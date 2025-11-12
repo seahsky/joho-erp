@@ -1,0 +1,422 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  SALES
+  PACKER
+  DRIVER
+  MANAGER
+}
+
+enum CustomerStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  PACKED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum StockMovementType {
+  RECEIPT
+  ADJUSTMENT
+  ORDER_FULFILLMENT
+  RETURN
+}
+
+enum PriceChangeType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  passwordHash  String       @map("password_hash")
+  role          UserRole
+  name          String?
+  phone         String?
+  status        String       @default("active")
+  lastLogin     DateTime?    @map("last_login")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  customer      Customer?
+  adminProfile  AdminProfile?
+
+  // Activity logs
+  priceChanges  PriceAudit[]
+  stockMovements StockMovement[]
+  orderStatusUpdates OrderStatusHistory[]
+
+  @@map("users")
+}
+
+model AdminProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_profiles")
+}
+
+model Customer {
+  id                  String         @id @default(cuid())
+  userId              String         @unique @map("user_id")
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  businessName        String         @map("business_name")
+  abn                 String         @unique
+  contactPerson       String         @map("contact_person")
+
+  // Business Address
+  businessStreet      String         @map("business_street")
+  businessSuburb      String         @map("business_suburb")
+  businessState       String         @map("business_state")
+  businessPostcode    String         @map("business_postcode")
+
+  // Delivery Address
+  deliveryStreet      String         @map("delivery_street")
+  deliverySuburb      String         @map("delivery_suburb")
+  deliveryState       String         @map("delivery_state")
+  deliveryPostcode    String         @map("delivery_postcode")
+  deliveryArea        String?        @map("delivery_area") // North, South, East, West
+
+  // Credit Information
+  status              CustomerStatus @default(PENDING)
+  creditLimit         Float?         @map("credit_limit")
+  requestedCreditLimit Float?        @map("requested_credit_limit")
+  paymentTerms        String?        @map("payment_terms")
+
+  // Credit Application
+  yearsInBusiness     Int?           @map("years_in_business")
+  annualRevenue       String?        @map("annual_revenue")
+  businessType        String?        @map("business_type")
+  bankName            String?        @map("bank_name")
+  bankAccount         String?        @map("bank_account")
+  bankBsb             String?        @map("bank_bsb")
+
+  notes               String?        @db.Text
+
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  orders              Order[]
+  customerPricing     CustomerPricing[]
+  tradeReferences     TradeReference[]
+  creditApplicationDocs CreditApplicationDoc[]
+  cartItems           CartItem[]
+
+  @@map("customers")
+}
+
+model TradeReference {
+  id            String   @id @default(cuid())
+  customerId    String   @map("customer_id")
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  companyName   String   @map("company_name")
+  contactPerson String   @map("contact_person")
+  phone         String
+  email         String?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("trade_references")
+}
+
+model CreditApplicationDoc {
+  id          String   @id @default(cuid())
+  customerId  String   @map("customer_id")
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  fileName    String   @map("file_name")
+  fileUrl     String   @map("file_url")
+  fileType    String   @map("file_type")
+  fileSize    Int      @map("file_size")
+  docType     String   @map("doc_type") // registration, bank_statement, trade_reference
+
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  @@map("credit_application_docs")
+}
+
+model ProductCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?   @db.Text
+  sortOrder   Int       @default(0) @map("sort_order")
+
+  products    Product[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("product_categories")
+}
+
+model Product {
+  id                  String          @id @default(cuid())
+  sku                 String          @unique
+  name                String
+  description         String?         @db.Text
+  categoryId          String          @map("category_id")
+  category            ProductCategory @relation(fields: [categoryId], references: [id])
+
+  basePrice           Float           @map("base_price") // GST exclusive
+  gstApplicable       Boolean         @default(true) @map("gst_applicable")
+  unitOfMeasure       String          @map("unit_of_measure") // kg, units, cartons, boxes
+
+  stockLevel          Float           @default(0) @map("stock_level")
+  reorderLevel        Float           @default(0) @map("reorder_level")
+
+  nutritionalInfo     String?         @db.Text @map("nutritional_info")
+  storageInstructions String?         @db.Text @map("storage_instructions")
+  minOrderQuantity    Float?          @map("min_order_quantity")
+
+  imageUrls           String[]        @default([]) @map("image_urls")
+
+  status              String          @default("active") // active, inactive
+
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  customerPricing     CustomerPricing[]
+  orderItems          OrderItem[]
+  stockMovements      StockMovement[]
+  priceAudits         PriceAudit[]
+  cartItems           CartItem[]
+
+  @@map("products")
+}
+
+model CustomerPricing {
+  id              String    @id @default(cuid())
+  customerId      String    @map("customer_id")
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId       String    @map("product_id")
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  price           Float     // Override price (GST exclusive)
+  effectiveFrom   DateTime  @default(now()) @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  notes           String?   @db.Text
+  status          String    @default("active") // active, inactive
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([customerId, productId, effectiveFrom])
+  @@map("customer_pricing")
+}
+
+model PriceAudit {
+  id            String          @id @default(cuid())
+  productId     String          @map("product_id")
+  product       Product         @relation(fields: [productId], references: [id])
+  customerId    String?         @map("customer_id") // null for base price changes
+
+  changeType    PriceChangeType @map("change_type")
+  oldPrice      Float?          @map("old_price")
+  newPrice      Float           @map("new_price")
+  percentChange Float?          @map("percent_change")
+
+  reason        String?         @db.Text
+  changedBy     String          @map("changed_by")
+  changedByUser User            @relation(fields: [changedBy], references: [id])
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@map("price_audits")
+}
+
+model StockMovement {
+  id            String            @id @default(cuid())
+  productId     String            @map("product_id")
+  product       Product           @relation(fields: [productId], references: [id])
+
+  movementType  StockMovementType @map("movement_type")
+  quantity      Float             // Positive for additions, negative for deductions
+  previousStock Float             @map("previous_stock")
+  newStock      Float             @map("new_stock")
+
+  reason        String?           @db.Text
+  reference     String?           // Order number, supplier invoice, etc.
+  orderId       String?           @map("order_id")
+
+  performedBy   String            @map("performed_by")
+  performedByUser User            @relation(fields: [performedBy], references: [id])
+
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  @@map("stock_movements")
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity   Float
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([customerId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                    String      @id @default(cuid())
+  orderNumber           String      @unique @map("order_number")
+  customerId            String      @map("customer_id")
+  customer              Customer    @relation(fields: [customerId], references: [id])
+
+  status                OrderStatus @default(PENDING)
+
+  // Delivery Information
+  deliveryStreet        String      @map("delivery_street")
+  deliverySuburb        String      @map("delivery_suburb")
+  deliveryState         String      @map("delivery_state")
+  deliveryPostcode      String      @map("delivery_postcode")
+  deliveryArea          String?     @map("delivery_area")
+  estimatedDeliveryDate DateTime?   @map("estimated_delivery_date")
+  actualDeliveryDate    DateTime?   @map("actual_delivery_date")
+
+  purchaseOrderNumber   String?     @map("purchase_order_number")
+  deliveryInstructions  String?     @db.Text @map("delivery_instructions")
+  customerNotes         String?     @db.Text @map("customer_notes")
+  internalNotes         String?     @db.Text @map("internal_notes")
+
+  // Order placed after cutoff time
+  afterCutoff           Boolean     @default(false) @map("after_cutoff")
+
+  // Totals
+  subtotal              Float
+  gst                   Float
+  total                 Float
+
+  // Delivery tracking
+  driverName            String?     @map("driver_name")
+  deliveryProofUrl      String?     @map("delivery_proof_url")
+  recipientName         String?     @map("recipient_name")
+
+  // Xero integration
+  xeroInvoiceId         String?     @map("xero_invoice_id")
+  xeroInvoiceNumber     String?     @map("xero_invoice_number")
+
+  orderDate             DateTime    @default(now()) @map("order_date")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  items                 OrderItem[]
+  statusHistory         OrderStatusHistory[]
+  deliveryRun           DeliveryRun? @relation(fields: [deliveryRunId], references: [id])
+  deliveryRunId         String?     @map("delivery_run_id")
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String  @map("order_id")
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String  @map("product_id")
+  product     Product @relation(fields: [productId], references: [id])
+
+  quantity    Float
+  unitPrice   Float   @map("unit_price") // Price at time of order (GST exclusive)
+  lineTotal   Float   @map("line_total") // quantity * unitPrice
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id         String      @id @default(cuid())
+  orderId    String      @map("order_id")
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  status     OrderStatus
+  notes      String?     @db.Text
+  changedBy  String      @map("changed_by")
+  changedByUser User     @relation(fields: [changedBy], references: [id])
+
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@map("order_status_history")
+}
+
+model DeliveryRun {
+  id              String    @id @default(cuid())
+  runDate         DateTime  @map("run_date")
+  deliveryArea    String    @map("delivery_area")
+  driverName      String?   @map("driver_name")
+  status          String    @default("pending") // pending, in_progress, completed
+
+  startTime       DateTime? @map("start_time")
+  endTime         DateTime? @map("end_time")
+
+  notes           String?   @db.Text
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  orders          Order[]
+
+  @@map("delivery_runs")
+}
+
+model DeliveryArea {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  suburbs     String[] @default([])
+  description String?  @db.Text
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_areas")
+}
+
+model CompanySetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?  @db.Text
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("company_settings")
+}
