@@ -1,0 +1,99 @@
+// User Roles
+export type UserRole = 'customer' | 'admin' | 'sales' | 'packer' | 'driver' | 'manager';
+
+// Area Tags
+export type AreaTag = 'north' | 'south' | 'east' | 'west';
+
+// Order Status
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'packing'
+  | 'ready_for_delivery'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
+
+// Product Status
+export type ProductStatus = 'active' | 'discontinued' | 'out_of_stock';
+
+// Customer Status
+export type CustomerStatus = 'active' | 'suspended' | 'closed';
+
+// Credit Application Status
+export type CreditApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+// Product Unit
+export type ProductUnit = 'kg' | 'piece' | 'box' | 'carton';
+
+// Inventory Transaction Type
+export type InventoryTransactionType = 'purchase' | 'sale' | 'adjustment' | 'return' | 'damage';
+
+// Proof of Delivery Type
+export type PODType = 'signature' | 'photo';
+
+// Clerk Metadata for Customer
+export interface CustomerMetadata {
+  role: 'customer';
+  customerId: string;
+  approvalStatus: CreditApplicationStatus;
+  creditLimit: number;
+  areaTag: AreaTag;
+}
+
+// Clerk Metadata for Admin
+export interface AdminMetadata {
+  role: 'admin';
+  department: string;
+}
+
+// Clerk Metadata for Sales
+export interface SalesMetadata {
+  role: 'sales';
+  department: string;
+}
+
+// Clerk Metadata for Packer
+export interface PackerMetadata {
+  role: 'packer';
+  department: string;
+}
+
+// Clerk Metadata for Driver
+export interface DriverMetadata {
+  role: 'driver';
+  department: string;
+  vehicleNumber?: string;
+}
+
+// Clerk Metadata for Manager
+export interface ManagerMetadata {
+  role: 'manager';
+  department: string;
+}
+
+// Union type for all user metadata
+export type UserMetadata =
+  | CustomerMetadata
+  | AdminMetadata
+  | SalesMetadata
+  | PackerMetadata
+  | DriverMetadata
+  | ManagerMetadata;
+
+// Address Interface
+export interface Address {
+  street: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  country: string;
+  deliveryInstructions?: string;
+}
+
+// Delivery Address with Area Tag
+export interface DeliveryAddress extends Address {
+  areaTag: AreaTag;
+  latitude?: number;
+  longitude?: number;
+}
