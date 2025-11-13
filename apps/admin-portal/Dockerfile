@@ -19,14 +19,15 @@ COPY packages/database/package.json ./packages/database/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 
-# Install dependencies with BuildKit cache mount for faster rebuilds
-# This creates proper symlinks for the current filesystem
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
-
-# Copy all workspace source code
+# CRITICAL: Copy all workspace source code BEFORE installing
+# This ensures workspace symlinks resolve to complete packages with TypeScript source
 COPY packages ./packages
 COPY apps/admin-portal ./apps/admin-portal
+
+# Install dependencies with BuildKit cache mount for faster rebuilds
+# Workspace packages are now complete, so pnpm can create proper symlinks
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Build the admin portal and its dependencies using Turbo
 RUN pnpm turbo build --filter=admin-portal
