@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { LayoutDashboard, Users, Package, Truck } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jimmy-beef/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, LanguageSwitcher } from '@jimmy-beef/ui';
 
 export default async function Home() {
   const user = await currentUser();
@@ -24,7 +24,7 @@ export default async function Home() {
     },
     {
       title: t('products.name'),
-      description: 'Manage products and inventory',
+      description: t('navigation.inventory'),
       icon: Package,
       href: '/products',
     },
@@ -42,7 +42,8 @@ export default async function Home() {
         <p className="text-2xl font-bold">
           Jimmy Beef - {t('navigation.admin', { default: 'Admin Portal' })}
         </p>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <LanguageSwitcher />
           {user ? <UserButton /> : (
             <>
               <SignInButton mode="modal">

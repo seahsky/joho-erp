@@ -6,9 +6,10 @@
     "products": "Products",
     "orders": "Orders",
     "deliveries": "Deliveries",
-    "inventory": "Inventory",
+    "inventory": "Manage products and inventory",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin": "Admin Portal"
   },
   "common": {
     "loading": "Loading...",
@@ -26,7 +27,10 @@
     "tax": "Tax (GST)",
     "signIn": "Sign In",
     "signOut": "Sign Out",
-    "welcome": "Welcome"
+    "signUp": "Sign Up",
+    "welcome": "Welcome",
+    "items": "items",
+    "driver": "Driver"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -62,7 +66,11 @@
     "pending": "Pending",
     "rejected": "Rejected",
     "suspended": "Suspended",
-    "closed": "Closed"
+    "closed": "Closed",
+    "active_status": "active",
+    "pending_status": "pending",
+    "approved_status": "approved",
+    "rejected_status": "rejected"
   },
   "deliveries": {
     "title": "Delivery Management",
@@ -74,10 +82,13 @@
     "driver": "Driver",
     "estimatedTime": "ETA",
     "packages": "Packages",
-    "markAsDelivered": "Mark as Delivered",
+    "markAsDelivered": "Mark Delivered",
     "outForDelivery": "Out for Delivery",
     "readyForDelivery": "Ready for Delivery",
-    "delivered": "Delivered"
+    "delivered": "Delivered",
+    "deliveriesInProgress": "deliveries in progress",
+    "deliveryRoutes": "Delivery Routes",
+    "realTimeTracking": "Real-time delivery tracking on map"
   },
   "orders": {
     "orderNumber": "Order Number",
