@@ -1,7 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jimmy-beef/ui';
 import { Package, Users, ShoppingCart, TruckIcon } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const t = await getTranslations();
+
   // In production, these would come from tRPC queries
   const stats = {
     totalOrders: 142,
@@ -27,8 +30,8 @@ export default function DashboardPage() {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Welcome back! Here's what's happening today.</p>
+          <h1 className="text-4xl font-bold">{t('dashboard.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('dashboard.subtitle')}</p>
         </div>
       </div>
 
@@ -36,7 +39,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.totalOrders')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -47,7 +50,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.pendingOrders')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -58,7 +61,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.activeCustomers')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -69,7 +72,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Deliveries</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.activeDeliveries')}</CardTitle>
             <TruckIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -83,7 +86,7 @@ export default function DashboardPage() {
         {/* Recent Orders */}
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
+            <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
             <CardDescription>Latest orders from your customers</CardDescription>
           </CardHeader>
           <CardContent>
@@ -119,7 +122,7 @@ export default function DashboardPage() {
         {/* Low Stock Alert */}
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Low Stock Alerts</CardTitle>
+            <CardTitle>{t('dashboard.lowStockAlerts')}</CardTitle>
             <CardDescription>Products requiring attention</CardDescription>
           </CardHeader>
           <CardContent>
@@ -131,7 +134,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground">{item.sku}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-destructive">{item.stock} units</p>
+                    <p className="text-sm font-medium text-destructive">{item.stock} {t('dashboard.unitsLeft')}</p>
                     <p className="text-xs text-muted-foreground">Threshold: {item.threshold}</p>
                   </div>
                 </div>

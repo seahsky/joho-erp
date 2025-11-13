@@ -1,0 +1,132 @@
+{
+  "navigation": {
+    "home": "Home",
+    "products": "Products",
+    "myOrders": "My Orders",
+    "profile": "Profile",
+    "cart": "Cart"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "status": "Status",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "tax": "Tax (GST)",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "welcome": "Welcome",
+    "addToCart": "Add to Cart",
+    "checkout": "Checkout",
+    "placeOrder": "Place Order"
+  },
+  "home": {
+    "title": "Jimmy Beef - Quality Meat Distributor",
+    "subtitle": "Your trusted partner for premium meat products",
+    "heroTitle": "Welcome to Jimmy Beef",
+    "heroDescription": "Premium quality meat products delivered fresh to your business",
+    "getStarted": "Get Started",
+    "features": {
+      "title": "Why Choose Jimmy Beef?",
+      "quality": {
+        "title": "Premium Quality",
+        "description": "Only the finest cuts of meat, carefully selected and processed"
+      },
+      "delivery": {
+        "title": "Fast Delivery",
+        "description": "Next-day delivery across Sydney with real-time tracking"
+      },
+      "pricing": {
+        "title": "Competitive Pricing",
+        "description": "Best value for your business with flexible payment terms"
+      },
+      "service": {
+        "title": "Excellent Service",
+        "description": "Dedicated support team ready to assist you"
+      }
+    },
+    "getStartedSection": {
+      "title": "Ready to get started?",
+      "description": "Sign up now and start ordering premium meat products for your business"
+    }
+  },
+  "products": {
+    "title": "Product Catalog",
+    "subtitle": "Browse our selection of premium meat products",
+    "searchPlaceholder": "Search products...",
+    "category": "Category",
+    "priceRange": "Price Range",
+    "availability": "Availability",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "price": "Price",
+    "unit": "Unit",
+    "addToCart": "Add to Cart",
+    "viewDetails": "View Details"
+  },
+  "orders": {
+    "title": "My Orders",
+    "subtitle": "Track and manage your orders",
+    "orderNumber": "Order Number",
+    "date": "Date",
+    "status": "Status",
+    "total": "Total",
+    "items": "Items",
+    "viewDetails": "View Details",
+    "reorder": "Reorder",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "processing": "Processing",
+    "packed": "Packed",
+    "outForDelivery": "Out for Delivery",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "noOrders": "You haven't placed any orders yet",
+    "startShopping": "Start Shopping"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account information",
+    "businessInfo": "Business Information",
+    "businessName": "Business Name",
+    "abn": "ABN",
+    "contactInfo": "Contact Information",
+    "contactPerson": "Contact Person",
+    "email": "Email",
+    "phone": "Phone",
+    "deliveryAddress": "Delivery Address",
+    "street": "Street Address",
+    "suburb": "Suburb",
+    "state": "State",
+    "postcode": "Postcode",
+    "creditInfo": "Credit Information",
+    "creditStatus": "Credit Status",
+    "creditLimit": "Credit Limit",
+    "availableCredit": "Available Credit",
+    "updateProfile": "Update Profile"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "subtitle": "Review your items before checkout",
+    "product": "Product",
+    "price": "Price",
+    "quantity": "Quantity",
+    "total": "Total",
+    "remove": "Remove",
+    "emptyCart": "Your cart is empty",
+    "continueShopping": "Continue Shopping",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "tax": "Tax (GST)",
+    "orderTotal": "Order Total",
+    "proceedToCheckout": "Proceed to Checkout"
+  }
+}

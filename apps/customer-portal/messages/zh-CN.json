@@ -1,0 +1,132 @@
+{
+  "navigation": {
+    "home": "首页",
+    "products": "产品",
+    "myOrders": "我的订单",
+    "profile": "个人资料",
+    "cart": "购物车"
+  },
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "view": "查看",
+    "search": "搜索",
+    "filter": "筛选",
+    "actions": "操作",
+    "status": "状态",
+    "total": "总计",
+    "subtotal": "小计",
+    "tax": "税金 (GST)",
+    "signIn": "登录",
+    "signOut": "登出",
+    "welcome": "欢迎",
+    "addToCart": "加入购物车",
+    "checkout": "结账",
+    "placeOrder": "下订单"
+  },
+  "home": {
+    "title": "Jimmy Beef - 优质肉品经销商",
+    "subtitle": "您值得信赖的优质肉品合作伙伴",
+    "heroTitle": "欢迎来到 Jimmy Beef",
+    "heroDescription": "新鲜配送至您企业的优质肉品",
+    "getStarted": "开始使用",
+    "features": {
+      "title": "为什么选择 Jimmy Beef？",
+      "quality": {
+        "title": "优质品质",
+        "description": "精心挑选和处理的最优质肉品"
+      },
+      "delivery": {
+        "title": "快速配送",
+        "description": "悉尼地区隔日送达，提供实时追踪"
+      },
+      "pricing": {
+        "title": "具竞争力的价格",
+        "description": "灵活付款条件，为您的企业提供最佳价值"
+      },
+      "service": {
+        "title": "卓越服务",
+        "description": "专业支援团队随时为您服务"
+      }
+    },
+    "getStartedSection": {
+      "title": "准备好开始了吗？",
+      "description": "立即注册并开始为您的企业订购优质肉品"
+    }
+  },
+  "products": {
+    "title": "产品目录",
+    "subtitle": "浏览我们的优质肉品系列",
+    "searchPlaceholder": "搜索产品...",
+    "category": "类别",
+    "priceRange": "价格范围",
+    "availability": "供应状态",
+    "inStock": "有库存",
+    "lowStock": "低库存",
+    "outOfStock": "缺货",
+    "price": "价格",
+    "unit": "单位",
+    "addToCart": "加入购物车",
+    "viewDetails": "查看详情"
+  },
+  "orders": {
+    "title": "我的订单",
+    "subtitle": "追踪和管理您的订单",
+    "orderNumber": "订单编号",
+    "date": "日期",
+    "status": "状态",
+    "total": "总计",
+    "items": "项目",
+    "viewDetails": "查看详情",
+    "reorder": "重新订购",
+    "pending": "待处理",
+    "confirmed": "已确认",
+    "processing": "处理中",
+    "packed": "已打包",
+    "outForDelivery": "配送中",
+    "delivered": "已送达",
+    "cancelled": "已取消",
+    "noOrders": "您尚未下过任何订单",
+    "startShopping": "开始购物"
+  },
+  "profile": {
+    "title": "我的资料",
+    "subtitle": "管理您的帐户信息",
+    "businessInfo": "企业信息",
+    "businessName": "公司名称",
+    "abn": "澳洲商业号码",
+    "contactInfo": "联系信息",
+    "contactPerson": "联系人",
+    "email": "电子邮件",
+    "phone": "电话",
+    "deliveryAddress": "配送地址",
+    "street": "街道地址",
+    "suburb": "市郊",
+    "state": "州",
+    "postcode": "邮递区号",
+    "creditInfo": "信用信息",
+    "creditStatus": "信用状态",
+    "creditLimit": "信用额度",
+    "availableCredit": "可用信用",
+    "updateProfile": "更新资料"
+  },
+  "cart": {
+    "title": "购物车",
+    "subtitle": "结账前查看您的商品",
+    "product": "产品",
+    "price": "价格",
+    "quantity": "数量",
+    "total": "总计",
+    "remove": "移除",
+    "emptyCart": "您的购物车是空的",
+    "continueShopping": "继续购物",
+    "orderSummary": "订单摘要",
+    "subtotal": "小计",
+    "tax": "税金 (GST)",
+    "orderTotal": "订单总计",
+    "proceedToCheckout": "前往结账"
+  }
+}
