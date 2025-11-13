@@ -27,16 +27,16 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-4 py-6 md:py-10">
+      <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-4xl font-bold">{t('dashboard.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('dashboard.subtitle')}</p>
+          <h1 className="text-2xl md:text-4xl font-bold">{t('dashboard.title')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">{t('dashboard.subtitle')}</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('dashboard.totalOrders')}</CardTitle>
@@ -82,9 +82,9 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-8">
+      <div className="grid gap-4 lg:grid-cols-7 mb-6 md:mb-8">
         {/* Recent Orders */}
-        <Card className="col-span-4">
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
             <CardDescription>Latest orders from your customers</CardDescription>
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Low Stock Alert */}
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>{t('dashboard.lowStockAlerts')}</CardTitle>
             <CardDescription>Products requiring attention</CardDescription>
