@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "incremental": true,
+    "paths": {
+      "@jimmy-beef/api": ["./packages/api/src"],
+      "@jimmy-beef/database": ["./packages/database/src"],
+      "@jimmy-beef/email": ["./packages/email/src"],
+      "@jimmy-beef/shared": ["./packages/shared/src"],
+      "@jimmy-beef/ui": ["./packages/ui/src"]
+    }
+  },
+  "include": [],
+  "exclude": ["node_modules"]
+}
