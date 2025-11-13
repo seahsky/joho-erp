@@ -1,15 +1,19 @@
 import { type inferAsyncReturnType } from '@trpc/server';
 import { type FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
-import { auth } from '@clerk/nextjs';
 
-export async function createContext(opts?: FetchCreateContextFnOptions) {
-  const { userId, sessionId } = auth();
+export interface CreateContextOptions extends FetchCreateContextFnOptions {
+  auth: {
+    userId: string | null;
+    sessionId: string | null;
+  };
+}
 
+export async function createContext(opts: CreateContextOptions) {
   return {
-    userId,
-    sessionId,
-    req: opts?.req,
-    resHeaders: opts?.resHeaders,
+    userId: opts.auth.userId,
+    sessionId: opts.auth.sessionId,
+    req: opts.req,
+    resHeaders: opts.resHeaders,
   };
 }
 

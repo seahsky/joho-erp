@@ -1,4 +1,5 @@
-import { SignInButton, SignUpButton, UserButton, currentUser } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { Package, ShoppingCart, User, Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';

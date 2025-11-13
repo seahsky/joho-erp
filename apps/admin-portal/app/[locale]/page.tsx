@@ -1,4 +1,5 @@
-import { SignInButton, SignUpButton, UserButton, currentUser } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';

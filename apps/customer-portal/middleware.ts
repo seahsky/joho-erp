@@ -1,4 +1,4 @@
-import { authMiddleware } from '@clerk/nextjs';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import createMiddleware from 'next-intl/middleware';
 import { locales } from './i18n/request';
 
@@ -8,13 +8,20 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'always',
 });
 
-export default authMiddleware({
-  beforeAuth: (req) => {
-    // Step 1: Use the incoming request for i18n
-    return intlMiddleware(req);
-  },
-  // Routes that can be accessed without authentication
-  publicRoutes: ['/:locale', '/:locale/sign-in', '/:locale/sign-up'],
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/:locale/sign-in(.*)',
+  '/:locale/sign-up(.*)',
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Protect all routes except public ones
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+
+  // Apply internationalization middleware
+  return intlMiddleware(req);
 });
 
 export const config = {

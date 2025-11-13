@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^4.29.0",
+    "@clerk/nextjs": "^6.0.0",
     "@jimmy-beef/api": "workspace:*",
     "@jimmy-beef/database": "workspace:*",
     "@jimmy-beef/shared": "workspace:*",
