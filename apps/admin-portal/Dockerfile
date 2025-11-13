@@ -12,13 +12,6 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY turbo.json tsconfig.json .npmrc ./
 
-# Copy all package.json files for workspace resolution
-COPY apps/admin-portal/package.json ./apps/admin-portal/
-COPY packages/api/package.json ./packages/api/
-COPY packages/database/package.json ./packages/database/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/ui/package.json ./packages/ui/
-
 # CRITICAL: Copy all workspace source code BEFORE installing
 # This ensures workspace symlinks resolve to complete packages with TypeScript source
 COPY packages ./packages
