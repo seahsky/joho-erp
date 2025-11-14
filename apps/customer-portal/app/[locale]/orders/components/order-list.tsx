@@ -3,63 +3,19 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, Button, StatusBadge, type StatusType } from '@jimmy-beef/ui';
-import { ShoppingCart } from 'lucide-react';
-
-// Mock order data
-const mockOrders = [
-  {
-    id: 'ORD-1235',
-    customerId: 'customer-1',
-    items: [
-      { productName: 'Wagyu Beef', quantity: 5, unit: 'kg', price: 225.0 },
-      { productName: 'Pork Belly', quantity: 3, unit: 'kg', price: 54.0 },
-      { productName: 'Chicken Breast', quantity: 2, unit: 'kg', price: 25.0 },
-    ],
-    subtotal: 304.0,
-    tax: 30.4,
-    total: 334.4,
-    status: 'out_for_delivery' as StatusType,
-    createdAt: '2025-02-11T09:00:00Z',
-    estimatedDelivery: '2025-02-11T14:00:00Z',
-  },
-  {
-    id: 'ORD-1234',
-    customerId: 'customer-1',
-    items: [
-      { productName: 'Angus Beef', quantity: 10, unit: 'kg', price: 385.0 },
-      { productName: 'Pork Ribs', quantity: 5, unit: 'kg', price: 90.0 },
-    ],
-    subtotal: 475.0,
-    tax: 47.5,
-    total: 522.5,
-    status: 'delivered' as StatusType,
-    createdAt: '2025-02-10T08:30:00Z',
-    deliveredAt: '2025-02-10T15:20:00Z',
-  },
-  {
-    id: 'ORD-1233',
-    customerId: 'customer-1',
-    items: [
-      { productName: 'Chicken Wings', quantity: 15, unit: 'kg', price: 180.0 },
-    ],
-    subtotal: 180.0,
-    tax: 18.0,
-    total: 198.0,
-    status: 'delivered' as StatusType,
-    createdAt: '2025-02-08T10:00:00Z',
-    deliveredAt: '2025-02-08T16:30:00Z',
-  },
-];
+import { ShoppingCart, Loader2 } from 'lucide-react';
+import { api } from '@/trpc/client';
 
 export function OrderList() {
   const t = useTranslations('orders');
   const [filter, setFilter] = React.useState<'all' | StatusType>('all');
 
-  const filteredOrders = filter === 'all'
-    ? mockOrders
-    : mockOrders.filter((order) => order.status === filter);
+  const { data, isLoading, error } = api.order.getMyOrders.useQuery({
+    status: filter === 'all' ? undefined : filter,
+    limit: 50,
+  });
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-AU', {
       year: 'numeric',
@@ -69,6 +25,29 @@ export function OrderList() {
       minute: '2-digit',
     });
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">{t('loading', { default: 'Loading orders...' })}</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <ShoppingCart className="h-16 w-16 text-destructive mb-4" />
+        <p className="text-lg font-medium text-destructive mb-2">Error loading orders</p>
+        <p className="text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
+
+  const orders = data?.orders || [];
 
   return (
     <div className="space-y-4">
@@ -91,18 +70,18 @@ export function OrderList() {
 
       {/* Order Cards */}
       <div className="space-y-3">
-        {filteredOrders.map((order) => (
-          <Card key={order.id} className="overflow-hidden">
+        {orders.map((order) => (
+          <Card key={order._id.toString()} className="overflow-hidden">
             <CardContent className="p-4 space-y-3">
               {/* Order Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg">#{order.id}</h3>
+                  <h3 className="font-semibold text-lg">#{order.orderNumber}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(order.createdAt)}
+                    {formatDate(order.orderedAt)}
                   </p>
                 </div>
-                <StatusBadge status={order.status} />
+                <StatusBadge status={order.status as StatusType} />
               </div>
 
               {/* Order Details */}
@@ -110,11 +89,11 @@ export function OrderList() {
                 <p className="text-sm">
                   <span className="font-medium">{order.items.length}</span>{' '}
                   {order.items.length === 1 ? 'item' : 'items'} •{' '}
-                  <span className="font-semibold">${order.total.toFixed(2)}</span>
+                  <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
                 </p>
-                {order.status === 'out_for_delivery' && order.estimatedDelivery && (
+                {order.status === 'out_for_delivery' && order.estimatedDeliveryTime && (
                   <p className="text-sm text-muted-foreground">
-                    ETA: {formatDate(order.estimatedDelivery)}
+                    ETA: {formatDate(order.estimatedDeliveryTime)}
                   </p>
                 )}
                 {order.status === 'delivered' && order.deliveredAt && (
@@ -141,7 +120,7 @@ export function OrderList() {
       </div>
 
       {/* Empty State */}
-      {filteredOrders.length === 0 && (
+      {orders.length === 0 && (
         <div className="text-center py-12">
           <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-lg font-medium mb-2">{t('noOrders')}</p>

@@ -1,30 +1,29 @@
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jimmy-beef/ui';
-import { Package, Users, ShoppingCart, TruckIcon } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { Package, Users, ShoppingCart, TruckIcon, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { api } from '@/trpc/client';
 
-export default async function DashboardPage() {
-  const t = await getTranslations();
+export default function DashboardPage() {
+  const t = useTranslations();
 
-  // In production, these would come from tRPC queries
-  const stats = {
-    totalOrders: 142,
-    pendingOrders: 23,
-    totalCustomers: 89,
-    activeDeliveries: 12,
-  };
+  const { data: stats, isLoading: statsLoading } = api.dashboard.getStats.useQuery();
+  const { data: recentOrders, isLoading: ordersLoading } = api.dashboard.getRecentOrders.useQuery({ limit: 4 });
+  const { data: lowStockItems, isLoading: stockLoading } = api.dashboard.getLowStockItems.useQuery({ limit: 3 });
 
-  const recentOrders = [
-    { id: 'ORD-2025-001234', customer: 'Sydney Meats Co', amount: 2450.0, status: 'confirmed' },
-    { id: 'ORD-2025-001233', customer: 'Northern Butchers', amount: 1890.5, status: 'packing' },
-    { id: 'ORD-2025-001232', customer: 'East Side Foods', amount: 3210.0, status: 'out_for_delivery' },
-    { id: 'ORD-2025-001231', customer: 'West End Markets', amount: 1560.0, status: 'delivered' },
-  ];
+  const isLoading = statsLoading || ordersLoading || stockLoading;
 
-  const lowStockItems = [
-    { name: 'Premium Beef Brisket', sku: 'BEF-BRS-001', stock: 5, threshold: 10 },
-    { name: 'Wagyu Ribeye', sku: 'WAG-RIB-001', stock: 3, threshold: 10 },
-    { name: 'Lamb Shoulder', sku: 'LAM-SHO-001', stock: 7, threshold: 15 },
-  ];
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
@@ -43,8 +42,8 @@ export default async function DashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
-            <p className="text-xs text-muted-foreground">+12 from yesterday</p>
+            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
+            <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
 
@@ -54,7 +53,7 @@ export default async function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingOrders}</div>
+            <div className="text-2xl font-bold">{stats?.pendingOrders || 0}</div>
             <p className="text-xs text-muted-foreground">Require processing</p>
           </CardContent>
         </Card>
@@ -65,8 +64,8 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-            <p className="text-xs text-muted-foreground">+3 this week</p>
+            <div className="text-2xl font-bold">{stats?.totalCustomers || 0}</div>
+            <p className="text-xs text-muted-foreground">Active accounts</p>
           </CardContent>
         </Card>
 
@@ -76,7 +75,7 @@ export default async function DashboardPage() {
             <TruckIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeDeliveries}</div>
+            <div className="text-2xl font-bold">{stats?.activeDeliveries || 0}</div>
             <p className="text-xs text-muted-foreground">Out for delivery</p>
           </CardContent>
         </Card>
@@ -91,30 +90,34 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-                  <div>
-                    <p className="font-medium">{order.id}</p>
-                    <p className="text-sm text-muted-foreground">{order.customer}</p>
+              {recentOrders && recentOrders.length > 0 ? (
+                recentOrders.map((order) => (
+                  <div key={order._id.toString()} className="flex items-center justify-between border-b pb-4 last:border-0">
+                    <div>
+                      <p className="font-medium">{order.orderNumber}</p>
+                      <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          order.status === 'delivered'
+                            ? 'bg-green-100 text-green-800'
+                            : order.status === 'out_for_delivery'
+                            ? 'bg-blue-100 text-blue-800'
+                            : order.status === 'packing'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">${order.amount.toFixed(2)}</p>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        order.status === 'delivered'
-                          ? 'bg-green-100 text-green-800'
-                          : order.status === 'out_for_delivery'
-                          ? 'bg-blue-100 text-blue-800'
-                          : order.status === 'packing'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {order.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent orders</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -127,18 +130,26 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {lowStockItems.map((item) => (
-                <div key={item.sku} className="flex items-center justify-between border-b pb-3 last:border-0">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.sku}</p>
+              {lowStockItems && lowStockItems.length > 0 ? (
+                lowStockItems.map((item) => (
+                  <div key={item._id.toString()} className="flex items-center justify-between border-b pb-3 last:border-0">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.sku}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-destructive">
+                        {item.currentStock} {item.unit} {t('dashboard.unitsLeft', { default: 'left' })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Threshold: {item.lowStockThreshold}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-destructive">{item.stock} {t('dashboard.unitsLeft')}</p>
-                    <p className="text-xs text-muted-foreground">Threshold: {item.threshold}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No low stock items</p>
+              )}
             </div>
           </CardContent>
         </Card>

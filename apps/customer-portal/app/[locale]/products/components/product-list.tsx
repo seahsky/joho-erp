@@ -3,60 +3,16 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { MobileSearch, Card, CardContent, Button, Badge } from '@jimmy-beef/ui';
-import { Package } from 'lucide-react';
-
-// Mock product data (in real app, fetch from tRPC)
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Wagyu Beef Ribeye',
-    sku: 'WBR-001',
-    price: 45.0,
-    unit: 'kg',
-    stock: 25,
-    category: 'Beef',
-    imageUrl: null,
-  },
-  {
-    id: '2',
-    name: 'Angus Beef Striploin',
-    sku: 'ABS-002',
-    price: 38.5,
-    unit: 'kg',
-    stock: 42,
-    category: 'Beef',
-    imageUrl: null,
-  },
-  {
-    id: '3',
-    name: 'Pork Belly',
-    sku: 'PB-003',
-    price: 18.0,
-    unit: 'kg',
-    stock: 5,
-    category: 'Pork',
-    imageUrl: null,
-  },
-  {
-    id: '4',
-    name: 'Chicken Breast',
-    sku: 'CB-004',
-    price: 12.5,
-    unit: 'kg',
-    stock: 60,
-    category: 'Chicken',
-    imageUrl: null,
-  },
-];
+import { Package, Loader2 } from 'lucide-react';
+import { api } from '@/trpc/client';
 
 export function ProductList() {
   const t = useTranslations();
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  const filteredProducts = mockProducts.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: products, isLoading, error } = api.product.getAll.useQuery({
+    search: searchQuery || undefined,
+  });
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
@@ -67,6 +23,27 @@ export function ProductList() {
     }
     return <Badge variant="default" className="bg-green-500 text-white">{t('products.inStock')}</Badge>;
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Package className="h-16 w-16 text-destructive mb-4" />
+        <p className="text-lg font-medium text-destructive mb-2">Error loading products</p>
+        <p className="text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -80,8 +57,8 @@ export function ProductList() {
 
       {/* Product Grid - Single column on mobile, 2 on tablet, 3 on desktop */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredProducts.map((product) => (
-          <Card key={product.id} className="overflow-hidden">
+        {products?.map((product) => (
+          <Card key={product._id.toString()} className="overflow-hidden">
             <CardContent className="p-0">
               {/* Product Image Placeholder */}
               <div className="bg-muted flex items-center justify-center h-40 md:h-48">
@@ -100,20 +77,22 @@ export function ProductList() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold text-primary">
-                      ${product.price.toFixed(2)}
+                      ${product.basePrice.toFixed(2)}
                     </p>
                     <p className="text-sm text-muted-foreground">per {product.unit}</p>
                   </div>
-                  {getStockBadge(product.stock)}
+                  {getStockBadge(product.currentStock)}
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  {product.stock > 0 ? `${product.stock}${product.unit} available` : 'Out of stock'}
+                  {product.currentStock > 0
+                    ? `${product.currentStock}${product.unit} available`
+                    : 'Out of stock'}
                 </p>
 
                 <Button
                   className="w-full"
-                  disabled={product.stock === 0}
+                  disabled={product.currentStock === 0}
                 >
                   {t('products.addToCart')}
                 </Button>
@@ -124,7 +103,7 @@ export function ProductList() {
       </div>
 
       {/* Empty State */}
-      {filteredProducts.length === 0 && (
+      {products && products.length === 0 && (
         <div className="text-center py-12">
           <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-lg text-muted-foreground">No products found</p>
