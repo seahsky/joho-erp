@@ -11,7 +11,15 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "type-check": "turbo run type-check"
+    "type-check": "turbo run type-check",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:up:build": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:customer": "docker-compose up customer-portal",
+    "docker:admin": "docker-compose up admin-portal",
+    "docker:clean": "docker-compose down -v --rmi all"
   },
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {

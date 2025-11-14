@@ -22,7 +22,27 @@ COPY apps/customer-portal ./apps/customer-portal
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
+# Accept build arguments for NEXT_PUBLIC_* environment variables
+# These are embedded into the Next.js bundle at build time
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL
+ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL
+ARG NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+ARG NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ARG NEXT_PUBLIC_API_URL
+
+# Convert ARGs to ENV so Next.js build process can access them
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL=$NEXT_PUBLIC_CLERK_SIGN_IN_URL
+ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL=$NEXT_PUBLIC_CLERK_SIGN_UP_URL
+ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=$NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=$NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build the customer portal and its dependencies using Turbo
+# The NEXT_PUBLIC_* variables above will be embedded in the bundle
 RUN pnpm turbo build --filter=customer-portal
 
 # Deploy to isolated directory with all dependencies properly resolved

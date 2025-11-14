@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # Customer Portal - Public facing portal for customers
+  customer-portal:
+    build:
+      context: .
+      dockerfile: apps/customer-portal/Dockerfile
+      args:
+        # Build-time environment variables (embedded into Next.js bundle)
+        # These are for NEXT_PUBLIC_* variables that need to be available in the browser
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+        - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+        - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
+        - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
+        - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    container_name: jimmy-beef-customer-portal
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime environment variables (server-side only, not embedded in bundle)
+      # These are available to the Next.js server but not exposed to the browser
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - MONGODB_URI=${MONGODB_URI}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      - RESEND_ADMIN_EMAIL=${RESEND_ADMIN_EMAIL}
+      - XERO_CLIENT_ID=${XERO_CLIENT_ID}
+      - XERO_CLIENT_SECRET=${XERO_CLIENT_SECRET}
+      - XERO_REDIRECT_URI=${XERO_REDIRECT_URI}
+      - XERO_SCOPES=${XERO_SCOPES}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-ap-southeast-2}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - jimmy-beef-network
+
+  # Admin Portal - Internal admin dashboard
+  admin-portal:
+    build:
+      context: .
+      dockerfile: apps/admin-portal/Dockerfile
+      args:
+        # Build-time environment variables (embedded into Next.js bundle)
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+        - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+        - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
+        - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
+        - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    container_name: jimmy-beef-admin-portal
+    ports:
+      - "3001:3001"
+    environment:
+      # Runtime environment variables (server-side only)
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - MONGODB_URI=${MONGODB_URI}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      - RESEND_ADMIN_EMAIL=${RESEND_ADMIN_EMAIL}
+      - XERO_CLIENT_ID=${XERO_CLIENT_ID}
+      - XERO_CLIENT_SECRET=${XERO_CLIENT_SECRET}
+      - XERO_REDIRECT_URI=${XERO_REDIRECT_URI}
+      - XERO_SCOPES=${XERO_SCOPES}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-ap-southeast-2}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - jimmy-beef-network
+
+networks:
+  jimmy-beef-network:
+    driver: bridge
+
+# Usage:
+# 1. Make sure you have a .env file at the project root with all required variables
+# 2. Build and start all services: docker-compose up --build
+# 3. Start services (without rebuild): docker-compose up
+# 4. Stop services: docker-compose down
+# 5. View logs: docker-compose logs -f [service-name]
+# 6. Build specific service: docker-compose build customer-portal
+# 7. Run specific service: docker-compose up customer-portal
+#
+# Environment variable behavior:
+# - NEXT_PUBLIC_* variables are embedded at BUILD time (in the JavaScript bundle)
+# - Other variables are available at RUNTIME (server-side only)
+# - The .env file at project root is automatically loaded
+# - You can override values with environment variables before running docker-compose
