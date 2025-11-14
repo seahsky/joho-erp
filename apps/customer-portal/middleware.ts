@@ -15,13 +15,15 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // Protect all routes except public ones
+  // Apply internationalization middleware first to ensure locale handling
+  const intlResponse = intlMiddleware(req);
+
+  // Protect all routes except public ones (sign-in, sign-up)
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
 
-  // Apply internationalization middleware
-  return intlMiddleware(req);
+  return intlResponse;
 });
 
 export const config = {
