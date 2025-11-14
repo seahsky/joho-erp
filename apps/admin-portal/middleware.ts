@@ -9,9 +9,12 @@ const intlMiddleware = createMiddleware({
 });
 
 // Define public routes that don't require authentication
+// Include both localized and non-localized paths to handle Clerk's default redirects
 const isPublicRoute = createRouteMatcher([
   '/:locale/sign-in(.*)',
   '/:locale/sign-up(.*)',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
