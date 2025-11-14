@@ -1,5 +1,3 @@
-import { AreaTag } from '../types';
-
 /**
  * Format currency in AUD
  */

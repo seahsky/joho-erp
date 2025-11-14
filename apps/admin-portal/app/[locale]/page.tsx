@@ -1,10 +1,9 @@
 import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
-import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { LayoutDashboard, Users, Package, Truck } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, LanguageSwitcher } from '@jimmy-beef/ui';
+import { Card, CardDescription, CardHeader, CardTitle, LanguageSwitcher } from '@jimmy-beef/ui';
 
 export default async function Home() {
   const user = await currentUser();

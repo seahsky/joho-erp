@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/mapbox';
+import Map, { Marker, Popup, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin } from 'lucide-react';
 
@@ -24,7 +24,7 @@ interface DeliveryMapProps {
 
 export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMapProps) {
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<MapRef | null>(null);
 
   // Sydney CBD coordinates as default center
   const [viewState, setViewState] = useState({

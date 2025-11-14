@@ -18,7 +18,7 @@ import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loade
 import { api } from '@/trpc/client';
 
 type Customer = {
-  _id: any;
+  _id: string;
   businessName: string;
   abn: string;
   contactPerson: {
@@ -46,9 +46,9 @@ export default function CustomersPage() {
     limit: 100,
   });
 
-  // Mocked approval mutation (you would use this from tRPC)
-  const approveMutation = api.customer.approveCredit.useMutation();
-  const rejectMutation = api.customer.rejectCredit.useMutation();
+  // TODO: Implement approval mutations when needed
+  // const _approveMutation = api.customer.approveCredit.useMutation();
+  // const _rejectMutation = api.customer.rejectCredit.useMutation();
 
   if (isLoading) {
     return (
