@@ -82,5 +82,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the standalone server (server.js is at root of standalone output)
-CMD ["node", "server.js"]
+# Start the standalone server
+# In monorepos, server.js is nested at apps/admin-portal/server.js within standalone output
+CMD ["node", "apps/admin-portal/server.js"]
