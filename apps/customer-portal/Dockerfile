@@ -45,17 +45,10 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # The NEXT_PUBLIC_* variables above will be embedded in the bundle
 RUN pnpm turbo build --filter=customer-portal
 
-# Deploy to isolated directory with all dependencies properly resolved
-# This creates a production-ready bundle with no symlink issues
-RUN pnpm --filter=customer-portal deploy --prod /app/deploy/customer-portal
-
 # ========================================
 # Stage 2: Runner
 # ========================================
 FROM node:20-alpine AS runner
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
 
 WORKDIR /app
 
@@ -67,9 +60,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy the deployed package from builder
-# This includes all dependencies properly resolved without symlink issues
-COPY --from=builder --chown=nextjs:nodejs /app/deploy/customer-portal ./
+# Copy the standalone server and its dependencies
+# Next.js standalone output includes everything needed to run
+COPY --from=builder --chown=nextjs:nodejs /app/apps/customer-portal/.next/standalone ./
+
+# Copy the static files (required for assets)
+COPY --from=builder --chown=nextjs:nodejs /app/apps/customer-portal/.next/static ./apps/customer-portal/.next/static
+
+# Copy public folder if it exists (for static assets)
+COPY --from=builder --chown=nextjs:nodejs /app/apps/customer-portal/public ./apps/customer-portal/public
 
 # Switch to non-root user
 USER nextjs
@@ -81,5 +80,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["pnpm", "start"]
+# Start the standalone server (not using pnpm anymore)
+CMD ["node", "apps/customer-portal/server.js"]
