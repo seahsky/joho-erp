@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "node apps/admin-portal/server.js",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
