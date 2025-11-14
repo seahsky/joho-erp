@@ -8,7 +8,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInUrl="/en/sign-in"
+      signUpUrl="/en/sign-up"
+    >
       <html>
         <body className="font-sans antialiased">
           <TRPCProvider>{children}</TRPCProvider>
