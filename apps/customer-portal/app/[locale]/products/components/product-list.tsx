@@ -1,0 +1,114 @@
+'use client';
+
+import * as React from 'react';
+import { useTranslations } from 'next-intl';
+import { MobileSearch, Card, CardContent, Button, Badge } from '@jimmy-beef/ui';
+import { Package, Loader2 } from 'lucide-react';
+import { api } from '@/trpc/client';
+
+export function ProductList() {
+  const t = useTranslations();
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const { data: products, isLoading, error } = api.product.getAll.useQuery({
+    search: searchQuery || undefined,
+  });
+
+  const getStockBadge = (stock: number) => {
+    if (stock === 0) {
+      return <Badge variant="secondary" className="bg-red-500 text-white">{t('products.outOfStock')}</Badge>;
+    }
+    if (stock < 10) {
+      return <Badge variant="secondary" className="bg-amber-500 text-white">{t('products.lowStock')}</Badge>;
+    }
+    return <Badge variant="default" className="bg-green-500 text-white">{t('products.inStock')}</Badge>;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Package className="h-16 w-16 text-destructive mb-4" />
+        <p className="text-lg font-medium text-destructive mb-2">Error loading products</p>
+        <p className="text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search */}
+      <MobileSearch
+        placeholder={t('products.searchPlaceholder')}
+        value={searchQuery}
+        onChange={setSearchQuery}
+        showFilter={false}
+      />
+
+      {/* Product Grid - Single column on mobile, 2 on tablet, 3 on desktop */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {products?.map((product) => (
+          <Card key={product._id.toString()} className="overflow-hidden">
+            <CardContent className="p-0">
+              {/* Product Image Placeholder */}
+              <div className="bg-muted flex items-center justify-center h-40 md:h-48">
+                <Package className="h-16 w-16 text-muted-foreground" />
+              </div>
+
+              {/* Product Info */}
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-semibold text-base md:text-lg line-clamp-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-primary">
+                      ${product.basePrice.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">per {product.unit}</p>
+                  </div>
+                  {getStockBadge(product.currentStock)}
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  {product.currentStock > 0
+                    ? `${product.currentStock}${product.unit} available`
+                    : 'Out of stock'}
+                </p>
+
+                <Button
+                  className="w-full"
+                  disabled={product.currentStock === 0}
+                >
+                  {t('products.addToCart')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {products && products.length === 0 && (
+        <div className="text-center py-12">
+          <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-lg text-muted-foreground">No products found</p>
+        </div>
+      )}
+    </div>
+  );
+}
