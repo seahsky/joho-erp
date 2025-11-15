@@ -36,7 +36,7 @@ export function DesktopSidebar({
   }, [collapsed, onCollapsedChange]);
 
   const toggleCollapsed = () => {
-    setCollapsed((prev) => !prev);
+    setCollapsed((prev: boolean) => !prev);
   };
 
   return (
