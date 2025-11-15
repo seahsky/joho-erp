@@ -54,8 +54,8 @@ export function BottomNavigation({ items, className }: BottomNavigationProps) {
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
             >
-              <div className="relative">
-                <Icon className="h-6 w-6" />
+              <div className="relative flex items-center justify-center min-h-[44px] min-w-[44px]">
+                <Icon className="h-7 w-7" />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span
                     className={cn(

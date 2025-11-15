@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { MobileSearch, Card, CardContent, Button, Badge } from '@jimmy-beef/ui';
-import { Package, Loader2 } from 'lucide-react';
+import { MobileSearch, Card, CardContent, Button, Badge, Skeleton } from '@jimmy-beef/ui';
+import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 export function ProductList() {
@@ -27,9 +27,31 @@ export function ProductList() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">{t('common.loading')}</p>
+      <div className="space-y-4">
+        <Skeleton className="h-11 w-full rounded-lg" />
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="h-40 md:h-48 w-full" />
+              <div className="p-4 space-y-3">
+                <div>
+                  <Skeleton className="h-5 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <Skeleton className="h-8 w-24 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-11 w-full rounded-md" />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
