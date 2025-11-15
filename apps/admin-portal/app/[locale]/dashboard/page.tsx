@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jimmy-beef/ui';
-import { Package, Users, ShoppingCart, TruckIcon, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, H3, Small, type StatusType } from '@jimmy-beef/ui';
+import { Package, Users, ShoppingCart, TruckIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
@@ -16,10 +16,76 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <div className="container mx-auto px-4 py-6 md:py-10">
+        {/* Header Skeleton */}
+        <div className="mb-6 md:mb-8">
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent className="p-4 md:p-6">
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Recent Orders & Low Stock Skeleton */}
+        <div className="grid gap-4 lg:grid-cols-7">
+          <Card className="lg:col-span-4">
+            <CardHeader>
+              <Skeleton className="h-6 w-40 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between pb-4 border-b last:border-0">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="space-y-2 text-right">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-5 w-24 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <Skeleton className="h-6 w-40 mb-2" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex justify-between pb-3 border-b last:border-0">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="space-y-2 text-right">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -29,8 +95,8 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold">{t('dashboard.title')}</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">{t('dashboard.subtitle')}</p>
+          <H1>{t('dashboard.title')}</H1>
+          <Muted className="mt-2">{t('dashboard.subtitle')}</Muted>
         </div>
       </div>
 
@@ -41,9 +107,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">{t('dashboard.totalOrders')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
+          <CardContent className="p-4 md:p-6">
+            <H3 className="text-2xl">{stats?.totalOrders || 0}</H3>
+            <Small className="text-muted-foreground">All time</Small>
           </CardContent>
         </Card>
 
@@ -52,9 +118,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">{t('dashboard.pendingOrders')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.pendingOrders || 0}</div>
-            <p className="text-xs text-muted-foreground">Require processing</p>
+          <CardContent className="p-4 md:p-6">
+            <H3 className="text-2xl">{stats?.pendingOrders || 0}</H3>
+            <Small className="text-muted-foreground">Require processing</Small>
           </CardContent>
         </Card>
 
@@ -63,9 +129,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">{t('dashboard.activeCustomers')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalCustomers || 0}</div>
-            <p className="text-xs text-muted-foreground">Active accounts</p>
+          <CardContent className="p-4 md:p-6">
+            <H3 className="text-2xl">{stats?.totalCustomers || 0}</H3>
+            <Small className="text-muted-foreground">Active accounts</Small>
           </CardContent>
         </Card>
 
@@ -74,9 +140,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">{t('dashboard.activeDeliveries')}</CardTitle>
             <TruckIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeDeliveries || 0}</div>
-            <p className="text-xs text-muted-foreground">Out for delivery</p>
+          <CardContent className="p-4 md:p-6">
+            <H3 className="text-2xl">{stats?.activeDeliveries || 0}</H3>
+            <Small className="text-muted-foreground">Out for delivery</Small>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +154,7 @@ export default function DashboardPage() {
             <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
             <CardDescription>Latest orders from your customers</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
               {recentOrders && recentOrders.length > 0 ? (
                 recentOrders.map((order) => (
@@ -97,21 +163,9 @@ export default function DashboardPage() {
                       <p className="font-medium">{order.orderNumber}</p>
                       <p className="text-sm text-muted-foreground">{order.customerName}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'out_for_delivery'
-                            ? 'bg-blue-100 text-blue-800'
-                            : order.status === 'packing'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {order.status.replace(/_/g, ' ')}
-                      </span>
+                      <StatusBadge status={order.status as StatusType} showIcon={false} />
                     </div>
                   </div>
                 ))
@@ -128,7 +182,7 @@ export default function DashboardPage() {
             <CardTitle>{t('dashboard.lowStockAlerts')}</CardTitle>
             <CardDescription>Products requiring attention</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
               {lowStockItems && lowStockItems.length > 0 ? (
                 lowStockItems.map((item) => (

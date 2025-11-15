@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, Button, StatusBadge, type StatusType } from '@jimmy-beef/ui';
-import { ShoppingCart, Loader2 } from 'lucide-react';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@jimmy-beef/ui';
+import { ShoppingCart } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 export function OrderList() {
@@ -29,9 +29,35 @@ export function OrderList() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">{t('loading', { default: 'Loading orders...' })}</p>
+      <div className="space-y-4">
+        {/* Filter Pills Skeleton */}
+        <div className="flex gap-2 pb-2">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-11 w-28 rounded-full" />
+          ))}
+        </div>
+
+        {/* Order Cards Skeleton */}
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 md:p-6 space-y-3">
+                <div className="flex justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-48" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-11 flex-1 rounded-md" />
+                  <Skeleton className="h-11 flex-1 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -51,35 +77,42 @@ export function OrderList() {
 
   return (
     <div className="space-y-4">
-      {/* Filter Pills */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {(['all', 'confirmed', 'out_for_delivery', 'delivered'] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === status
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
-          >
-            {status === 'all' ? 'All Orders' : t(status)}
-          </button>
-        ))}
+      {/* Filter Pills with Scroll Indicators */}
+      <div className="relative">
+        {/* Left Fade Indicator */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
+
+        {/* Scrollable Container */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+          {(['all', 'confirmed', 'out_for_delivery', 'delivered'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] flex items-center snap-center ${
+                filter === status
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+              }`}
+            >
+              {status === 'all' ? 'All Orders' : t(status)}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Fade Indicator */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
       </div>
 
       {/* Order Cards */}
       <div className="space-y-3">
         {orders.map((order) => (
           <Card key={order._id.toString()} className="overflow-hidden">
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-4 md:p-6 space-y-3">
               {/* Order Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg">#{order.orderNumber}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(order.orderedAt)}
-                  </p>
+                  <H3 className="text-lg">#{order.orderNumber}</H3>
+                  <Muted>{formatDate(order.orderedAt)}</Muted>
                 </div>
                 <StatusBadge status={order.status as StatusType} />
               </div>
@@ -105,11 +138,11 @@ export function OrderList() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="default" className="flex-1 md:h-10">
                   {t('viewDetails')}
                 </Button>
                 {order.status === 'delivered' && (
-                  <Button variant="default" size="sm" className="flex-1">
+                  <Button variant="default" size="default" className="flex-1 md:h-10">
                     {t('reorder')}
                   </Button>
                 )}

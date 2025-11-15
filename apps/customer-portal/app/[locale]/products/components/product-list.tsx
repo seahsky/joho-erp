@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { MobileSearch, Card, CardContent, Button, Badge } from '@jimmy-beef/ui';
-import { Package, Loader2 } from 'lucide-react';
+import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, Large } from '@jimmy-beef/ui';
+import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 export function ProductList() {
@@ -16,20 +16,42 @@ export function ProductList() {
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
-      return <Badge variant="secondary" className="bg-red-500 text-white">{t('products.outOfStock')}</Badge>;
+      return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
     }
     if (stock < 10) {
-      return <Badge variant="secondary" className="bg-amber-500 text-white">{t('products.lowStock')}</Badge>;
+      return <Badge variant="warning">{t('products.lowStock')}</Badge>;
     }
-    return <Badge variant="default" className="bg-green-500 text-white">{t('products.inStock')}</Badge>;
+    return <Badge variant="success">{t('products.inStock')}</Badge>;
   };
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">{t('common.loading')}</p>
+      <div className="space-y-4">
+        <Skeleton className="h-11 w-full rounded-lg" />
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="h-40 md:h-48 w-full" />
+              <div className="p-4 space-y-3">
+                <div>
+                  <Skeleton className="h-5 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <Skeleton className="h-8 w-24 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-11 w-full rounded-md" />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -68,27 +90,25 @@ export function ProductList() {
               {/* Product Info */}
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-base md:text-lg line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+                  <H4 className="text-base md:text-lg line-clamp-2">{product.name}</H4>
+                  <Muted>SKU: {product.sku}</Muted>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-primary">
+                    <Large className="text-2xl text-primary">
                       ${product.basePrice.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">per {product.unit}</p>
+                    </Large>
+                    <Muted>per {product.unit}</Muted>
                   </div>
                   {getStockBadge(product.currentStock)}
                 </div>
 
-                <p className="text-sm text-muted-foreground">
+                <Muted>
                   {product.currentStock > 0
                     ? `${product.currentStock}${product.unit} available`
                     : 'Out of stock'}
-                </p>
+                </Muted>
 
                 <Button
                   className="w-full"
