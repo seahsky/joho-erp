@@ -5,9 +5,26 @@ import Link from 'next/link';
 import { Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@jimmy-beef/ui';
 
-export default async function Home() {
-  const user = await currentUser();
-  const t = await getTranslations();
+export default async function Home({
+  params: { locale },
+}: {
+  params: { locale: string };
+}) {
+  console.log('[Home Page] Component starting with locale:', locale);
+
+  let user, t;
+  try {
+    console.log('[Home Page] Calling currentUser()...');
+    user = await currentUser();
+    console.log('[Home Page] currentUser() succeeded, user:', user?.id || 'no user');
+
+    console.log('[Home Page] Calling getTranslations() with locale:', locale);
+    t = await getTranslations({ locale });
+    console.log('[Home Page] getTranslations() succeeded');
+  } catch (error) {
+    console.error('[Home Page] ERROR:', error);
+    throw error;
+  }
 
   const features = [
     {
