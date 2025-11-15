@@ -17,14 +17,16 @@ import {
   LogOut,
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
+import type { User as ClerkUser } from '@clerk/nextjs/server';
 
 interface AdminMobileDrawerProps {
   open: boolean;
   onClose: () => void;
   locale: string;
+  user?: ClerkUser | null;
 }
 
-export function AdminMobileDrawer({ open, onClose, locale }: AdminMobileDrawerProps) {
+export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDrawerProps) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
 
@@ -61,8 +63,16 @@ export function AdminMobileDrawer({ open, onClose, locale }: AdminMobileDrawerPr
       <div className="flex items-center gap-3 p-4 border-b mb-4">
         <UserButton />
         <div className="flex-1">
-          <p className="font-semibold">Admin User</p>
-          <p className="text-sm text-muted-foreground">admin@jimmybeef.com</p>
+          <p className="font-semibold">
+            {user?.firstName && user?.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : user?.firstName || 'User'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {user?.primaryEmailAddress?.emailAddress ||
+             user?.emailAddresses?.[0]?.emailAddress ||
+             'No email'}
+          </p>
         </div>
       </div>
 

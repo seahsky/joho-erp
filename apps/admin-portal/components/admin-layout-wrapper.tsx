@@ -8,15 +8,18 @@ import { useIsMobileOrTablet } from '@jimmy-beef/ui';
 import { UserButton } from '@clerk/nextjs';
 import { Bell } from 'lucide-react';
 import { Button } from '@jimmy-beef/ui';
+import type { User as ClerkUser } from '@clerk/nextjs/server';
 
 export function AdminLayoutWrapper({
   children,
   locale,
   title,
+  user,
 }: {
   children: React.ReactNode;
   locale: string;
   title?: string;
+  user: ClerkUser | null;
 }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
@@ -42,6 +45,7 @@ export function AdminLayoutWrapper({
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             locale={locale}
+            user={user}
           />
           <main>{children}</main>
         </>
@@ -50,6 +54,7 @@ export function AdminLayoutWrapper({
           <AdminDesktopSidebar
             locale={locale}
             onCollapsedChange={setSidebarCollapsed}
+            user={user}
           />
           <main
             className="transition-all duration-300"

@@ -20,13 +20,15 @@ import {
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { Button } from '@jimmy-beef/ui';
+import type { User as ClerkUser } from '@clerk/nextjs/server';
 
 interface AdminDesktopSidebarProps {
   locale: string;
   onCollapsedChange?: (collapsed: boolean) => void;
+  user?: ClerkUser | null;
 }
 
-export function AdminDesktopSidebar({ locale, onCollapsedChange }: AdminDesktopSidebarProps) {
+export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDesktopSidebarProps) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
 
@@ -111,8 +113,16 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange }: AdminDesktopS
                 <>
                   <UserButton />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">Admin</p>
-                    <p className="text-xs text-muted-foreground truncate">admin@jimmybeef.com</p>
+                    <p className="text-sm font-medium truncate">
+                      {user?.firstName && user?.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user?.firstName || 'User'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.primaryEmailAddress?.emailAddress ||
+                       user?.emailAddresses?.[0]?.emailAddress ||
+                       'No email'}
+                    </p>
                   </div>
                   <Button variant="ghost" size="icon" aria-label="Notifications">
                     <Bell className="h-4 w-4" />

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { locales } from '@/i18n/request';
 import type { Metadata } from 'next';
 import { AdminLayoutWrapper } from '@/components/admin-layout-wrapper';
+import { currentUser } from '@clerk/nextjs/server';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -33,6 +34,9 @@ export default async function LocaleLayout({
 
   console.log('[LocaleLayout] Locale is valid, proceeding...');
 
+  // Fetch current user data from Clerk
+  const user = await currentUser();
+
   // Providing all messages to the client side is the easiest way to get started
   let messages;
   try {
@@ -48,7 +52,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <AdminLayoutWrapper locale={locale}>
+      <AdminLayoutWrapper locale={locale} user={user}>
         {children}
       </AdminLayoutWrapper>
     </NextIntlClientProvider>
