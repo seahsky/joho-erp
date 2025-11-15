@@ -17,13 +17,13 @@ import {
   LogOut,
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
-import type { User as ClerkUser } from '@clerk/nextjs/server';
+import type { SerializableUser } from '@/types/user';
 
 interface AdminMobileDrawerProps {
   open: boolean;
   onClose: () => void;
   locale: string;
-  user?: ClerkUser | null;
+  user?: SerializableUser;
 }
 
 export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDrawerProps) {
@@ -69,9 +69,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
               : user?.firstName || 'User'}
           </p>
           <p className="text-sm text-muted-foreground">
-            {user?.primaryEmailAddress?.emailAddress ||
-             user?.emailAddresses?.[0]?.emailAddress ||
-             'No email'}
+            {user?.emailAddress || 'No email'}
           </p>
         </div>
       </div>
