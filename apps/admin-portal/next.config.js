@@ -5,12 +5,7 @@ const nextConfig = {
   transpilePackages: ['@jimmy-beef/api', '@jimmy-beef/database', '@jimmy-beef/shared'],
   // Enable standalone output for Docker deployments
   // This creates a minimal production server with all dependencies bundled
-  output: 'standalone',
-  // CRITICAL for monorepos: Trace dependencies from workspace root
-  // This ensures all workspace packages are included in standalone build
-  experimental: {
-    outputFileTracingRoot: path.join(__dirname, '../../'),
-  },
+  output: 'standalone'
 };
 
 module.exports = withNextIntl(nextConfig);
