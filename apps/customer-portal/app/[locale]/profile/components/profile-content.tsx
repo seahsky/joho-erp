@@ -51,7 +51,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
     <div className="space-y-4">
       {/* Profile Header */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 md:p-6">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
               {user?.firstName?.[0] || customer.contactPerson.firstName[0]}
@@ -78,7 +78,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
             {t('businessInfo')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="p-4 md:p-6 space-y-3">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{t('businessName')}</p>
             <p className="text-base">{customer.businessName}</p>
@@ -98,7 +98,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
             {t('contactInfo')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="p-4 md:p-6 space-y-3">
           <div className="flex items-center gap-3">
             <User className="h-4 w-4 text-muted-foreground" />
             <div className="flex-1">
@@ -133,7 +133,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
             {t('deliveryAddress')}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6">
           <p className="text-base">
             {customer.deliveryAddress.street}
             <br />
@@ -151,7 +151,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
             {t('creditInfo')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="p-4 md:p-6 space-y-3">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{t('creditStatus')}</p>
             <p className="text-base">
@@ -216,7 +216,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
             Settings
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="p-4 md:p-6 space-y-2">
           <button className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-accent transition-colors">
             <div className="flex items-center gap-3">
               <span>Dark Mode</span>

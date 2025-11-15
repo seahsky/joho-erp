@@ -84,7 +84,7 @@ export default function DeliveriesPage() {
               <CardTitle>Active Deliveries</CardTitle>
               <CardDescription>{deliveries.length} deliveries in progress</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-4 md:p-6 space-y-4">
               {deliveries.map((delivery) => (
                 <div
                   key={delivery.id}

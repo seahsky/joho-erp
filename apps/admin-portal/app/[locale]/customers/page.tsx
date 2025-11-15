@@ -282,7 +282,7 @@ export default function CustomersPage() {
           <CardTitle>Customers</CardTitle>
           <CardDescription>A list of all your customers and their details</CardDescription>
         </CardHeader>
-        <CardContent className="p-0 md:p-6">
+        <CardContent className="p-4 md:p-6">
           <ResponsiveTable
             data={customers}
             columns={columns}

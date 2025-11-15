@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { MobileSearch, Card, CardContent, Button, Badge, Skeleton } from '@jimmy-beef/ui';
+import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, Large } from '@jimmy-beef/ui';
 import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 
@@ -90,27 +90,25 @@ export function ProductList() {
               {/* Product Info */}
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-base md:text-lg line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+                  <H4 className="text-base md:text-lg line-clamp-2">{product.name}</H4>
+                  <Muted>SKU: {product.sku}</Muted>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-primary">
+                    <Large className="text-2xl text-primary">
                       ${product.basePrice.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">per {product.unit}</p>
+                    </Large>
+                    <Muted>per {product.unit}</Muted>
                   </div>
                   {getStockBadge(product.currentStock)}
                 </div>
 
-                <p className="text-sm text-muted-foreground">
+                <Muted>
                   {product.currentStock > 0
                     ? `${product.currentStock}${product.unit} available`
                     : 'Out of stock'}
-                </p>
+                </Muted>
 
                 <Button
                   className="w-full"

@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { OrderList } from './components/order-list';
+import { H2, Muted } from '@jimmy-beef/ui';
 
 export default async function OrdersPage() {
   const t = await getTranslations();
@@ -9,10 +10,8 @@ export default async function OrdersPage() {
       {/* Header */}
       <div className="border-b bg-background sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{t('orders.title')}</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
-            {t('orders.subtitle')}
-          </p>
+          <H2 className="text-2xl md:text-3xl">{t('orders.title')}</H2>
+          <Muted className="mt-1">{t('orders.subtitle')}</Muted>
         </div>
       </div>
 

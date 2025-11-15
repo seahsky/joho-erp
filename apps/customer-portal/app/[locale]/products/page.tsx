@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { ProductList } from './components/product-list';
+import { H2, Muted } from '@jimmy-beef/ui';
 
 export default async function ProductsPage() {
   const t = await getTranslations();
@@ -9,10 +10,8 @@ export default async function ProductsPage() {
       {/* Header */}
       <div className="border-b bg-background sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{t('products.title')}</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
-            {t('products.subtitle')}
-          </p>
+          <H2 className="text-2xl md:text-3xl">{t('products.title')}</H2>
+          <Muted className="mt-1">{t('products.subtitle')}</Muted>
         </div>
       </div>
 
