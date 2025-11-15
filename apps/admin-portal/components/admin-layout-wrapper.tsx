@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { AdminMobileDrawer } from './admin-mobile-drawer';
+import { AdminDesktopSidebar } from './admin-desktop-sidebar';
 import { MobileAppBar } from '@jimmy-beef/ui';
 import { useIsMobileOrTablet } from '@jimmy-beef/ui';
 import { UserButton } from '@clerk/nextjs';
@@ -18,11 +19,12 @@ export function AdminLayoutWrapper({
   title?: string;
 }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const isMobileOrTablet = useIsMobileOrTablet();
 
   return (
     <>
-      {isMobileOrTablet && (
+      {isMobileOrTablet ? (
         <>
           <MobileAppBar
             title={title}
@@ -41,9 +43,22 @@ export function AdminLayoutWrapper({
             onClose={() => setDrawerOpen(false)}
             locale={locale}
           />
+          <main>{children}</main>
+        </>
+      ) : (
+        <>
+          <AdminDesktopSidebar
+            locale={locale}
+            onCollapsedChange={setSidebarCollapsed}
+          />
+          <main
+            className="transition-all duration-300"
+            style={{ marginLeft: sidebarCollapsed ? '80px' : '280px' }}
+          >
+            {children}
+          </main>
         </>
       )}
-      <main>{children}</main>
     </>
   );
 }

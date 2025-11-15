@@ -11,6 +11,9 @@ export * from './components/language-switcher';
 // Mobile Components
 export * from './components/mobile';
 
+// Desktop Components
+export * from './components/desktop';
+
 // Responsive Components
 export * from './components/responsive';
 
