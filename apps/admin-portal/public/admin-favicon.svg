@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1e3a8a"/>
+
+  <!-- Shield outline for admin/security -->
+  <path d="M 32 12 L 46 18 L 46 30 Q 46 42 32 52 Q 18 42 18 30 L 18 18 Z"
+        fill="#3b82f6" stroke="#60a5fa" stroke-width="2"/>
+
+  <!-- Inner shield detail -->
+  <path d="M 32 18 L 42 22 L 42 30 Q 42 38 32 45 Q 22 38 22 30 L 22 22 Z"
+        fill="#1e3a8a"/>
+
+  <!-- Gear/cog symbol in center -->
+  <circle cx="32" cy="30" r="8" fill="#60a5fa"/>
+
+  <!-- Gear teeth -->
+  <g fill="#60a5fa">
+    <rect x="30.5" y="20" width="3" height="4" rx="0.5"/>
+    <rect x="30.5" y="36" width="3" height="4" rx="0.5"/>
+    <rect x="24" y="28.5" width="4" height="3" rx="0.5"/>
+    <rect x="36" y="28.5" width="4" height="3" rx="0.5"/>
+  </g>
+
+  <!-- Center hub -->
+  <circle cx="32" cy="30" r="4" fill="#1e3a8a"/>
+  <circle cx="32" cy="30" r="2" fill="#60a5fa"/>
+
+  <!-- Bottom accent bar (represents data/management) -->
+  <rect x="26" y="46" width="12" height="2" rx="1" fill="#60a5fa"/>
+  <rect x="24" y="49" width="16" height="1.5" rx="0.75" fill="#3b82f6"/>
+</svg>

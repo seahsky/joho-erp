@@ -1,4 +1,12 @@
 import { SignIn } from '@clerk/nextjs';
+import { locales } from '@/i18n/request';
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({
+    locale,
+    'sign-in': [],
+  }));
+}
 
 export default function SignInPage() {
   return (

@@ -23,6 +23,7 @@ export default async function LocaleLayout({
 }) {
   // Ensure that the incoming `locale` is valid
   if (!locales.includes(locale as (typeof locales)[number])) {
+    console.log('not found local nalang', locale)
     notFound();
   }
 
