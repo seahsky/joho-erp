@@ -8,7 +8,7 @@ import { useIsMobileOrTablet } from '@jimmy-beef/ui';
 import { UserButton } from '@clerk/nextjs';
 import { Bell } from 'lucide-react';
 import { Button } from '@jimmy-beef/ui';
-import type { User as ClerkUser } from '@clerk/nextjs/server';
+import type { SerializableUser } from '@/types/user';
 
 export function AdminLayoutWrapper({
   children,
@@ -19,7 +19,7 @@ export function AdminLayoutWrapper({
   children: React.ReactNode;
   locale: string;
   title?: string;
-  user: ClerkUser | null;
+  user: SerializableUser;
 }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);

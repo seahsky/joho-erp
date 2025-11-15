@@ -20,12 +20,12 @@ import {
 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { Button } from '@jimmy-beef/ui';
-import type { User as ClerkUser } from '@clerk/nextjs/server';
+import type { SerializableUser } from '@/types/user';
 
 interface AdminDesktopSidebarProps {
   locale: string;
   onCollapsedChange?: (collapsed: boolean) => void;
-  user?: ClerkUser | null;
+  user?: SerializableUser;
 }
 
 export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDesktopSidebarProps) {
@@ -119,9 +119,7 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDe
                         : user?.firstName || 'User'}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {user?.primaryEmailAddress?.emailAddress ||
-                       user?.emailAddresses?.[0]?.emailAddress ||
-                       'No email'}
+                      {user?.emailAddress || 'No email'}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" aria-label="Notifications">
