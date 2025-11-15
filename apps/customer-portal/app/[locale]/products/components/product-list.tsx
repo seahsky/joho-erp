@@ -16,12 +16,12 @@ export function ProductList() {
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
-      return <Badge variant="secondary" className="bg-red-500 text-white">{t('products.outOfStock')}</Badge>;
+      return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
     }
     if (stock < 10) {
-      return <Badge variant="secondary" className="bg-amber-500 text-white">{t('products.lowStock')}</Badge>;
+      return <Badge variant="warning">{t('products.lowStock')}</Badge>;
     }
-    return <Badge variant="default" className="bg-green-500 text-white">{t('products.inStock')}</Badge>;
+    return <Badge variant="success">{t('products.inStock')}</Badge>;
   };
 
   // Loading state

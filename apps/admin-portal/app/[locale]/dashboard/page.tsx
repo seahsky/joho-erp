@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jimmy-beef/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, type StatusType } from '@jimmy-beef/ui';
 import { Package, Users, ShoppingCart, TruckIcon, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -97,21 +97,9 @@ export default function DashboardPage() {
                       <p className="font-medium">{order.orderNumber}</p>
                       <p className="text-sm text-muted-foreground">{order.customerName}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'out_for_delivery'
-                            ? 'bg-blue-100 text-blue-800'
-                            : order.status === 'packing'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {order.status.replace(/_/g, ' ')}
-                      </span>
+                      <StatusBadge status={order.status as StatusType} showIcon={false} />
                     </div>
                   </div>
                 ))
