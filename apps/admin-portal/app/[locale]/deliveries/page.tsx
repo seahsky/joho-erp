@@ -14,10 +14,10 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | undefined>(
+  const [statusFilter, _setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | undefined>(
     undefined
   );
-  const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | undefined>(undefined);
+  const [areaFilter, _setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | undefined>(undefined);
 
   // Fetch deliveries from database
   const { data, isLoading } = api.delivery.getAll.useQuery({

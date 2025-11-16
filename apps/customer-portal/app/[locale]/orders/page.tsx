@@ -2,6 +2,8 @@ import { getTranslations } from 'next-intl/server';
 import { OrderList } from './components/order-list';
 import { H2, Muted } from '@jimmy-beef/ui';
 
+export const dynamic = 'force-dynamic';
+
 export default async function OrdersPage() {
   const t = await getTranslations();
 
