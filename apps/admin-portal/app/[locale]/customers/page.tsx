@@ -74,7 +74,7 @@ export default function CustomersPage() {
     );
   }
 
-  const customers = data?.customers || [];
+  const customers = (data?.customers ?? []) as Customer[];
   const totalCustomers = data?.total || 0;
   const activeCustomers = customers.filter((c) => c.status === 'active').length;
   const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;

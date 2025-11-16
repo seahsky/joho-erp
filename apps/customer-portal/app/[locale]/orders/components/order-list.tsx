@@ -73,7 +73,17 @@ export function OrderList() {
     );
   }
 
-  const orders = data?.orders || [];
+  // Ensure proper typing - if data exists, use orders, otherwise empty array
+  const orders = (data?.orders ?? []) as Array<{
+    _id: { toString(): string };
+    orderNumber: string;
+    orderedAt: Date | string;
+    status: string;
+    items: Array<{ length: number }>;
+    totalAmount: number;
+    estimatedDeliveryTime?: Date | string;
+    deliveredAt?: Date | string;
+  }>;
 
   return (
     <div className="space-y-4">

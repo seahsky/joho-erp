@@ -19,7 +19,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@jimmy-beef/api": ["../../packages/api/src"],
+      "@jimmy-beef/database": ["../../packages/database/src"],
+      "@jimmy-beef/email": ["../../packages/email/src"],
+      "@jimmy-beef/shared": ["../../packages/shared/src"],
+      "@jimmy-beef/ui": ["../../packages/ui/src"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
