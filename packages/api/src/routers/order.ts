@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
 import { Order, Customer, Product, connectDB } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals } from '@jimmy-beef/shared';
+import { generateOrderNumber, calculateOrderTotals, paginateQuery } from '@jimmy-beef/shared';
 
 export const orderRouter = router({
   // Create order
@@ -167,18 +167,17 @@ export const orderRouter = router({
         if (input.dateTo) filter.orderedAt.$lte = input.dateTo;
       }
 
-      const skip = (input.page - 1) * input.limit;
-
-      const [orders, total] = await Promise.all([
-        Order.find(filter).skip(skip).limit(input.limit).sort({ orderedAt: -1 }),
-        Order.countDocuments(filter),
-      ]);
+      const result = await paginateQuery(Order, filter, {
+        page: input.page,
+        limit: input.limit,
+        sortOptions: { orderedAt: -1 },
+      });
 
       return {
-        orders,
-        total,
-        page: input.page,
-        totalPages: Math.ceil(total / input.limit),
+        orders: result.items,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
       };
     }),
 
@@ -210,18 +209,17 @@ export const orderRouter = router({
         if (input.dateTo) filter.orderedAt.$lte = input.dateTo;
       }
 
-      const skip = (input.page - 1) * input.limit;
-
-      const [orders, total] = await Promise.all([
-        Order.find(filter).skip(skip).limit(input.limit).sort({ orderedAt: -1 }),
-        Order.countDocuments(filter),
-      ]);
+      const result = await paginateQuery(Order, filter, {
+        page: input.page,
+        limit: input.limit,
+        sortOptions: { orderedAt: -1 },
+      });
 
       return {
-        orders,
-        total,
-        page: input.page,
-        totalPages: Math.ceil(total / input.limit),
+        orders: result.items,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
       };
     }),
 

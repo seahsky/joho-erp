@@ -37,18 +37,10 @@ const isBypassRoute = (pathname: string) => {
 export default clerkMiddleware(async (auth, req) => {
   const pathname = req.nextUrl.pathname;
 
-  console.log('[Middleware] URL:', req.url);
-  console.log('[Middleware] Pathname:', pathname);
-  console.log('[Middleware] Is bypass route:', isBypassRoute(pathname));
-  console.log('[Middleware] Is public route:', isPublicRoute(req));
-
   // Handle routes that should bypass i18n middleware
   if (isBypassRoute(pathname)) {
-    console.log('[Middleware] Bypassing i18n for:', pathname);
-
     // Still apply auth protection if needed
     if (!isPublicRoute(req)) {
-      console.log('[Middleware] Protecting bypass route');
       await auth.protect();
     }
 
@@ -58,11 +50,9 @@ export default clerkMiddleware(async (auth, req) => {
   // Apply internationalization middleware FIRST to handle locale routing
   // This ensures locale is properly extracted before auth checks
   const intlResponse = intlMiddleware(req);
-  console.log('[Middleware] i18n Response status:', intlResponse?.status);
 
   // Then check auth protection
   if (!isPublicRoute(req)) {
-    console.log('[Middleware] Protecting route');
     await auth.protect();
   }
 

@@ -5,19 +5,11 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { MobileDrawer, DrawerItem, DrawerSection } from '@jimmy-beef/ui';
-import {
-  LayoutDashboard,
-  Users,
-  Truck,
-  Package,
-  Settings,
-  User,
-  Moon,
-  Globe,
-  LogOut,
-} from 'lucide-react';
+import { Settings, User, Moon, Globe, LogOut } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
+import { formatUserName } from '@jimmy-beef/shared';
 import type { SerializableUser } from '@/types/user';
+import { ADMIN_NAV_ITEMS } from '@/config/navigation';
 
 interface AdminMobileDrawerProps {
   open: boolean;
@@ -30,28 +22,11 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
   const t = useTranslations('navigation');
   const pathname = usePathname();
 
-  const navigationItems = [
-    {
-      label: t('dashboard'),
-      icon: LayoutDashboard,
-      href: `/${locale}/dashboard`,
-    },
-    {
-      label: t('customers'),
-      icon: Users,
-      href: `/${locale}/customers`,
-    },
-    {
-      label: t('deliveries'),
-      icon: Truck,
-      href: `/${locale}/deliveries`,
-    },
-    {
-      label: t('products'),
-      icon: Package,
-      href: `/${locale}/products`,
-    },
-  ];
+  const navigationItems = ADMIN_NAV_ITEMS.map((item) => ({
+    ...item,
+    label: t(item.labelKey),
+    href: `/${locale}${item.path}`,
+  }));
 
   const handleNavigate = () => {
     onClose();
@@ -63,11 +38,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
       <div className="flex items-center gap-3 p-4 border-b mb-4">
         <UserButton />
         <div className="flex-1">
-          <p className="font-semibold">
-            {user?.firstName && user?.lastName
-              ? `${user.firstName} ${user.lastName}`
-              : user?.firstName || 'User'}
-          </p>
+          <p className="font-semibold">{formatUserName(user)}</p>
           <p className="text-sm text-muted-foreground">
             {user?.emailAddress || 'No email'}
           </p>

@@ -182,3 +182,62 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 }
+
+/**
+ * Format user name from user object
+ * Returns full name if both first and last name are available,
+ * otherwise returns first name or fallback
+ */
+export function formatUserName(
+  user: { firstName?: string | null; lastName?: string | null } | null,
+  fallback = 'User'
+): string {
+  if (!user) return fallback;
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
+  }
+  return user.firstName || fallback;
+}
+
+/**
+ * Pagination result interface
+ */
+export interface PaginationResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+/**
+ * Generic pagination utility for MongoDB queries
+ * Handles pagination logic and returns standardized result
+ */
+export async function paginateQuery<T>(
+  model: any, // Mongoose Model
+  filter: any,
+  options: {
+    page: number;
+    limit: number;
+    sortOptions?: any;
+  }
+): Promise<PaginationResult<T>> {
+  const { page, limit, sortOptions = { createdAt: -1 } } = options;
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    model.find(filter).skip(skip).limit(limit).sort(sortOptions),
+    model.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    items,
+    total,
+    page,
+    totalPages,
+    hasMore: page < totalPages,
+  };
+}

@@ -10,17 +10,12 @@ import {
   SidebarItem,
   SidebarSection,
 } from '@jimmy-beef/ui';
-import {
-  LayoutDashboard,
-  Users,
-  Truck,
-  Package,
-  Bell,
-  Settings,
-} from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { Button } from '@jimmy-beef/ui';
+import { formatUserName } from '@jimmy-beef/shared';
 import type { SerializableUser } from '@/types/user';
+import { ADMIN_NAV_ITEMS } from '@/config/navigation';
 
 interface AdminDesktopSidebarProps {
   locale: string;
@@ -32,28 +27,11 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDe
   const t = useTranslations('navigation');
   const pathname = usePathname();
 
-  const navigationItems = [
-    {
-      label: t('dashboard'),
-      icon: LayoutDashboard,
-      href: `/${locale}/dashboard`,
-    },
-    {
-      label: t('customers'),
-      icon: Users,
-      href: `/${locale}/customers`,
-    },
-    {
-      label: t('deliveries'),
-      icon: Truck,
-      href: `/${locale}/deliveries`,
-    },
-    {
-      label: t('products'),
-      icon: Package,
-      href: `/${locale}/products`,
-    },
-  ];
+  const navigationItems = ADMIN_NAV_ITEMS.map((item) => ({
+    ...item,
+    label: t(item.labelKey),
+    href: `/${locale}${item.path}`,
+  }));
 
   return (
     <DesktopSidebar onCollapsedChange={onCollapsedChange}>
@@ -113,11 +91,7 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDe
                 <>
                   <UserButton />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {user?.firstName && user?.lastName
-                        ? `${user.firstName} ${user.lastName}`
-                        : user?.firstName || 'User'}
-                    </p>
+                    <p className="text-sm font-medium truncate">{formatUserName(user)}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {user?.emailAddress || 'No email'}
                     </p>
