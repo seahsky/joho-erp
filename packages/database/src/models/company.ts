@@ -79,4 +79,7 @@ const CompanySchema = new Schema<ICompany>(
   }
 );
 
+// Indexes
+CompanySchema.index({ businessName: 1 });
+
 export const Company = mongoose.models.Company || mongoose.model<ICompany>('Company', CompanySchema);

@@ -155,5 +155,11 @@ OrderSchema.index({ customerId: 1, orderedAt: -1 });
 OrderSchema.index({ status: 1, requestedDeliveryDate: 1 });
 OrderSchema.index({ 'deliveryAddress.areaTag': 1, requestedDeliveryDate: 1 });
 OrderSchema.index({ requestedDeliveryDate: 1, status: 1 });
+// Delivery-specific indexes
+OrderSchema.index({ 'delivery.driverId': 1 });
+OrderSchema.index({ 'delivery.deliveredAt': -1 });
+OrderSchema.index({ status: 1, 'deliveryAddress.areaTag': 1, requestedDeliveryDate: 1 });
+// General date queries
+OrderSchema.index({ orderedAt: -1 });
 
 export const Order = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);

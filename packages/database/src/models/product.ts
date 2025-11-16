@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   basePrice: number;
   currentStock: number;
   lowStockThreshold?: number;
+  isLowStock: boolean;
   status: 'active' | 'discontinued' | 'out_of_stock';
   xeroItemId?: string;
   createdAt: Date;
@@ -31,6 +32,7 @@ const ProductSchema = new Schema<IProduct>(
     basePrice: { type: Number, required: true, min: 0 },
     currentStock: { type: Number, required: true, min: 0, default: 0 },
     lowStockThreshold: { type: Number, min: 0 },
+    isLowStock: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['active', 'discontinued', 'out_of_stock'],
@@ -48,5 +50,16 @@ const ProductSchema = new Schema<IProduct>(
 ProductSchema.index({ sku: 1 }, { unique: true });
 ProductSchema.index({ status: 1 });
 ProductSchema.index({ category: 1 });
+ProductSchema.index({ isLowStock: 1, status: 1 });
+
+// Pre-save hook to compute isLowStock
+ProductSchema.pre('save', function (next) {
+  if (this.lowStockThreshold !== undefined) {
+    this.isLowStock = this.currentStock <= this.lowStockThreshold;
+  } else {
+    this.isLowStock = false;
+  }
+  next();
+});
 
 export const Product = mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

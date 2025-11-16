@@ -111,5 +111,8 @@ CustomerSchema.index({ 'contactPerson.email': 1 });
 CustomerSchema.index({ 'deliveryAddress.areaTag': 1 });
 CustomerSchema.index({ 'creditApplication.status': 1 });
 CustomerSchema.index({ status: 1 });
+// Search optimization indexes
+CustomerSchema.index({ abn: 1 });
+CustomerSchema.index({ businessName: 1 });
 
 export const Customer = mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);

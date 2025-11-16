@@ -13,7 +13,7 @@ export const dashboardRouter = router({
       Customer.countDocuments({ status: 'active' }),
       Order.countDocuments({ status: { $in: ['ready_for_delivery', 'out_for_delivery'] } }),
       Product.countDocuments({
-        $expr: { $lte: ['$currentStock', '$lowStockThreshold'] },
+        isLowStock: true,
         status: 'active',
       }),
     ]);
@@ -48,7 +48,7 @@ export const dashboardRouter = router({
       await connectDB();
 
       const products = await Product.find({
-        $expr: { $lte: ['$currentStock', '$lowStockThreshold'] },
+        isLowStock: true,
         status: 'active',
       })
         .sort({ currentStock: 1 })
