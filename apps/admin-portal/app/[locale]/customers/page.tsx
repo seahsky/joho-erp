@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -225,10 +226,12 @@ export default function CustomersPage() {
             Manage your customer accounts and credit applications
           </p>
         </div>
-        <Button className="w-full sm:w-auto">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add Customer
-        </Button>
+        <Link href="/customers/new">
+          <Button className="w-full sm:w-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Customer
+          </Button>
+        </Link>
       </div>
 
       {/* Stats */}

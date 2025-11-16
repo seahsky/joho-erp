@@ -205,6 +205,80 @@ export const customerRouter = router({
       return customer;
     }),
 
+  // Admin: Create customer
+  createCustomer: isAdmin
+    .input(
+      z.object({
+        businessName: z.string().min(1),
+        abn: z.string().length(11),
+        contactPerson: z.object({
+          firstName: z.string().min(1),
+          lastName: z.string().min(1),
+          email: z.string().email(),
+          phone: z.string(),
+          mobile: z.string().optional(),
+        }),
+        deliveryAddress: z.object({
+          street: z.string().min(1),
+          suburb: z.string().min(1),
+          state: z.string(),
+          postcode: z.string(),
+          areaTag: z.enum(['north', 'south', 'east', 'west']),
+          deliveryInstructions: z.string().optional(),
+        }),
+        billingAddress: z
+          .object({
+            street: z.string().min(1),
+            suburb: z.string().min(1),
+            state: z.string(),
+            postcode: z.string(),
+          })
+          .optional(),
+        creditLimit: z.number().min(0).default(0),
+        paymentTerms: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await connectDB();
+
+      // Check if customer with this email already exists
+      const existing = await Customer.findOne({ 'contactPerson.email': input.contactPerson.email });
+      if (existing) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A customer with this email already exists',
+        });
+      }
+
+      // Create customer
+      const customer = await Customer.create({
+        businessName: input.businessName,
+        abn: input.abn,
+        contactPerson: input.contactPerson,
+        deliveryAddress: {
+          ...input.deliveryAddress,
+          country: 'Australia',
+        },
+        billingAddress: input.billingAddress
+          ? { ...input.billingAddress, country: 'Australia' }
+          : undefined,
+        creditApplication: {
+          status: input.creditLimit > 0 ? 'approved' : 'pending',
+          appliedAt: new Date(),
+          creditLimit: input.creditLimit,
+          paymentTerms: input.paymentTerms,
+          reviewedAt: input.creditLimit > 0 ? new Date() : undefined,
+          reviewedBy: input.creditLimit > 0 ? ctx.userId : undefined,
+        },
+        status: 'active',
+      });
+
+      // TODO: Send welcome email to customer
+      // TODO: Log to audit trail
+
+      return customer;
+    }),
+
   // Admin: Approve credit
   approveCredit: isAdmin
     .input(
