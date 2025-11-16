@@ -35,7 +35,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 });
 
 // Middleware factory for role-based access
-export const hasRole = (roles: string[]) => {
+export const hasRole = (_roles: string[]) => {
   return protectedProcedure.use(async ({ ctx, next }) => {
     // In a real app, we would fetch user metadata from Clerk
     // and check if the user has one of the allowed roles

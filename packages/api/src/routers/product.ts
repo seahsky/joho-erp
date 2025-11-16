@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdmin } from '../trpc';
-import { Product, CustomerPricing, connectDB } from '@jimmy-beef/database';
+import { Product, connectDB } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
 
 export const productRouter = router({
@@ -13,7 +13,7 @@ export const productRouter = router({
         search: z.string().optional(),
       })
     )
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input, ctx: _ctx }) => {
       await connectDB();
 
       const filter: any = {};

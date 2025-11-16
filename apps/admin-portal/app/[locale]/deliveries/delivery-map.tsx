@@ -10,8 +10,8 @@ interface Delivery {
   orderId: string;
   customer: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   status: string;
   driver: string;
   estimatedTime: string;
@@ -36,7 +36,7 @@ export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMa
   useEffect(() => {
     if (selectedDelivery && mapRef.current) {
       const delivery = deliveries.find((d) => d.id === selectedDelivery);
-      if (delivery) {
+      if (delivery && delivery.latitude && delivery.longitude) {
         mapRef.current.flyTo({
           center: [delivery.longitude, delivery.latitude],
           zoom: 14,
@@ -76,24 +76,26 @@ export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMa
       >
         <NavigationControl position="top-right" />
 
-        {deliveries.map((delivery) => (
-          <Marker
-            key={delivery.id}
-            longitude={delivery.longitude}
-            latitude={delivery.latitude}
-            anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              setPopupInfo(delivery);
-            }}
-          >
-            <div className="cursor-pointer">
-              <MapPin className={`h-8 w-8 ${getMarkerColor(delivery.status)} drop-shadow-lg`} fill="currentColor" />
-            </div>
-          </Marker>
-        ))}
+        {deliveries
+          .filter((delivery) => delivery.latitude && delivery.longitude)
+          .map((delivery) => (
+            <Marker
+              key={delivery.id}
+              longitude={delivery.longitude!}
+              latitude={delivery.latitude!}
+              anchor="bottom"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setPopupInfo(delivery);
+              }}
+            >
+              <div className="cursor-pointer">
+                <MapPin className={`h-8 w-8 ${getMarkerColor(delivery.status)} drop-shadow-lg`} fill="currentColor" />
+              </div>
+            </Marker>
+          ))}
 
-        {popupInfo && (
+        {popupInfo && popupInfo.latitude && popupInfo.longitude && (
           <Popup
             longitude={popupInfo.longitude}
             latitude={popupInfo.latitude}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button } from '@jimmy-beef/ui';
 import { MapPin, Navigation, CheckCircle, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { api } from '@/trpc/client';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -13,46 +14,18 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | undefined>(
+    undefined
+  );
+  const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | undefined>(undefined);
 
-  // Mock delivery data - in production, this would come from tRPC
-  const deliveries = [
-    {
-      id: 'DEL-001',
-      orderId: 'ORD-2025-001234',
-      customer: 'Sydney Meats Co',
-      address: '123 George St, Sydney NSW 2000',
-      latitude: -33.8688,
-      longitude: 151.2093,
-      status: 'out_for_delivery',
-      driver: 'John Smith',
-      estimatedTime: '15 mins',
-      items: 12,
-    },
-    {
-      id: 'DEL-002',
-      orderId: 'ORD-2025-001232',
-      customer: 'Northern Butchers',
-      address: '456 Pacific Hwy, North Sydney NSW 2060',
-      latitude: -33.8387,
-      longitude: 151.2094,
-      status: 'out_for_delivery',
-      driver: 'Sarah Johnson',
-      estimatedTime: '25 mins',
-      items: 8,
-    },
-    {
-      id: 'DEL-003',
-      orderId: 'ORD-2025-001230',
-      customer: 'East Side Foods',
-      address: '789 Oxford St, Bondi Junction NSW 2022',
-      latitude: -33.8915,
-      longitude: 151.2477,
-      status: 'ready_for_delivery',
-      driver: 'Mike Brown',
-      estimatedTime: 'Pending',
-      items: 15,
-    },
-  ];
+  // Fetch deliveries from database
+  const { data, isLoading } = api.delivery.getAll.useQuery({
+    status: statusFilter,
+    areaTag: areaFilter,
+  });
+
+  const deliveries = data?.deliveries || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -66,6 +39,39 @@ export default function DeliveriesPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold">Delivery Management</h1>
+            <p className="text-muted-foreground mt-2">Track and manage deliveries in real-time</p>
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-20 bg-muted rounded"></div>
+                  <div className="h-20 bg-muted rounded"></div>
+                  <div className="h-20 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-6">
+                <div className="w-full h-[600px] bg-muted animate-pulse rounded-lg"></div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-10">
@@ -85,7 +91,10 @@ export default function DeliveriesPage() {
               <CardDescription>{deliveries.length} deliveries in progress</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6 space-y-4">
-              {deliveries.map((delivery) => (
+              {deliveries.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No deliveries found</p>
+              ) : (
+                deliveries.map((delivery) => (
                 <div
                   key={delivery.id}
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -129,7 +138,8 @@ export default function DeliveriesPage() {
                     )}
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </CardContent>
           </Card>
         </div>
