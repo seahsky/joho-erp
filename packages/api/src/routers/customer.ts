@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } from '../trpc';
 import { Customer, connectDB } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
+import { paginateQuery } from '@jimmy-beef/shared';
 
 export const customerRouter = router({
   // Public registration
@@ -173,18 +174,16 @@ export const customerRouter = router({
         ];
       }
 
-      const skip = (input.page - 1) * input.limit;
-
-      const [customers, total] = await Promise.all([
-        Customer.find(filter).skip(skip).limit(input.limit).sort({ createdAt: -1 }),
-        Customer.countDocuments(filter),
-      ]);
+      const result = await paginateQuery(Customer, filter, {
+        page: input.page,
+        limit: input.limit,
+      });
 
       return {
-        customers,
-        total,
-        page: input.page,
-        totalPages: Math.ceil(total / input.limit),
+        customers: result.items,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
       };
     }),
 

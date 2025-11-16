@@ -4,6 +4,7 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../button';
+import { useLocalStorage } from '@jimmy-beef/shared';
 
 export interface DesktopSidebarProps {
   children: React.ReactNode | ((collapsed: boolean) => React.ReactNode);
@@ -18,20 +19,10 @@ export function DesktopSidebar({
   defaultCollapsed = false,
   onCollapsedChange,
 }: DesktopSidebarProps) {
-  const [collapsed, setCollapsed] = React.useState(() => {
-    // Try to get from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sidebar-collapsed');
-      return stored ? JSON.parse(stored) : defaultCollapsed;
-    }
-    return defaultCollapsed;
-  });
+  const [collapsed, setCollapsed] = useLocalStorage('sidebar-collapsed', defaultCollapsed);
 
   React.useEffect(() => {
-    // Save to localStorage whenever collapsed state changes
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
-    }
+    // Notify parent of collapsed state changes
     onCollapsedChange?.(collapsed);
   }, [collapsed, onCollapsedChange]);
 
