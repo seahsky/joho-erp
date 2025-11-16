@@ -38,7 +38,7 @@ export const customerRouter = router({
         agreedToTerms: z.boolean(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: _ctx }) => {
       await connectDB();
 
       // Check if customer already exists

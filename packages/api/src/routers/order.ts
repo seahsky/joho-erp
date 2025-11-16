@@ -226,7 +226,7 @@ export const orderRouter = router({
     }),
 
   // Get order by ID
-  getById: protectedProcedure.input(z.object({ orderId: z.string() })).query(async ({ input, ctx }) => {
+  getById: protectedProcedure.input(z.object({ orderId: z.string() })).query(async ({ input, ctx: _ctx }) => {
     await connectDB();
 
     const order = await Order.findById(input.orderId);
