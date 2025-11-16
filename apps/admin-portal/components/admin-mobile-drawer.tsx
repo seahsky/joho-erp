@@ -38,7 +38,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
       <div className="flex items-center gap-3 p-4 border-b mb-4">
         <UserButton />
         <div className="flex-1">
-          <p className="font-semibold">{formatUserName(user)}</p>
+          <p className="font-semibold">{formatUserName(user ?? null)}</p>
           <p className="text-sm text-muted-foreground">
             {user?.emailAddress || 'No email'}
           </p>

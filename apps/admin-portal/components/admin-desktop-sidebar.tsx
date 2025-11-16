@@ -91,7 +91,7 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDe
                 <>
                   <UserButton />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{formatUserName(user)}</p>
+                    <p className="text-sm font-medium truncate">{formatUserName(user ?? null)}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {user?.emailAddress || 'No email'}
                     </p>

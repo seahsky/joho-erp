@@ -13,7 +13,7 @@ import React from 'react';
 export function useLocalStorage<T>(
   key: string,
   defaultValue: T
-): [T, (value: T) => void] {
+): [T, (value: T | ((prev: T) => T)) => void] {
   const [storedValue, setStoredValue] = React.useState<T>(() => {
     // Handle SSR - return default value on server
     if (typeof window === 'undefined') return defaultValue;
@@ -27,13 +27,15 @@ export function useLocalStorage<T>(
     }
   });
 
-  const setValue = (value: T) => {
+  const setValue = (value: T | ((prev: T) => T)) => {
     try {
-      setStoredValue(value);
+      // Support functional updates like React.useState
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
 
       // Update localStorage
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(value));
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
