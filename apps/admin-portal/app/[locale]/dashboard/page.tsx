@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, H3, Small, type StatusType } from '@jimmy-beef/ui';
 import { Package, Users, ShoppingCart, TruckIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';

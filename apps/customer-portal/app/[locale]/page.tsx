@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@jimmy-beef/ui';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home({
   params: { locale },
 }: {

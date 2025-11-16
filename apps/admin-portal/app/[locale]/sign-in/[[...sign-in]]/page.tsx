@@ -1,6 +1,8 @@
 import { SignIn } from '@clerk/nextjs';
 import { locales } from '@/i18n/request';
 
+export const dynamic = 'force-dynamic';
+
 export function generateStaticParams() {
   return locales.map((locale) => ({
     locale,

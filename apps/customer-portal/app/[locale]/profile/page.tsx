@@ -2,6 +2,8 @@ import { getTranslations } from 'next-intl/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { ProfileContent } from './components/profile-content';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage() {
   const t = await getTranslations();
   const user = await currentUser();

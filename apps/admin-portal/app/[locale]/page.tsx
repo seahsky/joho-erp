@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { LayoutDashboard, Users, Package, Truck } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle, LanguageSwitcher } from '@jimmy-beef/ui';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home({
   params: { locale },
 }: {
