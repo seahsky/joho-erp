@@ -102,7 +102,7 @@ export const packingRouter = router({
         orders: orders.map((order) => ({
           orderId: order.id,
           orderNumber: order.orderNumber,
-          customerName: order.customer.businessName,
+          customerName: order.customer?.businessName ?? 'Unknown Customer',
           areaTag: order.deliveryAddress.areaTag,
         })),
         productSummary,
@@ -154,7 +154,7 @@ export const packingRouter = router({
       return {
         orderId: order.id,
         orderNumber: order.orderNumber,
-        customerName: order.customer.businessName,
+        customerName: order.customer?.businessName ?? 'Unknown Customer',
         deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
         areaTag: order.deliveryAddress.areaTag,
         items,

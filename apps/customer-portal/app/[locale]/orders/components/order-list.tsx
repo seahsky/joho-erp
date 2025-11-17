@@ -130,7 +130,7 @@ export function OrderList() {
                     {t('requested')} {formatDate(order.requestedDeliveryDate)}
                   </p>
                 )}
-                {order.status === 'delivered' && order.delivery?.deliveredAt && (
+                {order.delivery?.deliveredAt && (
                   <p className="text-sm text-muted-foreground">
                     {t('deliveredDate')} {formatDate(order.delivery.deliveredAt)}
                   </p>

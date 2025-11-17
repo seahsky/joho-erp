@@ -380,7 +380,7 @@ export const pricingRouter = router({
       });
 
       // TODO: Log to audit trail
-      console.log(`Deleted pricing for ${pricing.customer.businessName} - ${pricing.product.name} by ${ctx.userId}`);
+      console.log(`Deleted pricing for ${pricing.customer?.businessName ?? 'Unknown'} - ${pricing.product?.name ?? 'Unknown'} by ${ctx.userId}`);
 
       return { success: true, message: 'Pricing deleted successfully' };
     }),
@@ -524,7 +524,7 @@ export const pricingRouter = router({
 
       let totalSavings = 0;
       pricings.forEach((pricing) => {
-        if (pricing.product) {
+        if (pricing.product?.basePrice != null) {
           const savings = pricing.product.basePrice - pricing.customPrice;
           if (savings > 0) {
             totalSavings += savings;
