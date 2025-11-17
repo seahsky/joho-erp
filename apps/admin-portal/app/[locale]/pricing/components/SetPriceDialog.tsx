@@ -35,14 +35,14 @@ type Pricing = {
   customPrice: number;
   effectiveFrom: Date;
   effectiveTo: Date | null;
-  customer: {
+  customer?: {
     businessName: string;
-  };
-  product: {
+  } | null;
+  product?: {
     sku: string;
     name: string;
     basePrice: number;
-  };
+  } | null;
 };
 
 interface SetPriceDialogProps {

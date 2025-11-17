@@ -39,14 +39,14 @@ type CustomerPricing = {
   customPrice: number;
   effectiveFrom: Date;
   effectiveTo: Date | null;
-  customer: {
+  customer?: {
     businessName: string;
-  };
-  product: {
+  } | null;
+  product?: {
     sku: string;
     name: string;
     basePrice: number;
-  };
+  } | null;
   isValid: boolean;
   effectivePriceInfo: {
     basePrice: number;
@@ -155,7 +155,7 @@ export default function PricingPage() {
       key: 'customer',
       label: t('pricing.table.customer'),
       render: (pricing) => (
-        <div className="font-medium">{pricing.customer.businessName}</div>
+        <div className="font-medium">{pricing.customer?.businessName ?? t('pricing.messages.unknownCustomer')}</div>
       ),
     },
     {
@@ -163,8 +163,8 @@ export default function PricingPage() {
       label: t('pricing.table.product'),
       render: (pricing) => (
         <div>
-          <div className="font-medium">{pricing.product.name}</div>
-          <div className="text-sm text-muted-foreground">{pricing.product.sku}</div>
+          <div className="font-medium">{pricing.product?.name ?? t('pricing.messages.unknownProduct')}</div>
+          <div className="text-sm text-muted-foreground">{pricing.product?.sku ?? 'N/A'}</div>
         </div>
       ),
     },
@@ -173,7 +173,7 @@ export default function PricingPage() {
       label: t('pricing.table.basePrice'),
       render: (pricing) => (
         <div className="text-muted-foreground">
-          {formatCurrency(pricing.product.basePrice)}
+          {pricing.product?.basePrice ? formatCurrency(pricing.product.basePrice) : 'N/A'}
         </div>
       ),
     },

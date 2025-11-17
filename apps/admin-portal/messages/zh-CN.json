@@ -362,7 +362,9 @@
     "messages": {
       "deleteConfirm": "您确定要删除此自定义价格吗？",
       "noPricing": "未找到自定义价格",
-      "noPricingDescription": "开始为您的客户添加自定义价格"
+      "noPricingDescription": "开始为您的客户添加自定义价格",
+      "unknownCustomer": "未知客户",
+      "unknownProduct": "未知产品"
     }
   },
   "bulkImportDialog": {
