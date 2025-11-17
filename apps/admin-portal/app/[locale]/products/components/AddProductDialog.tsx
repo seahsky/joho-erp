@@ -104,7 +104,10 @@ export function AddProductDialog({
     },
   });
 
-  const customers = (customersData?.customers || []) as Customer[];
+  const customers = useMemo(
+    () => (customersData?.customers || []) as Customer[],
+    [customersData?.customers]
+  );
 
   // Filter and search customers
   const filteredCustomers = useMemo(() => {
