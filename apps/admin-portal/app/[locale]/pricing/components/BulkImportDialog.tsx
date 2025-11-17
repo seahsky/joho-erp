@@ -10,6 +10,7 @@ import {
   Button,
 } from '@jimmy-beef/ui';
 import { Loader2, Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
 interface BulkImportDialogProps {
@@ -23,6 +24,7 @@ export function BulkImportDialog({
   onOpenChange,
   onSuccess,
 }: BulkImportDialogProps) {
+  const t = useTranslations('bulkImportDialog');
   const [csvData, setCsvData] = useState('');
   const [error, setError] = useState('');
   const [importResult, setImportResult] = useState<{
@@ -62,15 +64,21 @@ export function BulkImportDialog({
   const parseCsvData = (csv: string) => {
     const lines = csv.trim().split('\n');
     if (lines.length < 2) {
-      throw new Error('CSV must have at least a header row and one data row');
+      throw new Error(t('validation.csvHeaderRowRequired'));
     }
 
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const data: any[] = [];
+    const data: Array<{
+      customerAbn: string;
+      productSku: string;
+      customPrice: number;
+      effectiveFrom?: Date;
+      effectiveTo?: Date;
+    }> = [];
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map((v) => v.trim());
-      const row: any = {};
+      const row: Record<string, string> = {};
 
       headers.forEach((header, index) => {
         row[header] = values[index];
@@ -93,15 +101,15 @@ export function BulkImportDialog({
     setImportResult(null);
 
     if (!csvData.trim()) {
-      setError('Please upload a CSV file');
+      setError(t('validation.uploadCsvRequired'));
       return;
     }
 
     try {
       const pricings = parseCsvData(csvData);
       await bulkImportMutation.mutateAsync({ pricings });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
@@ -115,9 +123,9 @@ export function BulkImportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>Bulk Import Pricing</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple customer-specific prices at once
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -126,10 +134,10 @@ export function BulkImportDialog({
           <div className="bg-muted p-4 rounded-md">
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              CSV Format
+              {t('csvFormat.heading')}
             </h4>
             <p className="text-sm text-muted-foreground mb-2">
-              Your CSV file should have the following columns:
+              {t('csvFormat.instructions')}
             </p>
             <code className="block bg-background p-2 rounded text-xs overflow-x-auto">
               customer_abn,product_sku,custom_price,effective_from,effective_to
@@ -139,15 +147,15 @@ export function BulkImportDialog({
               23456789012,BEEF-SCOTCH-5KG,21.50,2025-01-01,
             </code>
             <p className="text-xs text-muted-foreground mt-2">
-              * effective_from and effective_to are optional (leave empty for immediate start or no expiry)
-              <br />* Use customer ABN to identify customers
+              * {t('csvFormat.noteEffectiveDates')}
+              <br />* {t('csvFormat.noteCustomerIdentifier')}
             </p>
           </div>
 
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              Upload CSV File
+              {t('fields.uploadCsvFile')}
             </label>
             <input
               type="file"
@@ -161,13 +169,13 @@ export function BulkImportDialog({
           {csvData && !importResult && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                Preview (First 5 lines)
+                {t('fields.preview')}
               </label>
               <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto max-h-32">
                 {csvData.split('\n').slice(0, 5).join('\n')}
               </pre>
               <p className="text-sm text-muted-foreground mt-1">
-                {csvData.split('\n').length - 1} rows to import
+                {t('fields.rowsToImport', { count: csvData.split('\n').length - 1 })}
               </p>
             </div>
           )}
@@ -180,7 +188,7 @@ export function BulkImportDialog({
                   <div className="flex items-center gap-2 text-green-700">
                     <CheckCircle2 className="h-5 w-5" />
                     <span className="font-medium">
-                      {importResult.success} rows imported successfully
+                      {t('results.successMessage', { count: importResult.success })}
                     </span>
                   </div>
                 </div>
@@ -190,7 +198,7 @@ export function BulkImportDialog({
                     <div className="flex items-center gap-2 text-red-700">
                       <AlertCircle className="h-5 w-5" />
                       <span className="font-medium">
-                        {importResult.failed} rows failed
+                        {t('results.failedMessage', { count: importResult.failed })}
                       </span>
                     </div>
                   </div>
@@ -200,11 +208,11 @@ export function BulkImportDialog({
               {/* Error Details */}
               {importResult.errors.length > 0 && (
                 <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
-                  <h4 className="font-medium text-sm mb-2">Import Errors:</h4>
+                  <h4 className="font-medium text-sm mb-2">{t('results.importErrors')}</h4>
                   <div className="space-y-1">
                     {importResult.errors.map((err, index) => (
                       <div key={index} className="text-sm text-muted-foreground">
-                        Row {err.row}: {err.error}
+                        {t('results.rowError', { row: err.row, error: err.error })}
                       </div>
                     ))}
                   </div>
@@ -213,7 +221,7 @@ export function BulkImportDialog({
 
               {importResult.failed === 0 && (
                 <div className="text-center text-sm text-green-600">
-                  All pricing records imported successfully! Closing...
+                  {t('results.allSuccess')}
                 </div>
               )}
             </div>
@@ -236,10 +244,10 @@ export function BulkImportDialog({
                   variant="outline"
                   onClick={handleReset}
                 >
-                  Import More
+                  {t('buttons.importMore')}
                 </Button>
                 <Button onClick={() => onOpenChange(false)}>
-                  Close
+                  {t('buttons.close')}
                 </Button>
               </>
             ) : (
@@ -250,7 +258,7 @@ export function BulkImportDialog({
                   onClick={() => onOpenChange(false)}
                   disabled={bulkImportMutation.isPending}
                 >
-                  Cancel
+                  {t('buttons.cancel')}
                 </Button>
                 <Button
                   onClick={handleImport}
@@ -260,7 +268,7 @@ export function BulkImportDialog({
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
                   <Upload className="h-4 w-4 mr-2" />
-                  Import Pricing
+                  {t('buttons.importPricing')}
                 </Button>
               </>
             )}

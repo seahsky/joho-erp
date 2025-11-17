@@ -12,6 +12,7 @@ import {
   Label,
 } from '@jimmy-beef/ui';
 import { Loader2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
 
@@ -61,6 +62,7 @@ export function SetPriceDialog({
   products,
   onSuccess,
 }: SetPriceDialogProps) {
+  const t = useTranslations();
   const [customerId, setCustomerId] = useState(pricing?.customerId || '');
   const [productId, setProductId] = useState(pricing?.productId || '');
   const [customPrice, setCustomPrice] = useState(pricing?.customPrice.toString() || '');
@@ -110,13 +112,13 @@ export function SetPriceDialog({
     setError('');
 
     if (!customerId || !productId || !customPrice) {
-      setError('Please fill in all required fields');
+      setError(t('pricingDialog.validation.requiredFields'));
       return;
     }
 
     const priceValue = parseFloat(customPrice);
     if (isNaN(priceValue) || priceValue <= 0) {
-      setError('Price must be a positive number');
+      setError(t('pricingDialog.validation.positivePrice'));
       return;
     }
 
@@ -142,19 +144,19 @@ export function SetPriceDialog({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {pricing ? 'Edit Custom Price' : 'Set Custom Price'}
+            {pricing ? t('pricingDialog.title.edit') : t('pricingDialog.title.create')}
           </DialogTitle>
           <DialogDescription>
             {pricing
-              ? 'Update the custom price for this customer-product combination'
-              : 'Create a new custom price for a customer-product combination'}
+              ? t('pricingDialog.description.edit')
+              : t('pricingDialog.description.create')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Customer Select */}
           <div>
-            <Label htmlFor="customer">Customer *</Label>
+            <Label htmlFor="customer">{t('pricingDialog.fields.customer')}</Label>
             <select
               id="customer"
               className="w-full px-3 py-2 border rounded-md mt-1"
@@ -163,7 +165,7 @@ export function SetPriceDialog({
               disabled={!!pricing}
               required
             >
-              <option value="">Select a customer...</option>
+              <option value="">{t('pricingDialog.placeholders.selectCustomer')}</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.businessName}
@@ -172,14 +174,14 @@ export function SetPriceDialog({
             </select>
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
-                Customer cannot be changed when editing
+                {t('pricingDialog.messages.cannotChangeCustomer')}
               </p>
             )}
           </div>
 
           {/* Product Select */}
           <div>
-            <Label htmlFor="product">Product *</Label>
+            <Label htmlFor="product">{t('pricingDialog.fields.product')}</Label>
             <select
               id="product"
               className="w-full px-3 py-2 border rounded-md mt-1"
@@ -188,7 +190,7 @@ export function SetPriceDialog({
               disabled={!!pricing}
               required
             >
-              <option value="">Select a product...</option>
+              <option value="">{t('pricingDialog.placeholders.selectProduct')}</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.sku} - {product.name} ({formatCurrency(product.basePrice)})
@@ -197,7 +199,7 @@ export function SetPriceDialog({
             </select>
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
-                Product cannot be changed when editing
+                {t('pricingDialog.messages.cannotChangeProduct')}
               </p>
             )}
           </div>
@@ -206,7 +208,7 @@ export function SetPriceDialog({
           {selectedProduct && (
             <div className="bg-muted p-3 rounded-md">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Base Price:</span>
+                <span className="text-sm font-medium">{t('pricingDialog.fields.basePrice')}</span>
                 <span className="text-lg font-bold">
                   {formatCurrency(selectedProduct.basePrice)}
                 </span>
@@ -216,7 +218,7 @@ export function SetPriceDialog({
 
           {/* Custom Price Input */}
           <div>
-            <Label htmlFor="customPrice">Custom Price *</Label>
+            <Label htmlFor="customPrice">{t('pricingDialog.fields.customPrice')}</Label>
             <div className="relative mt-1">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -239,7 +241,7 @@ export function SetPriceDialog({
               <div className="flex items-center gap-2 text-green-700">
                 <TrendingDown className="h-4 w-4" />
                 <span className="font-medium">
-                  Customer saves {formatCurrency(discount)} ({discountPct}% off)
+                  {t('pricingDialog.messages.customerSaves', { amount: formatCurrency(discount), percent: discountPct })}
                 </span>
               </div>
             </div>
@@ -247,7 +249,7 @@ export function SetPriceDialog({
 
           {/* Effective From Date */}
           <div>
-            <Label htmlFor="effectiveFrom">Effective From *</Label>
+            <Label htmlFor="effectiveFrom">{t('pricingDialog.fields.effectiveFrom')}</Label>
             <div className="relative mt-1">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -263,7 +265,7 @@ export function SetPriceDialog({
 
           {/* Effective To Date (Optional) */}
           <div>
-            <Label htmlFor="effectiveTo">Effective To (Optional)</Label>
+            <Label htmlFor="effectiveTo">{t('pricingDialog.fields.effectiveTo')}</Label>
             <div className="relative mt-1">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -275,7 +277,7 @@ export function SetPriceDialog({
               />
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Leave empty for no expiration
+              {t('pricingDialog.messages.noExpiration')}
             </p>
           </div>
 
@@ -294,13 +296,13 @@ export function SetPriceDialog({
               onClick={() => onOpenChange(false)}
               disabled={setPriceMutation.isPending}
             >
-              Cancel
+              {t('pricingDialog.buttons.cancel')}
             </Button>
             <Button type="submit" disabled={setPriceMutation.isPending}>
               {setPriceMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {pricing ? 'Update Price' : 'Set Price'}
+              {pricing ? t('pricingDialog.buttons.updatePrice') : t('pricingDialog.buttons.setPrice')}
             </Button>
           </div>
         </form>

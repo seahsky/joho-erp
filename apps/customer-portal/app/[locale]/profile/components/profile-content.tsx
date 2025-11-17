@@ -29,7 +29,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Loading profile...</p>
+        <p className="text-muted-foreground">{t('loadingProfile')}</p>
       </div>
     );
   }
@@ -39,8 +39,8 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <User className="h-16 w-16 text-destructive mb-4" />
-        <p className="text-lg font-medium text-destructive mb-2">Error loading profile</p>
-        <p className="text-sm text-muted-foreground">{error?.message || 'Profile not found'}</p>
+        <p className="text-lg font-medium text-destructive mb-2">{t('errorLoading')}</p>
+        <p className="text-sm text-muted-foreground">{error?.message || t('profileNotFound')}</p>
       </div>
     );
   }
@@ -166,9 +166,9 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
                     : 'bg-red-500 text-white'
                 }`}
               >
-                {customer.creditApplication.status === 'approved' && '✓ Approved'}
-                {customer.creditApplication.status === 'pending' && '⏳ Pending'}
-                {customer.creditApplication.status === 'rejected' && '✗ Rejected'}
+                {customer.creditApplication.status === 'approved' && `✓ ${t('approved')}`}
+                {customer.creditApplication.status === 'pending' && `⏳ ${t('pending')}`}
+                {customer.creditApplication.status === 'rejected' && `✗ ${t('rejected')}`}
               </span>
             </p>
           </div>
@@ -190,7 +190,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">Used</span>
+                  <span className="text-muted-foreground">{t('used')}</span>
                   <span className="font-medium">
                     ${usedCredit.toLocaleString()} /{' '}
                     ${customer.creditApplication.creditLimit.toLocaleString()}
@@ -215,15 +215,15 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Settings
+            {t('settings')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 md:p-6 space-y-2">
           <button className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-accent transition-colors">
             <div className="flex items-center gap-3">
-              <span>Dark Mode</span>
+              <span>{t('darkMode')}</span>
             </div>
-            <div className="text-sm text-muted-foreground">Coming soon</div>
+            <div className="text-sm text-muted-foreground">{t('comingSoon')}</div>
           </button>
         </CardContent>
       </Card>

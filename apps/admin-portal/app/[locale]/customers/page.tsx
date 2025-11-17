@@ -20,6 +20,7 @@ import {
   EmptyState,
 } from '@jimmy-beef/ui';
 import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
 type Customer = {
@@ -44,6 +45,7 @@ type Customer = {
 };
 
 export default function CustomersPage() {
+  const t = useTranslations('customers');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, error } = api.customer.getAll.useQuery({
@@ -60,7 +62,7 @@ export default function CustomersPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Loading customers...</p>
+          <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );
@@ -70,7 +72,7 @@ export default function CustomersPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">Error loading customers</p>
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
           <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -85,38 +87,38 @@ export default function CustomersPage() {
   const columns: Column<Customer>[] = [
     {
       key: 'businessName',
-      label: 'Business Name',
+      label: t('businessName'),
       className: 'font-medium',
     },
     {
       key: 'contactPerson',
-      label: 'Contact Person',
+      label: t('contactPerson'),
       render: (_, customer) => `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
     },
     {
       key: 'contactPerson',
-      label: 'Email',
+      label: t('email'),
       className: 'text-sm text-muted-foreground',
       render: (_, customer) => customer.contactPerson.email,
     },
     {
       key: 'deliveryAddress',
-      label: 'Area',
+      label: t('area'),
       render: (_, customer) => customer.deliveryAddress.areaTag,
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status', { ns: 'common' }),
       render: (value) => <StatusBadge status={value as StatusType} />,
     },
     {
       key: 'creditApplication',
-      label: 'Credit Status',
+      label: t('creditStatus'),
       render: (_, customer) => <StatusBadge status={customer.creditApplication.status as StatusType} />,
     },
     {
       key: 'creditApplication',
-      label: 'Credit Limit',
+      label: t('creditLimit'),
       render: (_, customer) =>
         customer.creditApplication.creditLimit > 0
           ? `$${customer.creditApplication.creditLimit.toLocaleString()}`
@@ -124,26 +126,26 @@ export default function CustomersPage() {
     },
     {
       key: 'orders',
-      label: 'Orders',
+      label: t('orders'),
       render: (value) => value || 0,
     },
     {
       key: 'id',
-      label: 'Actions',
+      label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
       render: (_, customer) => (
         <div className="flex justify-end gap-2">
           {customer.creditApplication.status === 'pending' && (
             <>
-              <Button variant="ghost" size="sm" aria-label="Approve">
+              <Button variant="ghost" size="sm" aria-label={t('approve')}>
                 <Check className="h-4 w-4 text-green-600" />
               </Button>
-              <Button variant="ghost" size="sm" aria-label="Reject">
+              <Button variant="ghost" size="sm" aria-label={t('reject')}>
                 <X className="h-4 w-4 text-red-600" />
               </Button>
             </>
           )}
-          <Button variant="ghost" size="sm" aria-label="View">
+          <Button variant="ghost" size="sm" aria-label={t('view')}>
             <Eye className="h-4 w-4" />
           </Button>
         </div>
@@ -177,7 +179,7 @@ export default function CustomersPage() {
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <MapPin className="h-4 w-4" />
-          <span>Area: {customer.deliveryAddress.areaTag}</span>
+          <span>{t('area')}: {customer.deliveryAddress.areaTag}</span>
         </div>
       </div>
 
@@ -189,12 +191,12 @@ export default function CustomersPage() {
             <p className="text-sm font-medium">
               {customer.creditApplication.creditLimit > 0
                 ? `$${customer.creditApplication.creditLimit.toLocaleString()}`
-                : 'No credit'}
+                : t('noCredit')}
             </p>
             <StatusBadge status={customer.creditApplication.status as StatusType} showIcon={false} />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{customer.orders || 0} orders</p>
+        <p className="text-sm text-muted-foreground">{t('ordersCount', { count: customer.orders || 0 })}</p>
       </div>
 
       {/* Actions */}
@@ -203,17 +205,17 @@ export default function CustomersPage() {
           <>
             <Button variant="outline" size="sm" className="flex-1">
               <Check className="h-4 w-4 mr-1" />
-              Approve
+              {t('approve')}
             </Button>
             <Button variant="outline" size="sm" className="flex-1">
               <X className="h-4 w-4 mr-1" />
-              Reject
+              {t('reject')}
             </Button>
           </>
         )}
         <Button variant="outline" size="sm" className="flex-1">
           <Eye className="h-4 w-4 mr-1" />
-          View
+          {t('view')}
         </Button>
       </div>
     </div>
@@ -223,15 +225,15 @@ export default function CustomersPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold">Customer Management</h1>
+          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            Manage your customer accounts and credit applications
+            {t('subtitle')}
           </p>
         </div>
         <Link href="/customers/new">
           <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
             <UserPlus className="mr-2 h-4 w-4" />
-            Add Customer
+            {t('addCustomer')}
           </Button>
         </Link>
       </div>
@@ -241,7 +243,7 @@ export default function CustomersPage() {
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Total Customers</CardDescription>
+            <CardDescription>{t('totalCustomers')}</CardDescription>
             <div className="stat-value tabular-nums">
               <CountUp end={totalCustomers} />
             </div>
@@ -250,7 +252,7 @@ export default function CustomersPage() {
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Active</CardDescription>
+            <CardDescription>{t('active')}</CardDescription>
             <div className="stat-value tabular-nums text-success">
               <CountUp end={activeCustomers} />
             </div>
@@ -259,7 +261,7 @@ export default function CustomersPage() {
         <Card className="stat-card animate-fade-in-up delay-200">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Pending Credit Approval</CardDescription>
+            <CardDescription>{t('pendingCreditApproval')}</CardDescription>
             <div className="stat-value tabular-nums text-warning">
               <CountUp end={pendingCredit} />
             </div>
@@ -268,7 +270,7 @@ export default function CustomersPage() {
         <Card className="stat-card animate-fade-in-up delay-300">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Total Orders</CardDescription>
+            <CardDescription>{t('totalOrders')}</CardDescription>
             <div className="stat-value tabular-nums">
               <CountUp end={customers.reduce((sum, c) => sum + (c.orders || 0), 0)} />
             </div>
@@ -283,7 +285,7 @@ export default function CustomersPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search customers..."
+                placeholder={t('searchPlaceholder')}
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -296,8 +298,8 @@ export default function CustomersPage() {
       {/* Customers Table/Cards */}
       <Card>
         <CardHeader>
-          <CardTitle>Customers</CardTitle>
-          <CardDescription>A list of all your customers and their details</CardDescription>
+          <CardTitle>{t('listTitle')}</CardTitle>
+          <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           {customers.length > 0 ? (
@@ -310,10 +312,10 @@ export default function CustomersPage() {
           ) : (
             <EmptyState
               icon={Users}
-              title="No customers found"
-              description={searchQuery ? "Try adjusting your search" : "Add your first customer to get started"}
+              title={t('noCustomersFound')}
+              description={searchQuery ? t('adjustSearch') : t('addFirstCustomer')}
               action={!searchQuery ? {
-                label: "Add Customer",
+                label: t('addCustomer'),
                 onClick: () => window.location.href = '/customers/new'
               } : undefined}
             />

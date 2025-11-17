@@ -70,7 +70,12 @@
     "price": "價格",
     "unit": "單位",
     "addToCart": "加入購物車",
-    "viewDetails": "檢視詳情"
+    "viewDetails": "檢視詳情",
+    "errorLoading": "載入產品時出錯",
+    "yourSpecialPrice": "您的專屬價格 每{unit}",
+    "perUnit": "每{unit}",
+    "unitsAvailable": "{count}{unit} 可用",
+    "noProductsFound": "未找到產品"
   },
   "orders": {
     "title": "我的訂單",
@@ -90,7 +95,14 @@
     "delivered": "已送達",
     "cancelled": "已取消",
     "noOrders": "您尚未下過任何訂單",
-    "startShopping": "開始購物"
+    "startShopping": "開始購物",
+    "errorLoading": "載入訂單時出錯",
+    "allOrders": "全部訂單",
+    "itemCount": "{count} 項",
+    "itemCount_plural": "{count} 項",
+    "requested": "要求：",
+    "deliveredDate": "已送達：",
+    "out_for_delivery": "配送中"
   },
   "profile": {
     "title": "我的資料",
@@ -111,7 +123,17 @@
     "creditStatus": "信用狀態",
     "creditLimit": "信用額度",
     "availableCredit": "可用信用",
-    "updateProfile": "更新資料"
+    "updateProfile": "更新資料",
+    "loadingProfile": "載入資料中...",
+    "errorLoading": "載入資料時出錯",
+    "profileNotFound": "未找到資料",
+    "approved": "已核准",
+    "pending": "待審核",
+    "rejected": "已拒絕",
+    "used": "已使用",
+    "settings": "設定",
+    "darkMode": "深色模式",
+    "comingSoon": "即將推出"
   },
   "cart": {
     "title": "購物車",

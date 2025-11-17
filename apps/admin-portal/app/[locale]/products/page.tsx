@@ -35,7 +35,7 @@ type Product = {
 };
 
 export default function ProductsPage() {
-  const t = useTranslations();
+  const t = useTranslations('products');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -48,7 +48,7 @@ export default function ProductsPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Loading products...</p>
+          <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );
@@ -58,7 +58,7 @@ export default function ProductsPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">Error loading products</p>
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
           <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -88,43 +88,43 @@ export default function ProductsPage() {
 
   const getStockBadge = (product: Product) => {
     if (product.currentStock === 0) {
-      return <Badge className="bg-red-100 text-red-800">Out of Stock</Badge>;
+      return <Badge className="bg-red-100 text-red-800">{t('outOfStock')}</Badge>;
     }
     if (product.lowStockThreshold && product.currentStock <= product.lowStockThreshold) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Low Stock</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800">{t('lowStock')}</Badge>;
     }
-    return <Badge className="bg-green-100 text-green-800">In Stock</Badge>;
+    return <Badge className="bg-green-100 text-green-800">{t('inStock')}</Badge>;
   };
 
   const columns: Column<Product>[] = [
     {
       key: 'sku',
-      label: 'SKU',
+      label: t('sku'),
       className: 'font-medium',
     },
     {
       key: 'name',
-      label: 'Product Name',
+      label: t('name'),
       className: 'font-medium',
     },
     {
       key: 'category',
-      label: 'Category',
+      label: t('category'),
       render: (value) => value || '-',
     },
     {
       key: 'basePrice',
-      label: 'Price',
+      label: t('price'),
       render: (value) => `$${(value as number).toFixed(2)}`,
     },
     {
       key: 'unit',
-      label: 'Unit',
+      label: t('unit'),
       render: (value) => String(value).toUpperCase(),
     },
     {
       key: 'currentStock',
-      label: 'Stock',
+      label: t('stock'),
       render: (_, product) => (
         <div className="flex items-center gap-2">
           <span>{product.currentStock}</span>
@@ -134,7 +134,7 @@ export default function ProductsPage() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status', { ns: 'common' }),
       render: (value) => (
         <Badge className={getStatusColor(value as string)}>
           {String(value).replace(/_/g, ' ')}
@@ -143,11 +143,11 @@ export default function ProductsPage() {
     },
     {
       key: 'id',
-      label: 'Actions',
+      label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
       render: () => (
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" aria-label="Edit">
+          <Button variant="ghost" size="sm" aria-label={t('edit')}>
             <Edit className="h-4 w-4" />
           </Button>
         </div>
@@ -160,7 +160,7 @@ export default function ProductsPage() {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h3 className="font-semibold text-base">{product.name}</h3>
-          <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+          <p className="text-sm text-muted-foreground">{t('sku')}: {product.sku}</p>
         </div>
         <Badge className={getStatusColor(product.status)}>
           {product.status.replace(/_/g, ' ')}
@@ -169,19 +169,19 @@ export default function ProductsPage() {
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
-          <p className="text-muted-foreground">Category</p>
+          <p className="text-muted-foreground">{t('category')}</p>
           <p className="font-medium">{product.category || '-'}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Price</p>
+          <p className="text-muted-foreground">{t('price')}</p>
           <p className="font-medium">${product.basePrice.toFixed(2)}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Unit</p>
+          <p className="text-muted-foreground">{t('unit')}</p>
           <p className="font-medium">{product.unit.toUpperCase()}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Stock</p>
+          <p className="text-muted-foreground">{t('stock')}</p>
           <div className="flex items-center gap-2">
             <p className="font-medium">{product.currentStock}</p>
             {getStockBadge(product)}
@@ -192,7 +192,7 @@ export default function ProductsPage() {
       <div className="flex gap-2 pt-2 border-t">
         <Button variant="outline" size="sm" className="flex-1">
           <Edit className="h-4 w-4 mr-1" />
-          Edit
+          {t('edit')}
         </Button>
       </div>
     </div>
@@ -202,9 +202,9 @@ export default function ProductsPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold">Product Management</h1>
+          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            Manage your product catalog and inventory
+            {t('subtitle')}
           </p>
         </div>
         <Button
@@ -212,7 +212,7 @@ export default function ProductsPage() {
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="mr-2 h-4 w-4" />
-          {t('productForm.buttons.addProduct')}
+          {t('productForm.buttons.addProduct', { ns: 'productForm' })}
         </Button>
       </div>
 
@@ -221,7 +221,7 @@ export default function ProductsPage() {
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Total Products</CardDescription>
+            <CardDescription>{t('totalProducts')}</CardDescription>
             <div className="stat-value tabular-nums">
               <CountUp end={totalProducts} />
             </div>
@@ -230,7 +230,7 @@ export default function ProductsPage() {
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Active Products</CardDescription>
+            <CardDescription>{t('activeProducts')}</CardDescription>
             <div className="stat-value tabular-nums text-success">
               <CountUp end={activeProducts} />
             </div>
@@ -239,7 +239,7 @@ export default function ProductsPage() {
         <Card className="stat-card animate-fade-in-up delay-200">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Low Stock Alerts</CardDescription>
+            <CardDescription>{t('lowStockAlerts')}</CardDescription>
             <div className="stat-value tabular-nums text-warning">
               <CountUp end={lowStockProducts} />
             </div>
@@ -248,7 +248,7 @@ export default function ProductsPage() {
         <Card className="stat-card animate-fade-in-up delay-300">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>Total Inventory Value</CardDescription>
+            <CardDescription>{t('totalInventoryValue')}</CardDescription>
             <div className="stat-value tabular-nums">
               $<CountUp end={totalValue} />
             </div>
@@ -263,7 +263,7 @@ export default function ProductsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name or SKU..."
+                placeholder={t('searchPlaceholder')}
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -279,10 +279,10 @@ export default function ProductsPage() {
           <CardTitle>
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Products
+              {t('listTitle')}
             </div>
           </CardTitle>
-          <CardDescription>Complete list of all products in your inventory</CardDescription>
+          <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           {productList.length > 0 ? (
@@ -295,8 +295,8 @@ export default function ProductsPage() {
           ) : (
             <EmptyState
               icon={PackageX}
-              title="No products found"
-              description={searchQuery ? "Try adjusting your search" : "Add your first product to get started"}
+              title={t('noProductsFound')}
+              description={searchQuery ? t('adjustSearch') : t('addFirstProduct')}
             />
           )}
         </CardContent>

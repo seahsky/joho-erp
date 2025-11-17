@@ -131,7 +131,7 @@ export function AddProductDialog({
     let savings = 0;
     const bp = parseFloat(basePrice) || 0;
 
-    pricingMap.forEach((entry, customerId) => {
+    pricingMap.forEach((entry) => {
       if (entry.enabled && entry.customPrice > 0) {
         count++;
         const discount = bp - entry.customPrice;
@@ -379,7 +379,7 @@ export function AddProductDialog({
                 <select
                   id="unit"
                   value={unit}
-                  onChange={(e) => setUnit(e.target.value as any)}
+                  onChange={(e) => setUnit(e.target.value as 'kg' | 'piece' | 'box' | 'carton')}
                   className="w-full px-3 py-2 border rounded-md"
                   required
                 >
@@ -446,7 +446,7 @@ export function AddProductDialog({
                 <select
                   id="status"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
+                  onChange={(e) => setStatus(e.target.value as 'active' | 'discontinued' | 'out_of_stock')}
                   className="w-full px-3 py-2 border rounded-md"
                 >
                   <option value="active">{t('productForm.statuses.active')}</option>

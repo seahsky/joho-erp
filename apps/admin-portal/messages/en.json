@@ -43,7 +43,18 @@
     "recentOrders": "Recent Orders",
     "lowStockAlerts": "Low Stock Alerts",
     "unitsLeft": "units left",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "allTime": "All time",
+    "requireProcessing": "Require processing",
+    "activeAccounts": "Active accounts",
+    "outForDelivery": "Out for delivery",
+    "latestOrders": "Latest orders from your customers",
+    "noRecentOrders": "No recent orders",
+    "ordersWillAppearHere": "Orders will appear here when customers place them",
+    "productsRequiringAttention": "Products requiring attention",
+    "threshold": "Threshold:",
+    "noLowStockItems": "No low stock items",
+    "allProductsWellStocked": "All products are well stocked"
   },
   "customers": {
     "title": "Customer Management",
@@ -53,7 +64,7 @@
     "active": "Active",
     "pendingCreditApproval": "Pending Credit Approval",
     "totalOrders": "Total Orders",
-    "searchPlaceholder": "Search customers by name, contact, or email...",
+    "searchPlaceholder": "Search customers...",
     "listTitle": "Customers",
     "listDescription": "A list of all your customers and their details",
     "businessName": "Business Name",
@@ -71,7 +82,17 @@
     "active_status": "active",
     "pending_status": "pending",
     "approved_status": "approved",
-    "rejected_status": "rejected"
+    "rejected_status": "rejected",
+    "loading": "Loading customers...",
+    "errorLoading": "Error loading customers",
+    "noCustomersFound": "No customers found",
+    "adjustSearch": "Try adjusting your search",
+    "addFirstCustomer": "Add your first customer to get started",
+    "noCredit": "No credit",
+    "ordersCount": "{count} orders",
+    "approve": "Approve",
+    "reject": "Reject",
+    "view": "View"
   },
   "deliveries": {
     "title": "Delivery Management",
@@ -83,15 +104,20 @@
     "driver": "Driver",
     "estimatedTime": "ETA",
     "packages": "Packages",
+    "items": "items",
     "markAsDelivered": "Mark Delivered",
     "outForDelivery": "Out for Delivery",
     "readyForDelivery": "Ready for Delivery",
     "delivered": "Delivered",
     "deliveriesInProgress": "deliveries in progress",
     "deliveryRoutes": "Delivery Routes",
-    "realTimeTracking": "Real-time delivery tracking on map"
+    "realTimeTracking": "Real-time delivery tracking on map",
+    "noDeliveriesFound": "No deliveries found",
+    "area": "Area"
   },
   "orders": {
+    "title": "Order Management",
+    "subtitle": "Track and manage customer orders",
     "orderNumber": "Order Number",
     "customer": "Customer",
     "date": "Date",
@@ -102,11 +128,36 @@
     "confirmed": "Confirmed",
     "processing": "Processing",
     "packed": "Packed",
+    "packing": "Packing",
+    "readyForDelivery": "Ready for Delivery",
     "outForDelivery": "Out for Delivery",
     "delivered": "Delivered",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "loading": "Loading orders...",
+    "errorLoading": "Error loading orders",
+    "totalOrders": "Total Orders",
+    "pendingOrders": "Pending",
+    "confirmedOrders": "Confirmed",
+    "deliveredOrders": "Delivered",
+    "totalRevenue": "Total Revenue",
+    "searchPlaceholder": "Search by order number or customer...",
+    "allStatuses": "All Statuses",
+    "allAreas": "All Areas",
+    "north": "North",
+    "south": "South",
+    "east": "East",
+    "west": "West",
+    "listTitle": "Orders",
+    "listDescription": "Complete list of all customer orders",
+    "noOrdersFound": "No orders found",
+    "adjustFilters": "Try adjusting your filters",
+    "ordersWillAppear": "Orders will appear here when customers place them",
+    "viewDetails": "View Details",
+    "area": "Area"
   },
   "products": {
+    "title": "Product Management",
+    "subtitle": "Manage your product catalog and inventory",
     "name": "Product Name",
     "sku": "SKU",
     "category": "Category",
@@ -115,7 +166,20 @@
     "unit": "Unit",
     "inStock": "In Stock",
     "lowStock": "Low Stock",
-    "outOfStock": "Out of Stock"
+    "outOfStock": "Out of Stock",
+    "loading": "Loading products...",
+    "errorLoading": "Error loading products",
+    "totalProducts": "Total Products",
+    "activeProducts": "Active Products",
+    "lowStockAlerts": "Low Stock Alerts",
+    "totalInventoryValue": "Total Inventory Value",
+    "searchPlaceholder": "Search products by name or SKU...",
+    "listTitle": "Products",
+    "listDescription": "Complete list of all products in your inventory",
+    "noProductsFound": "No products found",
+    "adjustSearch": "Try adjusting your search",
+    "addFirstProduct": "Add your first product to get started",
+    "edit": "Edit"
   },
   "productForm": {
     "dialog": {
@@ -206,6 +270,130 @@
       "amountDiscountApplied": "${amount} discount applied to {count} customers",
       "pricingCleared": "Pricing cleared",
       "pricingClearedDescription": "All customer-specific pricing has been cleared"
+    }
+  },
+  "pricingDialog": {
+    "title": {
+      "edit": "Edit Custom Price",
+      "create": "Set Custom Price"
+    },
+    "description": {
+      "edit": "Update the custom price for this customer-product combination",
+      "create": "Create a new custom price for a customer-product combination"
+    },
+    "fields": {
+      "customer": "Customer *",
+      "product": "Product *",
+      "basePrice": "Base Price:",
+      "customPrice": "Custom Price *",
+      "effectiveFrom": "Effective From *",
+      "effectiveTo": "Effective To (Optional)"
+    },
+    "placeholders": {
+      "selectCustomer": "Select a customer...",
+      "selectProduct": "Select a product...",
+      "price": "0.00"
+    },
+    "messages": {
+      "cannotChangeCustomer": "Customer cannot be changed when editing",
+      "cannotChangeProduct": "Product cannot be changed when editing",
+      "noExpiration": "Leave empty for no expiration",
+      "customerSaves": "Customer saves {amount} ({percent}% off)"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "updatePrice": "Update Price",
+      "setPrice": "Set Price"
+    },
+    "validation": {
+      "requiredFields": "Please fill in all required fields",
+      "positivePrice": "Price must be a positive number"
+    }
+  },
+  "pricing": {
+    "title": "Customer-Specific Pricing",
+    "subtitle": "Manage custom pricing for individual customers and products",
+    "loading": "Loading pricing data...",
+    "errorLoading": "Error loading pricing",
+    "stats": {
+      "totalPrices": "Total Custom Prices",
+      "activeExpired": "{active} active, {expired} expired",
+      "totalSavings": "Total Savings",
+      "averagePerRecord": "Average per pricing record",
+      "customersWithPricing": "Customers with Pricing",
+      "uniqueCustomers": "Unique customers",
+      "productsWithPricing": "Products with Pricing",
+      "uniqueProducts": "Unique products"
+    },
+    "management": {
+      "title": "Pricing Management",
+      "description": "Filter and manage customer-specific pricing"
+    },
+    "filters": {
+      "customer": "Filter by Customer",
+      "allCustomers": "All Customers",
+      "product": "Filter by Product",
+      "allProducts": "All Products",
+      "includeExpired": "Include Expired Pricing"
+    },
+    "table": {
+      "customer": "Customer",
+      "product": "Product",
+      "basePrice": "Base Price",
+      "customPrice": "Custom Price",
+      "savings": "Savings",
+      "status": "Status",
+      "effectiveDates": "Effective Dates",
+      "actions": "Actions",
+      "from": "From:",
+      "to": "To:"
+    },
+    "status": {
+      "expired": "Expired",
+      "active": "Active",
+      "activeNoExpiry": "Active (No expiry)",
+      "expiresInDays": "Expires in {days}d"
+    },
+    "buttons": {
+      "addCustomPrice": "Add Custom Price",
+      "bulkImport": "Bulk Import"
+    },
+    "messages": {
+      "deleteConfirm": "Are you sure you want to delete this custom pricing?",
+      "noPricing": "No custom pricing found",
+      "noPricingDescription": "Start by adding custom pricing for your customers"
+    }
+  },
+  "bulkImportDialog": {
+    "title": "Bulk Import Pricing",
+    "description": "Upload a CSV file to import multiple customer-specific prices at once",
+    "csvFormat": {
+      "heading": "CSV Format",
+      "instructions": "Your CSV file should have the following columns:",
+      "noteEffectiveDates": "effective_from and effective_to are optional (leave empty for immediate start or no expiry)",
+      "noteCustomerIdentifier": "Use customer ABN to identify customers"
+    },
+    "fields": {
+      "uploadCsvFile": "Upload CSV File",
+      "preview": "Preview (First 5 lines)",
+      "rowsToImport": "{count} rows to import"
+    },
+    "results": {
+      "successMessage": "{count} rows imported successfully",
+      "failedMessage": "{count} rows failed",
+      "importErrors": "Import Errors:",
+      "rowError": "Row {row}: {error}",
+      "allSuccess": "All pricing records imported successfully! Closing..."
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "importMore": "Import More",
+      "close": "Close",
+      "importPricing": "Import Pricing"
+    },
+    "validation": {
+      "uploadCsvRequired": "Please upload a CSV file",
+      "csvHeaderRowRequired": "CSV must have at least a header row and one data row"
     }
   }
 }

@@ -4,6 +4,7 @@
     "dashboard": "儀表板",
     "customers": "客戶",
     "products": "產品",
+    "pricing": "定價",
     "orders": "訂單",
     "deliveries": "配送",
     "inventory": "管理產品和庫存",
@@ -42,7 +43,18 @@
     "recentOrders": "最近訂單",
     "lowStockAlerts": "低庫存警報",
     "unitsLeft": "件剩餘",
-    "viewAll": "檢視全部"
+    "viewAll": "檢視全部",
+    "allTime": "全部時間",
+    "requireProcessing": "需要處理",
+    "activeAccounts": "活躍帳戶",
+    "outForDelivery": "配送中",
+    "latestOrders": "客戶的最新訂單",
+    "noRecentOrders": "暫無最近訂單",
+    "ordersWillAppearHere": "客戶下單後訂單將顯示在這裡",
+    "productsRequiringAttention": "需要關注的產品",
+    "threshold": "閾值：",
+    "noLowStockItems": "無低庫存商品",
+    "allProductsWellStocked": "所有產品庫存充足"
   },
   "customers": {
     "title": "客戶管理",
@@ -52,7 +64,7 @@
     "active": "活躍",
     "pendingCreditApproval": "待審核信用",
     "totalOrders": "總訂單數",
-    "searchPlaceholder": "以名稱、聯絡人或電子郵件搜尋客戶...",
+    "searchPlaceholder": "搜尋客戶...",
     "listTitle": "客戶",
     "listDescription": "所有客戶及其詳細資料列表",
     "businessName": "公司名稱",
@@ -70,7 +82,17 @@
     "active_status": "活躍",
     "pending_status": "待審核",
     "approved_status": "已核准",
-    "rejected_status": "已拒絕"
+    "rejected_status": "已拒絕",
+    "loading": "載入客戶中...",
+    "errorLoading": "載入客戶時出錯",
+    "noCustomersFound": "未找到客戶",
+    "adjustSearch": "請調整您的搜尋條件",
+    "addFirstCustomer": "添加您的第一個客戶以開始",
+    "noCredit": "無信用",
+    "ordersCount": "{count} 個訂單",
+    "approve": "核准",
+    "reject": "拒絕",
+    "view": "檢視"
   },
   "deliveries": {
     "title": "配送管理",
@@ -82,15 +104,20 @@
     "driver": "司機",
     "estimatedTime": "預計送達",
     "packages": "包裹",
+    "items": "件",
     "markAsDelivered": "標記為已送達",
     "outForDelivery": "配送中",
     "readyForDelivery": "準備配送",
     "delivered": "已送達",
     "deliveriesInProgress": "進行中的配送",
     "deliveryRoutes": "配送路線",
-    "realTimeTracking": "地圖上的即時配送追蹤"
+    "realTimeTracking": "地圖上的即時配送追蹤",
+    "noDeliveriesFound": "未找到配送",
+    "area": "區域"
   },
   "orders": {
+    "title": "訂單管理",
+    "subtitle": "追蹤和管理客戶訂單",
     "orderNumber": "訂單編號",
     "customer": "客戶",
     "date": "日期",
@@ -101,11 +128,36 @@
     "confirmed": "已確認",
     "processing": "處理中",
     "packed": "已打包",
+    "packing": "打包中",
+    "readyForDelivery": "準備配送",
     "outForDelivery": "配送中",
     "delivered": "已送達",
-    "cancelled": "已取消"
+    "cancelled": "已取消",
+    "loading": "載入訂單中...",
+    "errorLoading": "載入訂單時出錯",
+    "totalOrders": "總訂單數",
+    "pendingOrders": "待處理",
+    "confirmedOrders": "已確認",
+    "deliveredOrders": "已送達",
+    "totalRevenue": "總收入",
+    "searchPlaceholder": "按訂單編號或客戶搜尋...",
+    "allStatuses": "所有狀態",
+    "allAreas": "所有區域",
+    "north": "北部",
+    "south": "南部",
+    "east": "東部",
+    "west": "西部",
+    "listTitle": "訂單",
+    "listDescription": "所有客戶訂單的完整列表",
+    "noOrdersFound": "未找到訂單",
+    "adjustFilters": "請調整您的篩選條件",
+    "ordersWillAppear": "客戶下單後訂單將顯示在這裡",
+    "viewDetails": "檢視詳情",
+    "area": "區域"
   },
   "products": {
+    "title": "產品管理",
+    "subtitle": "管理您的產品目錄和庫存",
     "name": "產品名稱",
     "sku": "貨號",
     "category": "類別",
@@ -114,7 +166,20 @@
     "unit": "單位",
     "inStock": "有庫存",
     "lowStock": "低庫存",
-    "outOfStock": "缺貨"
+    "outOfStock": "缺貨",
+    "loading": "載入產品中...",
+    "errorLoading": "載入產品時出錯",
+    "totalProducts": "總產品數",
+    "activeProducts": "啟用產品",
+    "lowStockAlerts": "低庫存警報",
+    "totalInventoryValue": "總庫存價值",
+    "searchPlaceholder": "按名稱或貨號搜尋產品...",
+    "listTitle": "產品",
+    "listDescription": "庫存中所有產品的完整列表",
+    "noProductsFound": "未找到產品",
+    "adjustSearch": "請調整您的搜尋條件",
+    "addFirstProduct": "添加您的第一個產品以開始",
+    "edit": "編輯"
   },
   "productForm": {
     "dialog": {
@@ -205,6 +270,130 @@
       "amountDiscountApplied": "${amount} 折扣已應用於 {count} 位客戶",
       "pricingCleared": "價格已清除",
       "pricingClearedDescription": "所有客戶特定價格已被清除"
+    }
+  },
+  "pricingDialog": {
+    "title": {
+      "edit": "編輯自訂價格",
+      "create": "設置自訂價格"
+    },
+    "description": {
+      "edit": "更新此客戶-產品組合的自訂價格",
+      "create": "為客戶-產品組合創建新的自訂價格"
+    },
+    "fields": {
+      "customer": "客戶 *",
+      "product": "產品 *",
+      "basePrice": "基礎價格：",
+      "customPrice": "自訂價格 *",
+      "effectiveFrom": "生效日期 *",
+      "effectiveTo": "失效日期（可選）"
+    },
+    "placeholders": {
+      "selectCustomer": "選擇客戶...",
+      "selectProduct": "選擇產品...",
+      "price": "0.00"
+    },
+    "messages": {
+      "cannotChangeCustomer": "編輯時無法更改客戶",
+      "cannotChangeProduct": "編輯時無法更改產品",
+      "noExpiration": "留空表示永不過期",
+      "customerSaves": "客戶節省 {amount}（{percent}% 折扣）"
+    },
+    "buttons": {
+      "cancel": "取消",
+      "updatePrice": "更新價格",
+      "setPrice": "設置價格"
+    },
+    "validation": {
+      "requiredFields": "請填寫所有必填欄位",
+      "positivePrice": "價格必須為正數"
+    }
+  },
+  "pricing": {
+    "title": "客戶特定價格",
+    "subtitle": "管理個別客戶和產品的自訂價格",
+    "loading": "載入價格資料中...",
+    "errorLoading": "載入價格時出錯",
+    "stats": {
+      "totalPrices": "總自訂價格數",
+      "activeExpired": "{active} 個活躍，{expired} 個已過期",
+      "totalSavings": "總節省",
+      "averagePerRecord": "每條價格記錄的平均值",
+      "customersWithPricing": "有價格設置的客戶",
+      "uniqueCustomers": "唯一客戶",
+      "productsWithPricing": "有價格設置的產品",
+      "uniqueProducts": "唯一產品"
+    },
+    "management": {
+      "title": "價格管理",
+      "description": "篩選和管理客戶特定價格"
+    },
+    "filters": {
+      "customer": "按客戶篩選",
+      "allCustomers": "所有客戶",
+      "product": "按產品篩選",
+      "allProducts": "所有產品",
+      "includeExpired": "包括已過期價格"
+    },
+    "table": {
+      "customer": "客戶",
+      "product": "產品",
+      "basePrice": "基礎價格",
+      "customPrice": "自訂價格",
+      "savings": "節省",
+      "status": "狀態",
+      "effectiveDates": "有效日期",
+      "actions": "操作",
+      "from": "從：",
+      "to": "到："
+    },
+    "status": {
+      "expired": "已過期",
+      "active": "活躍",
+      "activeNoExpiry": "活躍（無到期日）",
+      "expiresInDays": "{days}天後到期"
+    },
+    "buttons": {
+      "addCustomPrice": "添加自訂價格",
+      "bulkImport": "批量匯入"
+    },
+    "messages": {
+      "deleteConfirm": "您確定要刪除此自訂價格嗎？",
+      "noPricing": "未找到自訂價格",
+      "noPricingDescription": "開始為您的客戶添加自訂價格"
+    }
+  },
+  "bulkImportDialog": {
+    "title": "批量匯入價格",
+    "description": "上傳 CSV 檔案以一次性匯入多個客戶特定價格",
+    "csvFormat": {
+      "heading": "CSV 格式",
+      "instructions": "您的 CSV 檔案應包含以下欄位：",
+      "noteEffectiveDates": "effective_from 和 effective_to 為可選項（留空表示立即生效或無到期日）",
+      "noteCustomerIdentifier": "使用客戶 ABN 來識別客戶"
+    },
+    "fields": {
+      "uploadCsvFile": "上傳 CSV 檔案",
+      "preview": "預覽（前5行）",
+      "rowsToImport": "{count} 行待匯入"
+    },
+    "results": {
+      "successMessage": "{count} 行匯入成功",
+      "failedMessage": "{count} 行失敗",
+      "importErrors": "匯入錯誤：",
+      "rowError": "第 {row} 行：{error}",
+      "allSuccess": "所有價格記錄匯入成功！即將關閉..."
+    },
+    "buttons": {
+      "cancel": "取消",
+      "importMore": "匯入更多",
+      "close": "關閉",
+      "importPricing": "匯入價格"
+    },
+    "validation": {
+      "uploadCsvRequired": "請上傳 CSV 檔案",
+      "csvHeaderRowRequired": "CSV 檔案必須至少包含一個標題行和一行資料"
     }
   }
 }

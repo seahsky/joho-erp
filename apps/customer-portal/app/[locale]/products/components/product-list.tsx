@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, Large } from '@jimmy-beef/ui';
 import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
+import type { ProductWithPricing } from '@jimmy-beef/shared';
 
 export function ProductList() {
   const t = useTranslations();
@@ -61,7 +62,7 @@ export function ProductList() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Package className="h-16 w-16 text-destructive mb-4" />
-        <p className="text-lg font-medium text-destructive mb-2">Error loading products</p>
+        <p className="text-lg font-medium text-destructive mb-2">{t('products.errorLoading')}</p>
         <p className="text-sm text-muted-foreground">{error.message}</p>
       </div>
     );
@@ -79,7 +80,9 @@ export function ProductList() {
 
       {/* Product Grid - Single column on mobile, 2 on tablet, 3 on desktop */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {products?.map((product) => (
+        {products?.map((product) => {
+          const productWithPricing = product as typeof product & ProductWithPricing;
+          return (
           <Card key={product.id} className="overflow-hidden">
             <CardContent className="p-0">
               {/* Product Image Placeholder */}
@@ -96,27 +99,27 @@ export function ProductList() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    {(product as any).hasCustomPricing ? (
+                    {productWithPricing.hasCustomPricing ? (
                       <div>
                         <Large className="text-2xl text-green-600 font-bold">
-                          ${(product as any).effectivePrice.toFixed(2)}
+                          ${productWithPricing.effectivePrice.toFixed(2)}
                         </Large>
                         <div className="flex items-center gap-2">
                           <Muted className="line-through text-xs">
-                            ${(product as any).basePrice.toFixed(2)}
+                            ${productWithPricing.basePrice.toFixed(2)}
                           </Muted>
                           <Badge variant="success" className="text-xs">
-                            Save {(product as any).discountPercentage?.toFixed(0)}%
+                            Save {productWithPricing.discountPercentage?.toFixed(0)}%
                           </Badge>
                         </div>
-                        <Muted className="text-xs">Your special price per {product.unit}</Muted>
+                        <Muted className="text-xs">{t('products.yourSpecialPrice', { unit: product.unit })}</Muted>
                       </div>
                     ) : (
                       <div>
                         <Large className="text-2xl text-primary">
                           ${product.basePrice.toFixed(2)}
                         </Large>
-                        <Muted>per {product.unit}</Muted>
+                        <Muted>{t('products.perUnit', { unit: product.unit })}</Muted>
                       </div>
                     )}
                   </div>
@@ -125,8 +128,8 @@ export function ProductList() {
 
                 <Muted>
                   {product.currentStock > 0
-                    ? `${product.currentStock}${product.unit} available`
-                    : 'Out of stock'}
+                    ? t('products.unitsAvailable', { count: product.currentStock, unit: product.unit })
+                    : t('products.outOfStock')}
                 </Muted>
 
                 <Button
@@ -138,14 +141,15 @@ export function ProductList() {
               </div>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
       </div>
 
       {/* Empty State */}
       {products && products.length === 0 && (
         <div className="text-center py-12">
           <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <p className="text-lg text-muted-foreground">No products found</p>
+          <p className="text-lg text-muted-foreground">{t('products.noProductsFound')}</p>
         </div>
       )}
     </div>

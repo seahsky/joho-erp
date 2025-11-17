@@ -70,7 +70,12 @@
     "price": "Price",
     "unit": "Unit",
     "addToCart": "Add to Cart",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "errorLoading": "Error loading products",
+    "yourSpecialPrice": "Your special price per {unit}",
+    "perUnit": "per {unit}",
+    "unitsAvailable": "{count}{unit} available",
+    "noProductsFound": "No products found"
   },
   "orders": {
     "title": "My Orders",
@@ -90,7 +95,14 @@
     "delivered": "Delivered",
     "cancelled": "Cancelled",
     "noOrders": "You haven't placed any orders yet",
-    "startShopping": "Start Shopping"
+    "startShopping": "Start Shopping",
+    "errorLoading": "Error loading orders",
+    "allOrders": "All Orders",
+    "itemCount": "{count} item",
+    "itemCount_plural": "{count} items",
+    "requested": "Requested:",
+    "deliveredDate": "Delivered:",
+    "out_for_delivery": "Out for Delivery"
   },
   "profile": {
     "title": "My Profile",
@@ -111,7 +123,17 @@
     "creditStatus": "Credit Status",
     "creditLimit": "Credit Limit",
     "availableCredit": "Available Credit",
-    "updateProfile": "Update Profile"
+    "updateProfile": "Update Profile",
+    "loadingProfile": "Loading profile...",
+    "errorLoading": "Error loading profile",
+    "profileNotFound": "Profile not found",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "used": "Used",
+    "settings": "Settings",
+    "darkMode": "Dark Mode",
+    "comingSoon": "Coming soon"
   },
   "cart": {
     "title": "Shopping Cart",

@@ -116,7 +116,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.totalOrders || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">All time</Small>
+            <Small className="text-muted-foreground mt-1">{t('dashboard.allTime')}</Small>
           </CardContent>
         </Card>
 
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.pendingOrders || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">Require processing</Small>
+            <Small className="text-muted-foreground mt-1">{t('dashboard.requireProcessing')}</Small>
           </CardContent>
         </Card>
 
@@ -148,7 +148,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.totalCustomers || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">Active accounts</Small>
+            <Small className="text-muted-foreground mt-1">{t('dashboard.activeAccounts')}</Small>
           </CardContent>
         </Card>
 
@@ -164,7 +164,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.activeDeliveries || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">Out for delivery</Small>
+            <Small className="text-muted-foreground mt-1">{t('dashboard.outForDelivery')}</Small>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +174,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
-            <CardDescription>Latest orders from your customers</CardDescription>
+            <CardDescription>{t('dashboard.latestOrders')}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
@@ -194,8 +194,8 @@ export default function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={PackageX}
-                  title="No recent orders"
-                  description="Orders will appear here when customers place them"
+                  title={t('dashboard.noRecentOrders')}
+                  description={t('dashboard.ordersWillAppearHere')}
                 />
               )}
             </div>
@@ -206,7 +206,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>{t('dashboard.lowStockAlerts')}</CardTitle>
-            <CardDescription>Products requiring attention</CardDescription>
+            <CardDescription>{t('dashboard.productsRequiringAttention')}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                         {item.currentStock} {item.unit} {t('dashboard.unitsLeft', { default: 'left' })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Threshold: {item.lowStockThreshold}
+                        {t('dashboard.threshold')} {item.lowStockThreshold}
                       </p>
                     </div>
                   </div>
@@ -230,8 +230,8 @@ export default function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={AlertTriangle}
-                  title="No low stock items"
-                  description="All products are well stocked"
+                  title={t('dashboard.noLowStockItems')}
+                  description={t('dashboard.allProductsWellStocked')}
                 />
               )}
             </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button } from '@jimmy-beef/ui';
 import { MapPin, Navigation, CheckCircle, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
 // Dynamically import Map component to avoid SSR issues
@@ -13,6 +14,7 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 });
 
 export default function DeliveriesPage() {
+  const t = useTranslations('deliveries');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [statusFilter, _setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | undefined>(
     undefined
@@ -45,8 +47,8 @@ export default function DeliveriesPage() {
       <div className="container mx-auto py-10">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold">Delivery Management</h1>
-            <p className="text-muted-foreground mt-2">Track and manage deliveries in real-time</p>
+            <h1 className="text-4xl font-bold">{t('title')}</h1>
+            <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
           </div>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
@@ -77,8 +79,8 @@ export default function DeliveriesPage() {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold">Delivery Management</h1>
-          <p className="text-muted-foreground mt-2">Track and manage deliveries in real-time</p>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -87,12 +89,12 @@ export default function DeliveriesPage() {
         <div className="lg:col-span-1 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Active Deliveries</CardTitle>
-              <CardDescription>{deliveries.length} deliveries in progress</CardDescription>
+              <CardTitle>{t('activeDeliveries')}</CardTitle>
+              <CardDescription>{deliveries.length} {t('deliveriesInProgress')}</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6 space-y-4">
               {deliveries.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No deliveries found</p>
+                <p className="text-center text-muted-foreground py-8">{t('noDeliveriesFound')}</p>
               ) : (
                 deliveries.map((delivery) => (
                 <div
@@ -120,7 +122,7 @@ export default function DeliveriesPage() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1">
                       <Package className="h-3 w-3" />
-                      <span>{delivery.items} items</span>
+                      <span>{delivery.items} {t('items')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Navigation className="h-3 w-3" />
@@ -129,11 +131,11 @@ export default function DeliveriesPage() {
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Driver: {delivery.driver}</span>
+                    <span className="text-xs text-muted-foreground">{t('driver')}: {delivery.driver}</span>
                     {delivery.status === 'out_for_delivery' && (
                       <Button size="sm" variant="ghost" className="h-7 text-xs">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Mark Delivered
+                        {t('markAsDelivered')}
                       </Button>
                     )}
                   </div>
@@ -148,8 +150,8 @@ export default function DeliveriesPage() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Delivery Routes</CardTitle>
-              <CardDescription>Real-time delivery tracking on map</CardDescription>
+              <CardTitle>{t('deliveryRoutes')}</CardTitle>
+              <CardDescription>{t('realTimeTracking')}</CardDescription>
             </CardHeader>
             <CardContent>
               <DeliveryMap deliveries={deliveries} selectedDelivery={selectedDelivery} />

@@ -70,7 +70,12 @@
     "price": "价格",
     "unit": "单位",
     "addToCart": "加入购物车",
-    "viewDetails": "查看详情"
+    "viewDetails": "查看详情",
+    "errorLoading": "加载产品时出错",
+    "yourSpecialPrice": "您的专属价格 每{unit}",
+    "perUnit": "每{unit}",
+    "unitsAvailable": "{count}{unit} 可用",
+    "noProductsFound": "未找到产品"
   },
   "orders": {
     "title": "我的订单",
@@ -90,7 +95,14 @@
     "delivered": "已送达",
     "cancelled": "已取消",
     "noOrders": "您尚未下过任何订单",
-    "startShopping": "开始购物"
+    "startShopping": "开始购物",
+    "errorLoading": "加载订单时出错",
+    "allOrders": "全部订单",
+    "itemCount": "{count} 项",
+    "itemCount_plural": "{count} 项",
+    "requested": "要求：",
+    "deliveredDate": "已送达：",
+    "out_for_delivery": "配送中"
   },
   "profile": {
     "title": "我的资料",
@@ -111,7 +123,17 @@
     "creditStatus": "信用状态",
     "creditLimit": "信用额度",
     "availableCredit": "可用信用",
-    "updateProfile": "更新资料"
+    "updateProfile": "更新资料",
+    "loadingProfile": "加载资料中...",
+    "errorLoading": "加载资料时出错",
+    "profileNotFound": "未找到资料",
+    "approved": "已核准",
+    "pending": "待审核",
+    "rejected": "已拒绝",
+    "used": "已使用",
+    "settings": "设置",
+    "darkMode": "深色模式",
+    "comingSoon": "即将推出"
   },
   "cart": {
     "title": "购物车",

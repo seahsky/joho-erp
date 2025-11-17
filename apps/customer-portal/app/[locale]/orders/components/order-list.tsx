@@ -67,7 +67,7 @@ export function OrderList() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <ShoppingCart className="h-16 w-16 text-destructive mb-4" />
-        <p className="text-lg font-medium text-destructive mb-2">Error loading orders</p>
+        <p className="text-lg font-medium text-destructive mb-2">{t('errorLoading')}</p>
         <p className="text-sm text-muted-foreground">{error.message}</p>
       </div>
     );
@@ -95,7 +95,7 @@ export function OrderList() {
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               }`}
             >
-              {status === 'all' ? 'All Orders' : t(status)}
+              {status === 'all' ? t('allOrders') : t(status)}
             </button>
           ))}
         </div>
@@ -122,17 +122,17 @@ export function OrderList() {
               <div className="space-y-1">
                 <p className="text-sm">
                   <span className="font-medium">{order.items.length}</span>{' '}
-                  {order.items.length === 1 ? 'item' : 'items'} •{' '}
+                  {order.items.length === 1 ? t('itemCount', { count: order.items.length }) : t('itemCount_plural', { count: order.items.length })} •{' '}
                   <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
                 </p>
                 {order.status === 'out_for_delivery' && order.requestedDeliveryDate && (
                   <p className="text-sm text-muted-foreground">
-                    Requested: {formatDate(order.requestedDeliveryDate)}
+                    {t('requested')} {formatDate(order.requestedDeliveryDate)}
                   </p>
                 )}
                 {order.status === 'delivered' && order.delivery?.deliveredAt && (
                   <p className="text-sm text-muted-foreground">
-                    Delivered: {formatDate(order.delivery.deliveredAt)}
+                    {t('deliveredDate')} {formatDate(order.delivery.deliveredAt)}
                   </p>
                 )}
               </div>

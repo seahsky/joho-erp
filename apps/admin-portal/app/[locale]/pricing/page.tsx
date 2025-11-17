@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Card,
   CardContent,
@@ -10,21 +11,13 @@ import {
   CardHeader,
   CardTitle,
   Button,
-  Input,
   ResponsiveTable,
   type Column,
   Badge,
   CountUp,
   EmptyState,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from '@jimmy-beef/ui';
 import {
-  Search,
   DollarSign,
   Plus,
   Edit,
@@ -32,7 +25,6 @@ import {
   Loader2,
   TrendingDown,
   Tag,
-  Filter,
   Upload,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -67,11 +59,10 @@ type CustomerPricing = {
 };
 
 export default function PricingPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const t = useTranslations();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>();
   const [includeExpired, setIncludeExpired] = useState(false);
-  const [viewMode, setViewMode] = useState<'all' | 'customer' | 'product'>('all');
   const [editingPricing, setEditingPricing] = useState<CustomerPricing | null>(null);
   const [showSetPriceDialog, setShowSetPriceDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
@@ -106,7 +97,7 @@ export default function PricingPage() {
   });
 
   const handleDelete = async (pricingId: string) => {
-    if (confirm('Are you sure you want to delete this custom pricing?')) {
+    if (confirm(t('pricing.messages.deleteConfirm'))) {
       await deleteMutation.mutateAsync({ pricingId });
     }
   };
@@ -126,7 +117,7 @@ export default function PricingPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Loading pricing data...</p>
+          <p className="text-muted-foreground">{t('pricing.loading')}</p>
         </div>
       </div>
     );
@@ -136,7 +127,7 @@ export default function PricingPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">Error loading pricing</p>
+          <p className="text-destructive text-lg mb-2">{t('pricing.errorLoading')}</p>
           <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -152,19 +143,24 @@ export default function PricingPage() {
   }, 0);
 
   const customers = customersData?.customers ?? [];
-  const products = (productsData ?? []) as any[];
+  const products = (productsData ?? []) as Array<{
+    id: string;
+    sku: string;
+    name: string;
+    basePrice: number;
+  }>;
 
   const columns: Column<CustomerPricing>[] = [
     {
       key: 'customer',
-      label: 'Customer',
+      label: t('pricing.table.customer'),
       render: (pricing) => (
         <div className="font-medium">{pricing.customer.businessName}</div>
       ),
     },
     {
       key: 'product',
-      label: 'Product',
+      label: t('pricing.table.product'),
       render: (pricing) => (
         <div>
           <div className="font-medium">{pricing.product.name}</div>
@@ -174,7 +170,7 @@ export default function PricingPage() {
     },
     {
       key: 'basePrice',
-      label: 'Base Price',
+      label: t('pricing.table.basePrice'),
       render: (pricing) => (
         <div className="text-muted-foreground">
           {formatCurrency(pricing.product.basePrice)}
@@ -183,7 +179,7 @@ export default function PricingPage() {
     },
     {
       key: 'customPrice',
-      label: 'Custom Price',
+      label: t('pricing.table.customPrice'),
       render: (pricing) => (
         <div className="font-semibold text-green-600">
           {formatCurrency(pricing.customPrice)}
@@ -192,7 +188,7 @@ export default function PricingPage() {
     },
     {
       key: 'discount',
-      label: 'Savings',
+      label: t('pricing.table.savings'),
       render: (pricing) => {
         const discount = pricing.effectivePriceInfo.discount ?? 0;
         const discountPct = pricing.effectivePriceInfo.discountPercentage ?? 0;
@@ -213,32 +209,32 @@ export default function PricingPage() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('pricing.table.status'),
       render: (pricing) => {
         if (!pricing.isValid) {
-          return <Badge variant="secondary">Expired</Badge>;
+          return <Badge variant="secondary">{t('pricing.status.expired')}</Badge>;
         }
         if (pricing.effectiveTo) {
           const daysUntilExpiry = Math.floor(
             (new Date(pricing.effectiveTo).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           );
           if (daysUntilExpiry <= 7) {
-            return <Badge variant="warning">Expires in {daysUntilExpiry}d</Badge>;
+            return <Badge variant="warning">{t('pricing.status.expiresInDays', { days: daysUntilExpiry })}</Badge>;
           }
-          return <Badge variant="success">Active</Badge>;
+          return <Badge variant="success">{t('pricing.status.active')}</Badge>;
         }
-        return <Badge variant="success">Active (No expiry)</Badge>;
+        return <Badge variant="success">{t('pricing.status.activeNoExpiry')}</Badge>;
       },
     },
     {
       key: 'effectiveDates',
-      label: 'Effective Dates',
+      label: t('pricing.table.effectiveDates'),
       render: (pricing) => (
         <div className="text-sm">
-          <div>From: {formatDate(pricing.effectiveFrom)}</div>
+          <div>{t('pricing.table.from')} {formatDate(pricing.effectiveFrom)}</div>
           {pricing.effectiveTo && (
             <div className="text-muted-foreground">
-              To: {formatDate(pricing.effectiveTo)}
+              {t('pricing.table.to')} {formatDate(pricing.effectiveTo)}
             </div>
           )}
         </div>
@@ -246,7 +242,7 @@ export default function PricingPage() {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: t('pricing.table.actions'),
       render: (pricing) => (
         <div className="flex items-center gap-2">
           <Button
@@ -272,9 +268,9 @@ export default function PricingPage() {
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Customer-Specific Pricing</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('pricing.title')}</h1>
         <p className="text-muted-foreground">
-          Manage custom pricing for individual customers and products
+          {t('pricing.subtitle')}
         </p>
       </div>
 
@@ -282,7 +278,7 @@ export default function PricingPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Custom Prices</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pricing.stats.totalPrices')}</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -290,14 +286,14 @@ export default function PricingPage() {
               <CountUp end={totalPricings} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {activePricings} active, {totalPricings - activePricings} expired
+              {t('pricing.stats.activeExpired', { active: activePricings, expired: totalPricings - activePricings })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Savings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pricing.stats.totalSavings')}</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -305,14 +301,14 @@ export default function PricingPage() {
               {formatCurrency(totalSavings)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Average per pricing record
+              {t('pricing.stats.averagePerRecord')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Customers with Pricing</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pricing.stats.customersWithPricing')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -322,14 +318,14 @@ export default function PricingPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Unique customers
+              {t('pricing.stats.uniqueCustomers')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products with Pricing</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pricing.stats.productsWithPricing')}</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -339,7 +335,7 @@ export default function PricingPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Unique products
+              {t('pricing.stats.uniqueProducts')}
             </p>
           </CardContent>
         </Card>
@@ -350,19 +346,19 @@ export default function PricingPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Pricing Management</CardTitle>
+              <CardTitle>{t('pricing.management.title')}</CardTitle>
               <CardDescription>
-                Filter and manage customer-specific pricing
+                {t('pricing.management.description')}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleAddNew}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Custom Price
+                {t('pricing.buttons.addCustomPrice')}
               </Button>
               <Button variant="outline" onClick={() => setShowBulkImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
-                Bulk Import
+                {t('pricing.buttons.bulkImport')}
               </Button>
             </div>
           </div>
@@ -371,14 +367,14 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* Customer Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Filter by Customer</label>
+              <label className="text-sm font-medium mb-2 block">{t('pricing.filters.customer')}</label>
               <select
                 className="w-full px-3 py-2 border rounded-md"
                 value={selectedCustomerId || ''}
                 onChange={(e) => setSelectedCustomerId(e.target.value || undefined)}
               >
-                <option value="">All Customers</option>
-                {customers.map((customer: any) => (
+                <option value="">{t('pricing.filters.allCustomers')}</option>
+                {customers.map((customer: { id: string; businessName: string }) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.businessName}
                   </option>
@@ -388,14 +384,14 @@ export default function PricingPage() {
 
             {/* Product Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Filter by Product</label>
+              <label className="text-sm font-medium mb-2 block">{t('pricing.filters.product')}</label>
               <select
                 className="w-full px-3 py-2 border rounded-md"
                 value={selectedProductId || ''}
                 onChange={(e) => setSelectedProductId(e.target.value || undefined)}
               >
-                <option value="">All Products</option>
-                {products.map((product: any) => (
+                <option value="">{t('pricing.filters.allProducts')}</option>
+                {products.map((product: { id: string; sku: string; name: string }) => (
                   <option key={product.id} value={product.id}>
                     {product.sku} - {product.name}
                   </option>
@@ -412,7 +408,7 @@ export default function PricingPage() {
                   onChange={(e) => setIncludeExpired(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium">Include Expired Pricing</span>
+                <span className="text-sm font-medium">{t('pricing.filters.includeExpired')}</span>
               </label>
             </div>
           </div>
@@ -425,10 +421,10 @@ export default function PricingPage() {
           {pricings.length === 0 ? (
             <EmptyState
               icon={DollarSign}
-              title="No custom pricing found"
-              description="Start by adding custom pricing for your customers"
+              title={t('pricing.messages.noPricing')}
+              description={t('pricing.messages.noPricingDescription')}
               action={{
-                label: 'Add Custom Price',
+                label: t('pricing.buttons.addCustomPrice'),
                 onClick: handleAddNew,
               }}
             />
