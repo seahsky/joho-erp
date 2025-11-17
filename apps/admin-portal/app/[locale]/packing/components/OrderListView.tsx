@@ -28,7 +28,7 @@ interface OrderListViewProps {
   onOrderUpdated: () => void;
 }
 
-export function OrderListView({ orders, deliveryDate, onOrderUpdated }: OrderListViewProps) {
+export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpdated }: OrderListViewProps) {
   const t = useTranslations('packing');
   const [areaFilter, setAreaFilter] = useState<string>('');
 

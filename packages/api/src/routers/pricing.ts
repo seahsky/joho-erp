@@ -43,7 +43,13 @@ export const pricingRouter = router({
       return pricings.map((pricing) => ({
         ...pricing,
         isValid: isCustomPriceValid(pricing),
-        effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+        effectivePriceInfo: pricing.product
+          ? getEffectivePrice(pricing.product.basePrice, pricing)
+          : {
+              basePrice: 0,
+              effectivePrice: pricing.customPrice,
+              hasCustomPricing: false,
+            },
       }));
     }),
 
@@ -91,7 +97,13 @@ export const pricingRouter = router({
       return pricings.map((pricing) => ({
         ...pricing,
         isValid: isCustomPriceValid(pricing),
-        effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+        effectivePriceInfo: pricing.product
+          ? getEffectivePrice(pricing.product.basePrice, pricing)
+          : {
+              basePrice: 0,
+              effectivePrice: pricing.customPrice,
+              hasCustomPricing: false,
+            },
       }));
     }),
 
@@ -160,7 +172,13 @@ export const pricingRouter = router({
         pricings: pricings.map((pricing) => ({
           ...pricing,
           isValid: isCustomPriceValid(pricing),
-          effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+          effectivePriceInfo: pricing.product
+            ? getEffectivePrice(pricing.product.basePrice, pricing)
+            : {
+                basePrice: 0,
+                effectivePrice: pricing.customPrice,
+                hasCustomPricing: false,
+              },
         })),
         total,
         page: input.page,
@@ -506,9 +524,11 @@ export const pricingRouter = router({
 
       let totalSavings = 0;
       pricings.forEach((pricing) => {
-        const savings = pricing.product.basePrice - pricing.customPrice;
-        if (savings > 0) {
-          totalSavings += savings;
+        if (pricing.product) {
+          const savings = pricing.product.basePrice - pricing.customPrice;
+          if (savings > 0) {
+            totalSavings += savings;
+          }
         }
       });
 
