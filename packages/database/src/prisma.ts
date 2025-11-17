@@ -19,6 +19,7 @@ export function getPrismaClient(): PrismaClient {
     throw new Error('Please define MONGODB_URI environment variable');
   }
 
+  console.log(process.env.MONGODB_URI)
   if (cached.client) {
     return cached.client;
   }

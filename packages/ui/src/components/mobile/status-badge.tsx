@@ -3,19 +3,24 @@
 import * as React from 'react';
 import { cn } from '../../lib/utils';
 import { Badge, type BadgeProps } from '../badge';
-import { CheckCircle2, Clock, Truck, Package, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, Package, XCircle, AlertTriangle } from 'lucide-react';
 
 export type StatusType =
   | 'confirmed'
   | 'packing'
   | 'out_for_delivery'
+  | 'ready_for_delivery'
   | 'delivered'
   | 'cancelled'
   | 'pending'
   | 'approved'
   | 'rejected'
   | 'active'
-  | 'inactive';
+  | 'inactive'
+  | 'suspended'
+  | 'closed'
+  | 'discontinued'
+  | 'out_of_stock';
 
 export interface StatusBadgeProps extends Omit<BadgeProps, 'variant'> {
   status: StatusType;
@@ -80,6 +85,31 @@ const statusConfig: Record<
     variant: 'secondary',
     icon: XCircle,
   },
+  ready_for_delivery: {
+    label: 'Ready for Delivery',
+    variant: 'info',
+    icon: Package,
+  },
+  suspended: {
+    label: 'Suspended',
+    variant: 'warning',
+    icon: XCircle,
+  },
+  closed: {
+    label: 'Closed',
+    variant: 'secondary',
+    icon: XCircle,
+  },
+  discontinued: {
+    label: 'Discontinued',
+    variant: 'secondary',
+    icon: XCircle,
+  },
+  out_of_stock: {
+    label: 'Out of Stock',
+    variant: 'destructive',
+    icon: AlertTriangle,
+  },
 };
 
 export function StatusBadge({
@@ -89,6 +119,17 @@ export function StatusBadge({
   ...props
 }: StatusBadgeProps) {
   const config = statusConfig[status];
+
+  // Fallback for undefined status
+  if (!config) {
+    console.warn(`Unknown status: ${status}`);
+    return (
+      <Badge variant="secondary" className={cn('flex items-center gap-1', className)} {...props}>
+        <span>{status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+      </Badge>
+    );
+  }
+
   const Icon = config.icon;
 
   return (
