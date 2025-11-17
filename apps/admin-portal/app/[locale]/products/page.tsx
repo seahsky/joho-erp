@@ -19,6 +19,8 @@ import {
 } from '@jimmy-beef/ui';
 import { Search, Package, Plus, Edit, Loader2, PackageX } from 'lucide-react';
 import { api } from '@/trpc/client';
+import { AddProductDialog } from './components/AddProductDialog';
+import { useTranslations } from 'next-intl';
 
 type Product = {
   id: string;
@@ -33,9 +35,11 @@ type Product = {
 };
 
 export default function ProductsPage() {
+  const t = useTranslations();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const { data: products, isLoading, error } = api.product.getAll.useQuery({
+  const { data: products, isLoading, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
   });
 
@@ -203,9 +207,12 @@ export default function ProductsPage() {
             Manage your product catalog and inventory
           </p>
         </div>
-        <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
+        <Button
+          className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
+          onClick={() => setShowAddDialog(true)}
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Add Product
+          {t('productForm.buttons.addProduct')}
         </Button>
       </div>
 
@@ -294,6 +301,13 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Product Dialog */}
+      <AddProductDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

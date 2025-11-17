@@ -115,5 +115,96 @@
     "inStock": "有库存",
     "lowStock": "低库存",
     "outOfStock": "缺货"
+  },
+  "productForm": {
+    "dialog": {
+      "title": "添加新产品",
+      "description": "创建新产品并可选择设置客户特定价格"
+    },
+    "sections": {
+      "productDetails": "产品详情",
+      "inventoryPricing": "库存与定价",
+      "customerPricing": "客户特定价格（可选）"
+    },
+    "fields": {
+      "sku": "货号",
+      "skuRequired": "货号 *",
+      "skuPlaceholder": "BEEF-RUMP-5KG",
+      "name": "产品名称",
+      "nameRequired": "产品名称 *",
+      "namePlaceholder": "牛肉臀肉 5公斤",
+      "description": "描述",
+      "descriptionPlaceholder": "优质牛肉臀肉...",
+      "category": "类别",
+      "categoryPlaceholder": "牛肉",
+      "unit": "单位",
+      "unitRequired": "单位 *",
+      "packageSize": "包装大小",
+      "packageSizePlaceholder": "5.0",
+      "basePrice": "基础价格 * ($)",
+      "basePricePlaceholder": "18.50",
+      "currentStock": "当前库存",
+      "currentStockPlaceholder": "0",
+      "lowStockThreshold": "低库存阈值",
+      "lowStockThresholdPlaceholder": "10",
+      "status": "状态"
+    },
+    "units": {
+      "kg": "千克 (kg)",
+      "piece": "件",
+      "box": "盒",
+      "carton": "箱"
+    },
+    "statuses": {
+      "active": "启用",
+      "discontinued": "已停产",
+      "out_of_stock": "缺货"
+    },
+    "pricing": {
+      "customer": "客户",
+      "customers": "位客户",
+      "oneCustomer": "位客户",
+      "basePrice": "基础价格",
+      "customPrice": "自定义价格",
+      "savings": "节省",
+      "totalSavings": "总节省",
+      "selected": "位客户已选",
+      "noCustomersFound": "未找到客户",
+      "searchPlaceholder": "搜索客户...",
+      "selectedOnly": "仅显示已选"
+    },
+    "bulkActions": {
+      "title": "批量操作",
+      "applyPercentDiscount": "应用百分比折扣",
+      "applyAmountDiscount": "应用金额折扣",
+      "apply": "应用",
+      "clearAll": "全部清除",
+      "percentPlaceholder": "10",
+      "amountPlaceholder": "2.00"
+    },
+    "buttons": {
+      "cancel": "取消",
+      "createProduct": "创建产品",
+      "addProduct": "添加产品"
+    },
+    "validation": {
+      "skuNamePriceRequired": "货号、名称和基础价格为必填项",
+      "basePricePositive": "基础价格必须为正数",
+      "invalidInput": "无效输入",
+      "invalidPercentAndPrice": "请输入有效的百分比和基础价格",
+      "invalidAmountAndPrice": "请输入有效的金额和基础价格"
+    },
+    "messages": {
+      "productCreated": "产品创建成功",
+      "productCreatedWith": "产品已创建，包含",
+      "customPrices": "个自定义价格",
+      "customPrice": "个自定义价格",
+      "errorCreating": "创建产品时出错",
+      "discountApplied": "折扣已应用",
+      "percentDiscountApplied": "{percent}% 折扣已应用于 {count} 位客户",
+      "amountDiscountApplied": "${amount} 折扣已应用于 {count} 位客户",
+      "pricingCleared": "价格已清除",
+      "pricingClearedDescription": "所有客户特定价格已被清除"
+    }
   }
 }

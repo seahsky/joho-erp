@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdmin } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
+import { getEffectivePrice } from '@jimmy-beef/shared';
 
 export const productRouter = router({
   // Get all products (with customer-specific pricing if authenticated customer)
@@ -39,15 +40,52 @@ export const productRouter = router({
         orderBy: { name: 'asc' },
       });
 
-      // TODO: Fetch customer-specific pricing if user is a customer
+      // Fetch customer-specific pricing if user is authenticated
+      let customerId: string | null = null;
 
-      return products;
+      // Try to get customer ID from clerk user ID
+      if (_ctx.userId) {
+        const customer = await prisma.customer.findUnique({
+          where: { clerkUserId: _ctx.userId },
+          select: { id: true },
+        });
+        customerId = customer?.id || null;
+      }
+
+      // If customer exists, fetch their custom pricing
+      if (customerId) {
+        const customerPricings = await prisma.customerPricing.findMany({
+          where: {
+            customerId,
+            productId: { in: products.map((p) => p.id) },
+          },
+        });
+
+        // Map pricing to products
+        const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
+
+        return products.map((product) => {
+          const customPricing = pricingMap.get(product.id);
+          const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+
+          return {
+            ...product,
+            ...priceInfo,
+          };
+        });
+      }
+
+      // No customer pricing, return products with base price as effective price
+      return products.map((product) => ({
+        ...product,
+        ...getEffectivePrice(product.basePrice),
+      }));
     }),
 
-  // Get product by ID
+  // Get product by ID (with customer-specific pricing if applicable)
   getById: protectedProcedure
     .input(z.object({ productId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const product = await prisma.product.findUnique({
         where: { id: input.productId },
       });
@@ -59,10 +97,40 @@ export const productRouter = router({
         });
       }
 
-      return product;
+      // Try to get customer ID and their custom pricing
+      let customerId: string | null = null;
+      if (ctx.userId) {
+        const customer = await prisma.customer.findUnique({
+          where: { clerkUserId: ctx.userId },
+          select: { id: true },
+        });
+        customerId = customer?.id || null;
+      }
+
+      if (customerId) {
+        const customPricing = await prisma.customerPricing.findFirst({
+          where: {
+            customerId,
+            productId: input.productId,
+          },
+        });
+
+        const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+
+        return {
+          ...product,
+          ...priceInfo,
+        };
+      }
+
+      // No customer pricing, return product with base price
+      return {
+        ...product,
+        ...getEffectivePrice(product.basePrice),
+      };
     }),
 
-  // Admin: Create product
+  // Admin: Create product (with optional customer-specific pricing)
   create: isAdmin
     .input(
       z.object({
@@ -76,12 +144,25 @@ export const productRouter = router({
         currentStock: z.number().min(0).default(0),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).default('active'),
+        // Optional customer-specific pricing to be created with the product
+        customerPricing: z
+          .array(
+            z.object({
+              customerId: z.string(),
+              customPrice: z.number().positive(),
+              effectiveFrom: z.date().optional(),
+              effectiveTo: z.date().optional(),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input }) => {
+      const { customerPricing, ...productData } = input;
+
       // Check if SKU already exists
       const existing = await prisma.product.findUnique({
-        where: { sku: input.sku },
+        where: { sku: productData.sku },
       });
 
       if (existing) {
@@ -91,13 +172,35 @@ export const productRouter = router({
         });
       }
 
-      const product = await prisma.product.create({
-        data: input,
+      // Use transaction to create product and pricing atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the product
+        const product = await tx.product.create({
+          data: productData,
+        });
+
+        // Create customer pricing records if provided
+        if (customerPricing && customerPricing.length > 0) {
+          await tx.customerPricing.createMany({
+            data: customerPricing.map((cp) => ({
+              productId: product.id,
+              customerId: cp.customerId,
+              customPrice: cp.customPrice,
+              effectiveFrom: cp.effectiveFrom || new Date(),
+              effectiveTo: cp.effectiveTo || null,
+            })),
+          });
+        }
+
+        return {
+          product,
+          pricingCount: customerPricing?.length || 0,
+        };
       });
 
       // TODO: Log to audit trail
 
-      return product;
+      return result;
     }),
 
   // Admin: Update product

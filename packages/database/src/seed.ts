@@ -685,6 +685,104 @@ async function seed() {
     });
     console.log('');
 
+    // Seed Customer-Specific Pricing
+    console.log('💰 Creating customer-specific pricing...');
+    const customerPricingData = [];
+
+    // The Steakhouse Melbourne - Premium customer with discounts on premium beef
+    const steakhouse = createdCustomers.find((c) => c.businessName === 'The Steakhouse Melbourne');
+    if (steakhouse) {
+      // Premium cuts at discounted rates
+      const beefRump = createdProducts.find((p) => p.sku === 'BEEF-RUMP-5KG');
+      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
+      const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
+      const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
+
+      if (beefRump) customerPricingData.push({ customerId: steakhouse.id, productId: beefRump.id, customPrice: 16.50 }); // $2 off
+      if (scotchFillet) customerPricingData.push({ customerId: steakhouse.id, productId: scotchFillet.id, customPrice: 21.50 }); // $2.50 off
+      if (tenderloin) customerPricingData.push({ customerId: steakhouse.id, productId: tenderloin.id, customPrice: 29.00 }); // $3 off
+      if (tbone) customerPricingData.push({ customerId: steakhouse.id, productId: tbone.id, customPrice: 20.00 }); // $2 off
+    }
+
+    // Brunswick Butcher Shop - High volume customer with discounts on bulk items
+    const brunswickButcher = createdCustomers.find((c) => c.businessName === 'Brunswick Butcher Shop');
+    if (brunswickButcher) {
+      const brisket = createdProducts.find((p) => p.sku === 'BEEF-BRISKET-10KG');
+      const chuck = createdProducts.find((p) => p.sku === 'BEEF-CHUCK-15KG');
+      const mince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-20KG');
+      const porkShoulder = createdProducts.find((p) => p.sku === 'PORK-SHOULDER-10KG');
+      const porkBelly = createdProducts.find((p) => p.sku === 'PORK-BELLY-8KG');
+
+      if (brisket) customerPricingData.push({ customerId: brunswickButcher.id, productId: brisket.id, customPrice: 11.00 }); // $1.50 off
+      if (chuck) customerPricingData.push({ customerId: brunswickButcher.id, productId: chuck.id, customPrice: 8.50 }); // $1.50 off
+      if (mince) customerPricingData.push({ customerId: brunswickButcher.id, productId: mince.id, customPrice: 7.00 }); // $1 off
+      if (porkShoulder) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkShoulder.id, customPrice: 9.50 }); // $1.50 off
+      if (porkBelly) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkBelly.id, customPrice: 13.50 }); // $1.50 off
+    }
+
+    // Footscray Grill House - Mixed pricing with some discounts
+    const footscrayGrill = createdCustomers.find((c) => c.businessName === 'Footscray Grill House');
+    if (footscrayGrill) {
+      const sirloin = createdProducts.find((p) => p.sku === 'BEEF-SIRLOIN-8KG');
+      const ribs = createdProducts.find((p) => p.sku === 'BEEF-RIBS-12KG');
+      const sausages = createdProducts.find((p) => p.sku === 'SAUSAGE-BEEF-5KG');
+
+      if (sirloin) customerPricingData.push({ customerId: footscrayGrill.id, productId: sirloin.id, customPrice: 18.00 }); // $1.50 off
+      if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 12.50 }); // $1.50 off
+      if (sausages) customerPricingData.push({ customerId: footscrayGrill.id, productId: sausages.id, customPrice: 9.00 }); // $1 off
+    }
+
+    // Brighton Beach Bistro - Premium customer with special pricing
+    const brightonBistro = createdCustomers.find((c) => c.businessName === 'Brighton Beach Bistro');
+    if (brightonBistro) {
+      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
+      const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
+      const porkLoin = createdProducts.find((p) => p.sku === 'PORK-LOIN-6KG');
+
+      if (scotchFillet) customerPricingData.push({ customerId: brightonBistro.id, productId: scotchFillet.id, customPrice: 22.00 }); // $2 off
+      if (tenderloin) customerPricingData.push({ customerId: brightonBistro.id, productId: tenderloin.id, customPrice: 30.00 }); // $2 off
+      if (porkLoin) customerPricingData.push({ customerId: brightonBistro.id, productId: porkLoin.id, customPrice: 15.50 }); // $1.50 off
+    }
+
+    // Camberwell Fine Meats - Specialty pricing with time-limited offers
+    const camberwellMeats = createdCustomers.find((c) => c.businessName === 'Camberwell Fine Meats');
+    if (camberwellMeats) {
+      const beefRump = createdProducts.find((p) => p.sku === 'BEEF-RUMP-5KG');
+      const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
+      const porkChops = createdProducts.find((p) => p.sku === 'PORK-CHOPS-10KG');
+
+      // Some with expiration dates (expires in 30 days)
+      const futureExpiry = new Date();
+      futureExpiry.setDate(futureExpiry.getDate() + 30);
+
+      if (beefRump) customerPricingData.push({
+        customerId: camberwellMeats.id,
+        productId: beefRump.id,
+        customPrice: 17.00,
+        effectiveTo: futureExpiry
+      }); // $1.50 off, expires in 30 days
+
+      if (tbone) customerPricingData.push({ customerId: camberwellMeats.id, productId: tbone.id, customPrice: 20.50 }); // $1.50 off, no expiry
+      if (porkChops) customerPricingData.push({ customerId: camberwellMeats.id, productId: porkChops.id, customPrice: 12.00 }); // $1 off
+    }
+
+    const createdPricing = await Promise.all(
+      customerPricingData.map((p) => prisma.customerPricing.create({ data: p }))
+    );
+    console.log(`✅ Created ${createdPricing.length} custom pricing records:`);
+    for (const pricing of createdPricing) {
+      const customer = createdCustomers.find((c) => c.id === pricing.customerId);
+      const product = createdProducts.find((p) => p.id === pricing.productId);
+      if (customer && product) {
+        const savings = product.basePrice - pricing.customPrice;
+        const savingsPercent = ((savings / product.basePrice) * 100).toFixed(1);
+        console.log(
+          `   - ${customer.businessName} → ${product.name}: $${pricing.customPrice} (save $${savings.toFixed(2)} / ${savingsPercent}%)`
+        );
+      }
+    }
+    console.log('');
+
     // Seed Orders with different statuses
     console.log('📦 Creating orders...');
     const allOrders = [];
@@ -759,6 +857,7 @@ async function seed() {
     console.log('📝 Summary:');
     console.log(`   - Products: ${createdProducts.length}`);
     console.log(`   - Customers: ${createdCustomers.length}`);
+    console.log(`   - Customer Pricing: ${createdPricing.length}`);
     console.log(`   - Orders: ${createdOrders.length}`);
     console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
     console.log(`   - Company: ${company.businessName}\n`);

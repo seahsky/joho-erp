@@ -96,10 +96,29 @@ export function ProductList() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Large className="text-2xl text-primary">
-                      ${product.basePrice.toFixed(2)}
-                    </Large>
-                    <Muted>per {product.unit}</Muted>
+                    {(product as any).hasCustomPricing ? (
+                      <div>
+                        <Large className="text-2xl text-green-600 font-bold">
+                          ${(product as any).effectivePrice.toFixed(2)}
+                        </Large>
+                        <div className="flex items-center gap-2">
+                          <Muted className="line-through text-xs">
+                            ${(product as any).basePrice.toFixed(2)}
+                          </Muted>
+                          <Badge variant="success" className="text-xs">
+                            Save {(product as any).discountPercentage?.toFixed(0)}%
+                          </Badge>
+                        </div>
+                        <Muted className="text-xs">Your special price per {product.unit}</Muted>
+                      </div>
+                    ) : (
+                      <div>
+                        <Large className="text-2xl text-primary">
+                          ${product.basePrice.toFixed(2)}
+                        </Large>
+                        <Muted>per {product.unit}</Muted>
+                      </div>
+                    )}
                   </div>
                   {getStockBadge(product.currentStock)}
                 </div>

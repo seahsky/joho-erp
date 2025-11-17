@@ -115,5 +115,96 @@
     "inStock": "有庫存",
     "lowStock": "低庫存",
     "outOfStock": "缺貨"
+  },
+  "productForm": {
+    "dialog": {
+      "title": "添加新產品",
+      "description": "創建新產品並可選擇設置客戶特定價格"
+    },
+    "sections": {
+      "productDetails": "產品詳情",
+      "inventoryPricing": "庫存與定價",
+      "customerPricing": "客戶特定價格（可選）"
+    },
+    "fields": {
+      "sku": "貨號",
+      "skuRequired": "貨號 *",
+      "skuPlaceholder": "BEEF-RUMP-5KG",
+      "name": "產品名稱",
+      "nameRequired": "產品名稱 *",
+      "namePlaceholder": "牛肉臀肉 5公斤",
+      "description": "描述",
+      "descriptionPlaceholder": "優質牛肉臀肉...",
+      "category": "類別",
+      "categoryPlaceholder": "牛肉",
+      "unit": "單位",
+      "unitRequired": "單位 *",
+      "packageSize": "包裝大小",
+      "packageSizePlaceholder": "5.0",
+      "basePrice": "基礎價格 * ($)",
+      "basePricePlaceholder": "18.50",
+      "currentStock": "當前庫存",
+      "currentStockPlaceholder": "0",
+      "lowStockThreshold": "低庫存閾值",
+      "lowStockThresholdPlaceholder": "10",
+      "status": "狀態"
+    },
+    "units": {
+      "kg": "千克 (kg)",
+      "piece": "件",
+      "box": "盒",
+      "carton": "箱"
+    },
+    "statuses": {
+      "active": "啟用",
+      "discontinued": "已停產",
+      "out_of_stock": "缺貨"
+    },
+    "pricing": {
+      "customer": "客戶",
+      "customers": "位客戶",
+      "oneCustomer": "位客戶",
+      "basePrice": "基礎價格",
+      "customPrice": "自定義價格",
+      "savings": "節省",
+      "totalSavings": "總節省",
+      "selected": "位客戶已選",
+      "noCustomersFound": "未找到客戶",
+      "searchPlaceholder": "搜索客戶...",
+      "selectedOnly": "僅顯示已選"
+    },
+    "bulkActions": {
+      "title": "批量操作",
+      "applyPercentDiscount": "應用百分比折扣",
+      "applyAmountDiscount": "應用金額折扣",
+      "apply": "應用",
+      "clearAll": "全部清除",
+      "percentPlaceholder": "10",
+      "amountPlaceholder": "2.00"
+    },
+    "buttons": {
+      "cancel": "取消",
+      "createProduct": "創建產品",
+      "addProduct": "添加產品"
+    },
+    "validation": {
+      "skuNamePriceRequired": "貨號、名稱和基礎價格為必填項",
+      "basePricePositive": "基礎價格必須為正數",
+      "invalidInput": "無效輸入",
+      "invalidPercentAndPrice": "請輸入有效的百分比和基礎價格",
+      "invalidAmountAndPrice": "請輸入有效的金額和基礎價格"
+    },
+    "messages": {
+      "productCreated": "產品創建成功",
+      "productCreatedWith": "產品已創建，包含",
+      "customPrices": "個自定義價格",
+      "customPrice": "個自定義價格",
+      "errorCreating": "創建產品時出錯",
+      "discountApplied": "折扣已應用",
+      "percentDiscountApplied": "{percent}% 折扣已應用於 {count} 位客戶",
+      "amountDiscountApplied": "${amount} 折扣已應用於 {count} 位客戶",
+      "pricingCleared": "價格已清除",
+      "pricingClearedDescription": "所有客戶特定價格已被清除"
+    }
   }
 }

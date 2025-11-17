@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery } from '@jimmy-beef/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice } from '@jimmy-beef/shared';
 
 export const orderRouter = router({
   // Create order
@@ -66,7 +66,18 @@ export const orderRouter = router({
         });
       }
 
-      // Build order items with prices
+      // Get customer-specific pricing for all products
+      const customerPricings = await prisma.customerPricing.findMany({
+        where: {
+          customerId: customer.id,
+          productId: { in: productIds },
+        },
+      });
+
+      // Create a map of product ID to custom pricing
+      const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
+
+      // Build order items with prices (using customer-specific pricing if available)
       const orderItems = input.items.map((item) => {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
@@ -84,14 +95,19 @@ export const orderRouter = router({
           });
         }
 
+        // Get effective price (custom or base price)
+        const customPricing = pricingMap.get(product.id);
+        const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+        const effectivePrice = priceInfo.effectivePrice;
+
         return {
           productId: product.id,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,
           quantity: item.quantity,
-          unitPrice: product.basePrice, // TODO: Check for customer-specific pricing
-          subtotal: item.quantity * product.basePrice,
+          unitPrice: effectivePrice, // Use customer-specific price if available
+          subtotal: item.quantity * effectivePrice,
         };
       });
 

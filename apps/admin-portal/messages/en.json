@@ -4,6 +4,7 @@
     "dashboard": "Dashboard",
     "customers": "Customers",
     "products": "Products",
+    "pricing": "Pricing",
     "orders": "Orders",
     "deliveries": "Deliveries",
     "inventory": "Manage products and inventory",
@@ -115,5 +116,96 @@
     "inStock": "In Stock",
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock"
+  },
+  "productForm": {
+    "dialog": {
+      "title": "Add New Product",
+      "description": "Create a new product and optionally set customer-specific pricing"
+    },
+    "sections": {
+      "productDetails": "Product Details",
+      "inventoryPricing": "Inventory & Pricing",
+      "customerPricing": "Customer-Specific Pricing (Optional)"
+    },
+    "fields": {
+      "sku": "SKU",
+      "skuRequired": "SKU *",
+      "skuPlaceholder": "BEEF-RUMP-5KG",
+      "name": "Product Name",
+      "nameRequired": "Product Name *",
+      "namePlaceholder": "Beef Rump 5kg",
+      "description": "Description",
+      "descriptionPlaceholder": "Premium quality beef rump...",
+      "category": "Category",
+      "categoryPlaceholder": "Beef",
+      "unit": "Unit",
+      "unitRequired": "Unit *",
+      "packageSize": "Package Size",
+      "packageSizePlaceholder": "5.0",
+      "basePrice": "Base Price * ($)",
+      "basePricePlaceholder": "18.50",
+      "currentStock": "Current Stock",
+      "currentStockPlaceholder": "0",
+      "lowStockThreshold": "Low Stock Threshold",
+      "lowStockThresholdPlaceholder": "10",
+      "status": "Status"
+    },
+    "units": {
+      "kg": "Kilogram (kg)",
+      "piece": "Piece",
+      "box": "Box",
+      "carton": "Carton"
+    },
+    "statuses": {
+      "active": "Active",
+      "discontinued": "Discontinued",
+      "out_of_stock": "Out of Stock"
+    },
+    "pricing": {
+      "customer": "Customer",
+      "customers": "customers",
+      "oneCustomer": "customer",
+      "basePrice": "Base Price",
+      "customPrice": "Custom Price",
+      "savings": "Savings",
+      "totalSavings": "Total savings",
+      "selected": "customers selected",
+      "noCustomersFound": "No customers found",
+      "searchPlaceholder": "Search customers...",
+      "selectedOnly": "Selected Only"
+    },
+    "bulkActions": {
+      "title": "Bulk Actions",
+      "applyPercentDiscount": "Apply % discount",
+      "applyAmountDiscount": "Apply $ discount",
+      "apply": "Apply",
+      "clearAll": "Clear All",
+      "percentPlaceholder": "10",
+      "amountPlaceholder": "2.00"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "createProduct": "Create Product",
+      "addProduct": "Add Product"
+    },
+    "validation": {
+      "skuNamePriceRequired": "SKU, name, and base price are required",
+      "basePricePositive": "Base price must be a positive number",
+      "invalidInput": "Invalid input",
+      "invalidPercentAndPrice": "Please enter a valid percentage and base price",
+      "invalidAmountAndPrice": "Please enter a valid amount and base price"
+    },
+    "messages": {
+      "productCreated": "Product created successfully",
+      "productCreatedWith": "Product created with",
+      "customPrices": "custom prices",
+      "customPrice": "custom price",
+      "errorCreating": "Error creating product",
+      "discountApplied": "Discount applied",
+      "percentDiscountApplied": "{percent}% discount applied to {count} customers",
+      "amountDiscountApplied": "${amount} discount applied to {count} customers",
+      "pricingCleared": "Pricing cleared",
+      "pricingClearedDescription": "All customer-specific pricing has been cleared"
+    }
   }
 }

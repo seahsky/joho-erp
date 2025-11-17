@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Truck, Package, ShoppingBag, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Truck, Package, ShoppingBag, DollarSign, type LucideIcon } from 'lucide-react';
 
 export interface NavigationItem {
   id: string;
@@ -35,6 +35,12 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     labelKey: 'products',
     icon: Package,
     path: '/products',
+  },
+  {
+    id: 'pricing',
+    labelKey: 'pricing',
+    icon: DollarSign,
+    path: '/pricing',
   },
   {
     id: 'deliveries',

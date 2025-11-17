@@ -1,0 +1,523 @@
+import { z } from 'zod';
+import { router, protectedProcedure, isAdminOrSales } from '../trpc';
+import { prisma } from '@jimmy-beef/database';
+import { TRPCError } from '@trpc/server';
+import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@jimmy-beef/shared';
+
+export const pricingRouter = router({
+  /**
+   * Get all custom prices for a specific customer
+   */
+  getCustomerPrices: isAdminOrSales
+    .input(
+      z.object({
+        customerId: z.string(),
+        includeExpired: z.boolean().default(false),
+      })
+    )
+    .query(async ({ input }) => {
+      const where: any = { customerId: input.customerId };
+
+      // Filter out expired pricing if not requested
+      if (!input.includeExpired) {
+        const now = new Date();
+        where.OR = [
+          { effectiveTo: null }, // No expiration
+          { effectiveTo: { gte: now } }, // Not yet expired
+        ];
+      }
+
+      const pricings = await prisma.customerPricing.findMany({
+        where,
+        include: {
+          product: true,
+          customer: {
+            select: {
+              businessName: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return pricings.map((pricing) => ({
+        ...pricing,
+        isValid: isCustomPriceValid(pricing),
+        effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+      }));
+    }),
+
+  /**
+   * Get all customers with custom pricing for a specific product
+   */
+  getProductPrices: isAdminOrSales
+    .input(
+      z.object({
+        productId: z.string(),
+        includeExpired: z.boolean().default(false),
+      })
+    )
+    .query(async ({ input }) => {
+      const where: any = { productId: input.productId };
+
+      // Filter out expired pricing if not requested
+      if (!input.includeExpired) {
+        const now = new Date();
+        where.OR = [
+          { effectiveTo: null }, // No expiration
+          { effectiveTo: { gte: now } }, // Not yet expired
+        ];
+      }
+
+      const pricings = await prisma.customerPricing.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              businessName: true,
+              deliveryAddress: true,
+            },
+          },
+          product: {
+            select: {
+              name: true,
+              basePrice: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return pricings.map((pricing) => ({
+        ...pricing,
+        isValid: isCustomPriceValid(pricing),
+        effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+      }));
+    }),
+
+  /**
+   * Get all custom pricing (with pagination and filtering)
+   */
+  getAll: isAdminOrSales
+    .input(
+      z.object({
+        customerId: z.string().optional(),
+        productId: z.string().optional(),
+        includeExpired: z.boolean().default(false),
+        page: z.number().default(1),
+        limit: z.number().default(50),
+      })
+    )
+    .query(async ({ input }) => {
+      const where: any = {};
+
+      if (input.customerId) {
+        where.customerId = input.customerId;
+      }
+
+      if (input.productId) {
+        where.productId = input.productId;
+      }
+
+      // Filter out expired pricing if not requested
+      if (!input.includeExpired) {
+        const now = new Date();
+        where.OR = [
+          { effectiveTo: null }, // No expiration
+          { effectiveTo: { gte: now } }, // Not yet expired
+        ];
+      }
+
+      const skip = (input.page - 1) * input.limit;
+
+      const [pricings, total] = await Promise.all([
+        prisma.customerPricing.findMany({
+          where,
+          include: {
+            customer: {
+              select: {
+                businessName: true,
+              },
+            },
+            product: {
+              select: {
+                sku: true,
+                name: true,
+                basePrice: true,
+              },
+            },
+          },
+          skip,
+          take: input.limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.customerPricing.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / input.limit);
+
+      return {
+        pricings: pricings.map((pricing) => ({
+          ...pricing,
+          isValid: isCustomPriceValid(pricing),
+          effectivePriceInfo: getEffectivePrice(pricing.product.basePrice, pricing),
+        })),
+        total,
+        page: input.page,
+        totalPages,
+        hasMore: input.page < totalPages,
+      };
+    }),
+
+  /**
+   * Get a specific customer's price for a product (used by order creation)
+   */
+  getCustomerProductPrice: protectedProcedure
+    .input(
+      z.object({
+        customerId: z.string(),
+        productId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const pricing = await prisma.customerPricing.findFirst({
+        where: {
+          customerId: input.customerId,
+          productId: input.productId,
+        },
+      });
+
+      const product = await prisma.product.findUnique({
+        where: { id: input.productId },
+        select: { basePrice: true },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      return getEffectivePrice(product.basePrice, pricing);
+    }),
+
+  /**
+   * Set or update custom price for a customer-product pair
+   */
+  setCustomerPrice: isAdminOrSales
+    .input(
+      z.object({
+        customerId: z.string(),
+        productId: z.string(),
+        customPrice: z.number().positive(),
+        effectiveFrom: z.date().optional(),
+        effectiveTo: z.date().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Validate customer exists
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      // Validate product exists
+      const product = await prisma.product.findUnique({
+        where: { id: input.productId },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      // Validate pricing input
+      const validation = validateCustomerPricing({
+        customPrice: input.customPrice,
+        basePrice: product.basePrice,
+        effectiveFrom: input.effectiveFrom,
+        effectiveTo: input.effectiveTo,
+      });
+
+      if (!validation.valid) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: validation.error,
+        });
+      }
+
+      // Check if pricing already exists
+      const existingPricing = await prisma.customerPricing.findFirst({
+        where: {
+          customerId: input.customerId,
+          productId: input.productId,
+        },
+      });
+
+      let pricing;
+
+      if (existingPricing) {
+        // Update existing pricing
+        pricing = await prisma.customerPricing.update({
+          where: { id: existingPricing.id },
+          data: {
+            customPrice: input.customPrice,
+            effectiveFrom: input.effectiveFrom || new Date(),
+            effectiveTo: input.effectiveTo,
+          },
+          include: {
+            customer: {
+              select: {
+                businessName: true,
+              },
+            },
+            product: {
+              select: {
+                sku: true,
+                name: true,
+              },
+            },
+          },
+        });
+
+        // TODO: Log to audit trail
+        console.log(`Updated pricing for ${customer.businessName} - ${product.name} by ${ctx.userId}`);
+      } else {
+        // Create new pricing
+        pricing = await prisma.customerPricing.create({
+          data: {
+            customerId: input.customerId,
+            productId: input.productId,
+            customPrice: input.customPrice,
+            effectiveFrom: input.effectiveFrom || new Date(),
+            effectiveTo: input.effectiveTo,
+          },
+          include: {
+            customer: {
+              select: {
+                businessName: true,
+              },
+            },
+            product: {
+              select: {
+                sku: true,
+                name: true,
+              },
+            },
+          },
+        });
+
+        // TODO: Log to audit trail
+        console.log(`Created pricing for ${customer.businessName} - ${product.name} by ${ctx.userId}`);
+      }
+
+      return pricing;
+    }),
+
+  /**
+   * Delete custom pricing
+   */
+  deleteCustomerPrice: isAdminOrSales
+    .input(
+      z.object({
+        pricingId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const pricing = await prisma.customerPricing.findUnique({
+        where: { id: input.pricingId },
+        include: {
+          customer: {
+            select: {
+              businessName: true,
+            },
+          },
+          product: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!pricing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Pricing not found',
+        });
+      }
+
+      await prisma.customerPricing.delete({
+        where: { id: input.pricingId },
+      });
+
+      // TODO: Log to audit trail
+      console.log(`Deleted pricing for ${pricing.customer.businessName} - ${pricing.product.name} by ${ctx.userId}`);
+
+      return { success: true, message: 'Pricing deleted successfully' };
+    }),
+
+  /**
+   * Bulk import pricing from CSV data
+   */
+  bulkImport: isAdminOrSales
+    .input(
+      z.object({
+        pricings: z.array(
+          z.object({
+            customerAbn: z.string().optional(), // ABN to identify customer
+            customerClerkId: z.string().optional(), // Or Clerk ID
+            productSku: z.string(), // SKU to identify product
+            customPrice: z.number().positive(),
+            effectiveFrom: z.date().optional(),
+            effectiveTo: z.date().optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as { row: number; error: string }[],
+      };
+
+      for (let i = 0; i < input.pricings.length; i++) {
+        const item = input.pricings[i];
+
+        try {
+          // Find customer by ABN or Clerk ID
+          const customer = await prisma.customer.findFirst({
+            where: item.customerAbn
+              ? { abn: item.customerAbn }
+              : { clerkUserId: item.customerClerkId! },
+          });
+
+          if (!customer) {
+            results.failed++;
+            results.errors.push({
+              row: i + 1,
+              error: 'Customer not found',
+            });
+            continue;
+          }
+
+          // Find product by SKU
+          const product = await prisma.product.findUnique({
+            where: { sku: item.productSku },
+          });
+
+          if (!product) {
+            results.failed++;
+            results.errors.push({
+              row: i + 1,
+              error: 'Product not found',
+            });
+            continue;
+          }
+
+          // Validate pricing
+          const validation = validateCustomerPricing({
+            customPrice: item.customPrice,
+            basePrice: product.basePrice,
+            effectiveFrom: item.effectiveFrom,
+            effectiveTo: item.effectiveTo,
+          });
+
+          if (!validation.valid) {
+            results.failed++;
+            results.errors.push({
+              row: i + 1,
+              error: validation.error || 'Invalid pricing',
+            });
+            continue;
+          }
+
+          // Upsert pricing
+          await prisma.customerPricing.upsert({
+            where: {
+              customerId_productId: {
+                customerId: customer.id,
+                productId: product.id,
+              },
+            },
+            update: {
+              customPrice: item.customPrice,
+              effectiveFrom: item.effectiveFrom || new Date(),
+              effectiveTo: item.effectiveTo,
+            },
+            create: {
+              customerId: customer.id,
+              productId: product.id,
+              customPrice: item.customPrice,
+              effectiveFrom: item.effectiveFrom || new Date(),
+              effectiveTo: item.effectiveTo,
+            },
+          });
+
+          results.success++;
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push({
+            row: i + 1,
+            error: error.message || 'Unknown error',
+          });
+        }
+      }
+
+      // TODO: Log to audit trail
+      console.log(`Bulk import: ${results.success} success, ${results.failed} failed by ${ctx.userId}`);
+
+      return results;
+    }),
+
+  /**
+   * Get pricing statistics for a customer
+   */
+  getCustomerPricingStats: isAdminOrSales
+    .input(
+      z.object({
+        customerId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const pricings = await prisma.customerPricing.findMany({
+        where: { customerId: input.customerId },
+        include: {
+          product: {
+            select: {
+              basePrice: true,
+            },
+          },
+        },
+      });
+
+      const activePricings = pricings.filter(isCustomPriceValid);
+
+      let totalSavings = 0;
+      pricings.forEach((pricing) => {
+        const savings = pricing.product.basePrice - pricing.customPrice;
+        if (savings > 0) {
+          totalSavings += savings;
+        }
+      });
+
+      return {
+        totalProducts: pricings.length,
+        activeProducts: activePricings.length,
+        expiredProducts: pricings.length - activePricings.length,
+        averageSavings: pricings.length > 0 ? totalSavings / pricings.length : 0,
+        totalPotentialSavings: totalSavings,
+      };
+    }),
+});
