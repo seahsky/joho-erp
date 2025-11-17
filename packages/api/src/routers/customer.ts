@@ -4,14 +4,53 @@ import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
 import { paginatePrismaQuery } from '@jimmy-beef/shared';
 
+// Validation schemas for credit application
+const residentialAddressSchema = z.object({
+  street: z.string().min(1, 'Street address is required'),
+  suburb: z.string().min(1, 'Suburb is required'),
+  state: z.string().min(1, 'State is required'),
+  postcode: z.string().regex(/^\d{4}$/, 'Postcode must be 4 digits'),
+  country: z.string().default('Australia'),
+});
+
+const directorDetailsSchema = z.object({
+  familyName: z.string().min(1, 'Family name is required'),
+  givenNames: z.string().min(1, 'Given names are required'),
+  residentialAddress: residentialAddressSchema,
+  dateOfBirth: z.date().or(z.string().transform((str) => new Date(str))),
+  driverLicenseNumber: z.string().min(1, 'Driver license number is required'),
+  licenseState: z.enum(['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']),
+  licenseExpiry: z.date().or(z.string().transform((str) => new Date(str))),
+  position: z.string().optional(),
+});
+
+const financialDetailsSchema = z.object({
+  bankName: z.string().min(1, 'Bank name is required'),
+  accountName: z.string().min(1, 'Account name is required'),
+  bsb: z.string().regex(/^\d{6}$/, 'BSB must be 6 digits'),
+  accountNumber: z.string().min(1, 'Account number is required'),
+});
+
+const tradeReferenceSchema = z.object({
+  companyName: z.string().min(1, 'Company name is required'),
+  contactPerson: z.string().min(1, 'Contact person is required'),
+  phone: z.string().min(1, 'Phone number is required'),
+  email: z.string().email('Invalid email address'),
+  verified: z.boolean().default(false),
+  verifiedAt: z.date().optional(),
+});
+
 export const customerRouter = router({
   // Public registration
   register: publicProcedure
     .input(
       z.object({
         clerkUserId: z.string(),
+        accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']),
         businessName: z.string().min(1),
+        tradingName: z.string().optional(),
         abn: z.string().length(11),
+        acn: z.string().length(9).optional(),
         contactPerson: z.object({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
@@ -35,7 +74,19 @@ export const customerRouter = router({
             postcode: z.string(),
           })
           .optional(),
+        postalAddress: z
+          .object({
+            street: z.string().min(1),
+            suburb: z.string().min(1),
+            state: z.string(),
+            postcode: z.string(),
+          })
+          .optional(),
         requestedCreditLimit: z.number().optional(),
+        forecastPurchase: z.number().optional(),
+        directors: z.array(directorDetailsSchema).min(1, 'At least one director is required'),
+        financialDetails: financialDetailsSchema.optional(),
+        tradeReferences: z.array(tradeReferenceSchema).optional(),
         agreedToTerms: z.boolean(),
       })
     )
@@ -56,8 +107,11 @@ export const customerRouter = router({
       const customer = await prisma.customer.create({
         data: {
           clerkUserId: input.clerkUserId,
+          accountType: input.accountType,
           businessName: input.businessName,
+          tradingName: input.tradingName,
           abn: input.abn,
+          acn: input.acn,
           contactPerson: input.contactPerson,
           deliveryAddress: {
             ...input.deliveryAddress,
@@ -66,11 +120,20 @@ export const customerRouter = router({
           billingAddress: input.billingAddress
             ? { ...input.billingAddress, country: 'Australia' }
             : undefined,
+          postalAddress: input.postalAddress
+            ? { ...input.postalAddress, country: 'Australia' }
+            : undefined,
           creditApplication: {
             status: 'pending',
+            requestedCreditLimit: input.requestedCreditLimit,
+            forecastPurchase: input.forecastPurchase,
             appliedAt: new Date(),
-            creditLimit: input.requestedCreditLimit || 0,
+            submittedAt: new Date(),
+            creditLimit: 0,
           },
+          directors: input.directors,
+          financialDetails: input.financialDetails,
+          tradeReferences: input.tradeReferences || [],
           status: 'active',
         },
       });
@@ -234,8 +297,14 @@ export const customerRouter = router({
   createCustomer: isAdmin
     .input(
       z.object({
+        // Business Information
+        accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']),
         businessName: z.string().min(1),
+        tradingName: z.string().optional(),
         abn: z.string().length(11),
+        acn: z.string().length(9).optional(),
+
+        // Contact Person
         contactPerson: z.object({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
@@ -243,6 +312,8 @@ export const customerRouter = router({
           phone: z.string(),
           mobile: z.string().optional(),
         }),
+
+        // Addresses
         deliveryAddress: z.object({
           street: z.string().min(1),
           suburb: z.string().min(1),
@@ -259,13 +330,35 @@ export const customerRouter = router({
             postcode: z.string(),
           })
           .optional(),
+        postalAddress: z
+          .object({
+            street: z.string().min(1),
+            suburb: z.string().min(1),
+            state: z.string(),
+            postcode: z.string(),
+          })
+          .optional(),
+
+        // Credit Application
+        requestedCreditLimit: z.number().optional(),
+        forecastPurchase: z.number().optional(),
         creditLimit: z.number().min(0).default(0),
         paymentTerms: z.string().optional(),
+        notes: z.string().optional(),
+
+        // Optional: Directors/Proprietors
+        directors: z.array(directorDetailsSchema).optional(),
+
+        // Optional: Financial Details
+        financialDetails: financialDetailsSchema.optional(),
+
+        // Optional: Trade References
+        tradeReferences: z.array(tradeReferenceSchema).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       // Check if customer with this email already exists
-      const existing = await prisma.customer.findFirst({
+      const existingByEmail = await prisma.customer.findFirst({
         where: {
           contactPerson: {
             is: { email: input.contactPerson.email },
@@ -273,10 +366,22 @@ export const customerRouter = router({
         },
       });
 
-      if (existing) {
+      if (existingByEmail) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'A customer with this email already exists',
+        });
+      }
+
+      // Check if customer with this ABN already exists
+      const existingByABN = await prisma.customer.findFirst({
+        where: { abn: input.abn },
+      });
+
+      if (existingByABN) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A customer with this ABN already exists',
         });
       }
 
@@ -287,8 +392,11 @@ export const customerRouter = router({
       const customer = await prisma.customer.create({
         data: {
           clerkUserId: dummyClerkId,
+          accountType: input.accountType,
           businessName: input.businessName,
+          tradingName: input.tradingName,
           abn: input.abn,
+          acn: input.acn,
           contactPerson: input.contactPerson,
           deliveryAddress: {
             ...input.deliveryAddress,
@@ -297,14 +405,23 @@ export const customerRouter = router({
           billingAddress: input.billingAddress
             ? { ...input.billingAddress, country: 'Australia' }
             : undefined,
+          postalAddress: input.postalAddress
+            ? { ...input.postalAddress, country: 'Australia' }
+            : undefined,
           creditApplication: {
             status: input.creditLimit > 0 ? 'approved' : 'pending',
+            requestedCreditLimit: input.requestedCreditLimit,
+            forecastPurchase: input.forecastPurchase,
             appliedAt: new Date(),
             creditLimit: input.creditLimit,
             paymentTerms: input.paymentTerms,
+            notes: input.notes,
             reviewedAt: input.creditLimit > 0 ? new Date() : undefined,
             reviewedBy: input.creditLimit > 0 ? ctx.userId : undefined,
           },
+          directors: input.directors || [],
+          financialDetails: input.financialDetails,
+          tradeReferences: input.tradeReferences || [],
           status: 'active',
         },
       });

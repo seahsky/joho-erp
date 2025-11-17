@@ -47,6 +47,24 @@ enum AreaTag {
   west
 }
 
+enum AccountType {
+  sole_trader
+  partnership
+  company
+  other
+}
+
+enum AustralianState {
+  NSW
+  VIC
+  QLD
+  SA
+  WA
+  TAS
+  NT
+  ACT
+}
+
 enum OrderStatus {
   pending
   confirmed
@@ -122,12 +140,19 @@ model Product {
 model Customer {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   clerkUserId         String              @unique
+  accountType         AccountType         @default(company)
   businessName        String
+  tradingName         String?
   abn                 String
+  acn                 String?
   contactPerson       ContactPerson
   deliveryAddress     DeliveryAddress
   billingAddress      BillingAddress?
+  postalAddress       BillingAddress?
   creditApplication   CreditApplication
+  directors           DirectorDetails[]
+  financialDetails    FinancialDetails?
+  tradeReferences     TradeReference[]
   status              CustomerStatus      @default(active)
   xeroContactId       String?
   createdAt           DateTime            @default(now())
@@ -144,6 +169,7 @@ model Customer {
   @@index([status])
   @@index([businessName])
   @@index([abn])
+  @@index([accountType])
   @@index([xeroContactId])
   @@map("customers")
 }
@@ -337,7 +363,10 @@ type BillingAddress {
 
 type CreditApplication {
   status              CreditApplicationStatus @default(pending)
+  requestedCreditLimit Float?
+  forecastPurchase    Float?
   appliedAt           DateTime            @default(now())
+  submittedAt         DateTime?
   reviewedAt          DateTime?
   reviewedBy          String?             @db.ObjectId
   creditLimit         Float               @default(0)
@@ -412,4 +441,39 @@ type XeroSettings {
   tenantId            String?
   refreshToken        String?
   tokenExpiry         DateTime?
+}
+
+type DirectorDetails {
+  familyName          String
+  givenNames          String
+  residentialAddress  ResidentialAddress
+  dateOfBirth         DateTime
+  driverLicenseNumber String
+  licenseState        AustralianState
+  licenseExpiry       DateTime
+  position            String?
+}
+
+type ResidentialAddress {
+  street              String
+  suburb              String
+  state               String
+  postcode            String
+  country             String              @default("Australia")
+}
+
+type FinancialDetails {
+  bankName            String
+  accountName         String
+  bsb                 String
+  accountNumber       String
+}
+
+type TradeReference {
+  companyName         String
+  contactPerson       String
+  phone               String
+  email               String
+  verified            Boolean             @default(false)
+  verifiedAt          DateTime?
 }

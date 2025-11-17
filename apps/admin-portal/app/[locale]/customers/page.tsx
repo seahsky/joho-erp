@@ -136,18 +136,17 @@ export default function CustomersPage() {
       render: (_, customer) => (
         <div className="flex justify-end gap-2">
           {customer.creditApplication.status === 'pending' && (
-            <>
-              <Button variant="ghost" size="sm" aria-label={t('approve')}>
-                <Check className="h-4 w-4 text-green-600" />
+            <Link href={`/customers/${customer.id}/credit-review`}>
+              <Button variant="default" size="sm">
+                {t('reviewCredit')}
               </Button>
-              <Button variant="ghost" size="sm" aria-label={t('reject')}>
-                <X className="h-4 w-4 text-red-600" />
-              </Button>
-            </>
+            </Link>
           )}
-          <Button variant="ghost" size="sm" aria-label={t('view')}>
-            <Eye className="h-4 w-4" />
-          </Button>
+          <Link href={`/customers/${customer.id}`}>
+            <Button variant="ghost" size="sm" aria-label={t('view')}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       ),
     },

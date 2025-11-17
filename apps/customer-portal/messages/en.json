@@ -150,5 +150,175 @@
     "tax": "Tax (GST)",
     "orderTotal": "Order Total",
     "proceedToCheckout": "Proceed to Checkout"
+  },
+  "onboarding": {
+    "progress": {
+      "step": "Step {current} of {total}"
+    },
+    "messages": {
+      "success": "Credit application submitted successfully!",
+      "error": "Failed to submit application. Please try again.",
+      "notAuthenticated": "You must be signed in to complete this application.",
+      "mustAgreeToTerms": "You must agree to the terms and conditions."
+    },
+    "businessInfo": {
+      "title": "Business Information",
+      "description": "Tell us about your business",
+      "fields": {
+        "accountType": "Account Type",
+        "accountTypePlaceholder": "Select account type",
+        "businessName": "Registered Business Name",
+        "tradingName": "Trading Name (if different)",
+        "abn": "ABN",
+        "acn": "ACN",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phone": "Phone",
+        "mobile": "Mobile",
+        "street": "Street Address",
+        "suburb": "Suburb",
+        "state": "State",
+        "postcode": "Postcode",
+        "areaTag": "Delivery Area",
+        "areaTagPlaceholder": "Select delivery area",
+        "deliveryInstructions": "Delivery Instructions",
+        "requestedCreditLimit": "Requested Credit Limit ($)",
+        "forecastPurchase": "Forecast Purchase (next 3 months)"
+      },
+      "sections": {
+        "contactPerson": "Contact Person",
+        "deliveryAddress": "Delivery Address",
+        "creditRequest": "Credit Request"
+      },
+      "accountTypes": {
+        "soleTrader": "Sole Trader",
+        "partnership": "Partnership",
+        "company": "Company",
+        "other": "Other"
+      },
+      "areaTags": {
+        "north": "North",
+        "south": "South",
+        "east": "East",
+        "west": "West"
+      },
+      "validation": {
+        "accountTypeRequired": "Account type is required",
+        "businessNameRequired": "Business name is required",
+        "abnInvalid": "ABN must be 11 digits",
+        "acnInvalid": "ACN must be 9 digits",
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required",
+        "emailRequired": "Email is required",
+        "phoneRequired": "Phone is required",
+        "streetRequired": "Street address is required",
+        "suburbRequired": "Suburb is required",
+        "stateRequired": "State is required",
+        "postcodeInvalid": "Postcode must be 4 digits",
+        "areaTagRequired": "Delivery area is required"
+      },
+      "buttons": {
+        "next": "Next"
+      }
+    },
+    "directors": {
+      "title": "Director/Proprietor Details",
+      "description": "Provide details for at least one director or proprietor",
+      "directorNumber": "Director #{number}",
+      "fields": {
+        "familyName": "Family Name",
+        "givenNames": "Given Names",
+        "dateOfBirth": "Date of Birth",
+        "position": "Position",
+        "street": "Street Address",
+        "suburb": "Suburb",
+        "state": "State",
+        "postcode": "Postcode",
+        "driverLicenseNumber": "Driver License Number",
+        "licenseState": "License State",
+        "licenseExpiry": "License Expiry"
+      },
+      "sections": {
+        "residentialAddress": "Residential Address"
+      },
+      "validation": {
+        "allFieldsRequired": "All director fields are required"
+      },
+      "buttons": {
+        "addDirector": "Add Another Director",
+        "remove": "Remove",
+        "back": "Back",
+        "next": "Next"
+      }
+    },
+    "financial": {
+      "title": "Financial Information",
+      "description": "Provide your business bank account details",
+      "fields": {
+        "bankName": "Bank Name",
+        "accountName": "Account Name",
+        "bsb": "BSB",
+        "accountNumber": "Account Number"
+      },
+      "placeholders": {
+        "bankName": "e.g., Commonwealth Bank",
+        "accountName": "Account holder name",
+        "accountNumber": "e.g., 12345678"
+      },
+      "validation": {
+        "allFieldsRequired": "All financial fields are required and BSB must be 6 digits"
+      },
+      "buttons": {
+        "back": "Back",
+        "next": "Next"
+      }
+    },
+    "tradeReferences": {
+      "title": "Trade References",
+      "description": "Add trade references (optional but recommended)",
+      "noReferences": "No trade references added yet",
+      "referenceNumber": "Reference #{number}",
+      "fields": {
+        "companyName": "Company Name",
+        "contactPerson": "Contact Person",
+        "phone": "Phone",
+        "email": "Email"
+      },
+      "buttons": {
+        "addFirst": "Add Trade Reference",
+        "addAnother": "Add Another Reference",
+        "remove": "Remove",
+        "back": "Back",
+        "next": "Next"
+      }
+    },
+    "review": {
+      "title": "Review & Submit",
+      "description": "Please review your application before submitting",
+      "sections": {
+        "businessInfo": "Business Information",
+        "directors": "Directors/Proprietors",
+        "financialInfo": "Financial Information",
+        "tradeReferences": "Trade References"
+      },
+      "fields": {
+        "accountType": "Account Type",
+        "businessName": "Business Name",
+        "abn": "ABN",
+        "acn": "ACN",
+        "bankName": "Bank",
+        "accountName": "Account Name",
+        "bsb": "BSB"
+      },
+      "noPosition": "No position specified",
+      "termsAgreement": "I agree to the terms and conditions and confirm that all information provided is accurate.",
+      "termsLink": "Terms & Conditions",
+      "buttons": {
+        "back": "Back",
+        "submit": "Submit Application",
+        "submitting": "Submitting..."
+      }
+    }
   }
 }

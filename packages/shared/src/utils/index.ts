@@ -75,6 +75,61 @@ export function validateAustralianPhone(phone: string): boolean {
 }
 
 /**
+ * Validate Australian Company Number (ACN) - 9 digits
+ */
+export function validateACN(acn: string): boolean {
+  const acnNumbers = acn.replace(/\s/g, '');
+
+  if (acnNumbers.length !== 9 || !/^\d+$/.test(acnNumbers)) {
+    return false;
+  }
+
+  // ACN validation algorithm (similar to ABN but with different weights)
+  const weights = [8, 7, 6, 5, 4, 3, 2, 1];
+  let sum = 0;
+
+  for (let i = 0; i < 8; i++) {
+    sum += parseInt(acnNumbers[i]) * weights[i];
+  }
+
+  const checkDigit = (10 - (sum % 10)) % 10;
+  return checkDigit === parseInt(acnNumbers[8]);
+}
+
+/**
+ * Validate Australian BSB (Bank-State-Branch) - 6 digits
+ */
+export function validateBSB(bsb: string): boolean {
+  const bsbNumbers = bsb.replace(/[\s-]/g, '');
+  return /^\d{6}$/.test(bsbNumbers);
+}
+
+/**
+ * Validate Australian driver license number (state-specific)
+ */
+export function validateDriverLicense(
+  licenseNumber: string,
+  state: 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT'
+): boolean {
+  const cleanLicense = licenseNumber.replace(/\s/g, '').toUpperCase();
+
+  // State-specific validation patterns
+  const patterns: Record<string, RegExp> = {
+    NSW: /^\d{8}$/, // 8 digits
+    VIC: /^\d{7,9}$/, // 7-9 digits
+    QLD: /^\d{8}$/, // 8 digits
+    SA: /^[A-Z]\d{6}$/, // 1 letter + 6 digits
+    WA: /^\d{7}$/, // 7 digits
+    TAS: /^\d{8}$/, // 8 digits
+    NT: /^\d{6,9}$/, // 6-9 digits
+    ACT: /^\d{8}$/, // 8 digits
+  };
+
+  const pattern = patterns[state];
+  return pattern ? pattern.test(cleanLicense) : false;
+}
+
+/**
  * Check if order cutoff time has passed
  */
 export function checkOrderCutoff(
