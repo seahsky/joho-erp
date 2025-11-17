@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } from '../trpc';
-import { Customer, connectDB } from '@jimmy-beef/database';
+import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
-import { paginateQuery } from '@jimmy-beef/shared';
+import { paginatePrismaQuery } from '@jimmy-beef/shared';
 
 export const customerRouter = router({
   // Public registration
@@ -40,10 +40,11 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx: _ctx }) => {
-      await connectDB();
-
       // Check if customer already exists
-      const existing = await Customer.findOne({ clerkUserId: input.clerkUserId });
+      const existing = await prisma.customer.findUnique({
+        where: { clerkUserId: input.clerkUserId },
+      });
+
       if (existing) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -52,40 +53,42 @@ export const customerRouter = router({
       }
 
       // Create customer
-      const customer = await Customer.create({
-        clerkUserId: input.clerkUserId,
-        businessName: input.businessName,
-        abn: input.abn,
-        contactPerson: input.contactPerson,
-        deliveryAddress: {
-          ...input.deliveryAddress,
-          country: 'Australia',
+      const customer = await prisma.customer.create({
+        data: {
+          clerkUserId: input.clerkUserId,
+          businessName: input.businessName,
+          abn: input.abn,
+          contactPerson: input.contactPerson,
+          deliveryAddress: {
+            ...input.deliveryAddress,
+            country: 'Australia',
+          },
+          billingAddress: input.billingAddress
+            ? { ...input.billingAddress, country: 'Australia' }
+            : undefined,
+          creditApplication: {
+            status: 'pending',
+            appliedAt: new Date(),
+            creditLimit: input.requestedCreditLimit || 0,
+          },
+          status: 'active',
         },
-        billingAddress: input.billingAddress
-          ? { ...input.billingAddress, country: 'Australia' }
-          : undefined,
-        creditApplication: {
-          status: 'pending',
-          appliedAt: new Date(),
-          creditLimit: input.requestedCreditLimit || 0,
-        },
-        status: 'active',
       });
 
       // TODO: Send confirmation email to customer
       // TODO: Send notification email to admin for approval
 
       return {
-        customerId: customer._id.toString(),
+        customerId: customer.id,
         status: 'pending',
       };
     }),
 
   // Get customer profile (authenticated)
   getProfile: protectedProcedure.query(async ({ ctx }) => {
-    await connectDB();
-
-    const customer = await Customer.findOne({ clerkUserId: ctx.userId });
+    const customer = await prisma.customer.findUnique({
+      where: { clerkUserId: ctx.userId },
+    });
 
     if (!customer) {
       throw new TRPCError({
@@ -117,20 +120,39 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
+      // Fetch current customer to merge updates
+      const currentCustomer = await prisma.customer.findUnique({
+        where: { clerkUserId: ctx.userId },
+      });
 
-      const customer = await Customer.findOneAndUpdate(
-        { clerkUserId: ctx.userId },
-        { $set: input },
-        { new: true }
-      );
-
-      if (!customer) {
+      if (!currentCustomer) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Customer not found',
         });
       }
+
+      // Build update data with merged composite types
+      const updateData: any = {};
+
+      if (input.contactPerson) {
+        updateData.contactPerson = {
+          ...currentCustomer.contactPerson,
+          ...input.contactPerson,
+        };
+      }
+
+      if (input.deliveryAddress) {
+        updateData.deliveryAddress = {
+          ...currentCustomer.deliveryAddress,
+          ...input.deliveryAddress,
+        };
+      }
+
+      const customer = await prisma.customer.update({
+        where: { clerkUserId: ctx.userId },
+        data: updateData,
+      });
 
       // TODO: Log to audit trail
 
@@ -150,33 +172,36 @@ export const customerRouter = router({
       })
     )
     .query(async ({ input }) => {
-      await connectDB();
-
-      const filter: any = {};
+      const where: any = {};
 
       if (input.status) {
-        filter.status = input.status;
+        where.status = input.status;
       }
 
       if (input.approvalStatus) {
-        filter['creditApplication.status'] = input.approvalStatus;
+        where.creditApplication = {
+          is: { status: input.approvalStatus },
+        };
       }
 
       if (input.areaTag) {
-        filter['deliveryAddress.areaTag'] = input.areaTag;
+        where.deliveryAddress = {
+          is: { areaTag: input.areaTag },
+        };
       }
 
       if (input.search) {
-        filter.$or = [
-          { businessName: { $regex: input.search, $options: 'i' } },
-          { 'contactPerson.email': { $regex: input.search, $options: 'i' } },
-          { abn: { $regex: input.search, $options: 'i' } },
+        where.OR = [
+          { businessName: { contains: input.search, mode: 'insensitive' } },
+          { contactPerson: { is: { email: { contains: input.search, mode: 'insensitive' } } } },
+          { abn: { contains: input.search, mode: 'insensitive' } },
         ];
       }
 
-      const result = await paginateQuery(Customer, filter, {
+      const result = await paginatePrismaQuery(prisma.customer, where, {
         page: input.page,
         limit: input.limit,
+        orderBy: { createdAt: 'desc' },
       });
 
       return {
@@ -191,9 +216,9 @@ export const customerRouter = router({
   getById: isAdminOrSales
     .input(z.object({ customerId: z.string() }))
     .query(async ({ input }) => {
-      await connectDB();
-
-      const customer = await Customer.findById(input.customerId);
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
 
       if (!customer) {
         throw new TRPCError({
@@ -239,10 +264,15 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
-
       // Check if customer with this email already exists
-      const existing = await Customer.findOne({ 'contactPerson.email': input.contactPerson.email });
+      const existing = await prisma.customer.findFirst({
+        where: {
+          contactPerson: {
+            is: { email: input.contactPerson.email },
+          },
+        },
+      });
+
       if (existing) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -250,27 +280,33 @@ export const customerRouter = router({
         });
       }
 
+      // Generate a dummy Clerk user ID for admin-created customers
+      const dummyClerkId = `admin_created_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
       // Create customer
-      const customer = await Customer.create({
-        businessName: input.businessName,
-        abn: input.abn,
-        contactPerson: input.contactPerson,
-        deliveryAddress: {
-          ...input.deliveryAddress,
-          country: 'Australia',
+      const customer = await prisma.customer.create({
+        data: {
+          clerkUserId: dummyClerkId,
+          businessName: input.businessName,
+          abn: input.abn,
+          contactPerson: input.contactPerson,
+          deliveryAddress: {
+            ...input.deliveryAddress,
+            country: 'Australia',
+          },
+          billingAddress: input.billingAddress
+            ? { ...input.billingAddress, country: 'Australia' }
+            : undefined,
+          creditApplication: {
+            status: input.creditLimit > 0 ? 'approved' : 'pending',
+            appliedAt: new Date(),
+            creditLimit: input.creditLimit,
+            paymentTerms: input.paymentTerms,
+            reviewedAt: input.creditLimit > 0 ? new Date() : undefined,
+            reviewedBy: input.creditLimit > 0 ? ctx.userId : undefined,
+          },
+          status: 'active',
         },
-        billingAddress: input.billingAddress
-          ? { ...input.billingAddress, country: 'Australia' }
-          : undefined,
-        creditApplication: {
-          status: input.creditLimit > 0 ? 'approved' : 'pending',
-          appliedAt: new Date(),
-          creditLimit: input.creditLimit,
-          paymentTerms: input.paymentTerms,
-          reviewedAt: input.creditLimit > 0 ? new Date() : undefined,
-          reviewedBy: input.creditLimit > 0 ? ctx.userId : undefined,
-        },
-        status: 'active',
       });
 
       // TODO: Send welcome email to customer
@@ -290,29 +326,32 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
+      // Fetch current customer to update creditApplication
+      const currentCustomer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
 
-      const customer = await Customer.findByIdAndUpdate(
-        input.customerId,
-        {
-          $set: {
-            'creditApplication.status': 'approved',
-            'creditApplication.creditLimit': input.creditLimit,
-            'creditApplication.paymentTerms': input.paymentTerms,
-            'creditApplication.notes': input.notes,
-            'creditApplication.reviewedAt': new Date(),
-            'creditApplication.reviewedBy': ctx.userId,
-          },
-        },
-        { new: true }
-      );
-
-      if (!customer) {
+      if (!currentCustomer) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Customer not found',
         });
       }
+
+      const customer = await prisma.customer.update({
+        where: { id: input.customerId },
+        data: {
+          creditApplication: {
+            ...currentCustomer.creditApplication,
+            status: 'approved',
+            creditLimit: input.creditLimit,
+            paymentTerms: input.paymentTerms,
+            notes: input.notes,
+            reviewedAt: new Date(),
+            reviewedBy: ctx.userId,
+          },
+        },
+      });
 
       // TODO: Send approval email to customer
       // TODO: Sync to Xero as contact
@@ -330,27 +369,30 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
+      // Fetch current customer to update creditApplication
+      const currentCustomer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
 
-      const customer = await Customer.findByIdAndUpdate(
-        input.customerId,
-        {
-          $set: {
-            'creditApplication.status': 'rejected',
-            'creditApplication.notes': input.notes,
-            'creditApplication.reviewedAt': new Date(),
-            'creditApplication.reviewedBy': ctx.userId,
-          },
-        },
-        { new: true }
-      );
-
-      if (!customer) {
+      if (!currentCustomer) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Customer not found',
         });
       }
+
+      const customer = await prisma.customer.update({
+        where: { id: input.customerId },
+        data: {
+          creditApplication: {
+            ...currentCustomer.creditApplication,
+            status: 'rejected',
+            notes: input.notes,
+            reviewedAt: new Date(),
+            reviewedBy: ctx.userId,
+          },
+        },
+      });
 
       // TODO: Send rejection email to customer
       // TODO: Log to audit trail

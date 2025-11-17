@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { AdminMobileDrawer } from './admin-mobile-drawer';
 import { AdminDesktopSidebar } from './admin-desktop-sidebar';
+import { TopNavigationBar } from './top-navigation-bar';
 import { MobileAppBar } from '@jimmy-beef/ui';
 import { useIsMobileOrTablet } from '@jimmy-beef/ui';
 import { UserButton } from '@clerk/nextjs';
@@ -51,13 +52,19 @@ export function AdminLayoutWrapper({
         </>
       ) : (
         <>
+          {/* Top Navigation Bar - Desktop Only */}
+          <TopNavigationBar />
+
+          {/* Sidebar - Desktop Only */}
           <AdminDesktopSidebar
             locale={locale}
             onCollapsedChange={setSidebarCollapsed}
             user={user}
           />
+
+          {/* Main Content Area with top nav spacing */}
           <main
-            className="transition-all duration-300"
+            className="transition-all duration-300 pt-16"
             style={{ marginLeft: sidebarCollapsed ? '80px' : '280px' }}
           >
             {children}

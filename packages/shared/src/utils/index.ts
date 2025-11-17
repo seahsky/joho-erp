@@ -211,8 +211,9 @@ export interface PaginationResult<T> {
 }
 
 /**
- * Generic pagination utility for MongoDB queries
+ * Generic pagination utility for MongoDB queries (Mongoose - DEPRECATED)
  * Handles pagination logic and returns standardized result
+ * @deprecated Use paginatePrismaQuery instead
  */
 export async function paginateQuery<T>(
   model: any, // Mongoose Model
@@ -229,6 +230,50 @@ export async function paginateQuery<T>(
   const [items, total] = await Promise.all([
     model.find(filter).skip(skip).limit(limit).sort(sortOptions),
     model.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    items,
+    total,
+    page,
+    totalPages,
+    hasMore: page < totalPages,
+  };
+}
+
+/**
+ * Generic pagination utility for Prisma queries
+ * Handles pagination logic and returns standardized result
+ */
+export async function paginatePrismaQuery<T>(
+  prismaModel: {
+    findMany: (args: any) => Promise<T[]>;
+    count: (args: any) => Promise<number>;
+  },
+  where: any,
+  options: {
+    page: number;
+    limit: number;
+    orderBy?: any;
+    include?: any;
+    select?: any;
+  }
+): Promise<PaginationResult<T>> {
+  const { page, limit, orderBy = { createdAt: 'desc' }, include, select } = options;
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    prismaModel.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      ...(include && { include }),
+      ...(select && { select }),
+    }),
+    prismaModel.count({ where }),
   ]);
 
   const totalPages = Math.ceil(total / limit);

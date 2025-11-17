@@ -34,7 +34,7 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange, user }: AdminDe
   }));
 
   return (
-    <DesktopSidebar onCollapsedChange={onCollapsedChange}>
+    <DesktopSidebar topOffset="top-16" onCollapsedChange={onCollapsedChange}>
       {(collapsed) => (
         <>
           {/* Header with Logo */}

@@ -21,7 +21,7 @@ import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loade
 import { api } from '@/trpc/client';
 
 type Customer = {
-  _id: string;
+  id: string;
   businessName: string;
   abn: string;
   contactPerson: {
@@ -126,7 +126,7 @@ export default function CustomersPage() {
       render: (value) => value || 0,
     },
     {
-      key: '_id',
+      key: 'id',
       label: 'Actions',
       className: 'text-right',
       render: (_, customer) => (

@@ -45,7 +45,9 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
     );
   }
 
-  const availableCredit = customer.creditApplication.creditLimit - (customer.creditApplication.usedCredit || 0);
+  // TODO: Calculate usedCredit from actual orders
+  const usedCredit = 0; // Placeholder until usedCredit is calculated from orders
+  const availableCredit = customer.creditApplication.creditLimit - usedCredit;
 
   return (
     <div className="space-y-4">
@@ -190,7 +192,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">Used</span>
                   <span className="font-medium">
-                    ${(customer.creditApplication.usedCredit || 0).toLocaleString()} /{' '}
+                    ${usedCredit.toLocaleString()} /{' '}
                     ${customer.creditApplication.creditLimit.toLocaleString()}
                   </span>
                 </div>
@@ -198,7 +200,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
                   <div
                     className="h-full bg-primary"
                     style={{
-                      width: `${((customer.creditApplication.usedCredit || 0) / customer.creditApplication.creditLimit) * 100}%`,
+                      width: `${(usedCredit / customer.creditApplication.creditLimit) * 100}%`,
                     }}
                   />
                 </div>

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
-import { Order, Customer, Product, connectDB } from '@jimmy-beef/database';
+import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginateQuery } from '@jimmy-beef/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery } from '@jimmy-beef/shared';
 
 export const orderRouter = router({
   // Create order
@@ -30,13 +30,14 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
-
       // Determine customer ID
       const targetCustomerId = input.customerId || ctx.userId;
 
       // Get customer
-      const customer = await Customer.findOne({ clerkUserId: targetCustomerId });
+      const customer = await prisma.customer.findUnique({
+        where: { clerkUserId: targetCustomerId },
+      });
+
       if (!customer) {
         throw new TRPCError({
           code: 'NOT_FOUND',
@@ -54,7 +55,9 @@ export const orderRouter = router({
 
       // Get products and validate stock
       const productIds = input.items.map((item) => item.productId);
-      const products = await Product.find({ _id: { $in: productIds } });
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+      });
 
       if (products.length !== input.items.length) {
         throw new TRPCError({
@@ -65,7 +68,7 @@ export const orderRouter = router({
 
       // Build order items with prices
       const orderItems = input.items.map((item) => {
-        const product = products.find((p) => p._id.toString() === item.productId);
+        const product = products.find((p) => p.id === item.productId);
         if (!product) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -82,7 +85,7 @@ export const orderRouter = router({
         }
 
         return {
-          productId: product._id,
+          productId: product.id,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,
@@ -102,27 +105,29 @@ export const orderRouter = router({
       const deliveryDate = input.requestedDeliveryDate || new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       // Create order
-      const order = await Order.create({
-        orderNumber,
-        customerId: customer._id,
-        customerName: customer.businessName,
-        items: orderItems,
-        subtotal: totals.subtotal,
-        taxAmount: totals.taxAmount,
-        totalAmount: totals.totalAmount,
-        deliveryAddress: input.deliveryAddress || customer.deliveryAddress,
-        requestedDeliveryDate: deliveryDate,
-        status: 'pending',
-        statusHistory: [
-          {
-            status: 'pending',
-            changedAt: new Date(),
-            changedBy: ctx.userId,
-            notes: 'Order created',
-          },
-        ],
-        orderedAt: new Date(),
-        createdBy: ctx.userId,
+      const order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId: customer.id,
+          customerName: customer.businessName,
+          items: orderItems,
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: input.deliveryAddress || customer.deliveryAddress,
+          requestedDeliveryDate: deliveryDate,
+          status: 'pending',
+          statusHistory: [
+            {
+              status: 'pending',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: 'Order created',
+            },
+          ],
+          orderedAt: new Date(),
+          createdBy: ctx.userId,
+        },
       });
 
       // TODO: Reduce inventory
@@ -144,10 +149,11 @@ export const orderRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      await connectDB();
-
       // Get customer
-      const customer = await Customer.findOne({ clerkUserId: ctx.userId });
+      const customer = await prisma.customer.findUnique({
+        where: { clerkUserId: ctx.userId },
+      });
+
       if (!customer) {
         throw new TRPCError({
           code: 'NOT_FOUND',
@@ -155,22 +161,22 @@ export const orderRouter = router({
         });
       }
 
-      const filter: any = { customerId: customer._id };
+      const where: any = { customerId: customer.id };
 
       if (input.status) {
-        filter.status = input.status;
+        where.status = input.status;
       }
 
       if (input.dateFrom || input.dateTo) {
-        filter.orderedAt = {};
-        if (input.dateFrom) filter.orderedAt.$gte = input.dateFrom;
-        if (input.dateTo) filter.orderedAt.$lte = input.dateTo;
+        where.orderedAt = {};
+        if (input.dateFrom) where.orderedAt.gte = input.dateFrom;
+        if (input.dateTo) where.orderedAt.lte = input.dateTo;
       }
 
-      const result = await paginateQuery(Order, filter, {
+      const result = await paginatePrismaQuery(prisma.order, where, {
         page: input.page,
         limit: input.limit,
-        sortOptions: { orderedAt: -1 },
+        orderBy: { orderedAt: 'desc' },
       });
 
       return {
@@ -195,24 +201,27 @@ export const orderRouter = router({
       })
     )
     .query(async ({ input }) => {
-      await connectDB();
+      const where: any = {};
 
-      const filter: any = {};
+      if (input.status) where.status = input.status;
+      if (input.customerId) where.customerId = input.customerId;
 
-      if (input.status) filter.status = input.status;
-      if (input.customerId) filter.customerId = input.customerId;
-      if (input.areaTag) filter['deliveryAddress.areaTag'] = input.areaTag;
-
-      if (input.dateFrom || input.dateTo) {
-        filter.orderedAt = {};
-        if (input.dateFrom) filter.orderedAt.$gte = input.dateFrom;
-        if (input.dateTo) filter.orderedAt.$lte = input.dateTo;
+      if (input.areaTag) {
+        where.deliveryAddress = {
+          is: { areaTag: input.areaTag },
+        };
       }
 
-      const result = await paginateQuery(Order, filter, {
+      if (input.dateFrom || input.dateTo) {
+        where.orderedAt = {};
+        if (input.dateFrom) where.orderedAt.gte = input.dateFrom;
+        if (input.dateTo) where.orderedAt.lte = input.dateTo;
+      }
+
+      const result = await paginatePrismaQuery(prisma.order, where, {
         page: input.page,
         limit: input.limit,
-        sortOptions: { orderedAt: -1 },
+        orderBy: { orderedAt: 'desc' },
       });
 
       return {
@@ -224,22 +233,24 @@ export const orderRouter = router({
     }),
 
   // Get order by ID
-  getById: protectedProcedure.input(z.object({ orderId: z.string() })).query(async ({ input, ctx: _ctx }) => {
-    await connectDB();
-
-    const order = await Order.findById(input.orderId);
-
-    if (!order) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Order not found',
+  getById: protectedProcedure
+    .input(z.object({ orderId: z.string() }))
+    .query(async ({ input, ctx: _ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
       });
-    }
 
-    // TODO: Check if user has permission to view this order
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
 
-    return order;
-  }),
+      // TODO: Check if user has permission to view this order
+
+      return order;
+    }),
 
   // Update order status
   updateStatus: isAdminOrSales
@@ -259,30 +270,33 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await connectDB();
+      // Fetch current order to append to statusHistory
+      const currentOrder = await prisma.order.findUnique({
+        where: { id: input.orderId },
+      });
 
-      const order = await Order.findByIdAndUpdate(
-        input.orderId,
-        {
-          $set: { status: input.newStatus },
-          $push: {
-            statusHistory: {
-              status: input.newStatus,
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              notes: input.notes,
-            },
-          },
-        },
-        { new: true }
-      );
-
-      if (!order) {
+      if (!currentOrder) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Order not found',
         });
       }
+
+      const order = await prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          status: input.newStatus,
+          statusHistory: [
+            ...currentOrder.statusHistory,
+            {
+              status: input.newStatus,
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: input.notes,
+            },
+          ],
+        },
+      });
 
       // TODO: Send notification emails based on status
       // TODO: Log to audit trail

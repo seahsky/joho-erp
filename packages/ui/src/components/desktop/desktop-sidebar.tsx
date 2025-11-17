@@ -11,6 +11,7 @@ export interface DesktopSidebarProps {
   className?: string;
   defaultCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  topOffset?: string;
 }
 
 export function DesktopSidebar({
@@ -18,6 +19,7 @@ export function DesktopSidebar({
   className,
   defaultCollapsed = false,
   onCollapsedChange,
+  topOffset = 'top-0',
 }: DesktopSidebarProps) {
   const [collapsed, setCollapsed] = useLocalStorage('sidebar-collapsed', defaultCollapsed);
 
@@ -33,8 +35,9 @@ export function DesktopSidebar({
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 bottom-0 z-30',
-        'bg-background border-r border-border',
+        'fixed left-0 bottom-0 z-30',
+        topOffset,
+        'bg-[hsl(var(--sidebar-bg))] border-r border-border',
         'transition-all duration-300 ease-in-out',
         'flex flex-col',
         collapsed ? 'w-20' : 'w-[280px]',
@@ -125,10 +128,10 @@ export function SidebarItem({
     'flex items-center w-full',
     'px-4 py-3 rounded-lg',
     'text-sm font-medium',
-    'transition-colors duration-200',
+    'transition-all duration-200',
     active
-      ? 'bg-primary text-primary-foreground'
-      : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+      ? 'bg-primary text-primary-foreground shadow-sm'
+      : 'text-foreground hover:bg-[hsl(var(--sidebar-hover))] hover:text-foreground',
     collapsed && 'justify-center px-2',
     className
   );

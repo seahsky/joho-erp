@@ -73,17 +73,8 @@ export function OrderList() {
     );
   }
 
-  // Ensure proper typing - if data exists, use orders, otherwise empty array
-  const orders = (data?.orders ?? []) as Array<{
-    _id: { toString(): string };
-    orderNumber: string;
-    orderedAt: Date | string;
-    status: string;
-    items: Array<{ length: number }>;
-    totalAmount: number;
-    estimatedDeliveryTime?: Date | string;
-    deliveredAt?: Date | string;
-  }>;
+  // Use orders from data - tRPC infers the correct types from Prisma
+  const orders = data?.orders ?? [];
 
   return (
     <div className="space-y-4">
@@ -116,7 +107,7 @@ export function OrderList() {
       {/* Order Cards */}
       <div className="space-y-3">
         {orders.map((order) => (
-          <Card key={order._id.toString()} className="overflow-hidden">
+          <Card key={order.id} className="overflow-hidden">
             <CardContent className="p-4 md:p-6 space-y-3">
               {/* Order Header */}
               <div className="flex items-start justify-between">
@@ -134,14 +125,14 @@ export function OrderList() {
                   {order.items.length === 1 ? 'item' : 'items'} •{' '}
                   <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
                 </p>
-                {order.status === 'out_for_delivery' && order.estimatedDeliveryTime && (
+                {order.status === 'out_for_delivery' && order.requestedDeliveryDate && (
                   <p className="text-sm text-muted-foreground">
-                    ETA: {formatDate(order.estimatedDeliveryTime)}
+                    Requested: {formatDate(order.requestedDeliveryDate)}
                   </p>
                 )}
-                {order.status === 'delivered' && order.deliveredAt && (
+                {order.status === 'delivered' && order.delivery?.deliveredAt && (
                   <p className="text-sm text-muted-foreground">
-                    Delivered: {formatDate(order.deliveredAt)}
+                    Delivered: {formatDate(order.delivery.deliveredAt)}
                   </p>
                 )}
               </div>

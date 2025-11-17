@@ -1,9 +1,18 @@
 import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
 import { TRPCProvider } from './trpc-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 import type { Metadata } from 'next';
+import localFont from 'next/font/local';
 
 export const dynamic = 'force-dynamic';
+
+const outfit = localFont({
+  src: '../public/fonts/Outfit-Variable.woff2',
+  variable: '--font-outfit',
+  weight: '100 900',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   icons: {
@@ -20,9 +29,16 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className="font-sans antialiased">
-          <TRPCProvider>{children}</TRPCProvider>
+      <html lang="en" className={outfit.variable} suppressHydrationWarning>
+        <body className="font-outfit antialiased">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TRPCProvider>{children}</TRPCProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

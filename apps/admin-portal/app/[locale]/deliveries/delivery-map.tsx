@@ -10,8 +10,8 @@ interface Delivery {
   orderId: string;
   customer: string;
   address: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number | null;
+  longitude: number | null;
   status: string;
   driver: string;
   estimatedTime: string;

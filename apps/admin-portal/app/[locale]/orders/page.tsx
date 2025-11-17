@@ -20,7 +20,7 @@ import { Search, ShoppingBag, Loader2, Eye, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 type Order = {
-  _id: string;
+  id: string;
   orderNumber: string;
   customerName: string;
   orderedAt: Date;
@@ -122,7 +122,7 @@ export default function OrdersPage() {
       render: (value) => <StatusBadge status={value as StatusType} />,
     },
     {
-      key: '_id',
+      key: 'id',
       label: 'Actions',
       className: 'text-right',
       render: () => (

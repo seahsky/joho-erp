@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdmin } from '../trpc';
-import { Product, connectDB } from '@jimmy-beef/database';
+import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
 
 export const productRouter = router({
@@ -14,29 +14,30 @@ export const productRouter = router({
       })
     )
     .query(async ({ input, ctx: _ctx }) => {
-      await connectDB();
-
-      const filter: any = {};
+      const where: any = {};
 
       if (input.category) {
-        filter.category = input.category;
+        where.category = input.category;
       }
 
       if (input.status) {
-        filter.status = input.status;
+        where.status = input.status;
       } else {
         // By default, only show active products to customers
-        filter.status = 'active';
+        where.status = 'active';
       }
 
       if (input.search) {
-        filter.$or = [
-          { name: { $regex: input.search, $options: 'i' } },
-          { sku: { $regex: input.search, $options: 'i' } },
+        where.OR = [
+          { name: { contains: input.search, mode: 'insensitive' } },
+          { sku: { contains: input.search, mode: 'insensitive' } },
         ];
       }
 
-      const products = await Product.find(filter).sort({ name: 1 });
+      const products = await prisma.product.findMany({
+        where,
+        orderBy: { name: 'asc' },
+      });
 
       // TODO: Fetch customer-specific pricing if user is a customer
 
@@ -47,9 +48,9 @@ export const productRouter = router({
   getById: protectedProcedure
     .input(z.object({ productId: z.string() }))
     .query(async ({ input }) => {
-      await connectDB();
-
-      const product = await Product.findById(input.productId);
+      const product = await prisma.product.findUnique({
+        where: { id: input.productId },
+      });
 
       if (!product) {
         throw new TRPCError({
@@ -78,10 +79,11 @@ export const productRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      await connectDB();
-
       // Check if SKU already exists
-      const existing = await Product.findOne({ sku: input.sku });
+      const existing = await prisma.product.findUnique({
+        where: { sku: input.sku },
+      });
+
       if (existing) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -89,7 +91,9 @@ export const productRouter = router({
         });
       }
 
-      const product = await Product.create(input);
+      const product = await prisma.product.create({
+        data: input,
+      });
 
       // TODO: Log to audit trail
 
@@ -113,21 +117,22 @@ export const productRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      await connectDB();
-
       const { productId, ...updates } = input;
 
-      const product = await Product.findByIdAndUpdate(productId, { $set: updates }, { new: true });
+      try {
+        const product = await prisma.product.update({
+          where: { id: productId },
+          data: updates,
+        });
 
-      if (!product) {
+        // TODO: Log to audit trail
+
+        return product;
+      } catch (error) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Product not found',
         });
       }
-
-      // TODO: Log to audit trail
-
-      return product;
     }),
 });

@@ -19,7 +19,7 @@ import { Search, Package, Plus, Edit, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 type Product = {
-  _id: string;
+  id: string;
   sku: string;
   name: string;
   category?: string;
@@ -136,7 +136,7 @@ export default function ProductsPage() {
       ),
     },
     {
-      key: '_id',
+      key: 'id',
       label: 'Actions',
       className: 'text-right',
       render: () => (

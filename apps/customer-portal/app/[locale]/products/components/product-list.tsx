@@ -80,7 +80,7 @@ export function ProductList() {
       {/* Product Grid - Single column on mobile, 2 on tablet, 3 on desktop */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products?.map((product) => (
-          <Card key={product._id.toString()} className="overflow-hidden">
+          <Card key={product.id} className="overflow-hidden">
             <CardContent className="p-0">
               {/* Product Image Placeholder */}
               <div className="bg-muted flex items-center justify-center h-40 md:h-48">

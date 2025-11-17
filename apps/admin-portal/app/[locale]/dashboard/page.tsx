@@ -160,7 +160,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {recentOrders && recentOrders.length > 0 ? (
                 recentOrders.map((order) => (
-                  <div key={order._id.toString()} className="flex items-center justify-between border-b pb-4 last:border-0">
+                  <div key={order.id} className="flex items-center justify-between border-b pb-4 last:border-0">
                     <div>
                       <p className="font-medium">{order.orderNumber}</p>
                       <p className="text-sm text-muted-foreground">{order.customerName}</p>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {lowStockItems && lowStockItems.length > 0 ? (
                 lowStockItems.map((item) => (
-                  <div key={item._id.toString()} className="flex items-center justify-between border-b pb-3 last:border-0">
+                  <div key={item.id} className="flex items-center justify-between border-b pb-3 last:border-0">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.sku}</p>
