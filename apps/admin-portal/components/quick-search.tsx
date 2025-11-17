@@ -1,0 +1,165 @@
+'use client';
+
+import { Search, X, Clock, TrendingUp, FileText, Users, Package, ShoppingBag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface QuickSearchProps {
+  onClose: () => void;
+}
+
+const recentSearches = [
+  { id: 1, text: 'Customer #12345', icon: Users },
+  { id: 2, text: 'Order #98765', icon: ShoppingBag },
+  { id: 3, text: 'Ribeye Steak Inventory', icon: Package },
+];
+
+const quickActions = [
+  { id: 1, label: 'New Customer', icon: Users, path: '/customers/new' },
+  { id: 2, label: 'New Order', icon: ShoppingBag, path: '/orders/new' },
+  { id: 3, label: 'View Analytics', icon: TrendingUp, path: '/analytics' },
+  { id: 4, label: 'Inventory Report', icon: FileText, path: '/reports/inventory' },
+];
+
+export function QuickSearch({ onClose }: QuickSearchProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Focus input on mount
+    inputRef.current?.focus();
+
+    // Handle keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const handleAction = (path: string) => {
+    router.push(path);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] animate-in fade-in-0 duration-200">
+      <div className="flex items-start justify-center pt-20 px-4">
+        <div className="w-full max-w-2xl bg-popover border border-border rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 fade-in-0 duration-200">
+          {/* Search Input */}
+          <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
+            <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search customers, orders, products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
+            />
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Search Results / Quick Actions */}
+          <div className="max-h-[500px] overflow-y-auto">
+            {!searchQuery && (
+              <>
+                {/* Recent Searches */}
+                <div className="px-4 py-3 border-b border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Recent
+                    </h3>
+                  </div>
+                  <div className="space-y-1">
+                    {recentSearches.map((search) => {
+                      const Icon = search.icon;
+                      return (
+                        <button
+                          key={search.id}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-left"
+                        >
+                          <Icon className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">{search.text}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="px-4 py-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Quick Actions
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {quickActions.map((action) => {
+                      const Icon = action.icon;
+                      return (
+                        <button
+                          key={action.id}
+                          onClick={() => handleAction(action.path)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border hover:bg-muted hover:border-primary/50 transition-all text-left group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <Icon className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-sm font-medium text-foreground">{action.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Search Results (when typing) */}
+            {searchQuery && (
+              <div className="px-4 py-3">
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No results found for &ldquo;{searchQuery}&rdquo;
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-2 border-t border-border bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↑</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↓</kbd>
+                <span>to navigate</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↵</kbd>
+                <span>to select</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">esc</kbd>
+              <span>to close</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

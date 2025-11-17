@@ -1,0 +1,415 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum ProductUnit {
+  kg
+  piece
+  box
+  carton
+}
+
+enum ProductStatus {
+  active
+  discontinued
+  out_of_stock
+}
+
+enum CustomerStatus {
+  active
+  suspended
+  closed
+}
+
+enum CreditApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum AreaTag {
+  north
+  south
+  east
+  west
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  packing
+  ready_for_delivery
+  out_for_delivery
+  delivered
+  cancelled
+}
+
+enum ProofOfDeliveryType {
+  signature
+  photo
+}
+
+enum InventoryTransactionType {
+  purchase
+  sale
+  adjustment
+  return
+  transfer
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  approve
+  reject
+}
+
+enum SystemLogLevel {
+  info
+  warn
+  error
+  debug
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+// Product Model
+model Product {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  sku                 String              @unique
+  name                String
+  description         String?
+  category            String?
+  unit                ProductUnit
+  packageSize         Float?
+  basePrice           Float
+  currentStock        Float               @default(0)
+  lowStockThreshold   Float?
+  status              ProductStatus       @default(active)
+  xeroItemId          String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  inventoryTransactions InventoryTransaction[]
+  customerPricing     CustomerPricing[]
+
+  // Indexes
+  @@index([status])
+  @@index([category])
+  @@index([name])
+  @@index([currentStock, lowStockThreshold])
+  @@map("products")
+}
+
+// Customer Model
+model Customer {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  clerkUserId         String              @unique
+  businessName        String
+  abn                 String
+  contactPerson       ContactPerson
+  deliveryAddress     DeliveryAddress
+  billingAddress      BillingAddress?
+  creditApplication   CreditApplication
+  status              CustomerStatus      @default(active)
+  xeroContactId       String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  orders              Order[]
+  customerPricing     CustomerPricing[]
+
+  // Indexes
+  @@index([contactPerson.email])
+  @@index([deliveryAddress.areaTag])
+  @@index([creditApplication.status])
+  @@index([status])
+  @@index([businessName])
+  @@index([abn])
+  @@index([xeroContactId])
+  @@map("customers")
+}
+
+// Order Model
+model Order {
+  id                      String              @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber             String              @unique
+  customerId              String              @db.ObjectId
+  customerName            String
+  items                   OrderItem[]
+  subtotal                Float
+  taxAmount               Float
+  totalAmount             Float
+  deliveryAddress         DeliveryAddress
+  requestedDeliveryDate   DateTime
+  status                  OrderStatus         @default(pending)
+  statusHistory           StatusHistory[]
+  packing                 Packing?
+  delivery                Delivery?
+  internalNotes           String?
+  xero                    XeroInfo?
+  orderedAt               DateTime            @default(now())
+  createdBy               String
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  // Relations
+  customer                Customer            @relation(fields: [customerId], references: [id])
+
+  // Indexes
+  @@index([customerId, orderedAt(sort: Desc)])
+  @@index([status, requestedDeliveryDate])
+  @@index([deliveryAddress.areaTag, requestedDeliveryDate])
+  @@index([requestedDeliveryDate, status])
+  @@index([delivery.driverId, status])
+  @@index([orderedAt(sort: Desc)])
+  @@index([xero.invoiceId])
+  @@index([createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+// Customer Pricing Model
+model CustomerPricing {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  customerId          String              @db.ObjectId
+  productId           String              @db.ObjectId
+  customPrice         Float
+  effectiveFrom       DateTime            @default(now())
+  effectiveTo         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  customer            Customer            @relation(fields: [customerId], references: [id])
+  product             Product             @relation(fields: [productId], references: [id])
+
+  // Indexes
+  @@unique([customerId, productId])
+  @@index([productId])
+  @@index([effectiveTo])
+  @@map("customerpricing")
+}
+
+// Inventory Transaction Model
+model InventoryTransaction {
+  id                  String                      @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String                      @db.ObjectId
+  type                InventoryTransactionType
+  quantity            Float
+  previousStock       Float
+  newStock            Float
+  referenceType       String?
+  referenceId         String?                     @db.ObjectId
+  notes               String?
+  createdBy           String
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  // Relations
+  product             Product                     @relation(fields: [productId], references: [id])
+
+  // Indexes
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([referenceId, referenceType])
+  @@index([type])
+  @@map("inventorytransactions")
+}
+
+// Audit Log Model
+model AuditLog {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String
+  action              AuditAction
+  entity              String
+  entityId            String?             @db.ObjectId
+  changes             Json?
+  metadata            Json?
+  ipAddress           String?
+  userAgent           String?
+  timestamp           DateTime            @default(now())
+
+  // Indexes
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([entity, entityId, timestamp(sort: Desc)])
+  @@index([action, timestamp(sort: Desc)])
+  @@index([timestamp(sort: Desc)])
+  @@map("auditlogs")
+}
+
+// System Log Model
+model SystemLog {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  level               SystemLogLevel
+  message             String
+  service             String
+  context             Json?
+  stack               String?
+  timestamp           DateTime            @default(now())
+
+  // Indexes
+  @@index([level, timestamp(sort: Desc)])
+  @@index([service, timestamp(sort: Desc)])
+  @@index([timestamp(sort: Desc)])
+  @@map("systemlogs")
+}
+
+// Company Model (Singleton)
+model Company {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  businessName        String
+  abn                 String
+  address             CompanyAddress
+  contactPerson       ContactPerson
+  bankDetails         BankDetails?
+  xeroSettings        XeroSettings?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@map("company")
+}
+
+// Suburb Area Mapping Model
+model SuburbAreaMapping {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  suburb              String
+  state               String
+  postcode            String
+  areaTag             AreaTag
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Indexes
+  @@unique([suburb, state])
+  @@index([postcode])
+  @@index([areaTag])
+  @@map("suburbareamappings")
+}
+
+// ============================================================================
+// COMPOSITE TYPES (Embedded Documents)
+// ============================================================================
+
+type ContactPerson {
+  firstName           String
+  lastName            String
+  email               String
+  phone               String
+  mobile              String?
+}
+
+type DeliveryAddress {
+  street              String
+  suburb              String
+  state               String
+  postcode            String
+  country             String              @default("Australia")
+  areaTag             AreaTag
+  latitude            Float?
+  longitude           Float?
+  deliveryInstructions String?
+}
+
+type BillingAddress {
+  street              String
+  suburb              String
+  state               String
+  postcode            String
+  country             String              @default("Australia")
+}
+
+type CreditApplication {
+  status              CreditApplicationStatus @default(pending)
+  appliedAt           DateTime            @default(now())
+  reviewedAt          DateTime?
+  reviewedBy          String?             @db.ObjectId
+  creditLimit         Float               @default(0)
+  paymentTerms        String?
+  notes               String?
+}
+
+type OrderItem {
+  productId           String              @db.ObjectId
+  sku                 String
+  productName         String
+  unit                String
+  quantity            Float
+  unitPrice           Float
+  subtotal            Float
+}
+
+type StatusHistory {
+  status              String
+  changedAt           DateTime            @default(now())
+  changedBy           String
+  notes               String?
+}
+
+type Packing {
+  packedAt            DateTime?
+  packedBy            String?
+  notes               String?
+}
+
+type Delivery {
+  driverId            String?
+  driverName          String?
+  assignedAt          DateTime?
+  deliveredAt         DateTime?
+  proofOfDelivery     ProofOfDelivery?
+  notes               String?
+}
+
+type ProofOfDelivery {
+  type                ProofOfDeliveryType
+  fileUrl             String
+  uploadedAt          DateTime
+}
+
+type XeroInfo {
+  invoiceId           String?
+  invoiceNumber       String?
+  invoiceStatus       String?
+  syncedAt            DateTime?
+  syncError           String?
+}
+
+type CompanyAddress {
+  street              String
+  suburb              String
+  state               String
+  postcode            String
+  country             String              @default("Australia")
+}
+
+type BankDetails {
+  bankName            String
+  accountName         String
+  bsb                 String
+  accountNumber       String
+}
+
+type XeroSettings {
+  clientId            String
+  clientSecret        String
+  tenantId            String?
+  refreshToken        String?
+  tokenExpiry         DateTime?
+}
