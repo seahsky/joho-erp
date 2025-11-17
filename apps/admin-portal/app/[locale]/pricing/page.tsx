@@ -134,7 +134,8 @@ export default function PricingPage() {
     );
   }
 
-  const pricings = (pricingData?.pricings ?? []) as CustomerPricing[];
+  const pricings = ((pricingData?.pricings ?? []) as CustomerPricing[])
+    .filter((p) => p && p.customer && p.product); // Filter out invalid/orphaned records
   const totalPricings = pricingData?.total ?? 0;
   const activePricings = pricings.filter((p) => p.isValid).length;
   const totalSavings = pricings.reduce((sum, p) => {
@@ -155,7 +156,7 @@ export default function PricingPage() {
       key: 'customer',
       label: t('pricing.table.customer'),
       render: (pricing) => (
-        <div className="font-medium">{pricing.customer?.businessName ?? t('pricing.messages.unknownCustomer')}</div>
+        <div className="font-medium">{pricing?.customer?.businessName ?? t('pricing.messages.unknownCustomer')}</div>
       ),
     },
     {
@@ -163,8 +164,8 @@ export default function PricingPage() {
       label: t('pricing.table.product'),
       render: (pricing) => (
         <div>
-          <div className="font-medium">{pricing.product?.name ?? t('pricing.messages.unknownProduct')}</div>
-          <div className="text-sm text-muted-foreground">{pricing.product?.sku ?? 'N/A'}</div>
+          <div className="font-medium">{pricing?.product?.name ?? t('pricing.messages.unknownProduct')}</div>
+          <div className="text-sm text-muted-foreground">{pricing?.product?.sku ?? 'N/A'}</div>
         </div>
       ),
     },
@@ -173,7 +174,7 @@ export default function PricingPage() {
       label: t('pricing.table.basePrice'),
       render: (pricing) => (
         <div className="text-muted-foreground">
-          {pricing.product?.basePrice ? formatCurrency(pricing.product.basePrice) : 'N/A'}
+          {pricing?.product?.basePrice ? formatCurrency(pricing.product.basePrice) : 'N/A'}
         </div>
       ),
     },
@@ -182,7 +183,7 @@ export default function PricingPage() {
       label: t('pricing.table.customPrice'),
       render: (pricing) => (
         <div className="font-semibold text-green-600">
-          {formatCurrency(pricing.customPrice)}
+          {pricing?.customPrice ? formatCurrency(pricing.customPrice) : 'N/A'}
         </div>
       ),
     },
@@ -190,8 +191,8 @@ export default function PricingPage() {
       key: 'discount',
       label: t('pricing.table.savings'),
       render: (pricing) => {
-        const discount = pricing.effectivePriceInfo.discount ?? 0;
-        const discountPct = pricing.effectivePriceInfo.discountPercentage ?? 0;
+        const discount = pricing?.effectivePriceInfo?.discount ?? 0;
+        const discountPct = pricing?.effectivePriceInfo?.discountPercentage ?? 0;
         return discount > 0 ? (
           <div className="flex items-center gap-1">
             <TrendingDown className="h-4 w-4 text-green-600" />
@@ -211,10 +212,10 @@ export default function PricingPage() {
       key: 'status',
       label: t('pricing.table.status'),
       render: (pricing) => {
-        if (!pricing.isValid) {
+        if (!pricing?.isValid) {
           return <Badge variant="secondary">{t('pricing.status.expired')}</Badge>;
         }
-        if (pricing.effectiveTo) {
+        if (pricing?.effectiveTo) {
           const daysUntilExpiry = Math.floor(
             (new Date(pricing.effectiveTo).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           );
@@ -231,8 +232,8 @@ export default function PricingPage() {
       label: t('pricing.table.effectiveDates'),
       render: (pricing) => (
         <div className="text-sm">
-          <div>{t('pricing.table.from')} {formatDate(pricing.effectiveFrom)}</div>
-          {pricing.effectiveTo && (
+          <div>{t('pricing.table.from')} {pricing?.effectiveFrom ? formatDate(pricing.effectiveFrom) : 'N/A'}</div>
+          {pricing?.effectiveTo && (
             <div className="text-muted-foreground">
               {t('pricing.table.to')} {formatDate(pricing.effectiveTo)}
             </div>
@@ -248,14 +249,16 @@ export default function PricingPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleEdit(pricing)}
+            onClick={() => pricing && handleEdit(pricing)}
+            disabled={!pricing}
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleDelete(pricing.id)}
+            onClick={() => pricing?.id && handleDelete(pricing.id)}
+            disabled={!pricing?.id}
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>

@@ -166,10 +166,13 @@ export const pricingRouter = router({
         prisma.customerPricing.count({ where }),
       ]);
 
+      // Filter out records with missing customer or product (orphaned records)
+      const validPricings = pricings.filter((p) => p.customer && p.product);
+
       const totalPages = Math.ceil(total / input.limit);
 
       return {
-        pricings: pricings.map((pricing) => ({
+        pricings: validPricings.map((pricing) => ({
           ...pricing,
           isValid: isCustomPriceValid(pricing),
           effectivePriceInfo: pricing.product
@@ -180,7 +183,7 @@ export const pricingRouter = router({
                 hasCustomPricing: false,
               },
         })),
-        total,
+        total: validPricings.length,
         page: input.page,
         totalPages,
         hasMore: input.page < totalPages,
