@@ -542,7 +542,7 @@ function createOrdersForCustomer(
       status: statusInfo.status,
       statusHistory: [
         {
-          status: 'pending' as CreditApplicationStatus,
+          status: 'pending',
           changedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
           changedBy: customer.clerkUserId,
           notes: 'Order created',
@@ -709,9 +709,9 @@ async function seed() {
     if (brunswickButcher) {
       const brisket = createdProducts.find((p) => p.sku === 'BEEF-BRISKET-10KG');
       const chuck = createdProducts.find((p) => p.sku === 'BEEF-CHUCK-15KG');
-      const mince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-20KG');
+      const mince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-10KG');
       const porkShoulder = createdProducts.find((p) => p.sku === 'PORK-SHOULDER-10KG');
-      const porkBelly = createdProducts.find((p) => p.sku === 'PORK-BELLY-8KG');
+      const porkBelly = createdProducts.find((p) => p.sku === 'PORK-BELLY-10KG');
 
       if (brisket) customerPricingData.push({ customerId: brunswickButcher.id, productId: brisket.id, customPrice: 11.00 }); // $1.50 off
       if (chuck) customerPricingData.push({ customerId: brunswickButcher.id, productId: chuck.id, customPrice: 8.50 }); // $1.50 off
@@ -724,11 +724,11 @@ async function seed() {
     const footscrayGrill = createdCustomers.find((c) => c.businessName === 'Footscray Grill House');
     if (footscrayGrill) {
       const sirloin = createdProducts.find((p) => p.sku === 'BEEF-SIRLOIN-8KG');
-      const ribs = createdProducts.find((p) => p.sku === 'BEEF-RIBS-12KG');
+      // const ribs = createdProducts.find((p) => p.sku === 'BEEF-RIBS-12KG'); // Product doesn't exist - commented out
       const sausages = createdProducts.find((p) => p.sku === 'SAUSAGE-BEEF-5KG');
 
       if (sirloin) customerPricingData.push({ customerId: footscrayGrill.id, productId: sirloin.id, customPrice: 18.00 }); // $1.50 off
-      if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 12.50 }); // $1.50 off
+      // if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 12.50 }); // $1.50 off
       if (sausages) customerPricingData.push({ customerId: footscrayGrill.id, productId: sausages.id, customPrice: 9.00 }); // $1 off
     }
 
@@ -737,7 +737,7 @@ async function seed() {
     if (brightonBistro) {
       const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
       const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
-      const porkLoin = createdProducts.find((p) => p.sku === 'PORK-LOIN-6KG');
+      const porkLoin = createdProducts.find((p) => p.sku === 'PORK-LOIN-8KG');
 
       if (scotchFillet) customerPricingData.push({ customerId: brightonBistro.id, productId: scotchFillet.id, customPrice: 22.00 }); // $2 off
       if (tenderloin) customerPricingData.push({ customerId: brightonBistro.id, productId: tenderloin.id, customPrice: 30.00 }); // $2 off
@@ -749,7 +749,7 @@ async function seed() {
     if (camberwellMeats) {
       const beefRump = createdProducts.find((p) => p.sku === 'BEEF-RUMP-5KG');
       const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
-      const porkChops = createdProducts.find((p) => p.sku === 'PORK-CHOPS-10KG');
+      const porkChops = createdProducts.find((p) => p.sku === 'PORK-CHOPS-8KG');
 
       // Some with expiration dates (expires in 30 days)
       const futureExpiry = new Date();
