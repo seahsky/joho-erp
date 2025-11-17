@@ -15,8 +15,10 @@ import {
   type Column,
   StatusBadge,
   type StatusType,
+  CountUp,
+  EmptyState,
 } from '@jimmy-beef/ui';
-import { Search, ShoppingBag, Loader2, Eye, Package } from 'lucide-react';
+import { Search, ShoppingBag, Loader2, Eye, Package, PackageX } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 type Order = {
@@ -186,28 +188,40 @@ export default function OrdersPage() {
 
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Total Orders</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl">{totalOrders}</CardTitle>
+            <div className="stat-value tabular-nums">
+              <CountUp end={totalOrders} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-100">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Pending</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-yellow-600">{pendingOrders}</CardTitle>
+            <div className="stat-value tabular-nums text-warning">
+              <CountUp end={pendingOrders} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-200">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Confirmed</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-blue-600">{confirmedOrders}</CardTitle>
+            <div className="stat-value tabular-nums text-info">
+              <CountUp end={confirmedOrders} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-300">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Delivered</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-green-600">{deliveredOrders}</CardTitle>
+            <div className="stat-value tabular-nums text-success">
+              <CountUp end={deliveredOrders} />
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -257,14 +271,15 @@ export default function OrdersPage() {
       </Card>
 
       {/* Revenue Card */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
+      <Card className="stat-card mb-6">
+        <div className="stat-card-gradient" />
+        <CardHeader className="pb-3 relative">
           <div className="flex items-center justify-between">
             <div>
               <CardDescription>Total Revenue</CardDescription>
-              <CardTitle className="text-2xl md:text-3xl">
-                ${totalRevenue.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-              </CardTitle>
+              <div className="text-3xl font-bold tabular-nums">
+                $<CountUp end={totalRevenue} />
+              </div>
             </div>
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Package className="h-6 w-6 text-primary" />
@@ -285,13 +300,20 @@ export default function OrdersPage() {
           <CardDescription>Complete list of all customer orders</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          <ResponsiveTable
-            data={filteredOrders}
-            columns={columns}
-            mobileCard={mobileCard}
-            emptyMessage="No orders found"
-            className="md:border-0"
-          />
+          {filteredOrders.length > 0 ? (
+            <ResponsiveTable
+              data={filteredOrders}
+              columns={columns}
+              mobileCard={mobileCard}
+              className="md:border-0"
+            />
+          ) : (
+            <EmptyState
+              icon={PackageX}
+              title="No orders found"
+              description={searchQuery || statusFilter || areaFilter ? "Try adjusting your filters" : "Orders will appear here when customers place them"}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

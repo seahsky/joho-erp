@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, H3, Small, type StatusType } from '@jimmy-beef/ui';
-import { Package, Users, ShoppingCart, TruckIcon } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, Small, CountUp, EmptyState, type StatusType } from '@jimmy-beef/ui';
+import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
@@ -104,47 +104,67 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="stat-card animate-fade-in-up">
+          <div className="stat-card-gradient" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium">{t('dashboard.totalOrders')}</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/5 text-primary">
+              <ShoppingCart className="h-5 w-5" />
+            </div>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <H3 className="text-2xl">{stats?.totalOrders || 0}</H3>
-            <Small className="text-muted-foreground">All time</Small>
+          <CardContent className="p-4 md:p-6 relative">
+            <div className="stat-value tabular-nums">
+              <CountUp end={stats?.totalOrders || 0} />
+            </div>
+            <Small className="text-muted-foreground mt-1">All time</Small>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="stat-card animate-fade-in-up delay-100">
+          <div className="stat-card-gradient" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium">{t('dashboard.pendingOrders')}</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
+              <Package className="h-5 w-5" />
+            </div>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <H3 className="text-2xl">{stats?.pendingOrders || 0}</H3>
-            <Small className="text-muted-foreground">Require processing</Small>
+          <CardContent className="p-4 md:p-6 relative">
+            <div className="stat-value tabular-nums">
+              <CountUp end={stats?.pendingOrders || 0} />
+            </div>
+            <Small className="text-muted-foreground mt-1">Require processing</Small>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="stat-card animate-fade-in-up delay-200">
+          <div className="stat-card-gradient" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium">{t('dashboard.activeCustomers')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success">
+              <Users className="h-5 w-5" />
+            </div>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <H3 className="text-2xl">{stats?.totalCustomers || 0}</H3>
-            <Small className="text-muted-foreground">Active accounts</Small>
+          <CardContent className="p-4 md:p-6 relative">
+            <div className="stat-value tabular-nums">
+              <CountUp end={stats?.totalCustomers || 0} />
+            </div>
+            <Small className="text-muted-foreground mt-1">Active accounts</Small>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="stat-card animate-fade-in-up delay-300">
+          <div className="stat-card-gradient" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium">{t('dashboard.activeDeliveries')}</CardTitle>
-            <TruckIcon className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-info/10 text-info">
+              <TruckIcon className="h-5 w-5" />
+            </div>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <H3 className="text-2xl">{stats?.activeDeliveries || 0}</H3>
-            <Small className="text-muted-foreground">Out for delivery</Small>
+          <CardContent className="p-4 md:p-6 relative">
+            <div className="stat-value tabular-nums">
+              <CountUp end={stats?.activeDeliveries || 0} />
+            </div>
+            <Small className="text-muted-foreground mt-1">Out for delivery</Small>
           </CardContent>
         </Card>
       </div>
@@ -172,7 +192,11 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No recent orders</p>
+                <EmptyState
+                  icon={PackageX}
+                  title="No recent orders"
+                  description="Orders will appear here when customers place them"
+                />
               )}
             </div>
           </CardContent>
@@ -204,7 +228,11 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No low stock items</p>
+                <EmptyState
+                  icon={AlertTriangle}
+                  title="No low stock items"
+                  description="All products are well stocked"
+                />
               )}
             </div>
           </CardContent>

@@ -14,8 +14,10 @@ import {
   ResponsiveTable,
   type Column,
   Badge,
+  CountUp,
+  EmptyState,
 } from '@jimmy-beef/ui';
-import { Search, Package, Plus, Edit, Loader2 } from 'lucide-react';
+import { Search, Package, Plus, Edit, Loader2, PackageX } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 type Product = {
@@ -201,7 +203,7 @@ export default function ProductsPage() {
             Manage your product catalog and inventory
           </p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
@@ -209,28 +211,40 @@ export default function ProductsPage() {
 
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Total Products</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl">{totalProducts}</CardTitle>
+            <div className="stat-value tabular-nums">
+              <CountUp end={totalProducts} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-100">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Active Products</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-green-600">{activeProducts}</CardTitle>
+            <div className="stat-value tabular-nums text-success">
+              <CountUp end={activeProducts} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-200">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Low Stock Alerts</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-yellow-600">{lowStockProducts}</CardTitle>
+            <div className="stat-value tabular-nums text-warning">
+              <CountUp end={lowStockProducts} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-300">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Total Inventory Value</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl">${totalValue.toLocaleString()}</CardTitle>
+            <div className="stat-value tabular-nums">
+              $<CountUp end={totalValue} />
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -264,13 +278,20 @@ export default function ProductsPage() {
           <CardDescription>Complete list of all products in your inventory</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          <ResponsiveTable
-            data={productList}
-            columns={columns}
-            mobileCard={mobileCard}
-            emptyMessage="No products found"
-            className="md:border-0"
-          />
+          {productList.length > 0 ? (
+            <ResponsiveTable
+              data={productList}
+              columns={columns}
+              mobileCard={mobileCard}
+              className="md:border-0"
+            />
+          ) : (
+            <EmptyState
+              icon={PackageX}
+              title="No products found"
+              description={searchQuery ? "Try adjusting your search" : "Add your first product to get started"}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

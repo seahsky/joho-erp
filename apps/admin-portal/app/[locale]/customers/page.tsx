@@ -16,8 +16,10 @@ import {
   type Column,
   StatusBadge,
   type StatusType,
+  CountUp,
+  EmptyState,
 } from '@jimmy-beef/ui';
-import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2, Users } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 type Customer = {
@@ -227,7 +229,7 @@ export default function CustomersPage() {
           </p>
         </div>
         <Link href="/customers/new">
-          <Button className="w-full sm:w-auto">
+          <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
             <UserPlus className="mr-2 h-4 w-4" />
             Add Customer
           </Button>
@@ -236,30 +238,40 @@ export default function CustomersPage() {
 
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Total Customers</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl">{totalCustomers}</CardTitle>
+            <div className="stat-value tabular-nums">
+              <CountUp end={totalCustomers} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-100">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Active</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-green-600">{activeCustomers}</CardTitle>
+            <div className="stat-value tabular-nums text-success">
+              <CountUp end={activeCustomers} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-200">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Pending Credit Approval</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl text-yellow-600">{pendingCredit}</CardTitle>
+            <div className="stat-value tabular-nums text-warning">
+              <CountUp end={pendingCredit} />
+            </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="stat-card animate-fade-in-up delay-300">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
             <CardDescription>Total Orders</CardDescription>
-            <CardTitle className="text-3xl md:text-4xl">
-              {customers.reduce((sum, c) => sum + (c.orders || 0), 0)}
-            </CardTitle>
+            <div className="stat-value tabular-nums">
+              <CountUp end={customers.reduce((sum, c) => sum + (c.orders || 0), 0)} />
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -288,13 +300,24 @@ export default function CustomersPage() {
           <CardDescription>A list of all your customers and their details</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          <ResponsiveTable
-            data={customers}
-            columns={columns}
-            mobileCard={mobileCard}
-            emptyMessage="No customers found"
-            className="md:border-0"
-          />
+          {customers.length > 0 ? (
+            <ResponsiveTable
+              data={customers}
+              columns={columns}
+              mobileCard={mobileCard}
+              className="md:border-0"
+            />
+          ) : (
+            <EmptyState
+              icon={Users}
+              title="No customers found"
+              description={searchQuery ? "Try adjusting your search" : "Add your first customer to get started"}
+              action={!searchQuery ? {
+                label: "Add Customer",
+                onClick: () => window.location.href = '/customers/new'
+              } : undefined}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

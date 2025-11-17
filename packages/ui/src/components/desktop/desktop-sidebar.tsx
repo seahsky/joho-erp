@@ -125,12 +125,13 @@ export function SidebarItem({
   );
 
   const baseClassName = cn(
+    'nav-item-enhanced',
     'flex items-center w-full',
     'px-4 py-3 rounded-lg',
     'text-sm font-medium',
     'transition-all duration-200',
     active
-      ? 'bg-primary text-primary-foreground shadow-sm'
+      ? 'active bg-primary text-primary-foreground shadow-sm font-medium'
       : 'text-foreground hover:bg-[hsl(var(--sidebar-hover))] hover:text-foreground',
     collapsed && 'justify-center px-2',
     className
