@@ -258,7 +258,7 @@ export function SetPriceDialog({
           <div>
             <Label htmlFor="effectiveFrom">{t('pricingDialog.fields.effectiveFrom')}</Label>
             <div className="relative mt-1">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="effectiveFrom"
                 type="date"
@@ -274,7 +274,7 @@ export function SetPriceDialog({
           <div>
             <Label htmlFor="effectiveTo">{t('pricingDialog.fields.effectiveTo')}</Label>
             <div className="relative mt-1">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="effectiveTo"
                 type="date"

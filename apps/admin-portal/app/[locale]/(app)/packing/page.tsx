@@ -104,7 +104,7 @@ export default function PackingPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 type="date"
                 value={dateInputValue}
