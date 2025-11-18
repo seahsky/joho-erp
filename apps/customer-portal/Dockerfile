@@ -22,6 +22,10 @@ COPY apps/customer-portal ./apps/customer-portal
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
+# Generate Prisma Client with Linux binaries for Docker environment
+# This ensures the correct platform-specific query engine is included
+RUN pnpm --filter @jimmy-beef/database exec prisma generate
+
 # Accept build arguments for NEXT_PUBLIC_* environment variables
 # These are embedded into the Next.js bundle at build time
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
