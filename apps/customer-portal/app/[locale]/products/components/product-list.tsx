@@ -6,6 +6,7 @@ import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, La
 import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing } from '@jimmy-beef/shared';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 export function ProductList() {
   const t = useTranslations();
@@ -102,11 +103,11 @@ export function ProductList() {
                     {productWithPricing.hasCustomPricing ? (
                       <div>
                         <Large className="text-2xl text-green-600 font-bold">
-                          ${productWithPricing.effectivePrice.toFixed(2)}
+                          {formatCurrency(productWithPricing.effectivePrice)}
                         </Large>
                         <div className="flex items-center gap-2">
                           <Muted className="line-through text-xs">
-                            ${productWithPricing.basePrice.toFixed(2)}
+                            {formatCurrency(productWithPricing.basePrice)}
                           </Muted>
                           <Badge variant="success" className="text-xs">
                             Save {productWithPricing.discountPercentage?.toFixed(0)}%
@@ -117,7 +118,7 @@ export function ProductList() {
                     ) : (
                       <div>
                         <Large className="text-2xl text-primary">
-                          ${product.basePrice.toFixed(2)}
+                          {formatCurrency(product.basePrice)}
                         </Large>
                         <Muted>{t('products.perUnit', { unit: product.unit })}</Muted>
                       </div>

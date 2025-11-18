@@ -7,7 +7,7 @@ import { api } from '@/trpc/client';
 import { Button, Card, Badge, Input, Label } from '@jimmy-beef/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { formatCurrency, formatDate } from '@jimmy-beef/shared';
+import { formatCurrency, formatDate, parseToCents } from '@jimmy-beef/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -367,12 +367,13 @@ export default function CreditReviewPage({ params }: PageProps) {
                       type="number"
                       min="0"
                       step="100"
-                      value={approveData.creditLimit}
+                      value={approveData.creditLimit ? (approveData.creditLimit / 100).toFixed(0) : '0'}
                       onChange={(e) =>
-                        setApproveData({ ...approveData, creditLimit: parseFloat(e.target.value) || 0 })
+                        setApproveData({ ...approveData, creditLimit: parseToCents(e.target.value) || 0 })
                       }
                       placeholder="10000"
                     />
+                    <p className="text-xs text-muted-foreground">{t('enterDollars')}</p>
                   </div>
                   <div>
                     <Label htmlFor="paymentTerms">{t('fields.paymentTerms')}</Label>

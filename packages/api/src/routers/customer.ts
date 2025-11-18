@@ -82,8 +82,8 @@ export const customerRouter = router({
             postcode: z.string(),
           })
           .optional(),
-        requestedCreditLimit: z.number().optional(),
-        forecastPurchase: z.number().optional(),
+        requestedCreditLimit: z.number().int().optional(), // In cents
+        forecastPurchase: z.number().int().optional(), // In cents
         directors: z.array(directorDetailsSchema).min(1, 'At least one director is required'),
         financialDetails: financialDetailsSchema.optional(),
         tradeReferences: z.array(tradeReferenceSchema).optional(),
@@ -340,9 +340,9 @@ export const customerRouter = router({
           .optional(),
 
         // Credit Application
-        requestedCreditLimit: z.number().optional(),
-        forecastPurchase: z.number().optional(),
-        creditLimit: z.number().min(0).default(0),
+        requestedCreditLimit: z.number().int().optional(), // In cents
+        forecastPurchase: z.number().int().optional(), // In cents
+        creditLimit: z.number().int().min(0).default(0), // In cents
         paymentTerms: z.string().optional(),
         notes: z.string().optional(),
 
@@ -437,7 +437,7 @@ export const customerRouter = router({
     .input(
       z.object({
         customerId: z.string(),
-        creditLimit: z.number().min(0),
+        creditLimit: z.number().int().min(0), // In cents
         paymentTerms: z.string(),
         notes: z.string().optional(),
       })

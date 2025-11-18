@@ -27,7 +27,7 @@ import {
   Square,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency, parseToCents } from '@jimmy-beef/shared';
 import { useToast } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 
@@ -252,8 +252,9 @@ export function AddProductDialog({
       return;
     }
 
-    const basePriceNum = parseFloat(basePrice);
-    if (isNaN(basePriceNum) || basePriceNum <= 0) {
+    // Convert basePrice from dollars to cents
+    const basePriceInCents = parseToCents(basePrice);
+    if (basePriceInCents === null || basePriceInCents <= 0) {
       toast({
         title: t('productForm.validation.invalidInput'),
         description: t('productForm.validation.basePricePositive'),
@@ -262,13 +263,20 @@ export function AddProductDialog({
       return;
     }
 
-    // Build customer pricing array
+    // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
       .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
-      .map(([customerId, entry]) => ({
-        customerId,
-        customPrice: entry.customPrice,
-      }));
+      .map(([customerId, entry]) => {
+        const customPriceInCents = parseToCents(entry.customPrice.toString());
+        if (!customPriceInCents || customPriceInCents <= 0) {
+          return null;
+        }
+        return {
+          customerId,
+          customPrice: customPriceInCents, // Send cents to API
+        };
+      })
+      .filter((p): p is { customerId: string; customPrice: number } => p !== null);
 
     await createProductMutation.mutateAsync({
       sku,
@@ -277,7 +285,7 @@ export function AddProductDialog({
       category: category || undefined,
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
-      basePrice: basePriceNum,
+      basePrice: basePriceInCents, // Send cents to API
       currentStock: parseInt(currentStock) || 0,
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
@@ -624,7 +632,7 @@ export function AddProductDialog({
                                   )}
                                 </td>
                                 <td className="text-right p-2 text-muted-foreground">
-                                  {basePrice ? formatCurrency(parseFloat(basePrice)) : '-'}
+                                  {basePrice ? `$${parseFloat(basePrice).toFixed(2)}` : '-'}
                                 </td>
                                 <td className="text-right p-2">
                                   <Input
@@ -641,7 +649,7 @@ export function AddProductDialog({
                                   {isEnabled && amount !== 0 ? (
                                     <div className={amount > 0 ? 'text-green-600' : 'text-red-600'}>
                                       <div className="font-medium">
-                                        {amount > 0 ? '-' : '+'}{formatCurrency(Math.abs(amount))}
+                                        {amount > 0 ? '-' : '+'}${Math.abs(amount).toFixed(2)}
                                       </div>
                                       <div className="text-xs">
                                         ({percent.toFixed(1)}%)

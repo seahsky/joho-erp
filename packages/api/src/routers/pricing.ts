@@ -225,13 +225,14 @@ export const pricingRouter = router({
 
   /**
    * Set or update custom price for a customer-product pair
+   * NOTE: customPrice must be in cents (Int) not dollars
    */
   setCustomerPrice: isAdminOrSales
     .input(
       z.object({
         customerId: z.string(),
         productId: z.string(),
-        customPrice: z.number().positive(),
+        customPrice: z.number().int().positive(), // In cents (e.g., 2550 = $25.50)
         effectiveFrom: z.date().optional(),
         effectiveTo: z.date().optional(),
         notes: z.string().optional(),
@@ -390,6 +391,7 @@ export const pricingRouter = router({
 
   /**
    * Bulk import pricing from CSV data
+   * NOTE: customPrice must be in cents (Int)
    */
   bulkImport: isAdminOrSales
     .input(
@@ -399,7 +401,7 @@ export const pricingRouter = router({
             customerAbn: z.string().optional(), // ABN to identify customer
             customerClerkId: z.string().optional(), // Or Clerk ID
             productSku: z.string(), // SKU to identify product
-            customPrice: z.number().positive(),
+            customPrice: z.number().int().positive(), // In cents
             effectiveFrom: z.date().optional(),
             effectiveTo: z.date().optional(),
           })
@@ -525,12 +527,13 @@ export const pricingRouter = router({
 
       const activePricings = pricings.filter(isCustomPriceValid);
 
-      let totalSavings = 0;
+      // Calculate total savings (all values in cents)
+      let totalSavingsCents = 0;
       pricings.forEach((pricing) => {
         if (pricing.product?.basePrice != null) {
           const savings = pricing.product.basePrice - pricing.customPrice;
           if (savings > 0) {
-            totalSavings += savings;
+            totalSavingsCents += savings;
           }
         }
       });
@@ -539,8 +542,8 @@ export const pricingRouter = router({
         totalProducts: pricings.length,
         activeProducts: activePricings.length,
         expiredProducts: pricings.length - activePricings.length,
-        averageSavings: pricings.length > 0 ? totalSavings / pricings.length : 0,
-        totalPotentialSavings: totalSavings,
+        averageSavings: pricings.length > 0 ? Math.round(totalSavingsCents / pricings.length) : 0, // Average in cents
+        totalPotentialSavings: totalSavingsCents, // Total in cents
       };
     }),
 });

@@ -21,6 +21,7 @@ import { Search, Package, Plus, Edit, Loader2, PackageX } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { useTranslations } from 'next-intl';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 type Product = {
   id: string;
@@ -115,7 +116,7 @@ export default function ProductsPage() {
     {
       key: 'basePrice',
       label: t('price'),
-      render: (value) => `$${(value as number).toFixed(2)}`,
+      render: (value) => formatCurrency(value as number), // value is in cents
     },
     {
       key: 'unit',
@@ -174,7 +175,7 @@ export default function ProductsPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('price')}</p>
-          <p className="font-medium">${product.basePrice.toFixed(2)}</p>
+          <p className="font-medium">{formatCurrency(product.basePrice)}</p>
         </div>
         <div>
           <p className="text-muted-foreground">{t('unit')}</p>
@@ -250,7 +251,7 @@ export default function ProductsPage() {
           <CardHeader className="pb-3 relative">
             <CardDescription>{t('totalInventoryValue')}</CardDescription>
             <div className="stat-value tabular-nums">
-              $<CountUp end={totalValue} />
+              {formatCurrency(totalValue)}
             </div>
           </CardHeader>
         </Card>

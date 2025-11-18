@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@jimmy-beef/ui';
 import { ShoppingCart } from 'lucide-react';
 import { api } from '@/trpc/client';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 export function OrderList() {
   const t = useTranslations('orders');
@@ -123,7 +124,7 @@ export function OrderList() {
                 <p className="text-sm">
                   <span className="font-medium">{order.items.length}</span>{' '}
                   {order.items.length === 1 ? t('itemCount', { count: order.items.length }) : t('itemCount_plural', { count: order.items.length })} •{' '}
-                  <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
+                  <span className="font-semibold">{formatCurrency(order.totalAmount)}</span>
                 </p>
                 {order.status === 'out_for_delivery' && order.requestedDeliveryDate && (
                   <p className="text-sm text-muted-foreground">

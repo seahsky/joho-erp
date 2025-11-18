@@ -131,6 +131,7 @@ export const productRouter = router({
     }),
 
   // Admin: Create product (with optional customer-specific pricing)
+  // NOTE: basePrice and customPrice must be in cents (Int)
   create: isAdmin
     .input(
       z.object({
@@ -140,7 +141,7 @@ export const productRouter = router({
         category: z.string().optional(),
         unit: z.enum(['kg', 'piece', 'box', 'carton']),
         packageSize: z.number().positive().optional(),
-        basePrice: z.number().positive(),
+        basePrice: z.number().int().positive(), // In cents (e.g., 2550 = $25.50)
         currentStock: z.number().min(0).default(0),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).default('active'),
@@ -149,7 +150,7 @@ export const productRouter = router({
           .array(
             z.object({
               customerId: z.string(),
-              customPrice: z.number().positive(),
+              customPrice: z.number().int().positive(), // In cents
               effectiveFrom: z.date().optional(),
               effectiveTo: z.date().optional(),
             })
@@ -204,6 +205,7 @@ export const productRouter = router({
     }),
 
   // Admin: Update product
+  // NOTE: basePrice must be in cents (Int)
   update: isAdmin
     .input(
       z.object({
@@ -213,7 +215,7 @@ export const productRouter = router({
         category: z.string().optional(),
         unit: z.enum(['kg', 'piece', 'box', 'carton']).optional(),
         packageSize: z.number().positive().optional(),
-        basePrice: z.number().positive().optional(),
+        basePrice: z.number().int().positive().optional(), // In cents
         currentStock: z.number().min(0).optional(),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),

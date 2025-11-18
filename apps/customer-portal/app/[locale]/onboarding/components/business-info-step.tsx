@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Input, Label } from '@jimmy-beef/ui';
+import { parseToCents } from '@jimmy-beef/shared';
 import type { BusinessInfo } from '../page';
 
 interface BusinessInfoStepProps {
@@ -367,11 +368,14 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               type="number"
               min="0"
               step="100"
-              value={formData.requestedCreditLimit || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, requestedCreditLimit: parseFloat(e.target.value) || 0 })
-              }
+              value={formData.requestedCreditLimit ? (formData.requestedCreditLimit / 100).toFixed(0) : ''}
+              onChange={(e) => {
+                const cents = parseToCents(e.target.value) || 0;
+                setFormData({ ...formData, requestedCreditLimit: cents });
+              }}
+              placeholder="e.g., 10000 for $10,000"
             />
+            <p className="text-xs text-muted-foreground mt-1">Enter amount in dollars</p>
           </div>
           <div>
             <Label htmlFor="forecastPurchase">{t('fields.forecastPurchase')}</Label>
@@ -380,11 +384,14 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               type="number"
               min="0"
               step="100"
-              value={formData.forecastPurchase || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, forecastPurchase: parseFloat(e.target.value) || 0 })
-              }
+              value={formData.forecastPurchase ? (formData.forecastPurchase / 100).toFixed(0) : ''}
+              onChange={(e) => {
+                const cents = parseToCents(e.target.value) || 0;
+                setFormData({ ...formData, forecastPurchase: cents });
+              }}
+              placeholder="e.g., 5000 for $5,000"
             />
+            <p className="text-xs text-muted-foreground mt-1">Enter amount in dollars</p>
           </div>
         </div>
       </div>

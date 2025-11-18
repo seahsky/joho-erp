@@ -116,7 +116,7 @@ model Product {
   category            String?
   unit                ProductUnit
   packageSize         Float?
-  basePrice           Float
+  basePrice           Int                 // Stored in cents (e.g., 2550 = $25.50)
   currentStock        Float               @default(0)
   lowStockThreshold   Float?
   status              ProductStatus       @default(active)
@@ -181,9 +181,9 @@ model Order {
   customerId              String              @db.ObjectId
   customerName            String
   items                   OrderItem[]
-  subtotal                Float
-  taxAmount               Float
-  totalAmount             Float
+  subtotal                Int                 // Stored in cents
+  taxAmount               Int                 // Stored in cents
+  totalAmount             Int                 // Stored in cents
   deliveryAddress         DeliveryAddress
   requestedDeliveryDate   DateTime
   status                  OrderStatus         @default(pending)
@@ -217,7 +217,7 @@ model CustomerPricing {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   customerId          String              @db.ObjectId
   productId           String              @db.ObjectId
-  customPrice         Float
+  customPrice         Int                 // Stored in cents
   effectiveFrom       DateTime            @default(now())
   effectiveTo         DateTime?
   createdAt           DateTime            @default(now())
@@ -363,13 +363,13 @@ type BillingAddress {
 
 type CreditApplication {
   status              CreditApplicationStatus @default(pending)
-  requestedCreditLimit Float?
-  forecastPurchase    Float?
+  requestedCreditLimit Int?                // Stored in cents
+  forecastPurchase    Int?                // Stored in cents
   appliedAt           DateTime            @default(now())
   submittedAt         DateTime?
   reviewedAt          DateTime?
   reviewedBy          String?             @db.ObjectId
-  creditLimit         Float               @default(0)
+  creditLimit         Int                 @default(0) // Stored in cents
   paymentTerms        String?
   notes               String?
 }
@@ -380,8 +380,8 @@ type OrderItem {
   productName         String
   unit                String
   quantity            Float
-  unitPrice           Float
-  subtotal            Float
+  unitPrice           Int                 // Stored in cents
+  subtotal            Int                 // Stored in cents
 }
 
 type StatusHistory {

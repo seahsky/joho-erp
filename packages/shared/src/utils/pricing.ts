@@ -1,13 +1,16 @@
 /**
  * Pricing Utilities
  * Handles customer-specific pricing logic and calculations
+ * All prices are in cents (Int) for precision
  */
+
+import { createMoney, subtractMoney, toCents, getDiscountPercentage } from './money';
 
 export interface CustomerPricing {
   id: string;
   customerId: string;
   productId: string;
-  customPrice: number;
+  customPrice: number; // In cents
   effectiveFrom: Date;
   effectiveTo: Date | null;
   createdAt: Date;
@@ -15,11 +18,11 @@ export interface CustomerPricing {
 }
 
 export interface ProductWithPricing {
-  basePrice: number;
-  customPrice?: number;
-  effectivePrice: number;
+  basePrice: number; // In cents
+  customPrice?: number; // In cents
+  effectivePrice: number; // In cents
   hasCustomPricing: boolean;
-  discount?: number;
+  discount?: number; // In cents
   discountPercentage?: number;
 }
 
@@ -48,6 +51,9 @@ export function isCustomPriceValid(pricing: CustomerPricing): boolean {
 
 /**
  * Get the effective price for a product considering customer-specific pricing
+ * @param basePrice - Base price in cents
+ * @param customerPricing - Customer-specific pricing (if any)
+ * @returns Product with pricing information (all amounts in cents)
  */
 export function getEffectivePrice(
   basePrice: number,
@@ -62,9 +68,14 @@ export function getEffectivePrice(
     };
   }
 
-  // Calculate discount
-  const discount = basePrice - customerPricing.customPrice;
-  const discountPercentage = ((discount / basePrice) * 100);
+  // Calculate discount using dinero.js for precision
+  const baseMoney = createMoney(basePrice);
+  const customMoney = createMoney(customerPricing.customPrice);
+  const discountMoney = subtractMoney(baseMoney, customMoney);
+  const discount = toCents(discountMoney);
+
+  // Calculate discount percentage
+  const discountPercentage = getDiscountPercentage(baseMoney, customMoney);
 
   return {
     basePrice,
@@ -78,14 +89,26 @@ export function getEffectivePrice(
 
 /**
  * Calculate the price difference between base and custom price
+ * @param basePrice - Base price in cents
+ * @param customPrice - Custom price in cents
+ * @returns Discount/markup information (discount in cents, percentages as numbers)
  */
 export function calculatePriceDifference(
   basePrice: number,
   customPrice: number
 ): { discount: number; discountPercentage: number; markup: number } {
+  const baseMoney = createMoney(basePrice);
+  const customMoney = createMoney(customPrice);
+
+  // Calculate difference
   const difference = basePrice - customPrice;
-  const discountPercentage = ((difference / basePrice) * 100);
-  const markup = customPrice > basePrice ? ((customPrice - basePrice) / basePrice) * 100 : 0;
+
+  // Calculate discount percentage
+  const discountPercentage = difference > 0 ? getDiscountPercentage(baseMoney, customMoney) : 0;
+
+  // Calculate markup percentage (if custom price is higher than base)
+  const markup =
+    customPrice > basePrice ? ((customPrice - basePrice) / basePrice) * 100 : 0;
 
   return {
     discount: difference,
@@ -115,16 +138,21 @@ export function formatPriceComparison(
 
 /**
  * Format currency value (helper function)
+ * @param amount - Amount in cents
+ * @param currency - Currency code (default: AUD)
  */
 function formatCurrency(amount: number, currency: string = 'AUD'): string {
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency,
-  }).format(amount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount / 100); // Convert cents to dollars
 }
 
 /**
  * Validate customer pricing input
+ * @param input - Pricing input (prices in cents)
  */
 export function validateCustomerPricing(input: {
   customPrice: number;
@@ -132,7 +160,7 @@ export function validateCustomerPricing(input: {
   effectiveFrom?: Date;
   effectiveTo?: Date;
 }): { valid: boolean; error?: string } {
-  // Price must be positive
+  // Price must be positive (cents must be > 0)
   if (input.customPrice <= 0) {
     return { valid: false, error: 'Custom price must be greater than 0' };
   }

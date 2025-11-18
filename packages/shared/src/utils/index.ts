@@ -1,11 +1,16 @@
 /**
  * Format currency in AUD
+ * @param amount - Amount in cents or Money object
+ * @deprecated Use formatAUD from money utilities instead
  */
 export function formatCurrency(amount: number): string {
+  // This function now expects cents (Int) instead of dollars (Float)
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency: 'AUD',
-  }).format(amount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount / 100);
 }
 
 /**
@@ -167,7 +172,10 @@ export function checkOrderCutoff(
 }
 
 /**
- * Calculate order totals with tax
+ * Calculate order totals with tax using dinero.js
+ * @param items - Array of items with quantity and unitPrice (in cents)
+ * @param taxRate - Tax rate as decimal (e.g., 0.1 for 10% GST)
+ * @returns Object with subtotal, taxAmount, and totalAmount in cents
  */
 export function calculateOrderTotals(
   items: { quantity: number; unitPrice: number }[],
@@ -177,14 +185,29 @@ export function calculateOrderTotals(
   taxAmount: number;
   totalAmount: number;
 } {
-  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = subtotal * taxRate;
-  const totalAmount = subtotal + taxAmount;
+  // Import money utilities at runtime to avoid circular dependencies
+  const { createMoney, multiplyMoney, addMoney, toCents } = require('./money');
+
+  // Calculate subtotal by multiplying each item's price by quantity
+  let subtotal = createMoney(0);
+
+  for (const item of items) {
+    const itemPrice = createMoney(item.unitPrice);
+    const itemTotal = multiplyMoney(itemPrice, item.quantity);
+    subtotal = addMoney(subtotal, itemTotal);
+  }
+
+  // Calculate tax amount (e.g., 10% GST)
+  const taxMultiplier = { amount: Math.round(taxRate * 100), scale: 2 };
+  const taxAmount = multiplyMoney(subtotal, taxMultiplier);
+
+  // Calculate total
+  const totalAmount = addMoney(subtotal, taxAmount);
 
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    taxAmount: Math.round(taxAmount * 100) / 100,
-    totalAmount: Math.round(totalAmount * 100) / 100,
+    subtotal: toCents(subtotal),
+    taxAmount: toCents(taxAmount),
+    totalAmount: toCents(totalAmount),
   };
 }
 
@@ -346,3 +369,8 @@ export async function paginatePrismaQuery<T>(
  * Export pricing utilities
  */
 export * from './pricing';
+
+/**
+ * Export money utilities (dinero.js)
+ */
+export * from './money';

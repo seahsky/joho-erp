@@ -14,7 +14,7 @@ import {
 import { Loader2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency, parseToCents, formatCentsForInput } from '@jimmy-beef/shared';
 
 type Customer = {
   id: string;
@@ -65,7 +65,10 @@ export function SetPriceDialog({
   const t = useTranslations();
   const [customerId, setCustomerId] = useState(pricing?.customerId || '');
   const [productId, setProductId] = useState(pricing?.productId || '');
-  const [customPrice, setCustomPrice] = useState(pricing?.customPrice.toString() || '');
+  // Convert cents to dollars for display in the input
+  const [customPrice, setCustomPrice] = useState(
+    pricing?.customPrice ? formatCentsForInput(pricing.customPrice) : ''
+  );
   const [effectiveFrom, setEffectiveFrom] = useState(
     pricing?.effectiveFrom
       ? new Date(pricing.effectiveFrom).toISOString().split('T')[0]
@@ -83,7 +86,8 @@ export function SetPriceDialog({
     if (open) {
       setCustomerId(pricing?.customerId || '');
       setProductId(pricing?.productId || '');
-      setCustomPrice(pricing?.customPrice.toString() || '');
+      // Convert cents to dollars for display
+      setCustomPrice(pricing?.customPrice ? formatCentsForInput(pricing.customPrice) : '');
       setEffectiveFrom(
         pricing?.effectiveFrom
           ? new Date(pricing.effectiveFrom).toISOString().split('T')[0]
@@ -116,8 +120,9 @@ export function SetPriceDialog({
       return;
     }
 
-    const priceValue = parseFloat(customPrice);
-    if (isNaN(priceValue) || priceValue <= 0) {
+    // Convert dollars to cents for API
+    const priceInCents = parseToCents(customPrice);
+    if (priceInCents === null || priceInCents <= 0) {
       setError(t('pricingDialog.validation.positivePrice'));
       return;
     }
@@ -125,17 +130,19 @@ export function SetPriceDialog({
     await setPriceMutation.mutateAsync({
       customerId,
       productId,
-      customPrice: priceValue,
+      customPrice: priceInCents, // Send cents to API
       effectiveFrom: new Date(effectiveFrom),
       effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
     });
   };
 
   const selectedProduct = products.find((p) => p.id === productId);
-  const discount = selectedProduct && customPrice
-    ? selectedProduct.basePrice - parseFloat(customPrice)
+  // Calculate discount (both basePrice and customPrice in cents)
+  const customPriceInCents = customPrice ? parseToCents(customPrice) : null;
+  const discount = selectedProduct && customPriceInCents
+    ? selectedProduct.basePrice - customPriceInCents // Both in cents
     : 0;
-  const discountPct = selectedProduct && customPrice && discount > 0
+  const discountPct = selectedProduct && customPriceInCents && discount > 0
     ? ((discount / selectedProduct.basePrice) * 100).toFixed(1)
     : '0';
 

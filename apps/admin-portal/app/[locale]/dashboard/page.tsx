@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge,
 import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 export default function DashboardPage() {
   const t = useTranslations();
@@ -186,7 +187,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{order.customerName}</p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
+                      <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
                       <StatusBadge status={order.status as StatusType} showIcon={false} />
                     </div>
                   </div>

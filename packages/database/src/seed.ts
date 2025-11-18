@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import type { AreaTag, ProductUnit, ProductStatus, CustomerStatus, CreditApplicationStatus } from './generated/prisma';
+import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
 
 // Melbourne suburbs with coordinates and area tags
 const melbourneSuburbs = [
@@ -35,7 +36,7 @@ const products = [
     category: 'Beef - Premium Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 5,
-    basePrice: 18.50,
+    basePrice: 1850, // $18.50 in cents
     currentStock: 250,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
@@ -47,7 +48,7 @@ const products = [
     category: 'Beef - Premium Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 5,
-    basePrice: 24.00,
+    basePrice: 2400, // $24.00 in cents
     currentStock: 180,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
@@ -59,7 +60,7 @@ const products = [
     category: 'Beef - Premium Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 3,
-    basePrice: 32.00,
+    basePrice: 3200, // $32.00 in cents
     currentStock: 120,
     lowStockThreshold: 30,
     status: 'active' as ProductStatus,
@@ -71,7 +72,7 @@ const products = [
     category: 'Beef - Steaks',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 22.00,
+    basePrice: 2200, // $22.00 in cents
     currentStock: 200,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
@@ -83,7 +84,7 @@ const products = [
     category: 'Beef - Steaks',
     unit: 'kg' as ProductUnit,
     packageSize: 8,
-    basePrice: 19.50,
+    basePrice: 1950, // $19.50 in cents
     currentStock: 220,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
@@ -97,7 +98,7 @@ const products = [
     category: 'Beef - Secondary Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 12.50,
+    basePrice: 1250, // $12.50 in cents
     currentStock: 300,
     lowStockThreshold: 60,
     status: 'active' as ProductStatus,
@@ -109,7 +110,7 @@ const products = [
     category: 'Beef - Secondary Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 15,
-    basePrice: 11.00,
+    basePrice: 1100, // $11.00 in cents
     currentStock: 350,
     lowStockThreshold: 80,
     status: 'active' as ProductStatus,
@@ -121,7 +122,7 @@ const products = [
     category: 'Beef - Processed',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 9.50,
+    basePrice: 950, // $9.50 in cents
     currentStock: 400,
     lowStockThreshold: 100,
     status: 'active' as ProductStatus,
@@ -135,7 +136,7 @@ const products = [
     category: 'Pork - Premium Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 8,
-    basePrice: 13.50,
+    basePrice: 1350, // $13.50 in cents
     currentStock: 200,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
@@ -147,7 +148,7 @@ const products = [
     category: 'Pork - Premium Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 11.00,
+    basePrice: 1100, // $11.00 in cents
     currentStock: 250,
     lowStockThreshold: 60,
     status: 'active' as ProductStatus,
@@ -159,7 +160,7 @@ const products = [
     category: 'Pork - Secondary Cuts',
     unit: 'kg' as ProductUnit,
     packageSize: 12,
-    basePrice: 9.50,
+    basePrice: 950, // $9.50 in cents
     currentStock: 280,
     lowStockThreshold: 70,
     status: 'active' as ProductStatus,
@@ -171,7 +172,7 @@ const products = [
     category: 'Pork - Ribs',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 12.00,
+    basePrice: 1200, // $12.00 in cents
     currentStock: 180,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
@@ -183,7 +184,7 @@ const products = [
     category: 'Pork - Chops',
     unit: 'kg' as ProductUnit,
     packageSize: 8,
-    basePrice: 14.00,
+    basePrice: 1400, // $14.00 in cents
     currentStock: 160,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
@@ -195,7 +196,7 @@ const products = [
     category: 'Pork - Processed',
     unit: 'kg' as ProductUnit,
     packageSize: 10,
-    basePrice: 8.50,
+    basePrice: 850, // $8.50 in cents
     currentStock: 300,
     lowStockThreshold: 80,
     status: 'active' as ProductStatus,
@@ -209,7 +210,7 @@ const products = [
     category: 'Processed - Sausages',
     unit: 'kg' as ProductUnit,
     packageSize: 5,
-    basePrice: 10.00,
+    basePrice: 1000, // $10.00 in cents
     currentStock: 150,
     lowStockThreshold: 30,
     status: 'active' as ProductStatus,
@@ -244,7 +245,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-15'),
       reviewedAt: new Date('2025-01-16'),
-      creditLimit: 15000,
+      creditLimit: 1500000, // $15,000 in cents
       paymentTerms: '30 days',
       notes: 'Long-standing customer, excellent payment history',
     },
@@ -276,7 +277,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-20'),
       reviewedAt: new Date('2025-01-21'),
-      creditLimit: 20000,
+      creditLimit: 2000000, // $20,000 in cents
       paymentTerms: '14 days',
       notes: 'High volume customer',
     },
@@ -308,7 +309,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-02-01'),
       reviewedAt: new Date('2025-02-02'),
-      creditLimit: 10000,
+      creditLimit: 1000000, // $10,000 in cents
       paymentTerms: '30 days',
     },
     status: 'active' as CustomerStatus,
@@ -339,7 +340,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-02-05'),
       reviewedAt: new Date('2025-02-06'),
-      creditLimit: 12000,
+      creditLimit: 1200000, // $12,000 in cents
       paymentTerms: '30 days',
     },
     status: 'active' as CustomerStatus,
@@ -400,7 +401,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-25'),
       reviewedAt: new Date('2025-01-26'),
-      creditLimit: 8000,
+      creditLimit: 800000, // $8,000 in cents
       paymentTerms: '14 days',
     },
     status: 'active' as CustomerStatus,
@@ -431,7 +432,7 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-18'),
       reviewedAt: new Date('2025-01-19'),
-      creditLimit: 18000,
+      creditLimit: 1800000, // $18,000 in cents
       paymentTerms: '30 days',
     },
     status: 'active' as CustomerStatus,
@@ -462,19 +463,31 @@ const customers = [
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-02-03'),
       reviewedAt: new Date('2025-02-04'),
-      creditLimit: 9000,
+      creditLimit: 900000, // $9,000 in cents
       paymentTerms: '21 days',
     },
     status: 'active' as CustomerStatus,
   },
 ];
 
-// Helper function to calculate order totals
+// Helper function to calculate order totals (all values in cents)
 function calculateOrderTotals(items: any[], taxRate: number = 0.1) {
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  const taxAmount = subtotal * taxRate;
-  const totalAmount = subtotal + taxAmount;
-  return { subtotal, taxAmount, totalAmount };
+  // Sum all item subtotals (already in cents)
+  let subtotalMoney = createMoney(0);
+  for (const item of items) {
+    subtotalMoney = addMoney(subtotalMoney, createMoney(item.subtotal));
+  }
+
+  // Calculate tax using dinero.js for precision
+  const taxMultiplier = { amount: Math.round(taxRate * 100), scale: 2 }; // 0.1 = 10/100 = { amount: 10, scale: 2 }
+  const taxAmountMoney = multiplyMoney(subtotalMoney, taxMultiplier);
+  const totalAmountMoney = addMoney(subtotalMoney, taxAmountMoney);
+
+  return {
+    subtotal: toCents(subtotalMoney),
+    taxAmount: toCents(taxAmountMoney),
+    totalAmount: toCents(totalAmountMoney),
+  };
 }
 
 // Helper function to generate order number
@@ -668,7 +681,7 @@ async function seed() {
     );
     console.log(`✅ Created ${createdProducts.length} products:`);
     createdProducts.forEach((p) => {
-      console.log(`   - ${p.sku}: ${p.name} ($${p.basePrice}/${p.unit})`);
+      console.log(`   - ${p.sku}: ${p.name} ($${(p.basePrice / 100).toFixed(2)}/${p.unit})`);
     });
     console.log('');
 
@@ -698,10 +711,10 @@ async function seed() {
       const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
       const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
 
-      if (beefRump) customerPricingData.push({ customerId: steakhouse.id, productId: beefRump.id, customPrice: 16.50 }); // $2 off
-      if (scotchFillet) customerPricingData.push({ customerId: steakhouse.id, productId: scotchFillet.id, customPrice: 21.50 }); // $2.50 off
-      if (tenderloin) customerPricingData.push({ customerId: steakhouse.id, productId: tenderloin.id, customPrice: 29.00 }); // $3 off
-      if (tbone) customerPricingData.push({ customerId: steakhouse.id, productId: tbone.id, customPrice: 20.00 }); // $2 off
+      if (beefRump) customerPricingData.push({ customerId: steakhouse.id, productId: beefRump.id, customPrice: 1650 }); // $16.50 ($2 off) in cents
+      if (scotchFillet) customerPricingData.push({ customerId: steakhouse.id, productId: scotchFillet.id, customPrice: 2150 }); // $21.50 ($2.50 off) in cents
+      if (tenderloin) customerPricingData.push({ customerId: steakhouse.id, productId: tenderloin.id, customPrice: 2900 }); // $29.00 ($3 off) in cents
+      if (tbone) customerPricingData.push({ customerId: steakhouse.id, productId: tbone.id, customPrice: 2000 }); // $20.00 ($2 off) in cents
     }
 
     // Brunswick Butcher Shop - High volume customer with discounts on bulk items
@@ -713,11 +726,11 @@ async function seed() {
       const porkShoulder = createdProducts.find((p) => p.sku === 'PORK-SHOULDER-10KG');
       const porkBelly = createdProducts.find((p) => p.sku === 'PORK-BELLY-10KG');
 
-      if (brisket) customerPricingData.push({ customerId: brunswickButcher.id, productId: brisket.id, customPrice: 11.00 }); // $1.50 off
-      if (chuck) customerPricingData.push({ customerId: brunswickButcher.id, productId: chuck.id, customPrice: 8.50 }); // $1.50 off
-      if (mince) customerPricingData.push({ customerId: brunswickButcher.id, productId: mince.id, customPrice: 7.00 }); // $1 off
-      if (porkShoulder) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkShoulder.id, customPrice: 9.50 }); // $1.50 off
-      if (porkBelly) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkBelly.id, customPrice: 13.50 }); // $1.50 off
+      if (brisket) customerPricingData.push({ customerId: brunswickButcher.id, productId: brisket.id, customPrice: 1100 }); // $11.00 ($1.50 off) in cents
+      if (chuck) customerPricingData.push({ customerId: brunswickButcher.id, productId: chuck.id, customPrice: 850 }); // $8.50 ($1.50 off) in cents
+      if (mince) customerPricingData.push({ customerId: brunswickButcher.id, productId: mince.id, customPrice: 700 }); // $7.00 ($1 off) in cents
+      if (porkShoulder) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkShoulder.id, customPrice: 950 }); // $9.50 ($1.50 off) in cents
+      if (porkBelly) customerPricingData.push({ customerId: brunswickButcher.id, productId: porkBelly.id, customPrice: 1350 }); // $13.50 ($1.50 off) in cents
     }
 
     // Footscray Grill House - Mixed pricing with some discounts
@@ -727,9 +740,9 @@ async function seed() {
       // const ribs = createdProducts.find((p) => p.sku === 'BEEF-RIBS-12KG'); // Product doesn't exist - commented out
       const sausages = createdProducts.find((p) => p.sku === 'SAUSAGE-BEEF-5KG');
 
-      if (sirloin) customerPricingData.push({ customerId: footscrayGrill.id, productId: sirloin.id, customPrice: 18.00 }); // $1.50 off
-      // if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 12.50 }); // $1.50 off
-      if (sausages) customerPricingData.push({ customerId: footscrayGrill.id, productId: sausages.id, customPrice: 9.00 }); // $1 off
+      if (sirloin) customerPricingData.push({ customerId: footscrayGrill.id, productId: sirloin.id, customPrice: 1800 }); // $18.00 ($1.50 off) in cents
+      // if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 1250 }); // $12.50 ($1.50 off) in cents
+      if (sausages) customerPricingData.push({ customerId: footscrayGrill.id, productId: sausages.id, customPrice: 900 }); // $9.00 ($1 off) in cents
     }
 
     // Brighton Beach Bistro - Premium customer with special pricing
@@ -739,9 +752,9 @@ async function seed() {
       const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
       const porkLoin = createdProducts.find((p) => p.sku === 'PORK-LOIN-8KG');
 
-      if (scotchFillet) customerPricingData.push({ customerId: brightonBistro.id, productId: scotchFillet.id, customPrice: 22.00 }); // $2 off
-      if (tenderloin) customerPricingData.push({ customerId: brightonBistro.id, productId: tenderloin.id, customPrice: 30.00 }); // $2 off
-      if (porkLoin) customerPricingData.push({ customerId: brightonBistro.id, productId: porkLoin.id, customPrice: 15.50 }); // $1.50 off
+      if (scotchFillet) customerPricingData.push({ customerId: brightonBistro.id, productId: scotchFillet.id, customPrice: 2200 }); // $22.00 ($2 off) in cents
+      if (tenderloin) customerPricingData.push({ customerId: brightonBistro.id, productId: tenderloin.id, customPrice: 3000 }); // $30.00 ($2 off) in cents
+      if (porkLoin) customerPricingData.push({ customerId: brightonBistro.id, productId: porkLoin.id, customPrice: 1550 }); // $15.50 ($1.50 off) in cents
     }
 
     // Camberwell Fine Meats - Specialty pricing with time-limited offers
@@ -758,12 +771,12 @@ async function seed() {
       if (beefRump) customerPricingData.push({
         customerId: camberwellMeats.id,
         productId: beefRump.id,
-        customPrice: 17.00,
+        customPrice: 1700, // $17.00 ($1.50 off) in cents
         effectiveTo: futureExpiry
-      }); // $1.50 off, expires in 30 days
+      }); // expires in 30 days
 
-      if (tbone) customerPricingData.push({ customerId: camberwellMeats.id, productId: tbone.id, customPrice: 20.50 }); // $1.50 off, no expiry
-      if (porkChops) customerPricingData.push({ customerId: camberwellMeats.id, productId: porkChops.id, customPrice: 12.00 }); // $1 off
+      if (tbone) customerPricingData.push({ customerId: camberwellMeats.id, productId: tbone.id, customPrice: 2050 }); // $20.50 ($1.50 off) in cents, no expiry
+      if (porkChops) customerPricingData.push({ customerId: camberwellMeats.id, productId: porkChops.id, customPrice: 1200 }); // $12.00 ($1 off) in cents
     }
 
     const createdPricing = await Promise.all(
@@ -777,7 +790,7 @@ async function seed() {
         const savings = product.basePrice - pricing.customPrice;
         const savingsPercent = ((savings / product.basePrice) * 100).toFixed(1);
         console.log(
-          `   - ${customer.businessName} → ${product.name}: $${pricing.customPrice} (save $${savings.toFixed(2)} / ${savingsPercent}%)`
+          `   - ${customer.businessName} → ${product.name}: $${(pricing.customPrice / 100).toFixed(2)} (save $${(savings / 100).toFixed(2)} / ${savingsPercent}%)`
         );
       }
     }

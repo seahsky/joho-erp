@@ -22,6 +22,7 @@ import {
 import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 type Customer = {
   id: string;
@@ -121,7 +122,7 @@ export default function CustomersPage() {
       label: t('creditLimit'),
       render: (_, customer) =>
         customer.creditApplication.creditLimit > 0
-          ? `$${customer.creditApplication.creditLimit.toLocaleString()}`
+          ? formatCurrency(customer.creditApplication.creditLimit)
           : '-',
     },
     {
@@ -189,7 +190,7 @@ export default function CustomersPage() {
           <div>
             <p className="text-sm font-medium">
               {customer.creditApplication.creditLimit > 0
-                ? `$${customer.creditApplication.creditLimit.toLocaleString()}`
+                ? formatCurrency(customer.creditApplication.creditLimit)
                 : t('noCredit')}
             </p>
             <StatusBadge status={customer.creditApplication.status as StatusType} showIcon={false} />

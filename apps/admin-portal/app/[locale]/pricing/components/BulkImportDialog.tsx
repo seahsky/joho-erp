@@ -12,6 +12,7 @@ import {
 import { Loader2, Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { parseToCents } from '@jimmy-beef/shared';
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -87,7 +88,7 @@ export function BulkImportDialog({
       data.push({
         customerAbn: row['customer_abn'] || row['abn'],
         productSku: row['product_sku'] || row['sku'],
-        customPrice: parseFloat(row['custom_price'] || row['price']),
+        customPrice: parseToCents(row['custom_price'] || row['price']) || 0,
         effectiveFrom: row['effective_from'] ? new Date(row['effective_from']) : undefined,
         effectiveTo: row['effective_to'] ? new Date(row['effective_to']) : undefined,
       });

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice } from '@jimmy-beef/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@jimmy-beef/shared';
 
 export const orderRouter = router({
   // Create order
@@ -95,10 +95,15 @@ export const orderRouter = router({
           });
         }
 
-        // Get effective price (custom or base price)
+        // Get effective price (custom or base price) - already in cents
         const customPricing = pricingMap.get(product.id);
         const priceInfo = getEffectivePrice(product.basePrice, customPricing);
-        const effectivePrice = priceInfo.effectivePrice;
+        const effectivePrice = priceInfo.effectivePrice; // In cents
+
+        // Calculate item subtotal using dinero.js for precision
+        const priceMoney = createMoney(effectivePrice);
+        const itemSubtotalMoney = multiplyMoney(priceMoney, item.quantity);
+        const itemSubtotal = toCents(itemSubtotalMoney);
 
         return {
           productId: product.id,
@@ -106,8 +111,8 @@ export const orderRouter = router({
           productName: product.name,
           unit: product.unit,
           quantity: item.quantity,
-          unitPrice: effectivePrice, // Use customer-specific price if available
-          subtotal: item.quantity * effectivePrice,
+          unitPrice: effectivePrice, // In cents
+          subtotal: itemSubtotal, // In cents
         };
       });
 

@@ -21,6 +21,7 @@ import {
 import { Search, ShoppingBag, Loader2, Eye, Package, PackageX } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 type Order = {
   id: string;
@@ -118,7 +119,7 @@ export default function OrdersPage() {
     {
       key: 'totalAmount',
       label: t('total'),
-      render: (value) => `$${(value as number).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`,
+      render: (value) => formatCurrency(value as number), // value is in cents
     },
     {
       key: 'status',
@@ -164,7 +165,7 @@ export default function OrdersPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('total')}</p>
-          <p className="font-medium">${order.totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
+          <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
         </div>
       </div>
 
@@ -280,7 +281,7 @@ export default function OrdersPage() {
             <div>
               <CardDescription>{t('totalRevenue')}</CardDescription>
               <div className="text-3xl font-bold tabular-nums">
-                $<CountUp end={totalRevenue} />
+                {formatCurrency(totalRevenue)}
               </div>
             </div>
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

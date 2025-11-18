@@ -17,6 +17,7 @@ import {
 import { SignOutButton } from '@clerk/nextjs';
 import type { User as ClerkUser } from '@clerk/nextjs/server';
 import { api } from '@/trpc/client';
+import { formatCurrency } from '@jimmy-beef/shared';
 
 export function ProfileContent({ user }: { user: ClerkUser | null }) {
   const t = useTranslations('profile');
@@ -178,13 +179,13 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('creditLimit')}</p>
                   <p className="text-xl font-bold">
-                    ${customer.creditApplication.creditLimit.toLocaleString()}
+                    {formatCurrency(customer.creditApplication.creditLimit)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('availableCredit')}</p>
                   <p className="text-xl font-bold text-green-600">
-                    ${availableCredit.toLocaleString()}
+                    {formatCurrency(availableCredit)}
                   </p>
                 </div>
               </div>
@@ -192,8 +193,8 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">{t('used')}</span>
                   <span className="font-medium">
-                    ${usedCredit.toLocaleString()} /{' '}
-                    ${customer.creditApplication.creditLimit.toLocaleString()}
+                    {formatCurrency(usedCredit)} /{' '}
+                    {formatCurrency(customer.creditApplication.creditLimit)}
                   </span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">

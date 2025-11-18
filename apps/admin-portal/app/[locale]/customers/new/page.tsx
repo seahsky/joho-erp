@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
+import { parseToCents } from '@jimmy-beef/shared';
 
 // Type definitions
 type DirectorInfo = {
@@ -761,14 +762,15 @@ export default function NewCustomerPage() {
                       min="0"
                       step="100"
                       placeholder={t('creditApplication.requestedCreditLimitPlaceholder')}
-                      value={formData.requestedCreditLimit || ''}
+                      value={formData.requestedCreditLimit ? (formData.requestedCreditLimit / 100).toFixed(0) : ''}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          requestedCreditLimit: e.target.value ? Number(e.target.value) : undefined,
+                          requestedCreditLimit: e.target.value ? parseToCents(e.target.value) || undefined : undefined,
                         })
                       }
                     />
+                    <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="forecastPurchase">{t('creditApplication.forecastPurchase')}</Label>
@@ -778,14 +780,15 @@ export default function NewCustomerPage() {
                       min="0"
                       step="100"
                       placeholder={t('creditApplication.forecastPurchasePlaceholder')}
-                      value={formData.forecastPurchase || ''}
+                      value={formData.forecastPurchase ? (formData.forecastPurchase / 100).toFixed(0) : ''}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          forecastPurchase: e.target.value ? Number(e.target.value) : undefined,
+                          forecastPurchase: e.target.value ? parseToCents(e.target.value) || undefined : undefined,
                         })
                       }
                     />
+                    <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
                 </div>
 
@@ -798,10 +801,10 @@ export default function NewCustomerPage() {
                       min="0"
                       step="100"
                       placeholder={t('creditApplication.approvedCreditLimitPlaceholder')}
-                      value={formData.creditLimit}
-                      onChange={(e) => setFormData({ ...formData, creditLimit: Number(e.target.value) })}
+                      value={formData.creditLimit ? (formData.creditLimit / 100).toFixed(0) : '0'}
+                      onChange={(e) => setFormData({ ...formData, creditLimit: parseToCents(e.target.value) || 0 })}
                     />
-                    <p className="text-xs text-muted-foreground">{t('creditApplication.noCredit')}</p>
+                    <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="paymentTerms">{t('creditApplication.paymentTerms')}</Label>

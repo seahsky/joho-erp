@@ -47,7 +47,7 @@ importers:
         version: link:../../packages/database
       '@jimmy-beef/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: file:packages/shared(react@18.3.1)
       '@jimmy-beef/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -168,7 +168,7 @@ importers:
         version: link:../../packages/database
       '@jimmy-beef/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: file:packages/shared(react@18.3.1)
       '@jimmy-beef/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -277,7 +277,7 @@ importers:
         version: link:../database
       '@jimmy-beef/shared':
         specifier: workspace:*
-        version: link:../shared
+        version: file:packages/shared(react@18.3.1)
       '@trpc/server':
         specifier: ^10.45.0
         version: 10.45.2
@@ -322,6 +322,12 @@ importers:
 
   packages/shared:
     dependencies:
+      '@dinero.js/currencies':
+        specifier: 2.0.0-alpha.1
+        version: 2.0.0-alpha.1
+      dinero.js:
+        specifier: 2.0.0-alpha.14
+        version: 2.0.0-alpha.14
       react:
         specifier: ^18.0.0
         version: 18.3.1
@@ -440,6 +446,18 @@ packages:
   '@clerk/types@4.100.0':
     resolution: {integrity: sha512-QT9GIO3bDL4R+ojAtc8XeJc/ehkdcF/+6PN3tcRWwGe4eMbX2TQ54/mhXJiY01DhMwBnF5cgK3O/z3D+34B07Q==}
     engines: {node: '>=18.17.0'}
+
+  '@dinero.js/calculator-number@2.0.0-alpha.14':
+    resolution: {integrity: sha512-Vmlu6eXNtkFU2cqlrpqfq8KQP9onALf8Es2d34liVa3k3RHjuhizgFUU3V3/tsjOu5WekZq+gYPOr58XVTkB7A==}
+
+  '@dinero.js/core@2.0.0-alpha.14':
+    resolution: {integrity: sha512-CtKELJ783joUbaU62fRM2xDXb4XYSy0MgOuIkPWgVOS3SYKKb6+2Ec9bNlvrW8lsPROz/RsvCuYVTphrZ79twg==}
+
+  '@dinero.js/currencies@2.0.0-alpha.1':
+    resolution: {integrity: sha512-JoKY6q3AOm2II44qLp6VMGn+j+p6QC39m3DFogKZXsucWIIvzt7c2v04DZrrHWLNnDYNzITOnbQ7f2pGbONjig==}
+
+  '@dinero.js/currencies@2.0.0-alpha.14':
+    resolution: {integrity: sha512-Ck5ZLjRI7Pl7Y4VkeOst4WEwiN5vZezv8GHcXWsVLUfTNsmkV37VeLYDRAuTUP4akEJyIry+1o1qHYNtLq3eNw==}
 
   '@emnapi/core@1.7.0':
     resolution: {integrity: sha512-pJdKGq/1iquWYtv1RRSljZklxHCOCAJFJrImO5ZLKPJVJlVUcs8yFwNQlqS0Lo8xT1VAXXTCZocF9n26FWEKsw==}
@@ -676,6 +694,11 @@ packages:
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
+
+  '@jimmy-beef/shared@file:packages/shared':
+    resolution: {directory: packages/shared, type: directory}
+    peerDependencies:
+      react: ^18.0.0
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1941,6 +1964,9 @@ packages:
 
   didyoumean@1.2.2:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
+
+  dinero.js@2.0.0-alpha.14:
+    resolution: {integrity: sha512-dkURHd9P+2TjuSTMUAnvrB7SsL4GbBYG/WPtIBV8M+L7Xf80x84sJcUUTxIS33S4AlkIbVANlaL86w2g5zdrmg==}
 
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
@@ -3600,6 +3626,18 @@ snapshots:
       - react
       - react-dom
 
+  '@dinero.js/calculator-number@2.0.0-alpha.14':
+    dependencies:
+      '@dinero.js/core': 2.0.0-alpha.14
+
+  '@dinero.js/core@2.0.0-alpha.14':
+    dependencies:
+      '@dinero.js/currencies': 2.0.0-alpha.14
+
+  '@dinero.js/currencies@2.0.0-alpha.1': {}
+
+  '@dinero.js/currencies@2.0.0-alpha.14': {}
+
   '@emnapi/core@1.7.0':
     dependencies:
       '@emnapi/wasi-threads': 1.1.0
@@ -3786,6 +3824,11 @@ snapshots:
       strip-ansi-cjs: strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
+
+  '@jimmy-beef/shared@file:packages/shared(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      zod: 3.25.76
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4984,6 +5027,12 @@ snapshots:
 
   didyoumean@1.2.2: {}
 
+  dinero.js@2.0.0-alpha.14:
+    dependencies:
+      '@dinero.js/calculator-number': 2.0.0-alpha.14
+      '@dinero.js/core': 2.0.0-alpha.14
+      '@dinero.js/currencies': 2.0.0-alpha.14
+
   dir-glob@3.0.1:
     dependencies:
       path-type: 4.0.0
@@ -5194,8 +5243,8 @@ snapshots:
       '@typescript-eslint/parser': 6.21.0(eslint@8.57.1)(typescript@5.9.3)
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@8.57.1)
       eslint-plugin-react: 7.37.5(eslint@8.57.1)
       eslint-plugin-react-hooks: 5.0.0-canary-7118f5dd7-20230705(eslint@8.57.1)
@@ -5214,7 +5263,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@8.57.1):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
@@ -5225,22 +5274,22 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 6.21.0(eslint@8.57.1)(typescript@5.9.3)
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -5251,7 +5300,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
