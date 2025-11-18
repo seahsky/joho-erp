@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import type { AreaTag, ProductUnit, ProductStatus, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
+import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
 // Melbourne suburbs with coordinates and area tags
 const melbourneSuburbs = [
@@ -788,12 +789,28 @@ function createOrdersForCustomer(
     const orderNumber = generateOrderNumber();
 
     // Set delivery date based on status
+    // For confirmed/packing orders, spread across today, tomorrow, and day after tomorrow
     let requestedDeliveryDate = new Date();
     if (statusInfo.status === 'delivered') {
+      // Historical orders: 2 days ago
       requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() - 2);
     } else if (statusInfo.status === 'out_for_delivery') {
-      // Today
+      // Currently being delivered: today
+    } else if (statusInfo.status === 'confirmed' || statusInfo.status === 'packing') {
+      // Confirmed/packing orders: spread across today (33%), tomorrow (50%), day after (17%)
+      const dateVariation = Math.random();
+      if (dateVariation < 0.33) {
+        // 33% today (urgent)
+        requestedDeliveryDate.setDate(requestedDeliveryDate.getDate());
+      } else if (dateVariation < 0.83) {
+        // 50% tomorrow (most common)
+        requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 1);
+      } else {
+        // 17% day after tomorrow
+        requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 2);
+      }
     } else {
+      // Other statuses (pending, ready_for_delivery): tomorrow
       requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 1);
     }
 
@@ -879,6 +896,17 @@ function createOrdersForCustomer(
       });
     }
 
+    if (statusInfo.status === 'packing') {
+      order.statusHistory.push({
+        status: 'packing',
+        changedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+        changedBy: 'admin_user',
+        notes: 'Order is currently being packed',
+      });
+      // Note: No packing object yet - order is still in progress
+      // This allows testing the in-progress packing workflow
+    }
+
     if (statusInfo.status === 'ready_for_delivery') {
       order.statusHistory.push({
         status: 'packing',
@@ -908,18 +936,42 @@ async function seed() {
     console.log('🌱 Starting database seeding...\n');
     console.log('✅ Connected to database via Prisma\n');
 
-    // Clear existing data
-    console.log('🗑️  Clearing existing data...');
+    // Pre-seed validation: Check for existing data and orphans
+    const hasExistingData = await checkExistingData();
+    if (hasExistingData) {
+      console.log('🔍 Running pre-seed validation on existing data...\n');
+      const preValidation = await validateSeedData();
+      if (!preValidation.isValid) {
+        console.log('⚠️  Found orphaned records in existing data!');
+        console.log('    These will be cleaned up during seeding...\n');
+      }
+    }
+
+    // Clear existing data (children before parents to maintain referential integrity)
+    console.log('🗑️  Clearing existing data in dependency order...');
+    console.log('   Step 1: Deleting child entities (Orders, Pricing, Transactions, Logs)...');
     await prisma.order.deleteMany({});
+    console.log('      ✓ Orders deleted');
     await prisma.inventoryTransaction.deleteMany({});
+    console.log('      ✓ Inventory transactions deleted');
     await prisma.auditLog.deleteMany({});
+    console.log('      ✓ Audit logs deleted');
     await prisma.systemLog.deleteMany({});
+    console.log('      ✓ System logs deleted');
     await prisma.customerPricing.deleteMany({});
+    console.log('      ✓ Customer pricing deleted');
+
+    console.log('   Step 2: Deleting parent entities (Customers, Products, Company, Suburbs)...');
     await prisma.customer.deleteMany({});
+    console.log('      ✓ Customers deleted');
     await prisma.product.deleteMany({});
+    console.log('      ✓ Products deleted');
     await prisma.company.deleteMany({});
+    console.log('      ✓ Company deleted');
     await prisma.suburbAreaMapping.deleteMany({});
-    console.log('✅ Existing data cleared\n');
+    console.log('      ✓ Suburb mappings deleted');
+
+    console.log('✅ All existing data cleared\n');
 
     // Seed Company Settings
     console.log('🏢 Creating company settings...');
@@ -965,9 +1017,16 @@ async function seed() {
     const createdProducts = await Promise.all(
       products.map((p) => prisma.product.create({ data: p }))
     );
-    console.log(`✅ Created ${createdProducts.length} products:`);
+
+    // Validate all products have IDs
+    const productsWithoutIds = createdProducts.filter(p => !p.id);
+    if (productsWithoutIds.length > 0) {
+      throw new Error(`❌ ${productsWithoutIds.length} products were created without IDs! This should never happen.`);
+    }
+
+    console.log(`✅ Created ${createdProducts.length} products (all with valid IDs):`);
     createdProducts.forEach((p) => {
-      console.log(`   - ${p.sku}: ${p.name} ($${(p.basePrice / 100).toFixed(2)}/${p.unit})`);
+      console.log(`   - ${p.sku}: ${p.name} ($${(p.basePrice / 100).toFixed(2)}/${p.unit}) [ID: ${p.id.substring(0, 8)}...]`);
     });
     console.log('');
 
@@ -1059,10 +1118,17 @@ async function seed() {
     const createdCustomers = await Promise.all(
       customers.map((c) => prisma.customer.create({ data: c }))
     );
-    console.log(`✅ Created ${createdCustomers.length} customers:`);
+
+    // Validate all customers have IDs
+    const customersWithoutIds = createdCustomers.filter(c => !c.id);
+    if (customersWithoutIds.length > 0) {
+      throw new Error(`❌ ${customersWithoutIds.length} customers were created without IDs! This should never happen.`);
+    }
+
+    console.log(`✅ Created ${createdCustomers.length} customers (all with valid IDs):`);
     createdCustomers.forEach((c) => {
       console.log(
-        `   - ${c.businessName} (${c.deliveryAddress.suburb}, ${c.deliveryAddress.areaTag}) - ${c.creditApplication.status}`
+        `   - ${c.businessName} (${c.deliveryAddress.suburb}, ${c.deliveryAddress.areaTag}) - ${c.creditApplication.status} [ID: ${c.id.substring(0, 8)}...]`
       );
     });
     console.log('');
@@ -1197,6 +1263,21 @@ async function seed() {
       });
     }
 
+    // Validate all references before creating pricing
+    console.log(`   Validating ${customerPricingData.length} pricing records before creation...`);
+    const customerIdSet = new Set(createdCustomers.map(c => c.id));
+    const productIdSet = new Set(createdProducts.map(p => p.id));
+
+    for (const pricing of customerPricingData) {
+      if (!customerIdSet.has(pricing.customerId)) {
+        throw new Error(`❌ Pricing record references non-existent customer ID: ${pricing.customerId}`);
+      }
+      if (!productIdSet.has(pricing.productId)) {
+        throw new Error(`❌ Pricing record references non-existent product ID: ${pricing.productId}`);
+      }
+    }
+    console.log(`   ✓ All ${customerPricingData.length} pricing records reference valid customers and products`);
+
     const createdPricing = await Promise.all(
       customerPricingData.map((p) => prisma.customerPricing.create({ data: p }))
     );
@@ -1215,6 +1296,12 @@ async function seed() {
     console.log('');
 
     // Seed Orders with different statuses
+    // 📋 PACKING PAGE REQUIREMENTS:
+    // - Packing page ONLY shows orders with status 'confirmed' or 'packing'
+    // - Default view shows orders for tomorrow's delivery date
+    // - Order items MUST have productId (used as React key)
+    // - Customer relationship required for businessName
+    // - Status distribution optimized for packing page testing
     console.log('📦 Creating orders...');
     const allOrders = [];
 
@@ -1239,13 +1326,14 @@ async function seed() {
       const numOrders = Math.floor(Math.random() * 3) + 2; // 2-4 orders
 
       for (let j = 0; j < numOrders; j++) {
+        // Status distribution optimized for packing page (84% visible: confirmed + packing)
         const statusOptions = [
-          { status: 'ready_for_delivery' },
-          { status: 'out_for_delivery', ...drivers[i % drivers.length] },
-          { status: 'delivered', ...drivers[i % drivers.length], hasProofOfDelivery: true, hasXero: true },
-          { status: 'confirmed' },
-          { status: 'cancelled' },
-          { status: 'pending' },
+          { status: 'confirmed' },         // 33% - Ready for packing
+          { status: 'confirmed' },         // 33% - More confirmed orders
+          { status: 'packing' },           // 17% - Currently being packed
+          { status: 'ready_for_delivery' }, // 8% - Already packed
+          { status: 'pending' },           // 8% - Not yet ready
+          { status: 'delivered', ...drivers[i % drivers.length], hasProofOfDelivery: true, hasXero: true }, // Historical
         ];
         orderStatuses.push(statusOptions[j % statusOptions.length]);
       }
@@ -1258,10 +1346,30 @@ async function seed() {
       allOrders.push(...customerOrders);
     }
 
+    // Validate all order references before creation
+    console.log(`   Validating ${allOrders.length} orders before creation...`);
+    const validCustomerIds = new Set(createdCustomers.map(c => c.id));
+    const validProductIds = new Set(createdProducts.map(p => p.id));
+
+    for (const order of allOrders) {
+      // Validate customer ID
+      if (!validCustomerIds.has(order.customerId)) {
+        throw new Error(`❌ Order ${order.orderNumber} references non-existent customer ID: ${order.customerId}`);
+      }
+
+      // Validate all product IDs in order items
+      for (const item of order.items) {
+        if (!validProductIds.has(item.productId)) {
+          throw new Error(`❌ Order ${order.orderNumber} item references non-existent product ID: ${item.productId} (SKU: ${item.sku})`);
+        }
+      }
+    }
+    console.log(`   ✓ All ${allOrders.length} orders reference valid customers and products`);
+
     const createdOrders = await Promise.all(
       allOrders.map((o) => prisma.order.create({ data: o }))
     );
-    console.log(`✅ Created ${createdOrders.length} orders\n`);
+    console.log(`✅ Created ${createdOrders.length} orders (all relationships validated)\n`);
 
     // Create sale inventory transactions for delivered orders
     console.log('📤 Creating sale inventory transactions for delivered orders...');
@@ -1560,7 +1668,7 @@ async function seed() {
     console.log(`✅ Created ${createdSystemLogs.length} system log entries\n`);
 
     console.log('\n✨ Database seeding completed successfully!\n');
-    console.log('📝 Summary:');
+    console.log('📝 Seeding Summary:');
     console.log(`   - Company: ${company.businessName}`);
     console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
     console.log(`   - Products: ${createdProducts.length} (active: ${createdProducts.filter(p => p.status === 'active').length}, discontinued: ${createdProducts.filter(p => p.status === 'discontinued').length}, out_of_stock: ${createdProducts.filter(p => p.status === 'out_of_stock').length})`);
@@ -1571,10 +1679,40 @@ async function seed() {
     console.log(`   - Audit Logs: ${createdAuditLogs.length}`);
     console.log(`   - System Logs: ${createdSystemLogs.length}\n`);
 
+    // Post-seed validation: Verify all relationships are intact
+    console.log('🔍 Running post-seed validation...\n');
+    const postValidation = await validateSeedData();
+    printValidationResults(postValidation);
+
+    if (!postValidation.isValid) {
+      console.error('❌ Post-seed validation failed! Database contains orphaned records.');
+      console.error('   This indicates a bug in the seed script. Please review the errors above.\n');
+      await prisma.$disconnect();
+      process.exit(1);
+    }
+
+    console.log('✅ All relationship validations passed! Database is in a consistent state.\n');
+
     await prisma.$disconnect();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    console.error('\n' + '='.repeat(80));
+    console.error('❌ FATAL ERROR: Database seeding failed!');
+    console.error('='.repeat(80));
+
+    if (error instanceof Error) {
+      console.error(`\n🔴 Error Message: ${error.message}`);
+      if (error.stack) {
+        console.error(`\n📚 Stack Trace:\n${error.stack}`);
+      }
+    } else {
+      console.error('\n🔴 Unknown error:', error);
+    }
+
+    console.error('\n⚠️  The database may be in an inconsistent state.');
+    console.error('   Please review the error above and run the seed script again.\n');
+    console.error('='.repeat(80) + '\n');
+
     await prisma.$disconnect();
     process.exit(1);
   }
