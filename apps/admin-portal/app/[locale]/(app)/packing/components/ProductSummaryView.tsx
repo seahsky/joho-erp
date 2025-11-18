@@ -123,6 +123,15 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
   ];
 
   const mobileCard = (item: ProductSummaryItem) => {
+    // Defensive: Return null if productId is missing to prevent crashes
+    if (!item?.productId) {
+      console.warn('MobileCard: Item missing productId, skipping render:', {
+        sku: item?.sku,
+        productName: item?.productName,
+      });
+      return null;
+    }
+
     const isGathered = gatheredProducts.has(item.productId);
 
     return (
