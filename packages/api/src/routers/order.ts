@@ -53,6 +53,15 @@ export const orderRouter = router({
         });
       }
 
+      // Defensive: Validate all items have productId
+      const invalidItems = input.items.filter((item) => !item.productId);
+      if (invalidItems.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'All order items must have a valid productId',
+        });
+      }
+
       // Get products and validate stock
       const productIds = input.items.map((item) => item.productId);
       const products = await prisma.product.findMany({

@@ -762,19 +762,27 @@ function createOrdersForCustomer(
       .sort(() => Math.random() - 0.5)
       .slice(0, numItems);
 
-    const items = selectedProducts.map((product) => {
-      const quantity = Math.floor(Math.random() * 5) + 1; // 1-5 packages
-      const subtotal = quantity * product.basePrice;
-      return {
-        productId: product.id,
-        sku: product.sku,
-        productName: product.name,
-        unit: product.unit,
-        quantity,
-        unitPrice: product.basePrice,
-        subtotal,
-      };
-    });
+    const items = selectedProducts
+      .map((product) => {
+        // Defensive: Ensure product has valid id
+        if (!product.id) {
+          console.warn('Seed: Product missing id, skipping:', product.name);
+          return null;
+        }
+
+        const quantity = Math.floor(Math.random() * 5) + 1; // 1-5 packages
+        const subtotal = quantity * product.basePrice;
+        return {
+          productId: product.id,
+          sku: product.sku,
+          productName: product.name,
+          unit: product.unit,
+          quantity,
+          unitPrice: product.basePrice,
+          subtotal,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     const totals = calculateOrderTotals(items);
     const orderNumber = generateOrderNumber();
