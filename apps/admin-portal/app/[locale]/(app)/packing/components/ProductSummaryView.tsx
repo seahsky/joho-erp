@@ -34,6 +34,18 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
   const t = useTranslations('packing');
   const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(new Set());
 
+  // Defensive: Filter out items without productId (second line of defense)
+  const validProductSummary = productSummary.filter((item) => {
+    if (!item.productId) {
+      console.warn('Product summary item missing productId:', {
+        sku: item.sku,
+        productName: item.productName,
+      });
+      return false;
+    }
+    return true;
+  });
+
   const toggleProductGathered = (productId: string) => {
     setGatheredProducts((prev) => {
       const next = new Set(prev);
@@ -47,7 +59,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
   };
 
   const gatheredCount = gatheredProducts.size;
-  const totalCount = productSummary.length;
+  const totalCount = validProductSummary.length;
 
   const columns: Column<ProductSummaryItem>[] = [
     {
@@ -178,7 +190,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
         <CardContent>
           <ResponsiveTable
             columns={columns}
-            data={productSummary}
+            data={validProductSummary}
             mobileCard={mobileCard}
             emptyMessage={t('noProducts')}
           />

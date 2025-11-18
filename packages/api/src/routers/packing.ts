@@ -67,6 +67,15 @@ export const packingRouter = router({
 
       for (const order of orders) {
         for (const item of order.items) {
+          // Defensive: Skip items without productId
+          if (!item.productId) {
+            console.warn(`Order ${order.orderNumber} has item without productId:`, {
+              sku: item.sku,
+              productName: item.productName,
+            });
+            continue;
+          }
+
           const productId = item.productId;
 
           if (productMap.has(productId)) {
