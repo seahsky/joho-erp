@@ -120,55 +120,57 @@ export default function PackingPage() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="stat-card-gradient">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('totalOrders')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              <span className="text-3xl font-bold">
-                <CountUp end={totalOrders} duration={1} />
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      {totalOrders > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="stat-card-gradient">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('totalOrders')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <span className="text-3xl font-bold">
+                  <CountUp end={totalOrders} duration={1} />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="stat-card-gradient">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('uniqueProducts')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <PackageCheck className="h-5 w-5 text-success" />
-              <span className="text-3xl font-bold">
-                <CountUp end={totalProducts} duration={1} />
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="stat-card-gradient">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('uniqueProducts')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <PackageCheck className="h-5 w-5 text-success" />
+                <span className="text-3xl font-bold">
+                  <CountUp end={totalProducts} duration={1} />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="stat-card-gradient">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('totalItems')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Grid3x3 className="h-5 w-5 text-info" />
-              <span className="text-3xl font-bold">
-                <CountUp end={totalItems} duration={1} />
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="stat-card-gradient">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('totalItems')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Grid3x3 className="h-5 w-5 text-info" />
+                <span className="text-3xl font-bold">
+                  <CountUp end={totalItems} duration={1} />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* View Toggle */}
       {totalOrders > 0 && (
