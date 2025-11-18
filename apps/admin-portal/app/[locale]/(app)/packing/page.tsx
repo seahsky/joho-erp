@@ -12,6 +12,7 @@ import {
   Button,
   EmptyState,
   CountUp,
+  Input,
 } from '@jimmy-beef/ui';
 import { Package, Calendar, Loader2, PackageCheck, List, Grid3x3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -102,12 +103,15 @@ export default function PackingPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <input
-              type="date"
-              value={dateInputValue}
-              onChange={handleDateChange}
-              className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={dateInputValue}
+                onChange={handleDateChange}
+                className="pl-10"
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               {formatDate(deliveryDate)}
             </p>

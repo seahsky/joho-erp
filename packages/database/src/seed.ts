@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, CustomerStatus, CreditApplicationStatus } from './generated/prisma';
+import type { AreaTag, ProductUnit, ProductStatus, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
 
 // Melbourne suburbs with coordinates and area tags
@@ -213,6 +213,122 @@ const products = [
     basePrice: 1000, // $10.00 in cents
     currentStock: 150,
     lowStockThreshold: 30,
+    status: 'active' as ProductStatus,
+  },
+
+  // Products with Different Units
+  {
+    sku: 'BEEF-PATTY-BOX',
+    name: 'Beef Burger Patties',
+    description: 'Premium beef burger patties, 150g each',
+    category: 'Processed - Patties',
+    unit: 'box' as ProductUnit,
+    packageSize: 1,
+    basePrice: 4500, // $45.00 in cents (30 patties per box)
+    currentStock: 85,
+    lowStockThreshold: 20,
+    status: 'active' as ProductStatus,
+  },
+  {
+    sku: 'STEAK-PREMIUM-CARTON',
+    name: 'Mixed Premium Steaks Carton',
+    description: 'Assorted premium steaks in bulk carton',
+    category: 'Beef - Premium Cuts',
+    unit: 'carton' as ProductUnit,
+    packageSize: 1,
+    basePrice: 32000, // $320.00 in cents (20kg mixed steaks)
+    currentStock: 45,
+    lowStockThreshold: 10,
+    status: 'active' as ProductStatus,
+  },
+  {
+    sku: 'LAMB-CUTLET-PIECE',
+    name: 'Lamb Cutlet (Single Rack)',
+    description: 'Premium lamb cutlet rack, French trimmed',
+    category: 'Lamb - Premium Cuts',
+    unit: 'piece' as ProductUnit,
+    packageSize: 1,
+    basePrice: 2800, // $28.00 in cents per rack
+    currentStock: 120,
+    lowStockThreshold: 25,
+    status: 'active' as ProductStatus,
+  },
+
+  // Discontinued Products
+  {
+    sku: 'BEEF-OXTAIL-5KG',
+    name: 'Beef Oxtail',
+    description: 'Premium beef oxtail (DISCONTINUED - supplier issue)',
+    category: 'Beef - Specialty',
+    unit: 'kg' as ProductUnit,
+    packageSize: 5,
+    basePrice: 1650, // $16.50 in cents
+    currentStock: 25,
+    lowStockThreshold: 10,
+    status: 'discontinued' as ProductStatus,
+  },
+  {
+    sku: 'PORK-HOCK-8KG',
+    name: 'Pork Hock',
+    description: 'Pork hocks for braising (DISCONTINUED - low demand)',
+    category: 'Pork - Specialty',
+    unit: 'kg' as ProductUnit,
+    packageSize: 8,
+    basePrice: 950, // $9.50 in cents
+    currentStock: 15,
+    lowStockThreshold: 5,
+    status: 'discontinued' as ProductStatus,
+  },
+
+  // Out of Stock Products
+  {
+    sku: 'WAGYU-SIRLOIN-3KG',
+    name: 'Wagyu Sirloin A5',
+    description: 'Premium Japanese Wagyu sirloin (OUT OF STOCK)',
+    category: 'Beef - Premium Cuts',
+    unit: 'kg' as ProductUnit,
+    packageSize: 3,
+    basePrice: 12000, // $120.00 in cents
+    currentStock: 0,
+    lowStockThreshold: 5,
+    status: 'out_of_stock' as ProductStatus,
+  },
+  {
+    sku: 'BEEF-TONGUE-4KG',
+    name: 'Beef Tongue',
+    description: 'Whole beef tongue (OUT OF STOCK - awaiting delivery)',
+    category: 'Beef - Offal',
+    unit: 'kg' as ProductUnit,
+    packageSize: 4,
+    basePrice: 1450, // $14.50 in cents
+    currentStock: 0,
+    lowStockThreshold: 10,
+    status: 'out_of_stock' as ProductStatus,
+  },
+
+  // Products at Low Stock Threshold (for alerts testing)
+  {
+    sku: 'PORK-SAUSAGE-5KG',
+    name: 'Pork Sausages',
+    description: 'Traditional pork sausages',
+    category: 'Processed - Sausages',
+    unit: 'kg' as ProductUnit,
+    packageSize: 5,
+    basePrice: 900, // $9.00 in cents
+    currentStock: 30, // Exactly at threshold
+    lowStockThreshold: 30,
+    status: 'active' as ProductStatus,
+  },
+  {
+    sku: 'BEEF-LIVER-3KG',
+    name: 'Beef Liver',
+    description: 'Fresh beef liver',
+    category: 'Beef - Offal',
+    unit: 'kg' as ProductUnit,
+    packageSize: 3,
+    basePrice: 850, // $8.50 in cents
+    currentStock: 18, // Below threshold (20)
+    lowStockThreshold: 20,
     status: 'active' as ProductStatus,
   },
 ];
@@ -468,6 +584,137 @@ const customers = [
     },
     status: 'active' as CustomerStatus,
   },
+
+  // Suspended Customer (payment issues)
+  {
+    clerkUserId: 'user_seed_009',
+    businessName: 'Preston Steakhouse',
+    abn: '90123456789',
+    contactPerson: {
+      firstName: 'Robert',
+      lastName: 'Thompson',
+      email: 'robert@prestonsteaks.com.au',
+      phone: '03 9484 8901',
+      mobile: '0490 123 456',
+    },
+    deliveryAddress: {
+      street: '78 High Street',
+      suburb: 'Preston',
+      state: 'VIC',
+      postcode: '3072',
+      country: 'Australia',
+      areaTag: 'north' as AreaTag,
+      latitude: -37.7465,
+      longitude: 145.0034,
+      deliveryInstructions: 'Delivery during business hours only',
+    },
+    creditApplication: {
+      status: 'approved' as CreditApplicationStatus,
+      appliedAt: new Date('2024-12-01'),
+      reviewedAt: new Date('2024-12-02'),
+      creditLimit: 500000, // $5,000 in cents
+      paymentTerms: '14 days',
+      notes: 'Account suspended due to overdue invoices',
+    },
+    status: 'suspended' as CustomerStatus,
+  },
+
+  // Closed Customer (business ceased trading)
+  {
+    clerkUserId: 'user_seed_010',
+    businessName: 'Coburg Corner Deli',
+    abn: '01234567890',
+    contactPerson: {
+      firstName: 'Angela',
+      lastName: 'Morrison',
+      email: 'angela@coburgdeli.com.au',
+      phone: '03 9354 9012',
+      mobile: '0401 234 567',
+    },
+    deliveryAddress: {
+      street: '234 Sydney Road',
+      suburb: 'Coburg',
+      state: 'VIC',
+      postcode: '3058',
+      country: 'Australia',
+      areaTag: 'north' as AreaTag,
+      latitude: -37.7489,
+      longitude: 144.9631,
+    },
+    creditApplication: {
+      status: 'approved' as CreditApplicationStatus,
+      appliedAt: new Date('2024-10-01'),
+      reviewedAt: new Date('2024-10-02'),
+      creditLimit: 400000, // $4,000 in cents
+      paymentTerms: '30 days',
+      notes: 'Account closed - business ceased trading',
+    },
+    status: 'closed' as CustomerStatus,
+  },
+
+  // Rejected Credit Application
+  {
+    clerkUserId: 'user_seed_011',
+    businessName: 'Hawthorn Quick Bites',
+    abn: '12345098765',
+    contactPerson: {
+      firstName: 'Kevin',
+      lastName: 'Lee',
+      email: 'kevin@hawthornbites.com.au',
+      phone: '03 9818 0123',
+      mobile: '0412 345 098',
+    },
+    deliveryAddress: {
+      street: '456 Glenferrie Road',
+      suburb: 'Hawthorn',
+      state: 'VIC',
+      postcode: '3122',
+      country: 'Australia',
+      areaTag: 'east' as AreaTag,
+      latitude: -37.8226,
+      longitude: 145.0353,
+    },
+    creditApplication: {
+      status: 'rejected' as CreditApplicationStatus,
+      appliedAt: new Date('2025-02-08'),
+      reviewedAt: new Date('2025-02-09'),
+      creditLimit: 0,
+      notes: 'Insufficient trading history and references',
+    },
+    status: 'active' as CustomerStatus,
+  },
+
+  // Customer with minimal optional fields
+  {
+    clerkUserId: 'user_seed_012',
+    businessName: 'Elwood Beach Cafe',
+    abn: '23456109876',
+    contactPerson: {
+      firstName: 'Sarah',
+      lastName: 'Palmer',
+      email: 'sarah@elwoodcafe.com.au',
+      phone: '03 9531 1234',
+      // No mobile number
+    },
+    deliveryAddress: {
+      street: '89 Ormond Esplanade',
+      suburb: 'Elwood',
+      state: 'VIC',
+      postcode: '3184',
+      country: 'Australia',
+      areaTag: 'south' as AreaTag,
+      latitude: -37.8824,
+      longitude: 144.9868,
+      // No delivery instructions
+    },
+    creditApplication: {
+      status: 'pending' as CreditApplicationStatus,
+      appliedAt: new Date('2025-02-12'),
+      creditLimit: 0,
+      // No notes, reviewedAt, or reviewedBy
+    },
+    status: 'active' as CustomerStatus,
+  },
 ];
 
 // Helper function to calculate order totals (all values in cents)
@@ -594,6 +841,34 @@ function createOrdersForCustomer(
         changedBy: statusInfo.driverId,
         notes: 'Delivery completed',
       });
+
+      // Add proof of delivery for some delivered orders
+      if ((statusInfo as any).hasProofOfDelivery) {
+        order.delivery.proofOfDelivery = {
+          type: 'signature' as ProofOfDeliveryType,
+          fileUrl: `https://example.com/pod/${orderNumber}.jpg`,
+          uploadedAt: new Date(Date.now() - 10 * 60 * 1000),
+        };
+      }
+
+      // Add Xero integration data for some delivered orders
+      if ((statusInfo as any).hasXero) {
+        order.xero = {
+          invoiceId: `INV-${Math.floor(Math.random() * 100000)}`,
+          invoiceNumber: `${orderNumber}-INV`,
+          invoiceStatus: 'paid',
+          syncedAt: new Date(Date.now() - 5 * 60 * 1000),
+        };
+      }
+    }
+
+    if (statusInfo.status === 'cancelled') {
+      order.statusHistory.push({
+        status: 'cancelled',
+        changedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        changedBy: customer.clerkUserId,
+        notes: 'Order cancelled by customer',
+      });
     }
 
     if (statusInfo.status === 'ready_for_delivery') {
@@ -628,6 +903,9 @@ async function seed() {
     // Clear existing data
     console.log('🗑️  Clearing existing data...');
     await prisma.order.deleteMany({});
+    await prisma.inventoryTransaction.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+    await prisma.systemLog.deleteMany({});
     await prisma.customerPricing.deleteMany({});
     await prisma.customer.deleteMany({});
     await prisma.product.deleteMany({});
@@ -682,6 +960,89 @@ async function seed() {
     console.log(`✅ Created ${createdProducts.length} products:`);
     createdProducts.forEach((p) => {
       console.log(`   - ${p.sku}: ${p.name} ($${(p.basePrice / 100).toFixed(2)}/${p.unit})`);
+    });
+    console.log('');
+
+    // Seed Inventory Transactions (CRITICAL: Establishes stock audit trail)
+    console.log('📦 Creating inventory transactions...');
+    const inventoryTransactions = [];
+
+    // Create initial purchase transactions for all products (establishes how current stock was acquired)
+    for (const product of createdProducts) {
+      // Skip out of stock products (they never had stock to begin with in this scenario)
+      if (product.status === 'out_of_stock') continue;
+
+      // Initial purchase transaction (explains current stock)
+      inventoryTransactions.push({
+        productId: product.id,
+        type: 'purchase' as InventoryTransactionType,
+        quantity: product.currentStock,
+        previousStock: 0,
+        newStock: product.currentStock,
+        referenceType: 'purchase_order',
+        referenceId: product.id, // Using product ID as reference for initial stock
+        notes: `Initial stock purchase for ${product.name}`,
+        createdBy: 'admin_user',
+        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+      });
+    }
+
+    // Create some adjustment transactions for discontinued products
+    const discontinuedProducts = createdProducts.filter(p => p.status === 'discontinued');
+    for (const product of discontinuedProducts) {
+      inventoryTransactions.push({
+        productId: product.id,
+        type: 'adjustment' as InventoryTransactionType,
+        quantity: -10,
+        previousStock: product.currentStock + 10,
+        newStock: product.currentStock,
+        notes: `Stock adjustment for ${product.name} - product discontinued`,
+        createdBy: 'admin_user',
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      });
+    }
+
+    // Create return transaction example
+    const beefRump = createdProducts.find(p => p.sku === 'BEEF-RUMP-5KG');
+    if (beefRump) {
+      inventoryTransactions.push({
+        productId: beefRump.id,
+        type: 'return' as InventoryTransactionType,
+        quantity: 5,
+        previousStock: beefRump.currentStock - 5,
+        newStock: beefRump.currentStock,
+        notes: 'Customer return - order cancelled',
+        createdBy: 'admin_user',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+      });
+    }
+
+    // Create transfer transaction example
+    const porkBelly = createdProducts.find(p => p.sku === 'PORK-BELLY-10KG');
+    if (porkBelly) {
+      inventoryTransactions.push({
+        productId: porkBelly.id,
+        type: 'transfer' as InventoryTransactionType,
+        quantity: -15,
+        previousStock: porkBelly.currentStock + 15,
+        newStock: porkBelly.currentStock,
+        referenceType: 'warehouse_transfer',
+        notes: 'Transfer to warehouse B',
+        createdBy: 'admin_user',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      });
+    }
+
+    const createdInventoryTransactions = await Promise.all(
+      inventoryTransactions.map((t) => prisma.inventoryTransaction.create({ data: t }))
+    );
+    console.log(`✅ Created ${createdInventoryTransactions.length} inventory transactions:`);
+    const transactionsByType = createdInventoryTransactions.reduce((acc, t) => {
+      acc[t.type] = (acc[t.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    Object.entries(transactionsByType).forEach(([type, count]) => {
+      console.log(`   - ${type}: ${count} transactions`);
     });
     console.log('');
 
@@ -779,6 +1140,55 @@ async function seed() {
       if (porkChops) customerPricingData.push({ customerId: camberwellMeats.id, productId: porkChops.id, customPrice: 1200 }); // $12.00 ($1 off) in cents
     }
 
+    // St Kilda Seafood & Grill - Expired pricing (already expired)
+    const stkildaGrill = createdCustomers.find((c) => c.businessName === 'St Kilda Seafood & Grill');
+    if (stkildaGrill) {
+      const beefMince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-10KG');
+      const porkMince = createdProducts.find((p) => p.sku === 'PORK-MINCE-10KG');
+
+      const pastExpiry = new Date();
+      pastExpiry.setDate(pastExpiry.getDate() - 15); // Expired 15 days ago
+
+      if (beefMince) customerPricingData.push({
+        customerId: stkildaGrill.id,
+        productId: beefMince.id,
+        customPrice: 800, // $8.00 in cents (EXPIRED PRICING)
+        effectiveFrom: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // Started 60 days ago
+        effectiveTo: pastExpiry // Expired 15 days ago
+      });
+
+      if (porkMince) customerPricingData.push({
+        customerId: stkildaGrill.id,
+        productId: porkMince.id,
+        customPrice: 750, // $7.50 in cents
+        effectiveTo: pastExpiry // Expired 15 days ago
+      });
+    }
+
+    // Northcote Community Butcher - Future-dated pricing (not yet effective)
+    const northcoteButcher = createdCustomers.find((c) => c.businessName === 'Northcote Community Butcher');
+    if (northcoteButcher) {
+      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
+      const sirloin = createdProducts.find((p) => p.sku === 'BEEF-SIRLOIN-8KG');
+
+      const futureStart = new Date();
+      futureStart.setDate(futureStart.getDate() + 7); // Starts in 7 days
+
+      if (scotchFillet) customerPricingData.push({
+        customerId: northcoteButcher.id,
+        productId: scotchFillet.id,
+        customPrice: 2250, // $22.50 in cents (future pricing)
+        effectiveFrom: futureStart, // Starts in 7 days
+      });
+
+      if (sirloin) customerPricingData.push({
+        customerId: northcoteButcher.id,
+        productId: sirloin.id,
+        customPrice: 1850, // $18.50 in cents
+        effectiveFrom: futureStart, // Starts in 7 days
+      });
+    }
+
     const createdPricing = await Promise.all(
       customerPricingData.map((p) => prisma.customerPricing.create({ data: p }))
     );
@@ -817,15 +1227,17 @@ async function seed() {
 
       const orderStatuses = [];
 
-      // Give each customer 2-3 orders with different statuses
-      const numOrders = Math.floor(Math.random() * 2) + 2; // 2-3 orders
+      // Give each customer 2-4 orders with different statuses
+      const numOrders = Math.floor(Math.random() * 3) + 2; // 2-4 orders
 
       for (let j = 0; j < numOrders; j++) {
         const statusOptions = [
           { status: 'ready_for_delivery' },
           { status: 'out_for_delivery', ...drivers[i % drivers.length] },
-          { status: 'delivered', ...drivers[i % drivers.length] },
+          { status: 'delivered', ...drivers[i % drivers.length], hasProofOfDelivery: true, hasXero: true },
           { status: 'confirmed' },
+          { status: 'cancelled' },
+          { status: 'pending' },
         ];
         orderStatuses.push(statusOptions[j % statusOptions.length]);
       }
@@ -843,6 +1255,38 @@ async function seed() {
     );
     console.log(`✅ Created ${createdOrders.length} orders\n`);
 
+    // Create sale inventory transactions for delivered orders
+    console.log('📤 Creating sale inventory transactions for delivered orders...');
+    const saleTransactions = [];
+
+    for (const order of createdOrders) {
+      // Only create sale transactions for delivered orders
+      if (order.status === 'delivered') {
+        for (const item of order.items) {
+          const product = createdProducts.find(p => p.id === item.productId);
+          if (product) {
+            saleTransactions.push({
+              productId: item.productId,
+              type: 'sale' as InventoryTransactionType,
+              quantity: -item.quantity,
+              previousStock: product.currentStock + item.quantity,
+              newStock: product.currentStock,
+              referenceType: 'order',
+              referenceId: order.id,
+              notes: `Sale from order ${order.orderNumber} to ${order.customerName}`,
+              createdBy: order.delivery?.driverId || 'admin_user',
+              createdAt: order.delivery?.deliveredAt || order.updatedAt,
+            });
+          }
+        }
+      }
+    }
+
+    const createdSaleTransactions = await Promise.all(
+      saleTransactions.map((t) => prisma.inventoryTransaction.create({ data: t }))
+    );
+    console.log(`✅ Created ${createdSaleTransactions.length} sale transactions for delivered orders\n`);
+
     // Summary by status
     const statusCounts: Record<string, number> = {
       pending: 0,
@@ -851,6 +1295,7 @@ async function seed() {
       ready_for_delivery: 0,
       out_for_delivery: 0,
       delivered: 0,
+      cancelled: 0,
     };
 
     createdOrders.forEach((o) => {
@@ -865,15 +1310,258 @@ async function seed() {
         console.log(`   - ${status.replace(/_/g, ' ')}: ${count} orders`);
       }
     });
+    console.log('');
+
+    // Seed Audit Logs
+    console.log('📝 Creating audit logs...');
+    const auditLogs = [];
+
+    // Customer creation logs
+    for (const customer of createdCustomers) {
+      auditLogs.push({
+        userId: customer.clerkUserId,
+        action: 'create' as AuditAction,
+        entity: 'customer',
+        entityId: customer.id,
+        changes: {
+          businessName: customer.businessName,
+          abn: customer.abn,
+          status: customer.status,
+        },
+        metadata: {
+          source: 'database_seed',
+          creditStatus: customer.creditApplication.status,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'Database Seed Script',
+        timestamp: customer.createdAt,
+      });
+    }
+
+    // Order creation and status change logs
+    for (const order of createdOrders) {
+      // Order creation log
+      auditLogs.push({
+        userId: order.createdBy,
+        action: 'create' as AuditAction,
+        entity: 'order',
+        entityId: order.id,
+        changes: {
+          orderNumber: order.orderNumber,
+          customerId: order.customerId,
+          totalAmount: order.totalAmount,
+          status: 'pending',
+        },
+        metadata: {
+          source: 'database_seed',
+          itemCount: order.items.length,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'Database Seed Script',
+        timestamp: order.orderedAt,
+      });
+
+      // Status change logs for each status transition
+      for (const statusChange of order.statusHistory) {
+        auditLogs.push({
+          userId: statusChange.changedBy,
+          action: 'update' as AuditAction,
+          entity: 'order',
+          entityId: order.id,
+          changes: {
+            status: statusChange.status,
+            previousStatus: order.statusHistory[order.statusHistory.indexOf(statusChange) - 1]?.status || 'pending',
+          },
+          metadata: {
+            source: 'database_seed',
+            notes: statusChange.notes,
+            orderNumber: order.orderNumber,
+          },
+          ipAddress: '127.0.0.1',
+          userAgent: 'Database Seed Script',
+          timestamp: statusChange.changedAt,
+        });
+      }
+    }
+
+    // CustomerPricing creation logs
+    for (const pricing of createdPricing) {
+      const customer = createdCustomers.find(c => c.id === pricing.customerId);
+      const product = createdProducts.find(p => p.id === pricing.productId);
+
+      auditLogs.push({
+        userId: customer?.clerkUserId || 'admin_user',
+        action: 'create' as AuditAction,
+        entity: 'customer_pricing',
+        entityId: pricing.id,
+        changes: {
+          customerId: pricing.customerId,
+          productId: pricing.productId,
+          customPrice: pricing.customPrice,
+          effectiveFrom: pricing.effectiveFrom,
+          effectiveTo: pricing.effectiveTo,
+        },
+        metadata: {
+          source: 'database_seed',
+          customerName: customer?.businessName,
+          productSku: product?.sku,
+          basePrice: product?.basePrice,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'Database Seed Script',
+        timestamp: pricing.createdAt,
+      });
+    }
+
+    // Product creation logs
+    for (const product of createdProducts.slice(0, 5)) { // Sample - first 5 products
+      auditLogs.push({
+        userId: 'admin_user',
+        action: 'create' as AuditAction,
+        entity: 'product',
+        entityId: product.id,
+        changes: {
+          sku: product.sku,
+          name: product.name,
+          basePrice: product.basePrice,
+          status: product.status,
+        },
+        metadata: {
+          source: 'database_seed',
+          category: product.category,
+          unit: product.unit,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'Database Seed Script',
+        timestamp: product.createdAt,
+      });
+    }
+
+    const createdAuditLogs = await Promise.all(
+      auditLogs.map((log) => prisma.auditLog.create({ data: log }))
+    );
+    console.log(`✅ Created ${createdAuditLogs.length} audit log entries\n`);
+
+    // Seed System Logs
+    console.log('🔧 Creating system logs...');
+    const systemLogs = [
+      {
+        level: 'info' as SystemLogLevel,
+        message: 'Application started successfully',
+        service: 'main',
+        context: { version: '1.0.0', environment: 'development' },
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+      },
+      {
+        level: 'info' as SystemLogLevel,
+        message: 'Database connection established',
+        service: 'database',
+        context: { database: 'mongodb', connectionPool: 'ready' },
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+      {
+        level: 'info' as SystemLogLevel,
+        message: 'Order processing completed',
+        service: 'order-service',
+        context: { ordersProcessed: 15, duration: '2.3s' },
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+      },
+      {
+        level: 'warn' as SystemLogLevel,
+        message: 'Low stock alert triggered',
+        service: 'inventory-service',
+        context: {
+          productSku: 'BEEF-LIVER-3KG',
+          currentStock: 18,
+          threshold: 20,
+        },
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
+      },
+      {
+        level: 'error' as SystemLogLevel,
+        message: 'Payment gateway timeout',
+        service: 'payment-service',
+        context: {
+          gateway: 'stripe',
+          orderId: 'ORD-2025-123456',
+          errorCode: 'GATEWAY_TIMEOUT',
+        },
+        stack: 'Error: Gateway timeout\n  at PaymentService.process (payment.ts:45)\n  at OrderController.checkout (order.ts:120)',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+      },
+      {
+        level: 'debug' as SystemLogLevel,
+        message: 'Cache invalidation triggered',
+        service: 'cache-service',
+        context: {
+          cacheKey: 'products:list',
+          reason: 'product_update',
+        },
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+      },
+      {
+        level: 'info' as SystemLogLevel,
+        message: 'Inventory sync completed',
+        service: 'inventory-service',
+        context: {
+          productsUpdated: 25,
+          transactionsCreated: 50,
+          duration: '1.8s',
+        },
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+      {
+        level: 'warn' as SystemLogLevel,
+        message: 'API rate limit approaching threshold',
+        service: 'api-gateway',
+        context: {
+          endpoint: '/api/products',
+          currentRate: 450,
+          limit: 500,
+        },
+        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      },
+      {
+        level: 'error' as SystemLogLevel,
+        message: 'Xero sync failed',
+        service: 'integration-service',
+        context: {
+          integration: 'xero',
+          invoiceId: 'INV-12345',
+          errorMessage: 'Token expired',
+        },
+        stack: 'Error: Xero token expired\n  at XeroService.syncInvoice (xero.ts:89)\n  at IntegrationController.sync (integration.ts:45)',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+      },
+      {
+        level: 'debug' as SystemLogLevel,
+        message: 'Query performance metrics',
+        service: 'database',
+        context: {
+          query: 'findManyOrders',
+          executionTime: '125ms',
+          rowsReturned: 48,
+        },
+        timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+      },
+    ];
+
+    const createdSystemLogs = await Promise.all(
+      systemLogs.map((log) => prisma.systemLog.create({ data: log }))
+    );
+    console.log(`✅ Created ${createdSystemLogs.length} system log entries\n`);
 
     console.log('\n✨ Database seeding completed successfully!\n');
     console.log('📝 Summary:');
-    console.log(`   - Products: ${createdProducts.length}`);
-    console.log(`   - Customers: ${createdCustomers.length}`);
+    console.log(`   - Company: ${company.businessName}`);
+    console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
+    console.log(`   - Products: ${createdProducts.length} (active: ${createdProducts.filter(p => p.status === 'active').length}, discontinued: ${createdProducts.filter(p => p.status === 'discontinued').length}, out_of_stock: ${createdProducts.filter(p => p.status === 'out_of_stock').length})`);
+    console.log(`   - Customers: ${createdCustomers.length} (active: ${createdCustomers.filter(c => c.status === 'active').length}, suspended: ${createdCustomers.filter(c => c.status === 'suspended').length}, closed: ${createdCustomers.filter(c => c.status === 'closed').length})`);
     console.log(`   - Customer Pricing: ${createdPricing.length}`);
     console.log(`   - Orders: ${createdOrders.length}`);
-    console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
-    console.log(`   - Company: ${company.businessName}\n`);
+    console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (purchase: ${createdInventoryTransactions.filter(t => t.type === 'purchase').length}, sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length}, transfer: ${createdInventoryTransactions.filter(t => t.type === 'transfer').length})`);
+    console.log(`   - Audit Logs: ${createdAuditLogs.length}`);
+    console.log(`   - System Logs: ${createdSystemLogs.length}\n`);
 
     await prisma.$disconnect();
     process.exit(0);
