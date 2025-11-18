@@ -34,10 +34,11 @@ export const packingRouter = router({
       const deliveryDate = new Date(input.deliveryDate);
 
       // Get all orders for the delivery date with status 'confirmed' or 'packing'
+      // Use UTC methods to avoid timezone inconsistencies
       const startOfDay = new Date(deliveryDate);
-      startOfDay.setHours(0, 0, 0, 0);
+      startOfDay.setUTCHours(0, 0, 0, 0);
       const endOfDay = new Date(deliveryDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
       const orders = await prisma.order.findMany({
         where: {

@@ -26,10 +26,10 @@ type ViewMode = 'product-summary' | 'order-by-order';
 export default function PackingPage() {
   const t = useTranslations('packing');
 
-  // Default to tomorrow for delivery date
+  // Default to tomorrow for delivery date (using UTC to avoid timezone issues)
   const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
 
   const [deliveryDate, setDeliveryDate] = useState<Date>(tomorrow);
   const [viewMode, setViewMode] = useState<ViewMode>('product-summary');
@@ -66,19 +66,27 @@ export default function PackingPage() {
   const totalProducts = productSummary.length;
   const totalItems = productSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
 
-  // Format date for display
+  // Format date for display (using UTC to avoid timezone discrepancy)
   const formatDate = (date: Date) => {
+    // Create a date string using UTC components to avoid timezone shifts
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    const utcDate = new Date(Date.UTC(year, month, day));
+
     return new Intl.DateTimeFormat('en-AU', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(date);
+      timeZone: 'UTC'
+    }).format(utcDate);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = new Date(e.target.value);
-    newDate.setHours(0, 0, 0, 0);
+    // Parse date input as UTC to avoid timezone issues
+    const [year, month, day] = e.target.value.split('-').map(Number);
+    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     setDeliveryDate(newDate);
   };
 
