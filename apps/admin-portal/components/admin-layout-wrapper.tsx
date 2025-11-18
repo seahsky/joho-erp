@@ -59,7 +59,6 @@ export function AdminLayoutWrapper({
           <AdminDesktopSidebar
             locale={locale}
             onCollapsedChange={setSidebarCollapsed}
-            user={user}
           />
 
           {/* Main Content Area with top nav spacing */}
