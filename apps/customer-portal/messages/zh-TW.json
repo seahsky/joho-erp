@@ -87,6 +87,10 @@
     "items": "項目",
     "viewDetails": "檢視詳情",
     "reorder": "重新訂購",
+    "reordering": "訂購中...",
+    "reorderSuccess": "訂單已下達",
+    "reorderSuccessMessage": "您的訂單已成功下達！",
+    "reorderError": "重新訂購失敗",
     "pending": "待處理",
     "confirmed": "已確認",
     "processing": "處理中",
@@ -133,7 +137,16 @@
     "used": "已使用",
     "settings": "設定",
     "darkMode": "深色模式",
-    "comingSoon": "即將推出"
+    "comingSoon": "即將推出",
+    "edit": {
+      "editProfile": "編輯資料",
+      "mobile": "手機",
+      "deliveryInstructions": "配送說明",
+      "saving": "儲存中...",
+      "success": "資料已更新",
+      "successMessage": "您的資料已成功更新！",
+      "error": "更新失敗"
+    }
   },
   "cart": {
     "title": "購物車",
@@ -149,6 +162,57 @@
     "subtotal": "小計",
     "tax": "稅金 (GST)",
     "orderTotal": "訂單總計",
-    "proceedToCheckout": "前往結帳"
+    "proceedToCheckout": "前往結帳",
+    "clearCart": "清空購物車",
+    "itemTotal": "商品總計",
+    "creditLimitWarning": "警告：訂單總額超出可用信用額度",
+    "availableCredit": "可用信用額度",
+    "buttons": {
+      "addToCart": "加入購物車",
+      "addingToCart": "添加中...",
+      "removeItem": "移除",
+      "clearCart": "清空購物車",
+      "checkout": "前往結帳"
+    },
+    "messages": {
+      "addedToCart": "已加入購物車",
+      "productAddedToCart": "{productName} 已加入購物車",
+      "removedFromCart": "商品已從購物車中移除",
+      "cartCleared": "購物車已清空",
+      "errorAddingToCart": "添加商品失敗",
+      "errorRemovingItem": "移除商品失敗",
+      "errorClearingCart": "清空購物車失敗",
+      "errorLoadingCart": "載入購物車失敗",
+      "errorUpdatingQuantity": "更新數量失敗"
+    },
+    "itemCount": "{count} 項",
+    "itemCount_plural": "{count} 項"
+  },
+  "checkout": {
+    "title": "結帳",
+    "subtitle": "在下單前檢查您的訂單",
+    "orderItems": "訂單項目",
+    "deliveryAddress": "配送地址",
+    "instructions": "說明",
+    "summary": "訂單摘要",
+    "availableCredit": "可用信用額度",
+    "placingOrder": "下單中...",
+    "orderPlaced": "訂單已下達",
+    "orderPlacedSuccess": "您的訂單已成功下達！",
+    "orderFailed": "下單失敗",
+    "error": "錯誤",
+    "customerNotFound": "未找到客戶資料。請登入。",
+    "emptyCart": "您的購物車是空的",
+    "emptyCartDescription": "結帳前請添加一些產品到購物車",
+    "continueShopping": "繼續購物"
+  },
+  "orderDetails": {
+    "title": "訂單詳情",
+    "errorLoading": "載入訂單詳情時出錯",
+    "requestedDelivery": "要求配送日期",
+    "items": "訂單項目",
+    "deliveryAddress": "配送地址",
+    "instructions": "配送說明",
+    "statusHistory": "狀態歷史"
   }
 }

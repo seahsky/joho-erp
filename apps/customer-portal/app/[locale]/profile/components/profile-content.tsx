@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@jimmy-beef/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@jimmy-beef/ui';
 import {
   Building2,
   User,
@@ -13,17 +13,98 @@ import {
   Settings,
   LogOut,
   Loader2,
+  Edit,
+  X,
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
 import type { User as ClerkUser } from '@clerk/nextjs/server';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
+import { useToast } from '@jimmy-beef/ui';
 
 export function ProfileContent({ user }: { user: ClerkUser | null }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
+  const { toast } = useToast();
 
   const { data: customer, isLoading, error } = api.customer.getProfile.useQuery();
+  const utils = api.useUtils();
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({
+    phone: '',
+    mobile: '',
+    street: '',
+    suburb: '',
+    state: '',
+    postcode: '',
+    deliveryInstructions: '',
+  });
+
+  // Initialize form when customer data loads
+  React.useEffect(() => {
+    if (customer) {
+      setEditForm({
+        phone: customer.contactPerson.phone || '',
+        mobile: customer.contactPerson.mobile || '',
+        street: customer.deliveryAddress.street || '',
+        suburb: customer.deliveryAddress.suburb || '',
+        state: customer.deliveryAddress.state || '',
+        postcode: customer.deliveryAddress.postcode || '',
+        deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
+      });
+    }
+  }, [customer]);
+
+  // Update profile mutation
+  const updateProfile = api.customer.updateProfile.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('edit.success'),
+        description: t('edit.successMessage'),
+        variant: 'default',
+      });
+      setIsEditing(false);
+      utils.customer.getProfile.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: t('edit.error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSave = () => {
+    updateProfile.mutate({
+      contactPerson: {
+        phone: editForm.phone,
+        mobile: editForm.mobile,
+      },
+      deliveryAddress: {
+        street: editForm.street,
+        suburb: editForm.suburb,
+        deliveryInstructions: editForm.deliveryInstructions,
+      },
+    });
+  };
+
+  const handleCancel = () => {
+    if (customer) {
+      setEditForm({
+        phone: customer.contactPerson.phone || '',
+        mobile: customer.contactPerson.mobile || '',
+        street: customer.deliveryAddress.street || '',
+        suburb: customer.deliveryAddress.suburb || '',
+        state: customer.deliveryAddress.state || '',
+        postcode: customer.deliveryAddress.postcode || '',
+        deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
+      });
+    }
+    setIsEditing(false);
+  };
 
   // Loading state
   if (isLoading) {
@@ -118,13 +199,49 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
               <p className="text-base">{customer.contactPerson.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground">{t('phone')}</p>
-              <p className="text-base">{customer.contactPerson.phone}</p>
-            </div>
-          </div>
+          {isEditing ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="phone">{t('phone')}</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder={t('phone')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mobile">{t('edit.mobile')}</Label>
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={editForm.mobile}
+                  onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                  placeholder={t('edit.mobile')}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-muted-foreground">{t('phone')}</p>
+                  <p className="text-base">{customer.contactPerson.phone}</p>
+                </div>
+              </div>
+              {customer.contactPerson.mobile && (
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-muted-foreground">{t('edit.mobile')}</p>
+                    <p className="text-base">{customer.contactPerson.mobile}</p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -137,12 +254,71 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          <p className="text-base">
-            {customer.deliveryAddress.street}
-            <br />
-            {customer.deliveryAddress.suburb} {customer.deliveryAddress.state}{' '}
-            {customer.deliveryAddress.postcode}
-          </p>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="street">{t('street')}</Label>
+                <Input
+                  id="street"
+                  value={editForm.street}
+                  onChange={(e) => setEditForm({ ...editForm, street: e.target.value })}
+                  placeholder={t('street')}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="suburb">{t('suburb')}</Label>
+                  <Input
+                    id="suburb"
+                    value={editForm.suburb}
+                    onChange={(e) => setEditForm({ ...editForm, suburb: e.target.value })}
+                    placeholder={t('suburb')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">{t('state')}</Label>
+                  <Input
+                    id="state"
+                    value={editForm.state}
+                    disabled
+                    placeholder={t('state')}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="postcode">{t('postcode')}</Label>
+                <Input
+                  id="postcode"
+                  value={editForm.postcode}
+                  disabled
+                  placeholder={t('postcode')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deliveryInstructions">{t('edit.deliveryInstructions')}</Label>
+                <Input
+                  id="deliveryInstructions"
+                  value={editForm.deliveryInstructions}
+                  onChange={(e) => setEditForm({ ...editForm, deliveryInstructions: e.target.value })}
+                  placeholder={t('edit.deliveryInstructions')}
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-base">
+                {customer.deliveryAddress.street}
+                <br />
+                {customer.deliveryAddress.suburb} {customer.deliveryAddress.state}{' '}
+                {customer.deliveryAddress.postcode}
+              </p>
+              {customer.deliveryAddress.deliveryInstructions && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {t('edit.deliveryInstructions')}: {customer.deliveryAddress.deliveryInstructions}
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -229,10 +405,43 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
         </CardContent>
       </Card>
 
-      {/* Update Profile Button */}
-      <Button className="w-full" size="lg">
-        {t('updateProfile')}
-      </Button>
+      {/* Edit/Save/Cancel Buttons */}
+      {isEditing ? (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            size="lg"
+            onClick={handleCancel}
+            disabled={updateProfile.isPending}
+          >
+            <X className="h-4 w-4 mr-2" />
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            className="flex-1"
+            size="lg"
+            onClick={handleSave}
+            disabled={updateProfile.isPending}
+          >
+            {updateProfile.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('edit.saving')}
+              </>
+            ) : (
+              <>
+                {tCommon('save')}
+              </>
+            )}
+          </Button>
+        </div>
+      ) : (
+        <Button className="w-full" size="lg" onClick={() => setIsEditing(true)}>
+          <Edit className="h-4 w-4 mr-2" />
+          {t('edit.editProfile')}
+        </Button>
+      )}
 
       {/* Sign Out */}
       <SignOutButton>

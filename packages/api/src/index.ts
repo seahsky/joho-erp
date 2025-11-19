@@ -1,3 +1,3 @@
 export { appRouter, type AppRouter } from './root';
-export { createContext, type Context } from './context';
+export { createContext, type Context, type UserRole } from './context';
 export { router, publicProcedure, protectedProcedure } from './trpc';

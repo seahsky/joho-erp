@@ -2,18 +2,37 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, Large } from '@jimmy-beef/ui';
+import { MobileSearch, Card, CardContent, Button, Badge, Skeleton, H4, Muted, Large, useToast } from '@jimmy-beef/ui';
 import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing } from '@jimmy-beef/shared';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatAUD } from '@jimmy-beef/shared';
 
 export function ProductList() {
   const t = useTranslations();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = React.useState('');
 
   const { data: products, isLoading, error } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
+  });
+
+  const utils = api.useUtils();
+  const addToCart = api.cart.addItem.useMutation({
+    onSuccess: (data, variables) => {
+      const product = products?.find(p => p.id === variables.productId);
+      toast({
+        title: t('cart.messages.addedToCart'),
+        description: product ? t('cart.messages.productAddedToCart', { productName: product.name }) : undefined,
+      });
+      void utils.cart.getCart.invalidate();
+    },
+    onError: () => {
+      toast({
+        title: t('cart.messages.errorAddingToCart'),
+        variant: 'destructive',
+      });
+    },
   });
 
   const getStockBadge = (stock: number) => {
@@ -103,11 +122,11 @@ export function ProductList() {
                     {productWithPricing.hasCustomPricing ? (
                       <div>
                         <Large className="text-2xl text-green-600 font-bold">
-                          {formatCurrency(productWithPricing.effectivePrice)}
+                          {formatAUD(productWithPricing.effectivePrice)}
                         </Large>
                         <div className="flex items-center gap-2">
                           <Muted className="line-through text-xs">
-                            {formatCurrency(productWithPricing.basePrice)}
+                            {formatAUD(productWithPricing.basePrice)}
                           </Muted>
                           <Badge variant="success" className="text-xs">
                             Save {productWithPricing.discountPercentage?.toFixed(0)}%
@@ -118,7 +137,7 @@ export function ProductList() {
                     ) : (
                       <div>
                         <Large className="text-2xl text-primary">
-                          {formatCurrency(product.basePrice)}
+                          {formatAUD(product.basePrice)}
                         </Large>
                         <Muted>{t('products.perUnit', { unit: product.unit })}</Muted>
                       </div>
@@ -135,9 +154,10 @@ export function ProductList() {
 
                 <Button
                   className="w-full"
-                  disabled={product.currentStock === 0}
+                  disabled={product.currentStock === 0 || addToCart.isPending}
+                  onClick={() => addToCart.mutate({ productId: product.id, quantity: 1 })}
                 >
-                  {t('products.addToCart')}
+                  {addToCart.isPending ? t('cart.buttons.addingToCart') : t('cart.buttons.addToCart')}
                 </Button>
               </div>
             </CardContent>

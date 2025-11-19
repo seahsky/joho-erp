@@ -2,19 +2,57 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@jimmy-beef/ui';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
+import { useToast } from '@jimmy-beef/ui';
+import { OrderDetailsModal } from './order-details-modal';
 
 export function OrderList() {
   const t = useTranslations('orders');
+  const router = useRouter();
+  const { toast } = useToast();
   const [filter, setFilter] = React.useState<'all' | StatusType>('all');
+  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const { data, isLoading, error } = api.order.getMyOrders.useQuery({
     status: filter === 'all' ? undefined : filter,
     limit: 50,
   });
+
+  // Reorder mutation
+  const reorderMutation = api.order.reorder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('reorderSuccess'),
+        description: t('reorderSuccessMessage'),
+        variant: 'default',
+      });
+      router.push('/orders');
+    },
+    onError: (error) => {
+      toast({
+        title: t('reorderError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleViewDetails = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
+  };
+
+  const handleReorder = (orderId: string) => {
+    // Use the reorder endpoint which handles everything
+    reorderMutation.mutate({
+      orderId,
+    });
+  };
 
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
@@ -140,12 +178,30 @@ export function OrderList() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="default" className="flex-1 md:h-10">
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="flex-1 md:h-10"
+                  onClick={() => handleViewDetails(order.id)}
+                >
                   {t('viewDetails')}
                 </Button>
                 {order.status === 'delivered' && (
-                  <Button variant="default" size="default" className="flex-1 md:h-10">
-                    {t('reorder')}
+                  <Button
+                    variant="default"
+                    size="default"
+                    className="flex-1 md:h-10"
+                    onClick={() => handleReorder(order.id)}
+                    disabled={reorderMutation.isPending}
+                  >
+                    {reorderMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t('reordering')}
+                      </>
+                    ) : (
+                      t('reorder')
+                    )}
                   </Button>
                 )}
               </div>
@@ -159,9 +215,16 @@ export function OrderList() {
         <div className="text-center py-12">
           <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-lg font-medium mb-2">{t('noOrders')}</p>
-          <Button>{t('startShopping')}</Button>
+          <Button onClick={() => router.push('/products')}>{t('startShopping')}</Button>
         </div>
       )}
+
+      {/* Order Details Modal */}
+      <OrderDetailsModal
+        orderId={selectedOrderId}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </div>
   );
 }

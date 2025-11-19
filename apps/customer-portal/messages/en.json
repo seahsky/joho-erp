@@ -87,6 +87,10 @@
     "items": "Items",
     "viewDetails": "View Details",
     "reorder": "Reorder",
+    "reordering": "Reordering...",
+    "reorderSuccess": "Order Placed",
+    "reorderSuccessMessage": "Your order has been placed successfully!",
+    "reorderError": "Reorder Failed",
     "pending": "Pending",
     "confirmed": "Confirmed",
     "processing": "Processing",
@@ -133,7 +137,16 @@
     "used": "Used",
     "settings": "Settings",
     "darkMode": "Dark Mode",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "edit": {
+      "editProfile": "Edit Profile",
+      "mobile": "Mobile",
+      "deliveryInstructions": "Delivery Instructions",
+      "saving": "Saving...",
+      "success": "Profile Updated",
+      "successMessage": "Your profile has been updated successfully!",
+      "error": "Update Failed"
+    }
   },
   "cart": {
     "title": "Shopping Cart",
@@ -149,7 +162,31 @@
     "subtotal": "Subtotal",
     "tax": "Tax (GST)",
     "orderTotal": "Order Total",
-    "proceedToCheckout": "Proceed to Checkout"
+    "proceedToCheckout": "Proceed to Checkout",
+    "clearCart": "Clear Cart",
+    "itemTotal": "Item Total",
+    "creditLimitWarning": "Warning: Order total exceeds available credit",
+    "availableCredit": "Available Credit",
+    "buttons": {
+      "addToCart": "Add to Cart",
+      "addingToCart": "Adding...",
+      "removeItem": "Remove",
+      "clearCart": "Clear Cart",
+      "checkout": "Proceed to Checkout"
+    },
+    "messages": {
+      "addedToCart": "Added to cart",
+      "productAddedToCart": "{productName} added to cart",
+      "removedFromCart": "Item removed from cart",
+      "cartCleared": "Cart cleared",
+      "errorAddingToCart": "Failed to add item to cart",
+      "errorRemovingItem": "Failed to remove item",
+      "errorClearingCart": "Failed to clear cart",
+      "errorLoadingCart": "Failed to load cart",
+      "errorUpdatingQuantity": "Failed to update quantity"
+    },
+    "itemCount": "{count} item",
+    "itemCount_plural": "{count} items"
   },
   "onboarding": {
     "progress": {
@@ -320,5 +357,32 @@
         "submitting": "Submitting..."
       }
     }
+  },
+  "checkout": {
+    "title": "Checkout",
+    "subtitle": "Review your order before placing it",
+    "orderItems": "Order Items",
+    "deliveryAddress": "Delivery Address",
+    "instructions": "Instructions",
+    "summary": "Order Summary",
+    "availableCredit": "Available Credit",
+    "placingOrder": "Placing Order...",
+    "orderPlaced": "Order Placed",
+    "orderPlacedSuccess": "Your order has been placed successfully!",
+    "orderFailed": "Order Failed",
+    "error": "Error",
+    "customerNotFound": "Customer profile not found. Please sign in.",
+    "emptyCart": "Your cart is empty",
+    "emptyCartDescription": "Add some products to your cart before checking out",
+    "continueShopping": "Continue Shopping"
+  },
+  "orderDetails": {
+    "title": "Order Details",
+    "errorLoading": "Error loading order details",
+    "requestedDelivery": "Requested Delivery Date",
+    "items": "Order Items",
+    "deliveryAddress": "Delivery Address",
+    "instructions": "Delivery Instructions",
+    "statusHistory": "Status History"
   }
 }

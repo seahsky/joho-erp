@@ -333,4 +333,168 @@ export const orderRouter = router({
 
       return order;
     }),
+
+  // Reorder - Create new order from existing order
+  reorder: protectedProcedure
+    .input(z.object({ orderId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      // Fetch the original order with all items
+      const originalOrder = await prisma.order.findUnique({
+        where: { id: input.orderId },
+      });
+
+      if (!originalOrder) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Get customer to verify ownership
+      const customer = await prisma.customer.findUnique({
+        where: { clerkUserId: ctx.userId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      // Verify the order belongs to the authenticated customer
+      if (originalOrder.customerId !== customer.id) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to reorder this order',
+        });
+      }
+
+      // Check credit approval
+      if (customer.creditApplication.status !== 'approved') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Your credit application is pending approval',
+        });
+      }
+
+      // Extract product IDs and quantities from original order items
+      const orderItems = originalOrder.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+
+      // Get products and validate they still exist and are available
+      const productIds = orderItems.map((item) => item.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+      });
+
+      if (products.length !== orderItems.length) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'One or more products from the original order are no longer available',
+        });
+      }
+
+      // Get current customer-specific pricing for all products
+      const customerPricings = await prisma.customerPricing.findMany({
+        where: {
+          customerId: customer.id,
+          productId: { in: productIds },
+        },
+      });
+
+      // Create a map of product ID to custom pricing
+      const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
+
+      // Build new order items with CURRENT pricing and stock validation
+      const newOrderItems = orderItems.map((item) => {
+        const product = products.find((p) => p.id === item.productId);
+        if (!product) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Product not found',
+          });
+        }
+
+        // Check stock availability
+        if (product.currentStock < item.quantity) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Requested: ${item.quantity}`,
+          });
+        }
+
+        // Get effective price using CURRENT pricing (not historical)
+        const customPricing = pricingMap.get(product.id);
+        const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+        const effectivePrice = priceInfo.effectivePrice; // In cents
+
+        // Calculate item subtotal using dinero.js for precision
+        const priceMoney = createMoney(effectivePrice);
+        const itemSubtotalMoney = multiplyMoney(priceMoney, item.quantity);
+        const itemSubtotal = toCents(itemSubtotalMoney);
+
+        return {
+          productId: product.id,
+          sku: product.sku,
+          productName: product.name,
+          unit: product.unit,
+          quantity: item.quantity,
+          unitPrice: effectivePrice, // In cents - CURRENT price
+          subtotal: itemSubtotal, // In cents
+        };
+      });
+
+      // Calculate totals with current GST rate (10%)
+      const totals = calculateOrderTotals(newOrderItems, 0.1);
+
+      // Validate credit limit
+      const creditLimit = customer.creditApplication.creditLimit; // In cents
+      if (totals.totalAmount > creditLimit) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Order total exceeds your credit limit. Credit limit: ${creditLimit / 100}, Order total: ${totals.totalAmount / 100}`,
+        });
+      }
+
+      // Generate new order number
+      const orderNumber = generateOrderNumber();
+
+      // Set delivery date (tomorrow by default)
+      const deliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      // Create new order with confirmed status
+      const newOrder = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId: customer.id,
+          customerName: customer.businessName,
+          items: newOrderItems,
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: originalOrder.deliveryAddress, // Use same delivery address
+          requestedDeliveryDate: deliveryDate,
+          status: 'confirmed',
+          statusHistory: [
+            {
+              status: 'confirmed',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: `Reordered from order ${originalOrder.orderNumber}`,
+            },
+          ],
+          orderedAt: new Date(),
+          createdBy: ctx.userId,
+        },
+      });
+
+      // TODO: Reduce inventory
+      // TODO: Send order confirmation email
+      // TODO: Send notification to admin
+
+      return newOrder;
+    }),
 });

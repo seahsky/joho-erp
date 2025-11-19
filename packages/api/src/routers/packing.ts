@@ -1,23 +1,11 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, hasRole } from "../trpc";
 import { prisma } from "@jimmy-beef/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
 
 // Middleware to check if user is a packer or admin
-const isPackerOrAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  // TODO: Implement proper role checking with Clerk metadata
-  // For now, we'll allow all authenticated users
-  // const userRole = await getUserRole(ctx.userId);
-  // if (!userRole || !['packer', 'admin'].includes(userRole)) {
-  //   throw new TRPCError({
-  //     code: 'FORBIDDEN',
-  //     message: 'Only packers and admins can access the packing interface',
-  //   });
-  // }
-
-  return next({ ctx });
-});
+const isPackerOrAdmin = hasRole(['packer', 'admin']);
 
 export const packingRouter = router({
   /**

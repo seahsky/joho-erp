@@ -4,8 +4,9 @@ import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Home, Package, ShoppingBag, User } from 'lucide-react';
-import { LanguageSwitcher } from '@jimmy-beef/ui';
+import { Home, Package, ShoppingBag, User, ShoppingCart } from 'lucide-react';
+import { LanguageSwitcher, Badge } from '@jimmy-beef/ui';
+import { api } from '@/trpc/client';
 
 interface NavItem {
   href: string;
@@ -16,10 +17,14 @@ interface NavItem {
 export function CustomerDesktopNav({ locale }: { locale: string }) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
+  const { data: cart } = api.cart.getCart.useQuery();
+
+  const cartItemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   const navItems: NavItem[] = [
     { href: `/${locale}`, labelKey: 'home', icon: Home },
     { href: `/${locale}/products`, labelKey: 'products', icon: Package },
+    { href: `/${locale}/cart`, labelKey: 'cart', icon: ShoppingCart },
     { href: `/${locale}/orders`, labelKey: 'orders', icon: ShoppingBag },
     { href: `/${locale}/profile`, labelKey: 'profile', icon: User },
   ];
@@ -111,6 +116,11 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                     <div className="relative flex items-center gap-2">
                       <Icon className={`w-4 h-4 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                       <span className="tracking-wide">{t(item.labelKey)}</span>
+                      {item.labelKey === 'cart' && cartItemCount > 0 && (
+                        <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs">
+                          {cartItemCount}
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Active indicator line */}
@@ -142,7 +152,14 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                     `}
                     title={t(item.labelKey)}
                   >
-                    <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                    <div className="relative">
+                      <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      {item.labelKey === 'cart' && cartItemCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-4 min-w-4 flex items-center justify-center px-1 text-xs">
+                          {cartItemCount}
+                        </Badge>
+                      )}
+                    </div>
                   </Link>
                 );
               })}

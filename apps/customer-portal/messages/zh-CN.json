@@ -87,6 +87,10 @@
     "items": "项目",
     "viewDetails": "查看详情",
     "reorder": "重新订购",
+    "reordering": "订购中...",
+    "reorderSuccess": "订单已下达",
+    "reorderSuccessMessage": "您的订单已成功下达！",
+    "reorderError": "重新订购失败",
     "pending": "待处理",
     "confirmed": "已确认",
     "processing": "处理中",
@@ -133,7 +137,16 @@
     "used": "已使用",
     "settings": "设置",
     "darkMode": "深色模式",
-    "comingSoon": "即将推出"
+    "comingSoon": "即将推出",
+    "edit": {
+      "editProfile": "编辑资料",
+      "mobile": "手机",
+      "deliveryInstructions": "配送说明",
+      "saving": "保存中...",
+      "success": "资料已更新",
+      "successMessage": "您的资料已成功更新！",
+      "error": "更新失败"
+    }
   },
   "cart": {
     "title": "购物车",
@@ -149,6 +162,57 @@
     "subtotal": "小计",
     "tax": "税金 (GST)",
     "orderTotal": "订单总计",
-    "proceedToCheckout": "前往结账"
+    "proceedToCheckout": "前往结账",
+    "clearCart": "清空购物车",
+    "itemTotal": "商品总计",
+    "creditLimitWarning": "警告：订单总额超出可用信用额度",
+    "availableCredit": "可用信用额度",
+    "buttons": {
+      "addToCart": "加入购物车",
+      "addingToCart": "添加中...",
+      "removeItem": "移除",
+      "clearCart": "清空购物车",
+      "checkout": "前往结账"
+    },
+    "messages": {
+      "addedToCart": "已加入购物车",
+      "productAddedToCart": "{productName} 已加入购物车",
+      "removedFromCart": "商品已从购物车中移除",
+      "cartCleared": "购物车已清空",
+      "errorAddingToCart": "添加商品失败",
+      "errorRemovingItem": "移除商品失败",
+      "errorClearingCart": "清空购物车失败",
+      "errorLoadingCart": "加载购物车失败",
+      "errorUpdatingQuantity": "更新数量失败"
+    },
+    "itemCount": "{count} 项",
+    "itemCount_plural": "{count} 项"
+  },
+  "checkout": {
+    "title": "结账",
+    "subtitle": "在下单前检查您的订单",
+    "orderItems": "订单项目",
+    "deliveryAddress": "配送地址",
+    "instructions": "说明",
+    "summary": "订单摘要",
+    "availableCredit": "可用信用额度",
+    "placingOrder": "下单中...",
+    "orderPlaced": "订单已下达",
+    "orderPlacedSuccess": "您的订单已成功下达！",
+    "orderFailed": "下单失败",
+    "error": "错误",
+    "customerNotFound": "未找到客户资料。请登录。",
+    "emptyCart": "您的购物车是空的",
+    "emptyCartDescription": "结账前请添加一些产品到购物车",
+    "continueShopping": "继续购物"
+  },
+  "orderDetails": {
+    "title": "订单详情",
+    "errorLoading": "加载订单详情时出错",
+    "requestedDelivery": "要求配送日期",
+    "items": "订单项目",
+    "deliveryAddress": "配送地址",
+    "instructions": "配送说明",
+    "statusHistory": "状态历史"
   }
 }
