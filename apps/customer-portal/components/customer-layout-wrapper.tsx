@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { CustomerBottomNav } from './customer-bottom-nav';
+import { CustomerDesktopNav } from './customer-desktop-nav';
 import { useIsMobileOrTablet } from '@jimmy-beef/ui';
 
 export function CustomerLayoutWrapper({
@@ -15,6 +16,7 @@ export function CustomerLayoutWrapper({
 
   return (
     <>
+      {!isMobileOrTablet && <CustomerDesktopNav locale={locale} />}
       <main className={isMobileOrTablet ? 'pb-16' : ''}>
         {children}
       </main>
