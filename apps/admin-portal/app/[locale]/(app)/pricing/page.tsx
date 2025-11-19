@@ -12,7 +12,7 @@ import {
   CardTitle,
   Button,
   ResponsiveTable,
-  type Column,
+  type TableColumn,
   Badge,
   CountUp,
   EmptyState,
@@ -151,7 +151,7 @@ export default function PricingPage() {
     basePrice: number;
   }>;
 
-  const columns: Column<CustomerPricing>[] = [
+  const columns: TableColumn<CustomerPricing>[] = [
     {
       key: 'customer',
       label: t('pricing.table.customer'),

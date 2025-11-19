@@ -9,44 +9,125 @@ import {
   CardTitle,
   Badge,
   ResponsiveTable,
-  type Column,
+  type TableColumn,
 } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 import { Package, CheckCircle2, Circle } from 'lucide-react';
 
+/**
+ * Reference to an order that requires a specific product
+ */
+interface OrderReference {
+  orderNumber: string;
+  quantity: number;
+}
+
+/**
+ * Summary of a product across all orders for a delivery date
+ */
 interface ProductSummaryItem {
-  productId: string;
+  productId: string | null | undefined;
   sku: string;
   productName: string;
   unit: string;
   totalQuantity: number;
-  orders: {
-    orderNumber: string;
-    quantity: number;
-  }[];
+  orders?: OrderReference[];
 }
+
+/**
+ * Validated product summary item with guaranteed non-null productId
+ */
+interface ValidatedProductSummaryItem extends ProductSummaryItem {
+  productId: string;
+  orders: OrderReference[];
+}
+
+/**
+ * Union type of all valid translation keys in the 'packing' namespace
+ * Provides compile-time safety for translation key usage
+ */
+type PackingTranslationKey =
+  | 'title'
+  | 'subtitle'
+  | 'selectDate'
+  | 'selectDateDescription'
+  | 'productSummary'
+  | 'orderByOrder'
+  | 'totalOrders'
+  | 'uniqueProducts'
+  | 'totalItems'
+  | 'progress'
+  | 'ordersPacked'
+  | 'complete'
+  | 'sku'
+  | 'productName'
+  | 'totalQuantity'
+  | 'ordersRequiring'
+  | 'gathered'
+  | 'markAsGathered'
+  | 'markAsNotGathered'
+  | 'productSummaryDescription'
+  | 'orderByOrderDescription'
+  | 'orders'
+  | 'order'
+  | 'allAreas'
+  | 'deliveryAddress'
+  | 'items'
+  | 'itemsPacked'
+  | 'packingNotes'
+  | 'addNotes'
+  | 'markAsReady'
+  | 'marking'
+  | 'checkAllItemsFirst'
+  | 'orderReady'
+  | 'orderReadyDescription'
+  | 'mustCheckAllItems'
+  | 'mustCheckAllItemsDescription'
+  | 'errorMarkingReady'
+  | 'errorMarkingItem'
+  | 'noOrders'
+  | 'noOrdersDescription'
+  | 'noProducts'
+  | 'noOrdersForArea'
+  | 'loadingSession'
+  | 'loadingOrder'
+  | 'errorLoading';
 
 interface ProductSummaryViewProps {
-  productSummary: ProductSummaryItem[];
+  readonly productSummary: readonly ProductSummaryItem[];
 }
 
-export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) {
-  const t = useTranslations('packing');
+/**
+ * Type guard to check if a product summary item has a valid productId
+ * @param item - The product summary item to validate
+ * @returns True if the item has a non-null, non-empty productId
+ */
+function hasProductId(item: ProductSummaryItem): item is ValidatedProductSummaryItem {
+  if (!item.productId) {
+    console.warn('Product summary item missing productId:', {
+      sku: item.sku,
+      productName: item.productName,
+    });
+    return false;
+  }
+  return true;
+}
+
+export function ProductSummaryView({ productSummary }: ProductSummaryViewProps): React.JSX.Element {
+  const tRaw = useTranslations('packing');
+  // Type-safe translation function with compile-time key validation
+  const t = (key: PackingTranslationKey): string => tRaw(key);
+
   const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(new Set());
 
-  // Defensive: Filter out items without productId (second line of defense)
-  const validProductSummary = productSummary.filter((item) => {
-    if (!item.productId) {
-      console.warn('Product summary item missing productId:', {
-        sku: item.sku,
-        productName: item.productName,
-      });
-      return false;
-    }
-    return true;
-  });
+  // Filter out items without productId using type predicate for type safety
+  const validProductSummary = productSummary.filter(hasProductId);
 
-  const toggleProductGathered = (productId: string) => {
+  /**
+   * Toggles the gathered state of a product
+   * @param productId - The ID of the product to toggle
+   */
+  const toggleProductGathered = (productId: string): void => {
     setGatheredProducts((prev) => {
       const next = new Set(prev);
       if (next.has(productId)) {
@@ -61,22 +142,22 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
   const gatheredCount = gatheredProducts.size;
   const totalCount = validProductSummary.length;
 
-  const columns: Column<ProductSummaryItem>[] = [
+  const columns = [
     {
       key: 'gathered',
       label: '',
       className: 'w-12',
-      render: (item) => (
+      render: (row: ValidatedProductSummaryItem) => (
         <button
-          onClick={() => toggleProductGathered(item.productId)}
+          onClick={() => toggleProductGathered(row.productId)}
           className="hover:scale-110 transition-transform"
           aria-label={
-            gatheredProducts.has(item.productId)
+            gatheredProducts.has(row.productId)
               ? t('markAsNotGathered')
               : t('markAsGathered')
           }
         >
-          {gatheredProducts.has(item.productId) ? (
+          {gatheredProducts.has(row.productId) ? (
             <CheckCircle2 className="h-6 w-6 text-success" />
           ) : (
             <Circle className="h-6 w-6 text-muted-foreground" />
@@ -96,47 +177,50 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
     {
       key: 'totalQuantity',
       label: t('totalQuantity'),
-      render: (item) => (
+      render: (row: ValidatedProductSummaryItem) => (
         <span className="font-semibold">
-          {item.totalQuantity} {item.unit}
+          {row.totalQuantity} {row.unit}
         </span>
       ),
     },
     {
       key: 'orders',
       label: t('ordersRequiring'),
-      render: (item) => (
+      render: (row: ValidatedProductSummaryItem) => (
         <div className="flex flex-wrap gap-1">
-          {item.orders.slice(0, 3).map((order: { orderNumber: string; quantity: number }) => (
+          {row.orders && row.orders.length > 0 && row.orders.slice(0, 3).map((order) => (
             <Badge key={order.orderNumber} variant="secondary" className="text-xs">
               {order.orderNumber} ({order.quantity})
             </Badge>
           ))}
-          {item.orders.length > 3 && (
+          {row.orders && row.orders.length > 3 && (
             <Badge variant="outline" className="text-xs">
-              +{item.orders.length - 3}
+              +{row.orders.length - 3}
             </Badge>
           )}
         </div>
       ),
     },
-  ];
+  ] as const satisfies readonly TableColumn<ValidatedProductSummaryItem>[];
 
-  const mobileCard = (item: ProductSummaryItem) => {
-    // Defensive: Return null if productId is missing to prevent crashes
-    if (!item?.productId) {
-      console.warn('MobileCard: Item missing productId, skipping render:', {
-        sku: item?.sku,
-        productName: item?.productName,
-      });
+  /**
+   * Renders a mobile-friendly card view for a product summary item
+   * @param item - The product summary item to render
+   * @returns A card component or null if the item is invalid
+   */
+  const mobileCard = (item: ProductSummaryItem): React.ReactNode => {
+    // Type guard: Return null if productId is missing to prevent crashes
+    if (!hasProductId(item)) {
       return null;
     }
 
-    const isGathered = gatheredProducts.has(item.productId);
+    // At this point, TypeScript knows item is ValidatedProductSummaryItem
+    const validItem = item;
+    const isGathered = gatheredProducts.has(validItem.productId);
 
     return (
       <Card
-        key={item.productId}
+        key={validItem.productId}
         className={`transition-all ${isGathered ? 'bg-muted/50 border-success' : ''}`}
       >
         <CardHeader>
@@ -144,8 +228,13 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
             <div className="flex-1">
               <CardTitle className="text-lg flex items-center gap-2">
                 <button
-                  onClick={() => toggleProductGathered(item.productId)}
+                  onClick={() => toggleProductGathered(validItem.productId)}
                   className="hover:scale-110 transition-transform"
+                  aria-label={
+                    isGathered
+                      ? t('markAsNotGathered')
+                      : t('markAsGathered')
+                  }
                 >
                   {isGathered ? (
                     <CheckCircle2 className="h-6 w-6 text-success" />
@@ -153,9 +242,9 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
                     <Circle className="h-6 w-6 text-muted-foreground" />
                   )}
                 </button>
-                {item.productName}
+                {validItem.productName}
               </CardTitle>
-              <CardDescription className="font-mono">{item.sku}</CardDescription>
+              <CardDescription className="font-mono">{validItem.sku}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -163,22 +252,24 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps) 
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('totalQuantity')}</span>
             <span className="font-semibold text-lg">
-              {item.totalQuantity} {item.unit}
+              {validItem.totalQuantity} {validItem.unit}
             </span>
           </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">
-              {t('ordersRequiring')} ({item.orders.length})
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {item.orders.map((order: { orderNumber: string; quantity: number }) => (
-                <Badge key={order.orderNumber} variant="secondary" className="text-xs">
-                  {order.orderNumber} ({order.quantity})
-                </Badge>
-              ))}
+          {validItem.orders && validItem.orders.length > 0 && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                {t('ordersRequiring')} ({validItem.orders.length})
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {validItem.orders.map((order) => (
+                  <Badge key={order.orderNumber} variant="secondary" className="text-xs">
+                    {order.orderNumber} ({order.quantity})
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     );

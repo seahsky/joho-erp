@@ -12,7 +12,7 @@ import {
   Button,
   Input,
   ResponsiveTable,
-  type Column,
+  type TableColumn,
   Badge,
   CountUp,
   EmptyState,
@@ -97,7 +97,7 @@ export default function ProductsPage() {
     return <Badge className="bg-green-100 text-green-800">{t('inStock')}</Badge>;
   };
 
-  const columns: Column<Product>[] = [
+  const columns: TableColumn<Product>[] = [
     {
       key: 'sku',
       label: t('sku'),
@@ -111,22 +111,22 @@ export default function ProductsPage() {
     {
       key: 'category',
       label: t('category'),
-      render: (value) => value || '-',
+      render: (product) => product.category || '-',
     },
     {
       key: 'basePrice',
       label: t('price'),
-      render: (value) => formatCurrency(value as number), // value is in cents
+      render: (product) => formatCurrency(product.basePrice), // value is in cents
     },
     {
       key: 'unit',
       label: t('unit'),
-      render: (value) => String(value).toUpperCase(),
+      render: (product) => String(product.unit).toUpperCase(),
     },
     {
       key: 'currentStock',
       label: t('stock'),
-      render: (_, product) => (
+      render: (product) => (
         <div className="flex items-center gap-2">
           <span>{product.currentStock}</span>
           {getStockBadge(product)}
@@ -136,14 +136,14 @@ export default function ProductsPage() {
     {
       key: 'status',
       label: t('common.status', { ns: 'common' }),
-      render: (value) => (
-        <Badge className={getStatusColor(value as string)}>
-          {String(value).replace(/_/g, ' ')}
+      render: (product) => (
+        <Badge className={getStatusColor(product.status)}>
+          {String(product.status).replace(/_/g, ' ')}
         </Badge>
       ),
     },
     {
-      key: 'id',
+      key: 'actions',
       label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
       render: () => (

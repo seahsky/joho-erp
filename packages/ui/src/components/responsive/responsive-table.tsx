@@ -13,19 +13,41 @@ import {
 import { Card, CardContent } from '../card';
 import { useIsMobile } from '../../hooks';
 
+/**
+ * Standard column that displays a property from the data object
+ */
 export interface Column<T> {
-  key: keyof T | string;
+  /** Key must be a property of T for type safety */
+  key: keyof T;
   label: string;
-  render?: (value: any, row: T) => React.ReactNode;
+  /** Optional render function to customize display, receives the full row */
+  render?: (row: T) => React.ReactNode;
   className?: string;
 }
 
-export interface ResponsiveTableProps<T> {
-  data: T[];
-  columns: Column<T>[];
-  mobileCard?: (item: T, index: number) => React.ReactNode;
+/**
+ * Custom column with a string key that requires a render function
+ */
+export interface CustomColumn<T> {
+  /** Custom key that doesn't map to T properties */
+  key: string;
+  label: string;
+  /** Required render function for custom columns */
+  render: (row: T) => React.ReactNode;
   className?: string;
-  emptyMessage?: string;
+}
+
+/**
+ * Discriminated union of column types
+ */
+export type TableColumn<T> = Column<T> | CustomColumn<T>;
+
+export interface ResponsiveTableProps<T> {
+  readonly data: readonly T[];
+  readonly columns: readonly TableColumn<T>[];
+  readonly mobileCard?: (item: T, index: number) => React.ReactNode;
+  readonly className?: string;
+  readonly emptyMessage?: string;
 }
 
 export function ResponsiveTable<T extends Record<string, any>>({
@@ -34,7 +56,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
   mobileCard,
   className,
   emptyMessage = 'No data available',
-}: ResponsiveTableProps<T>) {
+}: ResponsiveTableProps<T>): React.JSX.Element {
   const isMobile = useIsMobile();
 
   if (data.length === 0) {
@@ -80,7 +102,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
                 const value = row[column.key as keyof T];
                 return (
                   <TableCell key={colIndex} className={column.className}>
-                    {column.render ? column.render(value, row) : value}
+                    {column.render ? column.render(row) : value}
                   </TableCell>
                 );
               })}

@@ -12,7 +12,7 @@ import {
   Button,
   Input,
   ResponsiveTable,
-  type Column,
+  type TableColumn,
   StatusBadge,
   type StatusType,
   CountUp,
@@ -91,7 +91,7 @@ export default function OrdersPage() {
   const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
-  const columns: Column<Order>[] = [
+  const columns: TableColumn<Order>[] = [
     {
       key: 'orderNumber',
       label: t('orderNumber'),
@@ -104,30 +104,30 @@ export default function OrdersPage() {
     {
       key: 'orderedAt',
       label: t('date'),
-      render: (value) => new Date(value as Date).toLocaleDateString(),
+      render: (order) => new Date(order.orderedAt).toLocaleDateString(),
     },
     {
       key: 'items',
       label: t('items'),
-      render: (value) => (value as Array<{ productName: string; quantity: number }>).length,
+      render: (order) => order.items.length,
     },
     {
-      key: 'deliveryAddress',
+      key: 'area',
       label: t('area'),
-      render: (_, order) => order.deliveryAddress.areaTag.toUpperCase(),
+      render: (order) => order.deliveryAddress.areaTag.toUpperCase(),
     },
     {
       key: 'totalAmount',
       label: t('total'),
-      render: (value) => formatCurrency(value as number), // value is in cents
+      render: (order) => formatCurrency(order.totalAmount), // value is in cents
     },
     {
       key: 'status',
       label: t('status'),
-      render: (value) => <StatusBadge status={value as StatusType} />,
+      render: (order) => <StatusBadge status={order.status} />,
     },
     {
-      key: 'id',
+      key: 'actions',
       label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
       render: () => (

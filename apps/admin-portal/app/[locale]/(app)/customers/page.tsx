@@ -13,7 +13,7 @@ import {
   Button,
   Input,
   ResponsiveTable,
-  type Column,
+  type TableColumn,
   StatusBadge,
   type StatusType,
   CountUp,
@@ -85,7 +85,7 @@ export default function CustomersPage() {
   const activeCustomers = customers.filter((c) => c.status === 'active').length;
   const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;
 
-  const columns: Column<Customer>[] = [
+  const columns: TableColumn<Customer>[] = [
     {
       key: 'businessName',
       label: t('businessName'),
@@ -94,33 +94,33 @@ export default function CustomersPage() {
     {
       key: 'contactPerson',
       label: t('contactPerson'),
-      render: (_, customer) => `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
+      render: (customer) => `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
     },
     {
-      key: 'contactPerson',
+      key: 'email',
       label: t('email'),
       className: 'text-sm text-muted-foreground',
-      render: (_, customer) => customer.contactPerson.email,
+      render: (customer) => customer.contactPerson.email,
     },
     {
-      key: 'deliveryAddress',
+      key: 'area',
       label: t('area'),
-      render: (_, customer) => customer.deliveryAddress.areaTag,
+      render: (customer) => customer.deliveryAddress.areaTag,
     },
     {
       key: 'status',
       label: t('common.status', { ns: 'common' }),
-      render: (value) => <StatusBadge status={value as StatusType} />,
+      render: (customer) => <StatusBadge status={customer.status} />,
     },
     {
-      key: 'creditApplication',
+      key: 'creditStatus',
       label: t('creditStatus'),
-      render: (_, customer) => <StatusBadge status={customer.creditApplication.status as StatusType} />,
+      render: (customer) => <StatusBadge status={customer.creditApplication.status as StatusType} />,
     },
     {
-      key: 'creditApplication',
+      key: 'creditLimit',
       label: t('creditLimit'),
-      render: (_, customer) =>
+      render: (customer) =>
         customer.creditApplication.creditLimit > 0
           ? formatCurrency(customer.creditApplication.creditLimit)
           : '-',
@@ -128,13 +128,13 @@ export default function CustomersPage() {
     {
       key: 'orders',
       label: t('orders'),
-      render: (value) => value || 0,
+      render: (customer) => customer.orders || 0,
     },
     {
-      key: 'id',
+      key: 'actions',
       label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
-      render: (_, customer) => (
+      render: (customer) => (
         <div className="flex justify-end gap-2">
           {customer.creditApplication.status === 'pending' && (
             <Link href={`/customers/${customer.id}/credit-review`}>
