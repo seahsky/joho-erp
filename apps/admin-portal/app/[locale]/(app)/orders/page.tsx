@@ -18,8 +18,9 @@ import {
   CountUp,
   EmptyState,
 } from '@jimmy-beef/ui';
-import { Search, ShoppingBag, Loader2, Eye, Package, PackageX } from 'lucide-react';
+import { Search, ShoppingBag, Loader2, Eye, Package, PackageX, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
 
@@ -41,6 +42,7 @@ type Order = {
 
 export default function OrdersPage() {
   const t = useTranslations('orders');
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [areaFilter, setAreaFilter] = useState<string>('');
@@ -187,6 +189,10 @@ export default function OrdersPage() {
             {t('subtitle')}
           </p>
         </div>
+        <Button onClick={() => router.push('/orders/create')}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t('createOrderOnBehalf')}
+        </Button>
       </div>
 
       {/* Stats */}

@@ -154,7 +154,83 @@
     "adjustFilters": "请调整您的筛选条件",
     "ordersWillAppear": "客户下单后订单将显示在这里",
     "viewDetails": "查看详情",
-    "area": "区域"
+    "area": "区域",
+    "createOrderOnBehalf": "代客户下单"
+  },
+  "orderOnBehalf": {
+    "title": "代客户创建订单",
+    "subtitle": "使用管理员特权为客户下订单",
+    "sections": {
+      "customerSelection": "选择客户",
+      "customerDescription": "选择要为哪个客户下订单",
+      "addProducts": "添加产品到订单",
+      "orderItems": "订单项目",
+      "deliveryAddress": "配送地址",
+      "adminOptions": "管理员选项",
+      "adminOptionsDescription": "管理员可用的特殊权限",
+      "notes": "内部备注"
+    },
+    "fields": {
+      "customer": "客户 *",
+      "product": "产品",
+      "quantity": "数量",
+      "useCustomAddress": "使用自定义配送地址",
+      "street": "街道地址",
+      "suburb": "郊区",
+      "state": "州",
+      "postcode": "邮政编码",
+      "areaTag": "配送区域",
+      "deliveryInstructions": "配送说明",
+      "deliveryDate": "要求配送日期（可选）",
+      "bypassCreditLimit": "绕过信用额度检查",
+      "bypassReason": "绕过原因 *",
+      "bypassCutoffTime": "绕过截止时间（允许次日配送）",
+      "adminNotes": "管理员备注（私密）",
+      "internalNotes": "内部备注"
+    },
+    "placeholders": {
+      "selectCustomer": "选择客户...",
+      "selectProduct": "选择产品...",
+      "street": "主街123号",
+      "suburb": "悉尼",
+      "deliveryInstructions": "请放在前门",
+      "bypassReason": "经理批准的紧急订单",
+      "adminNotes": "仅管理员可见的备注",
+      "internalNotes": "仓库工作人员可见的备注"
+    },
+    "buttons": {
+      "addItem": "添加到订单",
+      "createOrder": "创建订单"
+    },
+    "info": {
+      "creditLimit": "信用额度",
+      "deliveryArea": "配送区域",
+      "usingDefaultAddress": "使用客户的默认配送地址",
+      "deliveryDateOptional": "留空以使用自动配送安排",
+      "adminNotesPrivate": "这些备注仅管理员可见"
+    },
+    "warnings": {
+      "exceedsCreditLimit": "警告：订单总额超过客户信用额度"
+    },
+    "validation": {
+      "customerRequired": "请选择客户",
+      "itemsRequired": "请至少添加一个项目到订单",
+      "bypassReasonRequired": "绕过信用额度时必须提供原因",
+      "customAddressRequired": "请填写所有自定义地址字段",
+      "invalidItem": "无效项目",
+      "selectProductAndQuantity": "请选择产品并输入数量"
+    },
+    "messages": {
+      "orderCreated": "订单创建成功",
+      "orderCreatedSuccess": "订单 {orderNumber} 已为客户创建",
+      "orderFailed": "创建订单失败"
+    },
+    "areas": {
+      "north": "北部",
+      "south": "南部",
+      "east": "东部",
+      "west": "西部"
+    }
   },
   "products": {
     "title": "产品管理",

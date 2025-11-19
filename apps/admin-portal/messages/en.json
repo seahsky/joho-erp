@@ -155,7 +155,83 @@
     "adjustFilters": "Try adjusting your filters",
     "ordersWillAppear": "Orders will appear here when customers place them",
     "viewDetails": "View Details",
-    "area": "Area"
+    "area": "Area",
+    "createOrderOnBehalf": "Create Order on Behalf"
+  },
+  "orderOnBehalf": {
+    "title": "Create Order on Behalf of Customer",
+    "subtitle": "Place an order for a customer with special admin privileges",
+    "sections": {
+      "customerSelection": "Customer Selection",
+      "customerDescription": "Choose which customer to place this order for",
+      "addProducts": "Add Products to Order",
+      "orderItems": "Order Items",
+      "deliveryAddress": "Delivery Address",
+      "adminOptions": "Admin Options",
+      "adminOptionsDescription": "Special privileges available to administrators",
+      "notes": "Internal Notes"
+    },
+    "fields": {
+      "customer": "Customer *",
+      "product": "Product",
+      "quantity": "Quantity",
+      "useCustomAddress": "Use custom delivery address",
+      "street": "Street Address",
+      "suburb": "Suburb",
+      "state": "State",
+      "postcode": "Postcode",
+      "areaTag": "Delivery Area",
+      "deliveryInstructions": "Delivery Instructions",
+      "deliveryDate": "Requested Delivery Date (Optional)",
+      "bypassCreditLimit": "Bypass credit limit check",
+      "bypassReason": "Reason for bypassing credit limit *",
+      "bypassCutoffTime": "Bypass cutoff time (allow next-day delivery)",
+      "adminNotes": "Admin Notes (Private)",
+      "internalNotes": "Internal Notes"
+    },
+    "placeholders": {
+      "selectCustomer": "Select a customer...",
+      "selectProduct": "Select a product...",
+      "street": "123 Main Street",
+      "suburb": "Sydney",
+      "deliveryInstructions": "Leave at front door",
+      "bypassReason": "Approved by manager for urgent order",
+      "adminNotes": "Notes visible only to admin users",
+      "internalNotes": "Notes visible to warehouse staff"
+    },
+    "buttons": {
+      "addItem": "Add to Order",
+      "createOrder": "Create Order"
+    },
+    "info": {
+      "creditLimit": "Credit Limit",
+      "deliveryArea": "Delivery Area",
+      "usingDefaultAddress": "Using customer's default delivery address",
+      "deliveryDateOptional": "Leave empty to use automatic delivery scheduling",
+      "adminNotesPrivate": "These notes are only visible to admin users"
+    },
+    "warnings": {
+      "exceedsCreditLimit": "Warning: Order total exceeds customer credit limit"
+    },
+    "validation": {
+      "customerRequired": "Please select a customer",
+      "itemsRequired": "Please add at least one item to the order",
+      "bypassReasonRequired": "Please provide a reason for bypassing credit limit",
+      "customAddressRequired": "Please fill in all custom address fields",
+      "invalidItem": "Invalid item",
+      "selectProductAndQuantity": "Please select a product and enter a quantity"
+    },
+    "messages": {
+      "orderCreated": "Order created successfully",
+      "orderCreatedSuccess": "Order {orderNumber} has been created for the customer",
+      "orderFailed": "Failed to create order"
+    },
+    "areas": {
+      "north": "North",
+      "south": "South",
+      "east": "East",
+      "west": "West"
+    }
   },
   "products": {
     "title": "Product Management",

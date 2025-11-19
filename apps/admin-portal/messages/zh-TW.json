@@ -154,7 +154,83 @@
     "adjustFilters": "請調整您的篩選條件",
     "ordersWillAppear": "客戶下單後訂單將顯示在這裡",
     "viewDetails": "檢視詳情",
-    "area": "區域"
+    "area": "區域",
+    "createOrderOnBehalf": "代客戶下單"
+  },
+  "orderOnBehalf": {
+    "title": "代客戶建立訂單",
+    "subtitle": "使用管理員特權為客戶下訂單",
+    "sections": {
+      "customerSelection": "選擇客戶",
+      "customerDescription": "選擇要為哪個客戶下訂單",
+      "addProducts": "新增產品至訂單",
+      "orderItems": "訂單項目",
+      "deliveryAddress": "配送地址",
+      "adminOptions": "管理員選項",
+      "adminOptionsDescription": "管理員可用的特殊權限",
+      "notes": "內部備註"
+    },
+    "fields": {
+      "customer": "客戶 *",
+      "product": "產品",
+      "quantity": "數量",
+      "useCustomAddress": "使用自訂配送地址",
+      "street": "街道地址",
+      "suburb": "郊區",
+      "state": "州",
+      "postcode": "郵遞區號",
+      "areaTag": "配送區域",
+      "deliveryInstructions": "配送說明",
+      "deliveryDate": "要求配送日期（可選）",
+      "bypassCreditLimit": "繞過信用額度檢查",
+      "bypassReason": "繞過原因 *",
+      "bypassCutoffTime": "繞過截止時間（允許次日配送）",
+      "adminNotes": "管理員備註（私密）",
+      "internalNotes": "內部備註"
+    },
+    "placeholders": {
+      "selectCustomer": "選擇客戶...",
+      "selectProduct": "選擇產品...",
+      "street": "主街123號",
+      "suburb": "雪梨",
+      "deliveryInstructions": "請放在前門",
+      "bypassReason": "經理批准的緊急訂單",
+      "adminNotes": "僅管理員可見的備註",
+      "internalNotes": "倉庫工作人員可見的備註"
+    },
+    "buttons": {
+      "addItem": "新增至訂單",
+      "createOrder": "建立訂單"
+    },
+    "info": {
+      "creditLimit": "信用額度",
+      "deliveryArea": "配送區域",
+      "usingDefaultAddress": "使用客戶的預設配送地址",
+      "deliveryDateOptional": "留空以使用自動配送安排",
+      "adminNotesPrivate": "這些備註僅管理員可見"
+    },
+    "warnings": {
+      "exceedsCreditLimit": "警告：訂單總額超過客戶信用額度"
+    },
+    "validation": {
+      "customerRequired": "請選擇客戶",
+      "itemsRequired": "請至少新增一個項目至訂單",
+      "bypassReasonRequired": "繞過信用額度時必須提供原因",
+      "customAddressRequired": "請填寫所有自訂地址欄位",
+      "invalidItem": "無效項目",
+      "selectProductAndQuantity": "請選擇產品並輸入數量"
+    },
+    "messages": {
+      "orderCreated": "訂單建立成功",
+      "orderCreatedSuccess": "訂單 {orderNumber} 已為客戶建立",
+      "orderFailed": "建立訂單失敗"
+    },
+    "areas": {
+      "north": "北部",
+      "south": "南部",
+      "east": "東部",
+      "west": "西部"
+    }
   },
   "products": {
     "title": "產品管理",
