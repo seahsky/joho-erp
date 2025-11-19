@@ -1,18 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Badge,
-  ResponsiveTable,
-  type TableColumn,
-} from '@jimmy-beef/ui';
+import { Badge } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
-import { Package, CheckCircle2, Circle } from 'lucide-react';
+import { CheckSquare, Square, Package2 } from 'lucide-react';
 
 /**
  * Reference to an order that requires a specific product
@@ -42,65 +33,12 @@ interface ValidatedProductSummaryItem extends ProductSummaryItem {
   orders: OrderReference[];
 }
 
-/**
- * Union type of all valid translation keys in the 'packing' namespace
- * Provides compile-time safety for translation key usage
- */
-type PackingTranslationKey =
-  | 'title'
-  | 'subtitle'
-  | 'selectDate'
-  | 'selectDateDescription'
-  | 'productSummary'
-  | 'orderByOrder'
-  | 'totalOrders'
-  | 'uniqueProducts'
-  | 'totalItems'
-  | 'progress'
-  | 'ordersPacked'
-  | 'complete'
-  | 'sku'
-  | 'productName'
-  | 'totalQuantity'
-  | 'ordersRequiring'
-  | 'gathered'
-  | 'markAsGathered'
-  | 'markAsNotGathered'
-  | 'productSummaryDescription'
-  | 'orderByOrderDescription'
-  | 'orders'
-  | 'order'
-  | 'allAreas'
-  | 'deliveryAddress'
-  | 'items'
-  | 'itemsPacked'
-  | 'packingNotes'
-  | 'addNotes'
-  | 'markAsReady'
-  | 'marking'
-  | 'checkAllItemsFirst'
-  | 'orderReady'
-  | 'orderReadyDescription'
-  | 'mustCheckAllItems'
-  | 'mustCheckAllItemsDescription'
-  | 'errorMarkingReady'
-  | 'errorMarkingItem'
-  | 'noOrders'
-  | 'noOrdersDescription'
-  | 'noProducts'
-  | 'noOrdersForArea'
-  | 'loadingSession'
-  | 'loadingOrder'
-  | 'errorLoading';
-
 interface ProductSummaryViewProps {
   readonly productSummary: readonly ProductSummaryItem[];
 }
 
 /**
  * Type guard to check if a product summary item has a valid productId
- * @param item - The product summary item to validate
- * @returns True if the item has a non-null, non-empty productId
  */
 function hasProductId(item: ProductSummaryItem): item is ValidatedProductSummaryItem {
   if (!item.productId) {
@@ -114,10 +52,7 @@ function hasProductId(item: ProductSummaryItem): item is ValidatedProductSummary
 }
 
 export function ProductSummaryView({ productSummary }: ProductSummaryViewProps): React.JSX.Element {
-  const tRaw = useTranslations('packing');
-  // Type-safe translation function with compile-time key validation
-  const t = (key: PackingTranslationKey): string => tRaw(key);
-
+  const t = useTranslations('packing');
   const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(new Set());
 
   // Filter out items without productId using type predicate for type safety
@@ -125,7 +60,6 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
 
   /**
    * Toggles the gathered state of a product
-   * @param productId - The ID of the product to toggle
    */
   const toggleProductGathered = (productId: string): void => {
     setGatheredProducts((prev) => {
@@ -139,163 +73,115 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
     });
   };
 
-  const gatheredCount = gatheredProducts.size;
-  const totalCount = validProductSummary.length;
-
-  const columns = [
-    {
-      key: 'gathered',
-      label: '',
-      className: 'w-12',
-      render: (row: ValidatedProductSummaryItem) => (
-        <button
-          onClick={() => toggleProductGathered(row.productId)}
-          className="hover:scale-110 transition-transform"
-          aria-label={
-            gatheredProducts.has(row.productId)
-              ? t('markAsNotGathered')
-              : t('markAsGathered')
-          }
-        >
-          {gatheredProducts.has(row.productId) ? (
-            <CheckCircle2 className="h-6 w-6 text-success" />
-          ) : (
-            <Circle className="h-6 w-6 text-muted-foreground" />
-          )}
-        </button>
-      ),
-    },
-    {
-      key: 'sku',
-      label: t('sku'),
-      className: 'font-mono font-medium',
-    },
-    {
-      key: 'productName',
-      label: t('productName'),
-    },
-    {
-      key: 'totalQuantity',
-      label: t('totalQuantity'),
-      render: (row: ValidatedProductSummaryItem) => (
-        <span className="font-semibold">
-          {row.totalQuantity} {row.unit}
-        </span>
-      ),
-    },
-    {
-      key: 'orders',
-      label: t('ordersRequiring'),
-      render: (row: ValidatedProductSummaryItem) => (
-        <div className="flex flex-wrap gap-1">
-          {row.orders && row.orders.length > 0 && row.orders.slice(0, 3).map((order) => (
-            <Badge key={order.orderNumber} variant="secondary" className="text-xs">
-              {order.orderNumber} ({order.quantity})
-            </Badge>
-          ))}
-          {row.orders && row.orders.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{row.orders.length - 3}
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-  ] as const satisfies readonly TableColumn<ValidatedProductSummaryItem>[];
-
-  /**
-   * Renders a mobile-friendly card view for a product summary item
-   * @param item - The product summary item to render
-   * @returns A card component or null if the item is invalid
-   */
-  const mobileCard = (item: ProductSummaryItem): React.ReactNode => {
-    // Type guard: Return null if productId is missing to prevent crashes
-    if (!hasProductId(item)) {
-      return null;
-    }
-
-    // At this point, TypeScript knows item is ValidatedProductSummaryItem
-    const validItem = item;
-    const isGathered = gatheredProducts.has(validItem.productId);
-
+  if (validProductSummary.length === 0) {
     return (
-      <Card
-        key={validItem.productId}
-        className={`transition-all ${isGathered ? 'bg-muted/50 border-success' : ''}`}
-      >
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <button
-                  onClick={() => toggleProductGathered(validItem.productId)}
-                  className="hover:scale-110 transition-transform"
-                  aria-label={
-                    isGathered
-                      ? t('markAsNotGathered')
-                      : t('markAsGathered')
-                  }
-                >
-                  {isGathered ? (
-                    <CheckCircle2 className="h-6 w-6 text-success" />
-                  ) : (
-                    <Circle className="h-6 w-6 text-muted-foreground" />
-                  )}
-                </button>
-                {validItem.productName}
-              </CardTitle>
-              <CardDescription className="font-mono">{validItem.sku}</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t('totalQuantity')}</span>
-            <span className="font-semibold text-lg">
-              {validItem.totalQuantity} {validItem.unit}
-            </span>
-          </div>
-
-          {validItem.orders && validItem.orders.length > 0 && (
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                {t('ordersRequiring')} ({validItem.orders.length})
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {validItem.orders.map((order) => (
-                  <Badge key={order.orderNumber} variant="secondary" className="text-xs">
-                    {order.orderNumber} ({order.quantity})
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-12 text-center">
+        <Package2 className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+        <p className="text-slate-600 font-medium">{t('noProducts')}</p>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            {t('productSummary')}
-          </CardTitle>
-          <CardDescription>
-            {t('productSummaryDescription')} ({gatheredCount}/{totalCount} {t('gathered')})
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveTable
-            columns={columns}
-            data={validProductSummary}
-            mobileCard={mobileCard}
-            emptyMessage={t('noProducts')}
-          />
-        </CardContent>
-      </Card>
+    <div className="bg-white border-2 border-slate-200 rounded-b-lg shadow-sm">
+      {/* Checklist Items */}
+      <div className="divide-y-2 divide-slate-100">
+        {validProductSummary.map((item, index) => {
+          const isGathered = gatheredProducts.has(item.productId);
+
+          return (
+            <button
+              key={item.productId}
+              onClick={() => toggleProductGathered(item.productId)}
+              className={`w-full text-left p-4 transition-all duration-200 hover:bg-slate-50 group ${
+                isGathered ? 'bg-green-50 hover:bg-green-100' : ''
+              }`}
+              style={{
+                animationDelay: `${index * 30}ms`,
+                animation: 'slideIn 0.3s ease-out',
+              }}
+            >
+              <div className="flex items-start gap-4">
+                {/* Checkbox */}
+                <div className="flex-shrink-0 mt-0.5">
+                  {isGathered ? (
+                    <CheckSquare className="h-7 w-7 text-green-600 transition-transform group-hover:scale-110" />
+                  ) : (
+                    <Square className="h-7 w-7 text-slate-400 transition-transform group-hover:scale-110" />
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  {/* SKU + Quantity */}
+                  <div className="flex items-baseline justify-between gap-3 mb-1">
+                    <span
+                      className={`font-mono font-bold text-base tracking-tight ${
+                        isGathered ? 'text-slate-500 line-through' : 'text-slate-900'
+                      }`}
+                    >
+                      {item.sku}
+                    </span>
+                    <span className="font-bold text-lg text-orange-600 tabular-nums whitespace-nowrap">
+                      {item.totalQuantity}
+                      <span className="text-sm text-slate-600 ml-1">{item.unit}</span>
+                    </span>
+                  </div>
+
+                  {/* Product Name */}
+                  <p
+                    className={`text-sm font-medium mb-2 ${
+                      isGathered ? 'text-slate-500 line-through' : 'text-slate-700'
+                    }`}
+                  >
+                    {item.productName}
+                  </p>
+
+                  {/* Order References */}
+                  {item.orders && item.orders.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.orders.slice(0, 5).map((order) => (
+                        <Badge
+                          key={order.orderNumber}
+                          variant="secondary"
+                          className="text-xs font-mono bg-slate-100 text-slate-700 border border-slate-300"
+                        >
+                          {order.orderNumber} ×{order.quantity}
+                        </Badge>
+                      ))}
+                      {item.orders.length > 5 && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-mono border-slate-400 text-slate-600"
+                        >
+                          +{item.orders.length - 5}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Barcode-style divider */}
+              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Custom animations */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

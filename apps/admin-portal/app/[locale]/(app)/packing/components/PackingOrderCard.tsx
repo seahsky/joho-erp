@@ -1,20 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Badge,
-  Button,
-  StatusBadge,
-  type StatusType,
-  useToast,
-} from '@jimmy-beef/ui';
+import { StatusBadge, type StatusType, useToast } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
-import { MapPin, Package, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Send, StickyNote } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 interface PackingOrderCardProps {
@@ -107,14 +96,12 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="flex items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-sm text-muted-foreground">{t('loadingOrder')}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white border-2 border-slate-200 rounded-lg p-8">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+          <span className="text-sm text-slate-600 font-medium">{t('loadingOrder')}</span>
+        </div>
+      </div>
     );
   }
 
@@ -127,143 +114,193 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   const packedCount = Array.from(packedItems).filter((sku) =>
     items.some((item) => item.sku === sku)
   ).length;
-
-  const getAreaBadgeColor = (areaTag: string) => {
-    switch (areaTag.toLowerCase()) {
-      case 'north':
-        return 'bg-blue-100 text-blue-800';
-      case 'south':
-        return 'bg-green-100 text-green-800';
-      case 'east':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'west':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const progressPercent = items.length > 0 ? (packedCount / items.length) * 100 : 0;
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-muted/50">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex-1">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              {order.orderNumber}
-            </CardTitle>
-            <CardDescription className="mt-1">{order.customerName}</CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={getAreaBadgeColor(order.areaTag)}>
-              {order.areaTag.toUpperCase()}
-            </Badge>
-            <StatusBadge status={orderDetails.status as StatusType} />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-6 space-y-6">
-        {/* Delivery Address */}
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium">{t('deliveryAddress')}</p>
-            <p className="text-muted-foreground">{orderDetails.deliveryAddress}</p>
+    <div className="bg-white border-2 border-slate-300 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      {/* Header with Barcode Stripe */}
+      <div className="relative">
+        {/* Barcode-style decorative element */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 opacity-80">
+          <div className="flex h-full">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="flex-1"
+                style={{
+                  backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.3)',
+                }}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-muted-foreground">{t('itemsPacked')}</span>
-            <span className="font-medium">
-              {packedCount} / {items.length}
-            </span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-primary h-full transition-all duration-300 rounded-full"
-              style={{ width: `${items.length > 0 ? (packedCount / items.length) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
+        <div className="pt-6 px-6 pb-4 bg-gradient-to-br from-slate-50 to-white">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            {/* Order Info */}
+            <div className="flex-1">
+              <h3 className="font-mono font-bold text-2xl text-slate-900 tracking-tight">
+                {order.orderNumber}
+              </h3>
+              <p className="text-base font-semibold text-slate-700 mt-1">{order.customerName}</p>
+            </div>
 
-        {/* Items Checklist */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm">{t('items')}</h4>
-          <div className="space-y-2">
-            {items.map((item) => {
-              const isPacked = packedItems.has(item.sku);
-              return (
-                <button
-                  key={item.sku}
-                  onClick={() => toggleItemPacked(item.sku)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${
-                    isPacked
-                      ? 'bg-success/5 border-success/20'
-                      : 'bg-background hover:bg-muted/50'
+            {/* Status Badge */}
+            <div className="flex-shrink-0">
+              <StatusBadge status={orderDetails.status as StatusType} />
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-sm font-bold mb-2">
+              <span className="text-slate-600 uppercase tracking-wide">{t('progress')}</span>
+              <span className="text-slate-900 tabular-nums">
+                {packedCount} / {items.length}
+              </span>
+            </div>
+            <div className="h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+              <div
+                className="h-full transition-all duration-500 rounded-full"
+                style={{
+                  width: `${progressPercent}%`,
+                  background:
+                    progressPercent === 100
+                      ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                      : 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Delivery Instructions if present */}
+          {orderDetails.deliveryAddress && orderDetails.deliveryAddress.includes('instructions') && (
+            <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+              <div className="flex items-start gap-2">
+                <StickyNote className="h-4 w-4 text-yellow-700 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-yellow-800 font-medium">
+                  {orderDetails.deliveryAddress}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Items Checklist */}
+      <div className="p-6 space-y-2">
+        {items.map((item, index) => {
+          const isPacked = packedItems.has(item.sku);
+
+          return (
+            <button
+              key={item.sku}
+              onClick={() => toggleItemPacked(item.sku)}
+              className={`w-full flex items-center gap-4 p-4 rounded border-2 transition-all duration-200 hover:shadow-sm ${
+                isPacked
+                  ? 'bg-green-50 border-green-300 hover:bg-green-100'
+                  : 'bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400'
+              }`}
+              style={{
+                animationDelay: `${index * 50}ms`,
+                animation: 'itemSlide 0.3s ease-out',
+              }}
+            >
+              {/* Checkbox */}
+              <div className="flex-shrink-0">
+                {isPacked ? (
+                  <CheckSquare className="h-7 w-7 text-green-600 transition-transform hover:scale-110" />
+                ) : (
+                  <Square className="h-7 w-7 text-slate-400 transition-transform hover:scale-110" />
+                )}
+              </div>
+
+              {/* Item Details */}
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span
+                    className={`font-mono font-bold text-sm tracking-tight ${
+                      isPacked ? 'text-slate-500 line-through' : 'text-slate-900'
+                    }`}
+                  >
+                    {item.sku}
+                  </span>
+                  <span className="font-bold text-base text-orange-600 tabular-nums whitespace-nowrap">
+                    {item.quantity}
+                    <span className="text-xs text-slate-600 ml-1">units</span>
+                  </span>
+                </div>
+                <p
+                  className={`text-sm font-medium mt-0.5 ${
+                    isPacked ? 'text-slate-500 line-through' : 'text-slate-700'
                   }`}
                 >
-                  {isPacked ? (
-                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  )}
-                  <div className="flex-1 text-left">
-                    <p className={`font-medium text-sm ${isPacked ? 'line-through text-muted-foreground' : ''}`}>
-                      {item.productName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.sku} • {item.quantity} units
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  {item.productName}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Packing Notes */}
-        <div className="space-y-2">
-          <label htmlFor={`notes-${order.orderId}`} className="text-sm font-medium">
-            {t('packingNotes')}
-          </label>
-          <textarea
-            id={`notes-${order.orderId}`}
-            value={packingNotes}
-            onChange={(e) => setPackingNotes(e.target.value)}
-            placeholder={t('addNotes')}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            rows={3}
-          />
-        </div>
+      {/* Notes Section */}
+      <div className="px-6 pb-4">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+          {t('packingNotes')}
+        </label>
+        <textarea
+          value={packingNotes}
+          onChange={(e) => setPackingNotes(e.target.value)}
+          placeholder={t('addNotes')}
+          className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm font-medium text-slate-800 placeholder:text-slate-400"
+          rows={2}
+        />
+      </div>
 
-        {/* Mark as Ready Button */}
-        <Button
+      {/* Action Button */}
+      <div className="p-6 pt-2">
+        <button
           onClick={handleMarkReady}
           disabled={!allItemsPacked || markOrderReadyMutation.isPending}
-          className="w-full"
-          size="lg"
+          className={`w-full py-4 px-6 rounded-lg font-bold uppercase tracking-wider text-sm transition-all duration-200 ${
+            allItemsPacked && !markOrderReadyMutation.isPending
+              ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+          }`}
         >
           {markOrderReadyMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
               {t('marking')}
-            </>
+            </span>
           ) : (
-            <>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+            <span className="flex items-center justify-center gap-2">
+              <Send className="h-5 w-5" />
               {t('markAsReady')}
-            </>
+            </span>
           )}
-        </Button>
+        </button>
 
         {!allItemsPacked && (
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs text-center text-slate-500 mt-3 font-medium">
             {t('checkAllItemsFirst')}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Custom Animations */}
+      <style jsx>{`
+        @keyframes itemSlide {
+          from {
+            opacity: 0;
+            transform: translateX(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+    </div>
   );
 }
