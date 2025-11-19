@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Map, { Marker, Popup, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
+import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin } from 'lucide-react';
 
@@ -15,14 +15,25 @@ interface Delivery {
   status: string;
   driver: string;
   estimatedTime: string;
+  deliverySequence?: number | null;
+}
+
+interface RouteData {
+  geometry: {
+    type: string;
+    coordinates: [number, number][];
+  };
+  totalDistance: number;
+  totalDuration: number;
 }
 
 interface DeliveryMapProps {
   deliveries: Delivery[];
   selectedDelivery: string | null;
+  routeData?: RouteData | null;
 }
 
-export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMapProps) {
+export default function DeliveryMap({ deliveries, selectedDelivery, routeData }: DeliveryMapProps) {
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
   const mapRef = useRef<MapRef | null>(null);
 
@@ -76,6 +87,41 @@ export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMa
       >
         <NavigationControl position="top-right" />
 
+        {/* Route Line */}
+        {routeData && routeData.geometry && (
+          <Source
+            id="route"
+            type="geojson"
+            data={{
+              type: 'Feature' as const,
+              properties: {},
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              geometry: routeData.geometry as any,
+            }}
+          >
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+                'line-color': '#FF6B35',
+                'line-width': 4,
+                'line-opacity': 0.8,
+              }}
+            />
+            <Layer
+              id="route-line-glow"
+              type="line"
+              paint={{
+                'line-color': '#FF6B35',
+                'line-width': 8,
+                'line-opacity': 0.2,
+                'line-blur': 4,
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Delivery Markers with Sequence Numbers */}
         {deliveries
           .filter((delivery) => delivery.latitude && delivery.longitude)
           .map((delivery) => (
@@ -83,14 +129,34 @@ export default function DeliveryMap({ deliveries, selectedDelivery }: DeliveryMa
               key={delivery.id}
               longitude={delivery.longitude!}
               latitude={delivery.latitude!}
-              anchor="bottom"
+              anchor="center"
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 setPopupInfo(delivery);
               }}
             >
-              <div className="cursor-pointer">
-                <MapPin className={`h-8 w-8 ${getMarkerColor(delivery.status)} drop-shadow-lg`} fill="currentColor" />
+              <div className="cursor-pointer transform hover:scale-110 transition-transform">
+                {delivery.deliverySequence ? (
+                  // Numbered marker for sequenced deliveries
+                  <div className="relative">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg border-2 border-white ${
+                      delivery.status === 'delivered' ? 'bg-green-600' :
+                      delivery.status === 'out_for_delivery' ? 'bg-blue-600' :
+                      'bg-orange-500'
+                    }`}>
+                      {delivery.deliverySequence}
+                    </div>
+                    {/* Arrow pointer */}
+                    <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
+                      delivery.status === 'delivered' ? 'border-t-green-600' :
+                      delivery.status === 'out_for_delivery' ? 'border-t-blue-600' :
+                      'border-t-orange-500'
+                    }`}></div>
+                  </div>
+                ) : (
+                  // Default pin marker for non-sequenced deliveries
+                  <MapPin className={`h-8 w-8 ${getMarkerColor(delivery.status)} drop-shadow-lg`} fill="currentColor" />
+                )}
               </div>
             </Marker>
           ))}

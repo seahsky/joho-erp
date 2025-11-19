@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, isAdminOrSales } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
+import { getRouteOptimization } from '../services/route-optimizer';
 
 export const deliveryRouter = router({
   // Get all deliveries with filtering
@@ -223,4 +224,147 @@ export const deliveryRouter = router({
       deliveredToday,
     };
   }),
+
+  // Get optimized route with geometry for map display
+  getOptimizedRoute: isAdminOrSales
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+      const routeOptimization = await getRouteOptimization(deliveryDate);
+
+      if (!routeOptimization) {
+        return {
+          hasRoute: false,
+          route: null,
+        };
+      }
+
+      // Get all orders for this route with full details
+      const startOfDay = new Date(deliveryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(deliveryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const orders = await prisma.order.findMany({
+        where: {
+          requestedDeliveryDate: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+          status: {
+            in: ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+          },
+        },
+        orderBy: {
+          delivery: {
+            deliverySequence: 'asc',
+          },
+        },
+      });
+
+      // Build waypoints from route optimization data
+      const waypoints = routeOptimization.waypoints.map((wp) => {
+        const order = orders.find((o) => o.id === wp.orderId);
+        return {
+          orderId: wp.orderId,
+          orderNumber: wp.orderNumber,
+          sequence: wp.sequence,
+          address: wp.address,
+          latitude: wp.latitude,
+          longitude: wp.longitude,
+          estimatedArrival: wp.estimatedArrival,
+          distanceFromPrevious: wp.distanceFromPrevious,
+          durationFromPrevious: wp.durationFromPrevious,
+          status: order?.status || 'ready_for_delivery',
+          driver: order?.delivery?.driverName || null,
+        };
+      });
+
+      return {
+        hasRoute: true,
+        route: {
+          id: routeOptimization.id,
+          deliveryDate: routeOptimization.deliveryDate,
+          totalDistance: routeOptimization.totalDistance,
+          totalDuration: routeOptimization.totalDuration,
+          orderCount: routeOptimization.orderCount,
+          routeGeometry: JSON.parse(routeOptimization.routeGeometry),
+          waypoints,
+          optimizedAt: routeOptimization.optimizedAt,
+          optimizedBy: routeOptimization.optimizedBy,
+        },
+      };
+    }),
+
+  // Get deliveries sorted by sequence
+  getDeliveriesWithSequence: isAdminOrSales
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+        status: z
+          .enum(['ready_for_delivery', 'out_for_delivery', 'delivered'])
+          .optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+      const startOfDay = new Date(deliveryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(deliveryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const where: any = {
+        requestedDeliveryDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: {
+          in: input.status
+            ? [input.status]
+            : ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+        },
+      };
+
+      const orders = await prisma.order.findMany({
+        where,
+        orderBy: [
+          { delivery: { deliverySequence: 'asc' } },
+          { orderNumber: 'asc' },
+        ],
+        include: {
+          customer: {
+            select: {
+              deliveryAddress: true,
+            },
+          },
+        },
+      });
+
+      const deliveries = orders.map((order) => ({
+        id: order.id,
+        orderId: order.orderNumber,
+        customer: order.customerName,
+        address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
+        latitude: order.deliveryAddress.latitude,
+        longitude: order.deliveryAddress.longitude,
+        areaTag: order.deliveryAddress.areaTag,
+        status: order.status,
+        driver: order.delivery?.driverName || 'Unassigned',
+        driverId: order.delivery?.driverId,
+        deliverySequence: order.delivery?.deliverySequence || null,
+        estimatedArrival: order.delivery?.estimatedArrival || null,
+        items: order.items.length,
+        totalAmount: order.totalAmount,
+        requestedDeliveryDate: order.requestedDeliveryDate,
+        deliveryInstructions: order.deliveryAddress.deliveryInstructions,
+        assignedAt: order.delivery?.assignedAt,
+        deliveredAt: order.delivery?.deliveredAt,
+      }));
+
+      return deliveries;
+    }),
 });

@@ -12,6 +12,8 @@ interface PackingOrderCardProps {
     orderNumber: string;
     customerName: string;
     areaTag: string;
+    packingSequence: number | null;
+    deliverySequence: number | null;
   };
   onOrderUpdated: () => void;
 }
@@ -118,9 +120,23 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/40">
-      {/* Clean Header - No Decorative Elements */}
+      {/* Clean Header - With Sequence Badge */}
       <div className="relative">
-        <div className="px-5 py-4 bg-gradient-to-br from-muted/30 to-background border-b border-border">
+        {/* Sequence Badge - Prominent Position */}
+        {order.packingSequence !== null && (
+          <div className="absolute top-0 left-0 z-10">
+            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-2xl shadow-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider opacity-90">Pack</span>
+                <span className="text-2xl font-black tabular-nums leading-none">
+                  #{order.packingSequence}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="px-5 py-4 bg-gradient-to-br from-muted/30 to-background border-b border-border pt-14">
           <div className="flex items-start justify-between gap-4 mb-3">
             {/* Order Info */}
             <div className="flex-1">

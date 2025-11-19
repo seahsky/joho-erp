@@ -708,6 +708,42 @@
     "noOrdersForArea": "No orders for the selected area",
     "loadingSession": "Loading packing session...",
     "loadingOrder": "Loading order details...",
-    "errorLoading": "Error Loading Data"
+    "errorLoading": "Error Loading Data",
+    "routeOptimized": "Route optimized successfully",
+    "optimizingRoute": "Optimizing delivery route...",
+    "regenerateRoute": "Regenerate Route",
+    "lastOptimized": "Last optimized",
+    "routeStatus": "Route Status",
+    "notOptimized": "Not yet optimized",
+    "needsReoptimization": "Needs re-optimization",
+    "optimizeNow": "Optimize Now"
+  },
+  "settings": {
+    "delivery": {
+      "title": "Delivery Configuration",
+      "subtitle": "Warehouse Location • Route Optimization • API Integration",
+      "warehouseLocation": "Warehouse Location",
+      "addressSearch": "Address Search",
+      "warehouseAddress": "Warehouse Address",
+      "mapboxToken": "Mapbox API Token",
+      "operations": "Operations",
+      "streetAddress": "Street Address",
+      "suburb": "Suburb",
+      "postcode": "Postcode",
+      "state": "State",
+      "testConnection": "Test Connection",
+      "connectionSuccessful": "Connection successful",
+      "connectionFailed": "Connection failed",
+      "orderCutoffTime": "Order Cut-off Time",
+      "deliveryWindow": "Delivery Window",
+      "saveChanges": "Save Changes",
+      "unsavedChanges": "Unsaved changes",
+      "settingsSaved": "Settings saved successfully",
+      "validationError": "Please fill in all required fields",
+      "searchPlaceholder": "Search for warehouse address...",
+      "tokenPlaceholder": "pk.eyJ1IjoieW91ciIsImEiOiJjbHh4eHh4eHh4In0...",
+      "cutoffDescription": "Orders placed after this time will be scheduled for next-day delivery",
+      "clickMap": "Click anywhere on the map to set warehouse location"
+    }
   }
 }

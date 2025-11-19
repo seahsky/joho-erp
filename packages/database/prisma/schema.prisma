@@ -306,6 +306,7 @@ model Company {
   contactPerson       ContactPerson
   bankDetails         BankDetails?
   xeroSettings        XeroSettings?
+  deliverySettings    DeliverySettings?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -327,6 +328,28 @@ model SuburbAreaMapping {
   @@index([postcode])
   @@index([areaTag])
   @@map("suburbareamappings")
+}
+
+// Route Optimization Model
+model RouteOptimization {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  deliveryDate        DateTime
+  areaTag             AreaTag?            // Null if multi-area route
+  orderCount          Int
+  totalDistance       Float               // In kilometers
+  totalDuration       Int                 // In seconds
+  routeGeometry       String              // GeoJSON LineString from Mapbox
+  waypoints           RouteWaypoint[]     // Ordered list of delivery stops
+  optimizedAt         DateTime            @default(now())
+  optimizedBy         String
+  mapboxRouteData     Json?               // Full Mapbox API response for reference
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Indexes
+  @@index([deliveryDate, areaTag])
+  @@index([optimizedAt(sort: Desc)])
+  @@map("routeoptimizations")
 }
 
 // ============================================================================
@@ -395,6 +418,8 @@ type Packing {
   packedAt            DateTime?
   packedBy            String?
   notes               String?
+  packingSequence     Int?                // Position in packing queue (1 = pack first)
+  packedItems         String[]            // Array of SKUs that have been packed
 }
 
 type Delivery {
@@ -404,6 +429,10 @@ type Delivery {
   deliveredAt         DateTime?
   proofOfDelivery     ProofOfDelivery?
   notes               String?
+  deliverySequence    Int?                // Position in delivery route (1 = first stop)
+  routeId             String?             // Reference to RouteOptimization
+  estimatedArrival    DateTime?           // Estimated arrival time based on route
+  actualArrival       DateTime?           // Actual arrival time (for analytics)
 }
 
 type ProofOfDelivery {
@@ -476,4 +505,34 @@ type TradeReference {
   email               String
   verified            Boolean             @default(false)
   verifiedAt          DateTime?
+}
+
+type DeliverySettings {
+  warehouseAddress    WarehouseAddress
+  mapboxAccessToken   String?
+  orderCutoffTime     String              @default("14:00") // HH:mm format
+  cutoffByArea        Json?               // Custom cutoff times per area
+  defaultDeliveryWindow String?           // e.g., "9:00-17:00"
+}
+
+type WarehouseAddress {
+  street              String
+  suburb              String
+  state               String
+  postcode            String
+  country             String              @default("Australia")
+  latitude            Float
+  longitude           Float
+}
+
+type RouteWaypoint {
+  orderId             String              @db.ObjectId
+  orderNumber         String
+  sequence            Int                 // 1-based position in route
+  address             String              // Full formatted address
+  latitude            Float
+  longitude           Float
+  estimatedArrival    DateTime?           // Calculated arrival time
+  distanceFromPrevious Float?             // Meters from previous waypoint
+  durationFromPrevious Int?               // Seconds from previous waypoint
 }

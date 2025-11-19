@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input, EmptyState, CountUp } from '@jimmy-beef/ui';
 import { Package, Calendar, Loader2, TrendingUp, Boxes, ClipboardCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -20,10 +20,40 @@ export default function PackingPage() {
   tomorrow.setUTCHours(0, 0, 0, 0);
 
   const [deliveryDate, setDeliveryDate] = useState<Date>(tomorrow);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
-  const { data: session, isLoading, error, refetch } = api.packing.getSession.useQuery({
+  const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
   });
+
+  const optimizeRouteMutation = api.packing.optimizeRoute.useMutation();
+
+  // Trigger auto-optimization when session data changes
+  useEffect(() => {
+    const autoOptimize = async () => {
+      if (!session) return;
+      if (isOptimizing) return;
+      if (session.routeOptimization && !session.routeOptimization.needsReoptimization) {
+        return; // Already optimized
+      }
+
+      setIsOptimizing(true);
+      try {
+        await optimizeRouteMutation.mutateAsync({
+          deliveryDate: deliveryDate.toISOString(),
+          force: false,
+        });
+        await refetch(); // Refresh session data
+      } catch (error) {
+        console.error('Auto-optimization failed:', error);
+      } finally {
+        setIsOptimizing(false);
+      }
+    };
+
+    autoOptimize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.deliveryDate]);
 
   // Calculate packed orders count (orders that are ready_for_delivery)
   const packedOrdersCount = useMemo(() => {

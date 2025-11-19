@@ -11,6 +11,8 @@ interface OrderListViewProps {
     orderNumber: string;
     customerName: string;
     areaTag: string;
+    packingSequence: number | null;
+    deliverySequence: number | null;
   }>;
   deliveryDate: Date;
   onOrderUpdated: () => void;

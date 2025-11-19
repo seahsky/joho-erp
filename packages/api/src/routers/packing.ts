@@ -3,6 +3,11 @@ import { router, isPacker } from "../trpc";
 import { prisma } from "@jimmy-beef/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
+import {
+  optimizeDeliveryRoute,
+  getRouteOptimization,
+  checkIfRouteNeedsReoptimization,
+} from "../services/route-optimizer";
 
 export const packingRouter = router({
   /**
@@ -309,5 +314,198 @@ export const packingRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Optimize delivery route for a specific date
+   * Calculates packing and delivery sequences using Mapbox
+   */
+  optimizeRoute: isPacker
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+        force: z.boolean().optional(), // Force re-optimization even if route exists
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+
+      // Check if route already exists and is up-to-date
+      if (!input.force) {
+        const needsReoptimization =
+          await checkIfRouteNeedsReoptimization(deliveryDate);
+
+        if (!needsReoptimization) {
+          const existingRoute = await getRouteOptimization(deliveryDate);
+          if (existingRoute) {
+            return {
+              success: true,
+              message: "Route already optimized",
+              routeId: existingRoute.id,
+              alreadyOptimized: true,
+            };
+          }
+        }
+      }
+
+      try {
+        const result = await optimizeDeliveryRoute(
+          deliveryDate,
+          ctx.userId || "system"
+        );
+
+        return {
+          success: true,
+          message: `Route optimized successfully. ${result.routeSummary.totalOrders} orders, ${(result.routeSummary.totalDistance / 1000).toFixed(1)} km`,
+          routeId: result.routeOptimizationId,
+          summary: result.routeSummary,
+          alreadyOptimized: false,
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : "Route optimization failed",
+        });
+      }
+    }),
+
+  /**
+   * Get packing session with optimized sequences
+   * Enhanced version of getSession that includes sequence numbers
+   */
+  getOptimizedSession: isPacker
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+
+      // Get all orders for the delivery date
+      const startOfDay = new Date(deliveryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(deliveryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const orders = await prisma.order.findMany({
+        where: {
+          requestedDeliveryDate: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+          status: {
+            in: ["confirmed", "packing", "ready_for_delivery"],
+          },
+        },
+        include: {
+          customer: {
+            select: {
+              businessName: true,
+            },
+          },
+        },
+        orderBy: [
+          { packing: { packingSequence: "asc" } }, // Sort by packing sequence if available
+          { orderNumber: "asc" }, // Fallback to order number
+        ],
+      });
+
+      // Build product summary
+      const productMap = new Map<string, ProductSummaryItem>();
+
+      for (const order of orders) {
+        for (const item of order.items) {
+          if (!item.productId) continue;
+
+          const productId = item.productId;
+
+          if (productMap.has(productId)) {
+            const existing = productMap.get(productId)!;
+            existing.totalQuantity += item.quantity;
+            existing.orders.push({
+              orderNumber: order.orderNumber,
+              quantity: item.quantity,
+            });
+          } else {
+            productMap.set(productId, {
+              productId: item.productId,
+              sku: item.sku,
+              productName: item.productName,
+              unit: item.unit,
+              totalQuantity: item.quantity,
+              orders: [
+                {
+                  orderNumber: order.orderNumber,
+                  quantity: item.quantity,
+                },
+              ],
+            });
+          }
+        }
+      }
+
+      const productSummary = Array.from(productMap.values()).sort((a, b) =>
+        a.sku.localeCompare(b.sku)
+      );
+
+      // Check if route is optimized
+      const routeOptimization = await getRouteOptimization(deliveryDate);
+      const needsReoptimization = await checkIfRouteNeedsReoptimization(deliveryDate);
+
+      return {
+        deliveryDate,
+        orders: orders.map((order) => ({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customer?.businessName ?? "Unknown Customer",
+          areaTag: order.deliveryAddress.areaTag,
+          packingSequence: order.packing?.packingSequence ?? null,
+          deliverySequence: order.delivery?.deliverySequence ?? null,
+          status: order.status,
+          packedItemsCount: order.packing?.packedItems?.length ?? 0,
+          totalItemsCount: order.items.length,
+        })),
+        productSummary,
+        routeOptimization: routeOptimization
+          ? {
+              id: routeOptimization.id,
+              optimizedAt: routeOptimization.optimizedAt,
+              totalDistance: routeOptimization.totalDistance,
+              totalDuration: routeOptimization.totalDuration,
+              needsReoptimization,
+            }
+          : null,
+      };
+    }),
+
+  /**
+   * Get route optimization status for a date
+   */
+  getRouteStatus: isPacker
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+      const routeOptimization = await getRouteOptimization(deliveryDate);
+      const needsReoptimization = await checkIfRouteNeedsReoptimization(deliveryDate);
+
+      return {
+        isOptimized: !!routeOptimization,
+        needsReoptimization,
+        routeOptimization: routeOptimization
+          ? {
+              id: routeOptimization.id,
+              optimizedAt: routeOptimization.optimizedAt,
+              optimizedBy: routeOptimization.optimizedBy,
+              totalDistance: routeOptimization.totalDistance,
+              totalDuration: routeOptimization.totalDuration,
+              orderCount: routeOptimization.orderCount,
+            }
+          : null,
+      };
     }),
 });

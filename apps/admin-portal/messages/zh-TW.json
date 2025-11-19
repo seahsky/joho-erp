@@ -707,6 +707,42 @@
     "noOrdersForArea": "所選區域沒有訂單",
     "loadingSession": "載入打包作業...",
     "loadingOrder": "載入訂單詳情...",
-    "errorLoading": "載入資料時發生錯誤"
+    "errorLoading": "載入資料時發生錯誤",
+    "routeOptimized": "路線優化成功",
+    "optimizingRoute": "正在優化配送路線...",
+    "regenerateRoute": "重新生成路線",
+    "lastOptimized": "最後優化",
+    "routeStatus": "路線狀態",
+    "notOptimized": "尚未優化",
+    "needsReoptimization": "需要重新優化",
+    "optimizeNow": "立即優化"
+  },
+  "settings": {
+    "delivery": {
+      "title": "配送配置",
+      "subtitle": "倉庫位置 • 路線優化 • API整合",
+      "warehouseLocation": "倉庫位置",
+      "addressSearch": "地址搜尋",
+      "warehouseAddress": "倉庫地址",
+      "mapboxToken": "Mapbox API令牌",
+      "operations": "操作",
+      "streetAddress": "街道地址",
+      "suburb": "郊區",
+      "postcode": "郵政編碼",
+      "state": "州",
+      "testConnection": "測試連接",
+      "connectionSuccessful": "連接成功",
+      "connectionFailed": "連接失敗",
+      "orderCutoffTime": "訂單截止時間",
+      "deliveryWindow": "配送時間窗口",
+      "saveChanges": "儲存變更",
+      "unsavedChanges": "未儲存的變更",
+      "settingsSaved": "設定儲存成功",
+      "validationError": "請填寫所有必填欄位",
+      "searchPlaceholder": "搜尋倉庫地址...",
+      "tokenPlaceholder": "pk.eyJ1IjoieW91ciIsImEiOiJjbHh4eHh4eHh4In0...",
+      "cutoffDescription": "在此時間之後下的訂單將安排次日配送",
+      "clickMap": "點擊地圖上的任意位置設置倉庫位置"
+    }
   }
 }

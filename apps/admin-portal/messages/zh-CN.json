@@ -707,6 +707,42 @@
     "noOrdersForArea": "所选区域没有订单",
     "loadingSession": "加载打包会话...",
     "loadingOrder": "加载订单详情...",
-    "errorLoading": "加载数据时出错"
+    "errorLoading": "加载数据时出错",
+    "routeOptimized": "路线优化成功",
+    "optimizingRoute": "正在优化配送路线...",
+    "regenerateRoute": "重新生成路线",
+    "lastOptimized": "最后优化",
+    "routeStatus": "路线状态",
+    "notOptimized": "尚未优化",
+    "needsReoptimization": "需要重新优化",
+    "optimizeNow": "立即优化"
+  },
+  "settings": {
+    "delivery": {
+      "title": "配送配置",
+      "subtitle": "仓库位置 • 路线优化 • API集成",
+      "warehouseLocation": "仓库位置",
+      "addressSearch": "地址搜索",
+      "warehouseAddress": "仓库地址",
+      "mapboxToken": "Mapbox API令牌",
+      "operations": "操作",
+      "streetAddress": "街道地址",
+      "suburb": "郊区",
+      "postcode": "邮政编码",
+      "state": "州",
+      "testConnection": "测试连接",
+      "connectionSuccessful": "连接成功",
+      "connectionFailed": "连接失败",
+      "orderCutoffTime": "订单截止时间",
+      "deliveryWindow": "配送时间窗口",
+      "saveChanges": "保存更改",
+      "unsavedChanges": "未保存的更改",
+      "settingsSaved": "设置保存成功",
+      "validationError": "请填写所有必填字段",
+      "searchPlaceholder": "搜索仓库地址...",
+      "tokenPlaceholder": "pk.eyJ1IjoieW91ciIsImEiOiJjbHh4eHh4eHh4In0...",
+      "cutoffDescription": "在此时间之后下的订单将安排次日配送",
+      "clickMap": "点击地图上的任意位置设置仓库位置"
+    }
   }
 }
