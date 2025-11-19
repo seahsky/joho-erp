@@ -52,7 +52,7 @@ export async function optimizeDeliveryRoute(
   deliveryDate: Date,
   userId: string
 ): Promise<RouteOptimizationResult> {
-  // 1. Fetch company delivery settings (warehouse location, Mapbox token)
+  // 1. Fetch company delivery settings (warehouse location)
   const company = await prisma.company.findFirst({
     select: {
       deliverySettings: true,
@@ -61,15 +61,18 @@ export async function optimizeDeliveryRoute(
 
   if (!company?.deliverySettings) {
     throw new Error(
-      "Delivery settings not configured. Please configure warehouse location and Mapbox token in settings."
+      "Delivery settings not configured. Please configure warehouse location in settings."
     );
   }
 
-  const { warehouseAddress, mapboxAccessToken } = company.deliverySettings;
+  const { warehouseAddress } = company.deliverySettings;
+
+  // Get Mapbox token from environment variable
+  const mapboxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
   if (!mapboxAccessToken) {
     throw new Error(
-      "Mapbox access token not configured. Please add it in delivery settings."
+      "Mapbox access token not configured in environment variables. Please set NEXT_PUBLIC_MAPBOX_TOKEN."
     );
   }
 

@@ -46,7 +46,6 @@ export const companyRouter = router({
           latitude: z.number().min(-90).max(90),
           longitude: z.number().min(-180).max(180),
         }),
-        mapboxAccessToken: z.string().optional(),
         orderCutoffTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)').default('14:00'),
         cutoffByArea: z.record(z.string()).optional(),
         defaultDeliveryWindow: z.string().optional(),
@@ -69,7 +68,6 @@ export const companyRouter = router({
         data: {
           deliverySettings: {
             warehouseAddress: input.warehouseAddress,
-            mapboxAccessToken: input.mapboxAccessToken,
             orderCutoffTime: input.orderCutoffTime,
             cutoffByArea: input.cutoffByArea || null,
             defaultDeliveryWindow: input.defaultDeliveryWindow || null,
@@ -85,66 +83,17 @@ export const companyRouter = router({
     }),
 
   /**
-   * Test Mapbox connection with provided token
-   */
-  testMapboxConnection: isAdminOrSales
-    .input(
-      z.object({
-        accessToken: z.string().min(1, 'Access token is required'),
-      })
-    )
-    .mutation(async ({ input }) => {
-      try {
-        // Test the token with a simple geocoding request
-        const testUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/Sydney.json?access_token=${input.accessToken}&limit=1`;
-
-        const response = await fetch(testUrl);
-
-        if (!response.ok) {
-          const error = await response.text();
-          throw new Error(`Mapbox API error: ${error}`);
-        }
-
-        const data = await response.json();
-
-        if (data.message) {
-          throw new Error(data.message);
-        }
-
-        return {
-          success: true,
-          message: 'Mapbox connection successful',
-          apiVersion: 'v5',
-          features: data.features?.length || 0,
-        };
-      } catch (error) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: error instanceof Error ? error.message : 'Failed to connect to Mapbox API',
-        });
-      }
-    }),
-
-  /**
    * Geocode an address using Mapbox
    */
   geocodeAddress: isAdminOrSales
     .input(
       z.object({
         address: z.string().min(1, 'Address is required'),
-        accessToken: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
-      // Get token from input or company settings
-      let token = input.accessToken;
-
-      if (!token) {
-        const company = await prisma.company.findFirst({
-          select: { deliverySettings: true },
-        });
-        token = company?.deliverySettings?.mapboxAccessToken || '';
-      }
+      // Get token from environment variable
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
       if (!token) {
         throw new TRPCError({

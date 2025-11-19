@@ -8,13 +8,10 @@ import {
   MapPin,
   Save,
   Loader2,
-  CheckCircle2,
   AlertCircle,
   Warehouse,
   Clock,
-  Key,
   Search,
-  Zap,
   Navigation2,
 } from 'lucide-react';
 import { useToast } from '@jimmy-beef/ui';
@@ -29,7 +26,6 @@ export default function DeliverySettingsPage() {
   const [postcode, setPostcode] = useState('');
   const [latitude, setLatitude] = useState(-37.8136);
   const [longitude, setLongitude] = useState(144.9631);
-  const [mapboxToken, setMapboxToken] = useState('');
   const [cutoffTime, setCutoffTime] = useState('14:00');
   const [deliveryWindow, setDeliveryWindow] = useState('9:00-17:00');
 
@@ -38,7 +34,6 @@ export default function DeliverySettingsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [tokenTested, setTokenTested] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
@@ -48,7 +43,6 @@ export default function DeliverySettingsPage() {
 
   // Mutations
   const saveSettingsMutation = api.company.updateDeliverySettings.useMutation();
-  const testTokenMutation = api.company.testMapboxConnection.useMutation();
   const geocodeMutation = api.company.geocodeAddress.useMutation();
 
   // Load settings into form
@@ -62,10 +56,6 @@ export default function DeliverySettingsPage() {
         setPostcode(ds.warehouseAddress.postcode);
         setLatitude(ds.warehouseAddress.latitude);
         setLongitude(ds.warehouseAddress.longitude);
-      }
-      if (ds.mapboxAccessToken) {
-        setMapboxToken(ds.mapboxAccessToken);
-        setTokenTested(true);
       }
       if (ds.orderCutoffTime) {
         setCutoffTime(ds.orderCutoffTime);
@@ -84,11 +74,10 @@ export default function DeliverySettingsPage() {
         suburb !== (settings.deliverySettings.warehouseAddress?.suburb || '') ||
         state !== (settings.deliverySettings.warehouseAddress?.state || '') ||
         postcode !== (settings.deliverySettings.warehouseAddress?.postcode || '') ||
-        mapboxToken !== (settings.deliverySettings.mapboxAccessToken || '') ||
         cutoffTime !== (settings.deliverySettings.orderCutoffTime || '14:00');
       setHasChanges(hasModifications);
     }
-  }, [street, suburb, state, postcode, mapboxToken, cutoffTime, settings]);
+  }, [street, suburb, state, postcode, cutoffTime, settings]);
 
   // Geocode search
   const handleSearch = async () => {
@@ -97,7 +86,6 @@ export default function DeliverySettingsPage() {
     try {
       const result = await geocodeMutation.mutateAsync({
         address: addressSearch,
-        accessToken: mapboxToken || undefined,
       });
 
       if (result.success && result.results) {
@@ -135,39 +123,6 @@ export default function DeliverySettingsPage() {
     }
   };
 
-  // Test Mapbox token
-  const handleTestToken = async () => {
-    if (!mapboxToken.trim()) {
-      toast({
-        title: 'Token required',
-        description: 'Please enter a Mapbox access token first',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      const result = await testTokenMutation.mutateAsync({
-        accessToken: mapboxToken,
-      });
-
-      if (result.success) {
-        setTokenTested(true);
-        toast({
-          title: 'Connection successful',
-          description: 'Mapbox API is accessible with this token',
-        });
-      }
-    } catch (error) {
-      setTokenTested(false);
-      toast({
-        title: 'Connection failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive',
-      });
-    }
-  };
-
   // Save settings
   const handleSave = async () => {
     if (!street || !suburb || !state || !postcode) {
@@ -190,7 +145,6 @@ export default function DeliverySettingsPage() {
           latitude,
           longitude,
         },
-        mapboxAccessToken: mapboxToken || undefined,
         orderCutoffTime: cutoffTime,
         defaultDeliveryWindow: deliveryWindow || undefined,
       });
@@ -287,7 +241,7 @@ export default function DeliverySettingsPage() {
                   latitude={latitude}
                   zoom={13}
                   mapStyle="mapbox://styles/mapbox/dark-v11"
-                  mapboxAccessToken={mapboxToken || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}
+                  mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}
                   style={{ width: '100%', height: '100%' }}
                   onClick={(e) => {
                     setLatitude(e.lngLat.lat);
@@ -435,60 +389,6 @@ export default function DeliverySettingsPage() {
                     <option value="ACT">Australian Capital Territory</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            {/* Mapbox API Token */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Key className="h-5 w-5 text-orange-500" />
-                <h3 className="font-black uppercase tracking-wide text-sm">Mapbox API Token</h3>
-                {tokenTested && (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <input
-                  type="password"
-                  value={mapboxToken}
-                  onChange={(e) => {
-                    setMapboxToken(e.target.value);
-                    setTokenTested(false);
-                  }}
-                  placeholder="pk.eyJ1IjoieW91ciIsImEiOiJjbHh4eHh4eHh4In0..."
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-50 placeholder:text-zinc-600 font-mono text-xs focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                />
-
-                <button
-                  onClick={handleTestToken}
-                  disabled={testTokenMutation.isPending}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-orange-500 font-bold uppercase tracking-wide text-xs hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {testTokenMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Test Connection
-                    </>
-                  )}
-                </button>
-
-                <p className="text-xs text-zinc-500">
-                  Get your token from{' '}
-                  <a
-                    href="https://www.mapbox.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-orange-500 hover:underline"
-                  >
-                    mapbox.com
-                  </a>
-                </p>
               </div>
             </div>
 
