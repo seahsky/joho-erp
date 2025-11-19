@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Filter, Package2 } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
+import { Card, CardContent, Button } from '@jimmy-beef/ui';
 
 interface OrderListViewProps {
   orders: Array<{
@@ -33,24 +34,26 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
   const getAreaBadgeColor = (areaTag: string) => {
     switch (areaTag.toLowerCase()) {
       case 'north':
-        return 'bg-blue-500 text-white hover:bg-blue-600';
+        return 'bg-info text-info-foreground hover:bg-info/90';
       case 'south':
-        return 'bg-green-500 text-white hover:bg-green-600';
+        return 'bg-success text-success-foreground hover:bg-success/90';
       case 'east':
-        return 'bg-yellow-500 text-white hover:bg-yellow-600';
+        return 'bg-warning text-warning-foreground hover:bg-warning/90';
       case 'west':
-        return 'bg-purple-500 text-white hover:bg-purple-600';
+        return 'bg-primary text-primary-foreground hover:bg-primary/90';
       default:
-        return 'bg-gray-500 text-white hover:bg-gray-600';
+        return 'bg-muted text-muted-foreground hover:bg-muted/80';
     }
   };
 
   if (orders.length === 0) {
     return (
-      <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
-        <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground font-medium">{t('noOrders')}</p>
-      </div>
+      <Card>
+        <CardContent className="p-12 text-center border-2 border-dashed">
+          <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">{t('noOrders')}</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -58,12 +61,13 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
     <div className="space-y-4">
       {/* Area Filter - Only show if there are multiple areas */}
       {areaTags.length > 1 && (
-        <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span>{t('filterByArea')}</span>
-            </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <Filter className="h-4 w-4" />
+                <span>{t('filterByArea')}</span>
+              </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setAreaFilter('all')}
@@ -89,13 +93,14 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Orders Count */}
       <div className="flex items-center justify-between px-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-xs font-semibold text-muted-foreground">
           {filteredOrders.length} {filteredOrders.length === 1 ? t('order') : t('orders')}
           {areaFilter !== 'all' && ` · ${areaFilter.toUpperCase()}`}
         </p>
@@ -118,16 +123,18 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
 
       {/* Empty State for Filter */}
       {filteredOrders.length === 0 && (
-        <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
-          <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">{t('noOrdersForArea')}</p>
-          <button
-            onClick={() => setAreaFilter('all')}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold text-sm uppercase hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            {t('showAllAreas')}
-          </button>
-        </div>
+        <Card>
+          <CardContent className="p-12 text-center border-2 border-dashed">
+            <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">{t('noOrdersForArea')}</p>
+            <Button
+              onClick={() => setAreaFilter('all')}
+              className="mt-4"
+            >
+              {t('showAllAreas')}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Custom Animations */}

@@ -3,6 +3,7 @@
 import { ReactNode, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Package, ClipboardList } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription } from '@jimmy-beef/ui';
 
 interface PackingLayoutProps {
   summaryPanel: ReactNode;
@@ -31,13 +32,13 @@ export function PackingLayout({
       {/* Mobile: Tabbed Layout */}
       <div className="lg:hidden space-y-4">
         {/* Tab Navigation */}
-        <div className="flex gap-0 border-b-2 border-slate-200">
+        <div className="flex gap-0 border-b border-border">
           <button
             onClick={() => setActiveTab('summary')}
-            className={`flex-1 py-4 px-6 font-bold uppercase tracking-wider text-sm transition-all relative ${
+            className={`flex-1 py-4 px-6 font-semibold text-sm transition-all relative ${
               activeTab === 'summary'
-                ? 'text-orange-600 bg-orange-50'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -45,18 +46,18 @@ export function PackingLayout({
               <span>{t('summaryPanel')}</span>
             </div>
             {activeTab === 'summary' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary" />
             )}
-            <div className="text-xs mt-1 font-mono">
+            <div className="text-xs mt-1 tabular-nums">
               {gatheredCount}/{totalProducts}
             </div>
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`flex-1 py-4 px-6 font-bold uppercase tracking-wider text-sm transition-all relative ${
+            className={`flex-1 py-4 px-6 font-semibold text-sm transition-all relative ${
               activeTab === 'orders'
-                ? 'text-orange-600 bg-orange-50'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -64,9 +65,9 @@ export function PackingLayout({
               <span>{t('ordersPanel')}</span>
             </div>
             {activeTab === 'orders' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary" />
             )}
-            <div className="text-xs mt-1 font-mono">
+            <div className="text-xs mt-1 tabular-nums">
               {packedCount}/{totalOrders}
             </div>
           </button>
@@ -83,21 +84,17 @@ export function PackingLayout({
         {/* Summary Panel - Fixed Width Sidebar */}
         <div className="space-y-4">
           <div className="sticky top-4">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-4 rounded-t-lg border-b-4 border-orange-500">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-500 rounded">
-                  <Package className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="font-bold uppercase tracking-wider text-sm">
-                    {t('summaryPanel')}
-                  </h2>
-                  <p className="text-xs font-mono text-slate-300 mt-0.5">
-                    {gatheredCount}/{totalProducts} {t('gathered')}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  {t('summaryPanel')}
+                </CardTitle>
+                <CardDescription className="tabular-nums">
+                  {gatheredCount}/{totalProducts} {t('gathered')}
+                </CardDescription>
+              </CardHeader>
+            </Card>
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
               {summaryPanel}
             </div>
@@ -106,21 +103,17 @@ export function PackingLayout({
 
         {/* Orders Panel - Flexible Width */}
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-4 rounded-t-lg border-b-4 border-orange-500">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500 rounded">
-                <ClipboardList className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="font-bold uppercase tracking-wider text-sm">
-                  {t('ordersPanel')}
-                </h2>
-                <p className="text-xs font-mono text-slate-300 mt-0.5">
-                  {packedCount}/{totalOrders} {t('ordersPacked')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                {t('ordersPanel')}
+              </CardTitle>
+              <CardDescription className="tabular-nums">
+                {packedCount}/{totalOrders} {t('ordersPacked')}
+              </CardDescription>
+            </CardHeader>
+          </Card>
           <div>{ordersPanel}</div>
         </div>
       </div>

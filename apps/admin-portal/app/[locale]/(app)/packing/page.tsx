@@ -3,8 +3,8 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp } from '@jimmy-beef/ui';
-import { Package, Calendar, Loader2, TrendingUp, Boxes, ClipboardCheck } from 'lucide-react';
+import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription } from '@jimmy-beef/ui';
+import { Package, Calendar, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
@@ -116,99 +116,72 @@ export default function PackingPage() {
   const dateInputValue = deliveryDate.toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Clean Professional Header */}
-        <div className="bg-primary text-primary-foreground rounded-lg p-6 shadow-md">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="p-3 bg-primary-foreground/10 rounded-lg backdrop-blur-sm">
-              <Package className="h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold uppercase tracking-tight">{t('title')}</h1>
-              <p className="text-primary-foreground/80 text-sm mt-1">{t('subtitle')}</p>
-            </div>
-          </div>
+    <div className="container mx-auto px-4 py-6 md:py-10">
+      <div className="space-y-6">
+        {/* Standard Header */}
+        <div>
+          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+            {t('subtitle')}
+          </p>
         </div>
 
-        {/* Compact Date Selector */}
-        <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block mb-1">
-                  {t('selectDate')}
-                </label>
-                <Input
-                  type="date"
-                  value={dateInputValue}
-                  onChange={handleDateChange}
-                  className="font-mono font-bold border border-border focus:border-primary"
-                />
+        {/* Date Selector */}
+        <Card>
+          <CardHeader className="p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground block mb-1">
+                    {t('selectDate')}
+                  </label>
+                  <Input
+                    type="date"
+                    value={dateInputValue}
+                    onChange={handleDateChange}
+                  />
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {formatDate(deliveryDate)}
               </div>
             </div>
-            <div className="text-sm font-medium text-foreground bg-muted px-4 py-2 rounded-md border border-border">
-              {formatDate(deliveryDate)}
-            </div>
-          </div>
-        </div>
+          </CardHeader>
+        </Card>
 
-        {/* Compact Horizontal Stats Bar */}
+        {/* Stats Bar */}
         {totalOrders > 0 && (
-          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
-              {/* Total Orders */}
-              <div className="p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded">
-                    <ClipboardCheck className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t('totalOrders')}
-                    </p>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">
-                      <CountUp end={totalOrders} />
-                    </p>
-                  </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6 md:mb-8">
+            <Card className="stat-card animate-fade-in-up">
+              <div className="stat-card-gradient" />
+              <CardHeader className="pb-3 relative">
+                <CardDescription>{t('totalOrders')}</CardDescription>
+                <div className="stat-value tabular-nums">
+                  <CountUp end={totalOrders} />
                 </div>
-              </div>
+              </CardHeader>
+            </Card>
 
-              {/* Unique Products */}
-              <div className="p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-success/10 rounded">
-                    <Boxes className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t('uniqueProducts')}
-                    </p>
-                    <p className="text-2xl font-bold text-success tabular-nums">
-                      <CountUp end={totalProducts} />
-                    </p>
-                  </div>
+            <Card className="stat-card animate-fade-in-up">
+              <div className="stat-card-gradient" />
+              <CardHeader className="pb-3 relative">
+                <CardDescription>{t('uniqueProducts')}</CardDescription>
+                <div className="stat-value tabular-nums text-success">
+                  <CountUp end={totalProducts} />
                 </div>
-              </div>
+              </CardHeader>
+            </Card>
 
-              {/* Total Items */}
-              <div className="p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-info/10 rounded">
-                    <TrendingUp className="h-5 w-5 text-info" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t('totalItems')}
-                    </p>
-                    <p className="text-2xl font-bold text-info tabular-nums">
-                      <CountUp end={totalItems} />
-                    </p>
-                  </div>
+            <Card className="stat-card animate-fade-in-up">
+              <div className="stat-card-gradient" />
+              <CardHeader className="pb-3 relative">
+                <CardDescription>{t('totalItems')}</CardDescription>
+                <div className="stat-value tabular-nums text-info">
+                  <CountUp end={totalItems} />
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
           </div>
         )}
 

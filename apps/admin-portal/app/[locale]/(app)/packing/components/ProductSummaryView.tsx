@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge } from '@jimmy-beef/ui';
+import { Badge, Card, CardContent } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Package2 } from 'lucide-react';
 
@@ -75,17 +75,20 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
 
   if (validProductSummary.length === 0) {
     return (
-      <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
-        <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground font-medium">{t('noProducts')}</p>
-      </div>
+      <Card>
+        <CardContent className="p-12 text-center border-2 border-dashed">
+          <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">{t('noProducts')}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card border border-border rounded-b-lg shadow-sm">
-      {/* Checklist Items */}
-      <div className="divide-y divide-border">
+    <Card className="rounded-t-none">
+      <CardContent className="p-0">
+        {/* Checklist Items */}
+        <div className="divide-y divide-border">
         {validProductSummary.map((item, index) => {
           const isGathered = gatheredProducts.has(item.productId);
 
@@ -164,7 +167,8 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
             </button>
           );
         })}
-      </div>
+        </div>
+      </CardContent>
 
       {/* Custom animations */}
       <style jsx>{`
@@ -179,6 +183,6 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
           }
         }
       `}</style>
-    </div>
+    </Card>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StatusBadge, type StatusType, useToast } from '@jimmy-beef/ui';
+import { StatusBadge, type StatusType, useToast, Card, CardContent, Button } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Loader2, Send, StickyNote } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -98,12 +98,14 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground font-medium">{t('loadingOrder')}</span>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground font-medium">{t('loadingOrder')}</span>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -125,9 +127,9 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         {/* Sequence Badge - Prominent Position */}
         {order.packingSequence !== null && (
           <div className="absolute top-0 left-0 z-10">
-            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-2xl shadow-lg">
+            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider opacity-90">Pack</span>
+                <span className="text-xs font-semibold opacity-90">Pack</span>
                 <span className="text-2xl font-black tabular-nums leading-none">
                   #{order.packingSequence}
                 </span>
@@ -155,21 +157,17 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           {/* Progress Bar */}
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className="text-muted-foreground uppercase tracking-wide">{t('progress')}</span>
+              <span className="text-muted-foreground">{t('progress')}</span>
               <span className="text-foreground tabular-nums">
                 {packedCount} / {items.length}
               </span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full transition-all duration-500 rounded-full"
-                style={{
-                  width: `${progressPercent}%`,
-                  background:
-                    progressPercent === 100
-                      ? 'hsl(142 71% 45%)'
-                      : 'hsl(0 67% 35%)',
-                }}
+                className={`h-full transition-all duration-500 rounded-full ${
+                  progressPercent === 100 ? 'bg-success' : 'bg-primary'
+                }`}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
@@ -246,7 +244,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
       {/* Notes Section */}
       <div className="px-4 pb-3">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+        <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
           {t('packingNotes')}
         </label>
         <textarea
@@ -260,27 +258,24 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
       {/* Action Button */}
       <div className="px-4 pb-4">
-        <button
+        <Button
           onClick={handleMarkReady}
           disabled={!allItemsPacked || markOrderReadyMutation.isPending}
-          className={`w-full py-3 px-4 rounded-md font-semibold uppercase tracking-wide text-xs transition-all duration-200 ${
-            allItemsPacked && !markOrderReadyMutation.isPending
-              ? 'bg-success hover:bg-success/90 text-success-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5'
-              : 'bg-muted text-muted-foreground cursor-not-allowed'
-          }`}
+          className="w-full"
+          variant={allItemsPacked && !markOrderReadyMutation.isPending ? "default" : "secondary"}
         >
           {markOrderReadyMutation.isPending ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
               {t('marking')}
-            </span>
+            </>
           ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Send className="h-4 w-4" />
+            <>
+              <Send className="h-4 w-4 mr-2" />
               {t('markAsReady')}
-            </span>
+            </>
           )}
-        </button>
+        </Button>
 
         {!allItemsPacked && (
           <p className="text-xs text-center text-muted-foreground mt-2 font-medium">
