@@ -1,18 +1,15 @@
 import { z } from "zod";
-import { router, hasRole } from "../trpc";
+import { router, isPacker } from "../trpc";
 import { prisma } from "@jimmy-beef/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
-
-// Middleware to check if user is a packer or admin
-const isPackerOrAdmin = hasRole(['packer', 'admin']);
 
 export const packingRouter = router({
   /**
    * Get packing session for a specific delivery date
    * Returns all orders that need packing and aggregated product summary
    */
-  getSession: isPackerOrAdmin
+  getSession: isPacker
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -110,7 +107,7 @@ export const packingRouter = router({
   /**
    * Get detailed order information for packing
    */
-  getOrderDetails: isPackerOrAdmin
+  getOrderDetails: isPacker
     .input(
       z.object({
         orderId: z.string(),
@@ -167,7 +164,7 @@ export const packingRouter = router({
    * Note: This is a simplified implementation. In production, you would track
    * packed items in the database.
    */
-  markItemPacked: isPackerOrAdmin
+  markItemPacked: isPacker
     .input(
       z.object({
         orderId: z.string(),
@@ -217,7 +214,7 @@ export const packingRouter = router({
   /**
    * Mark entire order as ready for delivery
    */
-  markOrderReady: isPackerOrAdmin
+  markOrderReady: isPacker
     .input(
       z.object({
         orderId: z.string(),
@@ -278,7 +275,7 @@ export const packingRouter = router({
   /**
    * Add packing notes to an order
    */
-  addPackingNotes: isPackerOrAdmin
+  addPackingNotes: isPacker
     .input(
       z.object({
         orderId: z.string(),

@@ -265,7 +265,7 @@ export const orderRouter = router({
   // Get order by ID
   getById: protectedProcedure
     .input(z.object({ orderId: z.string() }))
-    .query(async ({ input, ctx: _ctx }) => {
+    .query(async ({ input, ctx }) => {
       const order = await prisma.order.findUnique({
         where: { id: input.orderId },
       });
@@ -277,7 +277,29 @@ export const orderRouter = router({
         });
       }
 
-      // TODO: Check if user has permission to view this order
+      // Role-based data isolation: customers can only view their own orders
+      if (ctx.userRole === 'customer') {
+        // Get customer to verify ownership
+        const customer = await prisma.customer.findUnique({
+          where: { clerkUserId: ctx.userId },
+        });
+
+        if (!customer) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Customer not found',
+          });
+        }
+
+        // Verify the order belongs to the authenticated customer
+        if (order.customerId !== customer.id) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Insufficient permissions to access this resource',
+          });
+        }
+      }
+      // Admin, Sales, and Manager roles can view all orders (no additional check needed)
 
       return order;
     }),

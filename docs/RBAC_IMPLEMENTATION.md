@@ -52,6 +52,10 @@ These endpoints require the `admin` role:
 - `customer.approveCredit` - Approve credit applications
 - `customer.rejectCredit` - Reject credit applications
 
+**Product Management:**
+- `product.create` - Create new products
+- `product.update` - Update product information
+
 ### Admin or Sales Endpoints
 
 These endpoints require `admin` OR `sales` role:
@@ -84,6 +88,7 @@ These endpoints require `packer` OR `admin` role:
 - `packing.getOrderDetails` - Order packing details
 - `packing.markItemPacked` - Mark items as packed
 - `packing.markOrderReady` - Mark order ready for delivery
+- `packing.addPackingNotes` - Add notes to packing orders
 
 ### Protected Endpoints (Any Authenticated User)
 
@@ -91,7 +96,9 @@ These endpoints require authentication but no specific role:
 
 **Orders:**
 - `order.create` - Create order (customers can create their own)
-- `order.getById` - View order details (own orders only for customers)
+- `order.getById` - View order details (customers: own orders only; admin/sales/manager: all orders)
+- `order.getMyOrders` - List customer's own orders
+- `order.reorder` - Reorder from existing order (customers: own orders only)
 
 **Customer Profile:**
 - `customer.getProfile` - View own profile
@@ -99,6 +106,17 @@ These endpoints require authentication but no specific role:
 
 **Pricing:**
 - `pricing.getCustomerProductPrice` - Get effective price for order creation
+
+**Cart:**
+- `cart.addItem` - Add items to cart
+- `cart.removeItem` - Remove items from cart
+- `cart.updateQuantity` - Update item quantities
+- `cart.getCart` - View current cart
+- `cart.clearCart` - Clear all items from cart
+
+**Products:**
+- `product.getAll` - List all products
+- `product.getById` - View product details
 
 ## Setting Up User Roles in Clerk
 
@@ -256,6 +274,60 @@ This prevents typos and ensures only valid roles are used.
 3. Check that `hasRole` middleware allows admin bypass
 4. Review server logs for role check failures
 
+## Implementation Notes
+
+### Recent Updates
+
+**Data Isolation Enhancement (2025-11-19)**
+- Enhanced `order.getById` endpoint with role-based data isolation
+- Customers can now only view their own orders
+- Admin/Sales/Manager roles can view all orders
+- Generic error messages prevent information leakage
+
+**Middleware Standardization (2025-11-19)**
+- All packer endpoints now use the standardized `isPacker` middleware from `trpc.ts`
+- Removed local middleware definitions for consistency
+- All role middlewares are now exported from the central `trpc.ts` file
+
+### Current Endpoint Coverage
+
+**Total Endpoints**: 43
+**Protected**: 100%
+**With Role-Based Access Control**: 100%
+
+All endpoints are properly protected with either:
+- Role-based middleware (admin, sales, packer, etc.)
+- Protected procedure with data isolation (customer endpoints)
+
+### Known Limitations
+
+**Unimplemented Documented Features:**
+- `product.updateStock` - Stock management for sales/packer roles (not yet implemented)
+- `order.cancel` - Order cancellation feature (not yet implemented)
+
+**Driver Role:**
+- The `driver` role is defined in the system but not currently used by any endpoints
+- Reserved for future mobile app delivery features
+- The `isDriver` middleware exists but has no active endpoints
+
+**Manager vs Sales Roles:**
+- Manager role currently has the same permissions as sales role
+- Both roles use `isAdminOrSalesOrManager` middleware
+- No manager-specific endpoints currently exist
+- Consider consolidating or defining distinct manager responsibilities
+
+### Middleware Reference
+
+All role middlewares are defined in `/packages/api/src/trpc.ts`:
+
+```typescript
+isAdmin              // Admin only
+isAdminOrSales      // Admin or Sales
+isAdminOrSalesOrManager  // Admin, Sales, or Manager
+isPacker            // Packer or Admin (used by all packing endpoints)
+isDriver            // Driver or Admin (reserved for future use)
+```
+
 ## Future Enhancements
 
 Potential improvements to the RBAC system:
@@ -265,6 +337,9 @@ Potential improvements to the RBAC system:
 3. **Audit Logging**: Track all authorization decisions
 4. **Dynamic Roles**: Load roles from database instead of Clerk
 5. **Multi-Tenancy**: Organization-level role assignments
+6. **Stock Management**: Implement `product.updateStock` endpoint
+7. **Order Cancellation**: Implement `order.cancel` endpoint
+8. **Driver Features**: Add delivery tracking endpoints for driver role
 
 ## References
 
