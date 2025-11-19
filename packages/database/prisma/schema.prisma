@@ -299,16 +299,18 @@ model SystemLog {
 
 // Company Model (Singleton)
 model Company {
-  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
-  businessName        String
-  abn                 String
-  address             CompanyAddress
-  contactPerson       ContactPerson
-  bankDetails         BankDetails?
-  xeroSettings        XeroSettings?
-  deliverySettings    DeliverySettings?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id                      String                  @id @default(auto()) @map("_id") @db.ObjectId
+  businessName            String
+  abn                     String
+  address                 CompanyAddress
+  contactPerson           ContactPerson
+  bankDetails             BankDetails?
+  xeroSettings            XeroSettings?
+  deliverySettings        DeliverySettings?
+  notificationSettings    NotificationSettings?
+  logoUrl                 String?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@map("company")
 }
@@ -535,4 +537,31 @@ type RouteWaypoint {
   estimatedArrival    DateTime?           // Calculated arrival time
   distanceFromPrevious Float?             // Meters from previous waypoint
   durationFromPrevious Int?               // Seconds from previous waypoint
+}
+
+type NotificationSettings {
+  emailRecipients         String[]            // Array of email addresses
+  orderNotifications      OrderNotifications
+  inventoryNotifications  InventoryNotifications
+  customerNotifications   CustomerNotifications
+  quietHoursEnabled       Boolean             @default(false)
+  quietHoursStart         String?             // HH:mm format
+  quietHoursEnd           String?             // HH:mm format
+}
+
+type OrderNotifications {
+  newOrder                Boolean             @default(true)
+  orderConfirmed          Boolean             @default(true)
+  orderDelivered          Boolean             @default(true)
+}
+
+type InventoryNotifications {
+  lowStock                Boolean             @default(true)
+  outOfStock              Boolean             @default(true)
+}
+
+type CustomerNotifications {
+  newCustomer             Boolean             @default(true)
+  creditApplication       Boolean             @default(true)
+  creditApproved          Boolean             @default(true)
 }

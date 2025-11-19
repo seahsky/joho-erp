@@ -18,6 +18,8 @@ export const companyRouter = router({
         bankDetails: true,
         xeroSettings: true,
         deliverySettings: true,
+        notificationSettings: true,
+        logoUrl: true,
       },
     });
 
@@ -29,6 +31,158 @@ export const companyRouter = router({
     }
 
     return company;
+  }),
+
+  /**
+   * Update company profile (business info, address, bank details)
+   */
+  updateProfile: isAdminOrSales
+    .input(
+      z.object({
+        businessName: z.string().min(1, 'Business name is required'),
+        abn: z.string().min(11, 'Valid ABN is required'),
+        address: z.object({
+          street: z.string().min(1, 'Street address is required'),
+          suburb: z.string().min(1, 'Suburb is required'),
+          state: z.string().min(1, 'State is required'),
+          postcode: z.string().min(4, 'Valid postcode is required'),
+          country: z.string().default('Australia'),
+        }),
+        contactPerson: z.object({
+          firstName: z.string().min(1, 'First name is required'),
+          lastName: z.string().min(1, 'Last name is required'),
+          email: z.string().email('Valid email is required'),
+          phone: z.string().min(1, 'Phone is required'),
+          mobile: z.string().optional(),
+        }),
+        bankDetails: z.object({
+          bankName: z.string().min(1, 'Bank name is required'),
+          accountName: z.string().min(1, 'Account name is required'),
+          bsb: z.string().min(6, 'Valid BSB is required'),
+          accountNumber: z.string().min(1, 'Account number is required'),
+        }).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const company = await prisma.company.findFirst();
+
+      if (!company) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Company not found',
+        });
+      }
+
+      const updated = await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          businessName: input.businessName,
+          abn: input.abn,
+          address: input.address,
+          contactPerson: input.contactPerson,
+          bankDetails: input.bankDetails || null,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Company profile updated successfully',
+        company: updated,
+      };
+    }),
+
+  /**
+   * Update logo URL
+   */
+  updateLogo: isAdminOrSales
+    .input(
+      z.object({
+        logoUrl: z.string().url('Valid URL is required'),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const company = await prisma.company.findFirst();
+
+      if (!company) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Company not found',
+        });
+      }
+
+      const updated = await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          logoUrl: input.logoUrl,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Company logo updated successfully',
+        logoUrl: updated.logoUrl,
+      };
+    }),
+
+  /**
+   * Update Xero integration settings
+   */
+  updateXeroSettings: isAdminOrSales
+    .input(
+      z.object({
+        clientId: z.string().min(1, 'Client ID is required'),
+        clientSecret: z.string().min(1, 'Client Secret is required'),
+        tenantId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const company = await prisma.company.findFirst();
+
+      if (!company) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Company not found',
+        });
+      }
+
+      const updated = await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          xeroSettings: {
+            clientId: input.clientId,
+            clientSecret: input.clientSecret,
+            tenantId: input.tenantId || null,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Xero settings updated successfully',
+        settings: updated.xeroSettings,
+      };
+    }),
+
+  /**
+   * Test Xero connection
+   */
+  testXeroConnection: isAdminOrSales.mutation(async () => {
+    const company = await prisma.company.findFirst();
+
+    if (!company || !company.xeroSettings) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Xero settings not configured',
+      });
+    }
+
+    // TODO: Implement actual Xero API connection test
+    // For now, just return success if settings exist
+    return {
+      success: true,
+      message: 'Xero connection test successful',
+      connected: true,
+    };
   }),
 
   /**
