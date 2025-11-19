@@ -37,8 +37,8 @@ export default function PackingPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Loader2 className="h-12 w-12 animate-spin text-orange-600 mb-4" />
-          <p className="text-slate-600 font-medium">{t('loadingSession')}</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground font-medium">{t('loadingSession')}</p>
         </div>
       </div>
     );
@@ -47,9 +47,9 @@ export default function PackingPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-red-50 border-2 border-red-200 rounded-lg p-8">
-          <p className="text-red-700 text-lg font-bold mb-2">{t('errorLoading')}</p>
-          <p className="text-sm text-red-600">{error.message}</p>
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-destructive/10 border-2 border-destructive/30 rounded-lg p-8">
+          <p className="text-destructive text-lg font-bold mb-2">{t('errorLoading')}</p>
+          <p className="text-sm text-destructive/80">{error.message}</p>
         </div>
       </div>
     );
@@ -86,39 +86,39 @@ export default function PackingPage() {
   const dateInputValue = deliveryDate.toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header with Industrial Styling */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6 shadow-lg border-b-4 border-orange-500">
+        {/* Clean Professional Header */}
+        <div className="bg-primary text-primary-foreground rounded-lg p-6 shadow-md">
           <div className="flex items-center gap-4 mb-3">
-            <div className="p-3 bg-orange-500 rounded-lg">
+            <div className="p-3 bg-primary-foreground/10 rounded-lg backdrop-blur-sm">
               <Package className="h-8 w-8" />
             </div>
             <div>
               <h1 className="text-3xl font-bold uppercase tracking-tight">{t('title')}</h1>
-              <p className="text-slate-300 text-sm mt-1">{t('subtitle')}</p>
+              <p className="text-primary-foreground/80 text-sm mt-1">{t('subtitle')}</p>
             </div>
           </div>
         </div>
 
         {/* Compact Date Selector */}
-        <div className="bg-white border-2 border-slate-200 rounded-lg p-4 shadow-sm">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-slate-600" />
+              <Calendar className="h-5 w-5 text-muted-foreground" />
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block mb-1">
                   {t('selectDate')}
                 </label>
                 <Input
                   type="date"
                   value={dateInputValue}
                   onChange={handleDateChange}
-                  className="font-mono font-bold border-2 border-slate-300 focus:border-orange-500"
+                  className="font-mono font-bold border border-border focus:border-primary"
                 />
               </div>
             </div>
-            <div className="text-sm font-medium text-slate-700 bg-slate-50 px-4 py-2 rounded-md border border-slate-200">
+            <div className="text-sm font-medium text-foreground bg-muted px-4 py-2 rounded-md border border-border">
               {formatDate(deliveryDate)}
             </div>
           </div>
@@ -126,19 +126,19 @@ export default function PackingPage() {
 
         {/* Compact Horizontal Stats Bar */}
         {totalOrders > 0 && (
-          <div className="bg-white border-2 border-slate-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x-2 divide-slate-200">
+          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
               {/* Total Orders */}
-              <div className="p-4 hover:bg-slate-50 transition-colors">
+              <div className="p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded">
-                    <ClipboardCheck className="h-5 w-5 text-orange-600" />
+                  <div className="p-2 bg-primary/10 rounded">
+                    <ClipboardCheck className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {t('totalOrders')}
                     </p>
-                    <p className="text-2xl font-bold text-slate-900 tabular-nums">
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
                       <CountUp end={totalOrders} />
                     </p>
                   </div>
@@ -146,16 +146,16 @@ export default function PackingPage() {
               </div>
 
               {/* Unique Products */}
-              <div className="p-4 hover:bg-slate-50 transition-colors">
+              <div className="p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded">
-                    <Boxes className="h-5 w-5 text-green-600" />
+                  <div className="p-2 bg-success/10 rounded">
+                    <Boxes className="h-5 w-5 text-success" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {t('uniqueProducts')}
                     </p>
-                    <p className="text-2xl font-bold text-green-600 tabular-nums">
+                    <p className="text-2xl font-bold text-success tabular-nums">
                       <CountUp end={totalProducts} />
                     </p>
                   </div>
@@ -163,16 +163,16 @@ export default function PackingPage() {
               </div>
 
               {/* Total Items */}
-              <div className="p-4 hover:bg-slate-50 transition-colors">
+              <div className="p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-info/10 rounded">
+                    <TrendingUp className="h-5 w-5 text-info" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {t('totalItems')}
                     </p>
-                    <p className="text-2xl font-bold text-blue-600 tabular-nums">
+                    <p className="text-2xl font-bold text-info tabular-nums">
                       <CountUp end={totalItems} />
                     </p>
                   </div>

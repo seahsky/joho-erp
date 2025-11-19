@@ -96,10 +96,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   if (isLoading) {
     return (
-      <div className="bg-white border-2 border-slate-200 rounded-lg p-8">
+      <div className="bg-card border border-border rounded-lg p-6">
         <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
-          <span className="text-sm text-slate-600 font-medium">{t('loadingOrder')}</span>
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground font-medium">{t('loadingOrder')}</span>
         </div>
       </div>
     );
@@ -117,32 +117,17 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   const progressPercent = items.length > 0 ? (packedCount / items.length) * 100 : 0;
 
   return (
-    <div className="bg-white border-2 border-slate-300 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      {/* Header with Barcode Stripe */}
+    <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/40">
+      {/* Clean Header - No Decorative Elements */}
       <div className="relative">
-        {/* Barcode-style decorative element */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 opacity-80">
-          <div className="flex h-full">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-1"
-                style={{
-                  backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.3)',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-6 px-6 pb-4 bg-gradient-to-br from-slate-50 to-white">
+        <div className="px-5 py-4 bg-gradient-to-br from-muted/30 to-background border-b border-border">
           <div className="flex items-start justify-between gap-4 mb-3">
             {/* Order Info */}
             <div className="flex-1">
-              <h3 className="font-mono font-bold text-2xl text-slate-900 tracking-tight">
+              <h3 className="font-mono font-bold text-xl text-foreground tracking-tight">
                 {order.orderNumber}
               </h3>
-              <p className="text-base font-semibold text-slate-700 mt-1">{order.customerName}</p>
+              <p className="text-sm font-medium text-muted-foreground mt-1">{order.customerName}</p>
             </div>
 
             {/* Status Badge */}
@@ -152,22 +137,22 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-sm font-bold mb-2">
-              <span className="text-slate-600 uppercase tracking-wide">{t('progress')}</span>
-              <span className="text-slate-900 tabular-nums">
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+              <span className="text-muted-foreground uppercase tracking-wide">{t('progress')}</span>
+              <span className="text-foreground tabular-nums">
                 {packedCount} / {items.length}
               </span>
             </div>
-            <div className="h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full transition-all duration-500 rounded-full"
                 style={{
                   width: `${progressPercent}%`,
                   background:
                     progressPercent === 100
-                      ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
-                      : 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)',
+                      ? 'hsl(142 71% 45%)'
+                      : 'hsl(0 67% 35%)',
                 }}
               />
             </div>
@@ -175,10 +160,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
           {/* Delivery Instructions if present */}
           {orderDetails.deliveryAddress && orderDetails.deliveryAddress.includes('instructions') && (
-            <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+            <div className="mt-3 p-2.5 bg-warning/10 border-l-4 border-warning rounded">
               <div className="flex items-start gap-2">
-                <StickyNote className="h-4 w-4 text-yellow-700 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-yellow-800 font-medium">
+                <StickyNote className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-warning-foreground font-medium">
                   {orderDetails.deliveryAddress}
                 </div>
               </div>
@@ -188,7 +173,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       </div>
 
       {/* Items Checklist */}
-      <div className="p-6 space-y-2">
+      <div className="p-4 space-y-1.5">
         {items.map((item, index) => {
           const isPacked = packedItems.has(item.sku);
 
@@ -196,10 +181,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
             <button
               key={item.sku}
               onClick={() => toggleItemPacked(item.sku)}
-              className={`w-full flex items-center gap-4 p-4 rounded border-2 transition-all duration-200 hover:shadow-sm ${
+              className={`w-full flex items-center gap-3 p-3 rounded-md border transition-all duration-200 ${
                 isPacked
-                  ? 'bg-green-50 border-green-300 hover:bg-green-100'
-                  : 'bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400'
+                  ? 'bg-success/10 border-success/30 hover:bg-success/15'
+                  : 'bg-background border-border hover:bg-muted/50 hover:border-primary/30'
               }`}
               style={{
                 animationDelay: `${index * 50}ms`,
@@ -209,9 +194,9 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
               {/* Checkbox */}
               <div className="flex-shrink-0">
                 {isPacked ? (
-                  <CheckSquare className="h-7 w-7 text-green-600 transition-transform hover:scale-110" />
+                  <CheckSquare className="h-5 w-5 text-success transition-transform hover:scale-110" />
                 ) : (
-                  <Square className="h-7 w-7 text-slate-400 transition-transform hover:scale-110" />
+                  <Square className="h-5 w-5 text-muted-foreground transition-transform hover:scale-110" />
                 )}
               </div>
 
@@ -219,20 +204,20 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-baseline justify-between gap-3">
                   <span
-                    className={`font-mono font-bold text-sm tracking-tight ${
-                      isPacked ? 'text-slate-500 line-through' : 'text-slate-900'
+                    className={`font-mono font-semibold text-xs tracking-tight ${
+                      isPacked ? 'text-muted-foreground line-through' : 'text-foreground'
                     }`}
                   >
                     {item.sku}
                   </span>
-                  <span className="font-bold text-base text-orange-600 tabular-nums whitespace-nowrap">
+                  <span className="font-bold text-sm text-primary tabular-nums whitespace-nowrap">
                     {item.quantity}
-                    <span className="text-xs text-slate-600 ml-1">units</span>
+                    <span className="text-xs text-muted-foreground ml-1">units</span>
                   </span>
                 </div>
                 <p
-                  className={`text-sm font-medium mt-0.5 ${
-                    isPacked ? 'text-slate-500 line-through' : 'text-slate-700'
+                  className={`text-xs font-medium mt-0.5 ${
+                    isPacked ? 'text-muted-foreground line-through' : 'text-muted-foreground'
                   }`}
                 >
                   {item.productName}
@@ -244,45 +229,45 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       </div>
 
       {/* Notes Section */}
-      <div className="px-6 pb-4">
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+      <div className="px-4 pb-3">
+        <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
           {t('packingNotes')}
         </label>
         <textarea
           value={packingNotes}
           onChange={(e) => setPackingNotes(e.target.value)}
           placeholder={t('addNotes')}
-          className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm font-medium text-slate-800 placeholder:text-slate-400"
+          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-xs font-medium text-foreground placeholder:text-muted-foreground bg-background"
           rows={2}
         />
       </div>
 
       {/* Action Button */}
-      <div className="p-6 pt-2">
+      <div className="px-4 pb-4">
         <button
           onClick={handleMarkReady}
           disabled={!allItemsPacked || markOrderReadyMutation.isPending}
-          className={`w-full py-4 px-6 rounded-lg font-bold uppercase tracking-wider text-sm transition-all duration-200 ${
+          className={`w-full py-3 px-4 rounded-md font-semibold uppercase tracking-wide text-xs transition-all duration-200 ${
             allItemsPacked && !markOrderReadyMutation.isPending
-              ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-success hover:bg-success/90 text-success-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
           }`}
         >
           {markOrderReadyMutation.isPending ? (
             <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               {t('marking')}
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
               {t('markAsReady')}
             </span>
           )}
         </button>
 
         {!allItemsPacked && (
-          <p className="text-xs text-center text-slate-500 mt-3 font-medium">
+          <p className="text-xs text-center text-muted-foreground mt-2 font-medium">
             {t('checkAllItemsFirst')}
           </p>
         )}

@@ -75,17 +75,17 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
 
   if (validProductSummary.length === 0) {
     return (
-      <div className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-12 text-center">
-        <Package2 className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-        <p className="text-slate-600 font-medium">{t('noProducts')}</p>
+      <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
+        <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground font-medium">{t('noProducts')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border-2 border-slate-200 rounded-b-lg shadow-sm">
+    <div className="bg-card border border-border rounded-b-lg shadow-sm">
       {/* Checklist Items */}
-      <div className="divide-y-2 divide-slate-100">
+      <div className="divide-y divide-border">
         {validProductSummary.map((item, index) => {
           const isGathered = gatheredProducts.has(item.productId);
 
@@ -93,21 +93,21 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
             <button
               key={item.productId}
               onClick={() => toggleProductGathered(item.productId)}
-              className={`w-full text-left p-4 transition-all duration-200 hover:bg-slate-50 group ${
-                isGathered ? 'bg-green-50 hover:bg-green-100' : ''
+              className={`w-full text-left p-3 transition-all duration-200 hover:bg-muted/50 group ${
+                isGathered ? 'bg-success/10 hover:bg-success/15' : ''
               }`}
               style={{
                 animationDelay: `${index * 30}ms`,
                 animation: 'slideIn 0.3s ease-out',
               }}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3">
                 {/* Checkbox */}
                 <div className="flex-shrink-0 mt-0.5">
                   {isGathered ? (
-                    <CheckSquare className="h-7 w-7 text-green-600 transition-transform group-hover:scale-110" />
+                    <CheckSquare className="h-6 w-6 text-success transition-transform group-hover:scale-110" />
                   ) : (
-                    <Square className="h-7 w-7 text-slate-400 transition-transform group-hover:scale-110" />
+                    <Square className="h-6 w-6 text-muted-foreground transition-transform group-hover:scale-110" />
                   )}
                 </div>
 
@@ -116,22 +116,22 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
                   {/* SKU + Quantity */}
                   <div className="flex items-baseline justify-between gap-3 mb-1">
                     <span
-                      className={`font-mono font-bold text-base tracking-tight ${
-                        isGathered ? 'text-slate-500 line-through' : 'text-slate-900'
+                      className={`font-mono font-semibold text-sm tracking-tight ${
+                        isGathered ? 'text-muted-foreground line-through' : 'text-foreground'
                       }`}
                     >
                       {item.sku}
                     </span>
-                    <span className="font-bold text-lg text-orange-600 tabular-nums whitespace-nowrap">
+                    <span className="font-bold text-base text-primary tabular-nums whitespace-nowrap">
                       {item.totalQuantity}
-                      <span className="text-sm text-slate-600 ml-1">{item.unit}</span>
+                      <span className="text-xs text-muted-foreground ml-1">{item.unit}</span>
                     </span>
                   </div>
 
                   {/* Product Name */}
                   <p
-                    className={`text-sm font-medium mb-2 ${
-                      isGathered ? 'text-slate-500 line-through' : 'text-slate-700'
+                    className={`text-xs font-medium mb-2 ${
+                      isGathered ? 'text-muted-foreground line-through' : 'text-muted-foreground'
                     }`}
                   >
                     {item.productName}
@@ -144,7 +144,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
                         <Badge
                           key={order.orderNumber}
                           variant="secondary"
-                          className="text-xs font-mono bg-slate-100 text-slate-700 border border-slate-300"
+                          className="text-xs font-mono"
                         >
                           {order.orderNumber} ×{order.quantity}
                         </Badge>
@@ -152,7 +152,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
                       {item.orders.length > 5 && (
                         <Badge
                           variant="outline"
-                          className="text-xs font-mono border-slate-400 text-slate-600"
+                          className="text-xs font-mono"
                         >
                           +{item.orders.length - 5}
                         </Badge>
@@ -161,9 +161,6 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
                   )}
                 </div>
               </div>
-
-              {/* Barcode-style divider */}
-              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           );
         })}

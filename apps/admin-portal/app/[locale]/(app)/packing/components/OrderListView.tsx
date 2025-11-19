@@ -45,9 +45,9 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-12 text-center">
-        <Package2 className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-        <p className="text-slate-600 font-medium">{t('noOrders')}</p>
+      <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
+        <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground font-medium">{t('noOrders')}</p>
       </div>
     );
   }
@@ -56,19 +56,19 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
     <div className="space-y-4">
       {/* Area Filter - Only show if there are multiple areas */}
       {areaTags.length > 1 && (
-        <div className="bg-white border-2 border-slate-200 rounded-lg p-4 shadow-sm">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-600">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               <Filter className="h-4 w-4" />
               <span>{t('filterByArea')}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setAreaFilter('all')}
-                className={`px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
                   areaFilter === 'all'
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
                 {t('allAreas')}
@@ -77,10 +77,10 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
                 <button
                   key={area}
                   onClick={() => setAreaFilter(area)}
-                  className={`px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                  className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
                     areaFilter === area
-                      ? getAreaBadgeColor(area) + ' shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? getAreaBadgeColor(area) + ' shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
                   {area.toUpperCase()}
@@ -93,14 +93,14 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
 
       {/* Orders Count */}
       <div className="flex items-center justify-between px-2">
-        <p className="text-sm font-bold uppercase tracking-wider text-slate-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {filteredOrders.length} {filteredOrders.length === 1 ? t('order') : t('orders')}
           {areaFilter !== 'all' && ` · ${areaFilter.toUpperCase()}`}
         </p>
       </div>
 
-      {/* Flat Order List */}
-      <div className="space-y-4">
+      {/* 2-Column Grid Layout for Orders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredOrders.map((order, index) => (
           <div
             key={order.orderId}
@@ -116,12 +116,12 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
 
       {/* Empty State for Filter */}
       {filteredOrders.length === 0 && (
-        <div className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-12 text-center">
-          <Package2 className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-          <p className="text-slate-600 font-medium">{t('noOrdersForArea')}</p>
+        <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
+          <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">{t('noOrdersForArea')}</p>
           <button
             onClick={() => setAreaFilter('all')}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md font-bold text-sm uppercase hover:bg-orange-600 transition-colors"
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold text-sm uppercase hover:bg-primary/90 transition-colors shadow-sm"
           >
             {t('showAllAreas')}
           </button>
