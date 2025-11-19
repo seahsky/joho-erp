@@ -46,15 +46,15 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange }: AdminDesktopS
           </SidebarSection>
 
           {/* Settings Section */}
-          <SidebarSection title={collapsed ? undefined : 'Settings'} collapsed={collapsed}>
-            <SidebarItem
-              icon={Settings}
-              label="Settings"
-              onClick={() => {
-                // TODO: Implement settings
-              }}
-              collapsed={collapsed}
-            />
+          <SidebarSection title={collapsed ? undefined : t('settingsSection')} collapsed={collapsed}>
+            <Link href={`/${locale}/settings`}>
+              <SidebarItem
+                icon={Settings}
+                label={t('settings')}
+                active={pathname.startsWith(`/${locale}/settings`)}
+                collapsed={collapsed}
+              />
+            </Link>
           </SidebarSection>
         </>
       )}
