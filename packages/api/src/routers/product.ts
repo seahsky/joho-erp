@@ -4,12 +4,14 @@ import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
 import { getEffectivePrice } from '@jimmy-beef/shared';
 
+const productCategoryEnum = z.enum(['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed']);
+
 export const productRouter = router({
   // Get all products (with customer-specific pricing if authenticated customer)
   getAll: protectedProcedure
     .input(
       z.object({
-        category: z.string().optional(),
+        category: productCategoryEnum.optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
         search: z.string().optional(),
       })
@@ -138,7 +140,7 @@ export const productRouter = router({
         sku: z.string().min(1),
         name: z.string().min(1),
         description: z.string().optional(),
-        category: z.string().optional(),
+        category: productCategoryEnum.optional(),
         unit: z.enum(['kg', 'piece', 'box', 'carton']),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive(), // In cents (e.g., 2550 = $25.50)
@@ -212,7 +214,7 @@ export const productRouter = router({
         productId: z.string(),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
-        category: z.string().optional(),
+        category: productCategoryEnum.optional(),
         unit: z.enum(['kg', 'piece', 'box', 'carton']).optional(),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive().optional(), // In cents

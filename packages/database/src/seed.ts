@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType } from './generated/prisma';
+import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
@@ -34,7 +34,7 @@ const products = [
     sku: 'BEEF-RUMP-5KG',
     name: 'Premium Beef Rump',
     description: 'Premium grass-fed beef rump, aged for 21 days',
-    category: 'Beef - Premium Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 5,
     basePrice: 1850, // $18.50 in cents
@@ -46,7 +46,7 @@ const products = [
     sku: 'BEEF-SCOTCH-5KG',
     name: 'Scotch Fillet',
     description: 'Premium scotch fillet, marble score 3+',
-    category: 'Beef - Premium Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 5,
     basePrice: 2400, // $24.00 in cents
@@ -58,7 +58,7 @@ const products = [
     sku: 'BEEF-TENDER-3KG',
     name: 'Beef Tenderloin',
     description: 'Premium whole beef tenderloin',
-    category: 'Beef - Premium Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 3,
     basePrice: 3200, // $32.00 in cents
@@ -70,7 +70,7 @@ const products = [
     sku: 'BEEF-TBONE-10KG',
     name: 'T-Bone Steak',
     description: 'Premium T-bone steaks, cut to order',
-    category: 'Beef - Steaks',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 2200, // $22.00 in cents
@@ -82,7 +82,7 @@ const products = [
     sku: 'BEEF-SIRLOIN-8KG',
     name: 'Sirloin Steak',
     description: 'Premium sirloin steaks',
-    category: 'Beef - Steaks',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 8,
     basePrice: 1950, // $19.50 in cents
@@ -96,7 +96,7 @@ const products = [
     sku: 'BEEF-BRISKET-10KG',
     name: 'Beef Brisket',
     description: 'Whole beef brisket, perfect for slow cooking',
-    category: 'Beef - Secondary Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 1250, // $12.50 in cents
@@ -108,7 +108,7 @@ const products = [
     sku: 'BEEF-CHUCK-15KG',
     name: 'Beef Chuck',
     description: 'Premium beef chuck for stewing and braising',
-    category: 'Beef - Secondary Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 15,
     basePrice: 1100, // $11.00 in cents
@@ -120,7 +120,7 @@ const products = [
     sku: 'BEEF-MINCE-10KG',
     name: 'Premium Beef Mince',
     description: 'Premium lean beef mince (85/15)',
-    category: 'Beef - Processed',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 950, // $9.50 in cents
@@ -134,7 +134,7 @@ const products = [
     sku: 'PORK-LOIN-8KG',
     name: 'Pork Loin',
     description: 'Premium pork loin, boneless',
-    category: 'Pork - Premium Cuts',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 8,
     basePrice: 1350, // $13.50 in cents
@@ -146,7 +146,7 @@ const products = [
     sku: 'PORK-BELLY-10KG',
     name: 'Pork Belly',
     description: 'Premium pork belly, skin on',
-    category: 'Pork - Premium Cuts',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 1100, // $11.00 in cents
@@ -158,7 +158,7 @@ const products = [
     sku: 'PORK-SHOULDER-12KG',
     name: 'Pork Shoulder',
     description: 'Premium pork shoulder, bone-in',
-    category: 'Pork - Secondary Cuts',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 12,
     basePrice: 950, // $9.50 in cents
@@ -170,7 +170,7 @@ const products = [
     sku: 'PORK-RIBS-10KG',
     name: 'Pork Spare Ribs',
     description: 'Premium pork spare ribs',
-    category: 'Pork - Ribs',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 1200, // $12.00 in cents
@@ -182,7 +182,7 @@ const products = [
     sku: 'PORK-CHOPS-8KG',
     name: 'Pork Chops',
     description: 'Premium pork loin chops',
-    category: 'Pork - Chops',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 8,
     basePrice: 1400, // $14.00 in cents
@@ -194,7 +194,7 @@ const products = [
     sku: 'PORK-MINCE-10KG',
     name: 'Pork Mince',
     description: 'Premium pork mince',
-    category: 'Pork - Processed',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 10,
     basePrice: 850, // $8.50 in cents
@@ -208,7 +208,7 @@ const products = [
     sku: 'SAUSAGE-BEEF-5KG',
     name: 'Beef Sausages',
     description: 'Premium beef sausages, gluten-free',
-    category: 'Processed - Sausages',
+    category: 'Processed' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 5,
     basePrice: 1000, // $10.00 in cents
@@ -222,7 +222,7 @@ const products = [
     sku: 'BEEF-PATTY-BOX',
     name: 'Beef Burger Patties',
     description: 'Premium beef burger patties, 150g each',
-    category: 'Processed - Patties',
+    category: 'Processed' as ProductCategory,
     unit: 'box' as ProductUnit,
     packageSize: 1,
     basePrice: 4500, // $45.00 in cents (30 patties per box)
@@ -234,7 +234,7 @@ const products = [
     sku: 'STEAK-PREMIUM-CARTON',
     name: 'Mixed Premium Steaks Carton',
     description: 'Assorted premium steaks in bulk carton',
-    category: 'Beef - Premium Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'carton' as ProductUnit,
     packageSize: 1,
     basePrice: 32000, // $320.00 in cents (20kg mixed steaks)
@@ -246,7 +246,7 @@ const products = [
     sku: 'LAMB-CUTLET-PIECE',
     name: 'Lamb Cutlet (Single Rack)',
     description: 'Premium lamb cutlet rack, French trimmed',
-    category: 'Lamb - Premium Cuts',
+    category: 'Lamb' as ProductCategory,
     unit: 'piece' as ProductUnit,
     packageSize: 1,
     basePrice: 2800, // $28.00 in cents per rack
@@ -260,7 +260,7 @@ const products = [
     sku: 'BEEF-OXTAIL-5KG',
     name: 'Beef Oxtail',
     description: 'Premium beef oxtail (DISCONTINUED - supplier issue)',
-    category: 'Beef - Specialty',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 5,
     basePrice: 1650, // $16.50 in cents
@@ -272,7 +272,7 @@ const products = [
     sku: 'PORK-HOCK-8KG',
     name: 'Pork Hock',
     description: 'Pork hocks for braising (DISCONTINUED - low demand)',
-    category: 'Pork - Specialty',
+    category: 'Pork' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 8,
     basePrice: 950, // $9.50 in cents
@@ -286,7 +286,7 @@ const products = [
     sku: 'WAGYU-SIRLOIN-3KG',
     name: 'Wagyu Sirloin A5',
     description: 'Premium Japanese Wagyu sirloin (OUT OF STOCK)',
-    category: 'Beef - Premium Cuts',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 3,
     basePrice: 12000, // $120.00 in cents
@@ -298,7 +298,7 @@ const products = [
     sku: 'BEEF-TONGUE-4KG',
     name: 'Beef Tongue',
     description: 'Whole beef tongue (OUT OF STOCK - awaiting delivery)',
-    category: 'Beef - Offal',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 4,
     basePrice: 1450, // $14.50 in cents
@@ -312,7 +312,7 @@ const products = [
     sku: 'PORK-SAUSAGE-5KG',
     name: 'Pork Sausages',
     description: 'Traditional pork sausages',
-    category: 'Processed - Sausages',
+    category: 'Processed' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 5,
     basePrice: 900, // $9.00 in cents
@@ -324,7 +324,7 @@ const products = [
     sku: 'BEEF-LIVER-3KG',
     name: 'Beef Liver',
     description: 'Fresh beef liver',
-    category: 'Beef - Offal',
+    category: 'Beef' as ProductCategory,
     unit: 'kg' as ProductUnit,
     packageSize: 3,
     basePrice: 850, // $8.50 in cents

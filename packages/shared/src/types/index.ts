@@ -16,6 +16,9 @@ export type OrderStatus =
 // Product Status
 export type ProductStatus = 'active' | 'discontinued' | 'out_of_stock';
 
+// Product Category
+export type ProductCategory = 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed';
+
 // Customer Status
 export type CustomerStatus = 'active' | 'suspended' | 'closed';
 

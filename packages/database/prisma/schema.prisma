@@ -28,6 +28,14 @@ enum ProductStatus {
   out_of_stock
 }
 
+enum ProductCategory {
+  Beef
+  Pork
+  Chicken
+  Lamb
+  Processed
+}
+
 enum CustomerStatus {
   active
   suspended
@@ -112,7 +120,7 @@ model Product {
   sku                 String              @unique
   name                String
   description         String?
-  category            String?
+  category            ProductCategory?
   unit                ProductUnit
   packageSize         Float?
   basePrice           Int                 // Stored in cents (e.g., 2550 = $25.50)

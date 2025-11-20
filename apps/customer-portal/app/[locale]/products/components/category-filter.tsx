@@ -5,11 +5,12 @@ import { useTranslations } from 'next-intl';
 import { BottomSheet, Button, Badge } from '@jimmy-beef/ui';
 import { Filter, X, Check } from 'lucide-react';
 import { cn } from '@jimmy-beef/ui';
+import type { ProductCategory } from '@jimmy-beef/shared';
 
 interface CategoryFilterProps {
-  categories: string[];
-  selectedCategory: string | undefined;
-  onSelectCategory: (category: string | undefined) => void;
+  categories: ProductCategory[];
+  selectedCategory: ProductCategory | undefined;
+  onSelectCategory: (category: ProductCategory | undefined) => void;
   productCount: number;
 }
 
@@ -23,9 +24,14 @@ export function CategoryFilter({
   const [mobileFilterOpen, setMobileFilterOpen] = React.useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
-  const handleCategorySelect = (category: string | undefined) => {
+  const handleCategorySelect = (category: ProductCategory | undefined) => {
     onSelectCategory(category);
     setMobileFilterOpen(false);
+  };
+
+  const getCategoryTranslation = (category: ProductCategory) => {
+    const categoryKey = category.toLowerCase();
+    return t(`categories.${categoryKey}`);
   };
 
   return (
@@ -82,7 +88,7 @@ export function CategoryFilter({
                   : 'bg-background text-foreground border-border hover:border-primary/50'
               )}
             >
-              {category}
+              {getCategoryTranslation(category)}
             </button>
           ))}
         </div>
@@ -98,7 +104,7 @@ export function CategoryFilter({
           <span className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
             <span className="font-medium">
-              {selectedCategory || t('products.allProducts')}
+              {selectedCategory ? getCategoryTranslation(selectedCategory) : t('products.allProducts')}
             </span>
           </span>
           {selectedCategory && (
@@ -163,7 +169,7 @@ export function CategoryFilter({
                       : 'bg-background hover:bg-muted border-border'
                   )}
                 >
-                  <span className="font-medium">{category}</span>
+                  <span className="font-medium">{getCategoryTranslation(category)}</span>
                   {selectedCategory === category && <Check className="h-5 w-5" />}
                 </button>
               ))}

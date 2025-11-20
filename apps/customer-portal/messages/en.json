@@ -96,6 +96,13 @@
     "adding": "Adding...",
     "noDescription": "No description available"
   },
+  "categories": {
+    "beef": "Beef",
+    "pork": "Pork",
+    "chicken": "Chicken",
+    "lamb": "Lamb",
+    "processed": "Processed"
+  },
   "orders": {
     "title": "My Orders",
     "subtitle": "Track and manage your orders",

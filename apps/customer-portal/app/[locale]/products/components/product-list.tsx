@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@jimmy-beef/ui';
 import { Package, Plus } from 'lucide-react';
 import { api } from '@/trpc/client';
-import type { ProductWithPricing } from '@jimmy-beef/shared';
+import type { ProductWithPricing, ProductCategory } from '@jimmy-beef/shared';
 import { formatAUD } from '@jimmy-beef/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategoryFilter } from './category-filter';
@@ -15,7 +15,7 @@ interface Product {
   name: string;
   sku: string;
   description: string | null;
-  category: string | null;
+  category: ProductCategory | null;
   unit: string;
   basePrice: number;
   currentStock: number;
@@ -25,7 +25,7 @@ export function ProductList() {
   const t = useTranslations();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>();
+  const [selectedCategory, setSelectedCategory] = React.useState<ProductCategory | undefined>();
   const [selectedProduct, setSelectedProduct] = React.useState<(Product & ProductWithPricing) | null>(null);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
@@ -55,12 +55,17 @@ export function ProductList() {
   // Extract unique categories
   const categories = React.useMemo(() => {
     if (!products) return [];
-    const uniqueCategories = new Set<string>();
+    const uniqueCategories = new Set<ProductCategory>();
     products.forEach(p => {
       if (p.category) uniqueCategories.add(p.category);
     });
     return Array.from(uniqueCategories).sort();
   }, [products]);
+
+  const getCategoryTranslation = (category: ProductCategory) => {
+    const categoryKey = category.toLowerCase();
+    return t(`categories.${categoryKey}`);
+  };
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
@@ -183,7 +188,7 @@ export function ProductList() {
                       <>
                         <span className="text-muted-foreground text-xs">•</span>
                         <Badge variant="outline" className="text-xs font-normal">
-                          {product.category}
+                          {getCategoryTranslation(product.category)}
                         </Badge>
                       </>
                     )}

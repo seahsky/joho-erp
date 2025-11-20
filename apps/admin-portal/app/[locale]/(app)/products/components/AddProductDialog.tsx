@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency, parseToCents } from '@jimmy-beef/shared';
+import type { ProductCategory } from '@jimmy-beef/shared';
 import { useToast } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 
@@ -62,7 +63,7 @@ export function AddProductDialog({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState<ProductCategory | ''>('');
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
@@ -375,7 +376,7 @@ export function AddProductDialog({
               <Input
                 id="category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value as ProductCategory | '')}
                 placeholder={t('productForm.fields.categoryPlaceholder')}
               />
             </div>

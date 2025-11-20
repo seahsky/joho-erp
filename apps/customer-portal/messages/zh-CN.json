@@ -96,6 +96,13 @@
     "adding": "添加中...",
     "noDescription": "暂无描述"
   },
+  "categories": {
+    "beef": "牛肉",
+    "pork": "猪肉",
+    "chicken": "鸡肉",
+    "lamb": "羊肉",
+    "processed": "加工品"
+  },
   "orders": {
     "title": "我的订单",
     "subtitle": "追踪和管理您的订单",

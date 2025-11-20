@@ -6,7 +6,7 @@ import { MobileDrawer } from '@jimmy-beef/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@jimmy-beef/ui';
 import { Package, Minus, Plus, X } from 'lucide-react';
 import { formatAUD } from '@jimmy-beef/shared';
-import type { ProductWithPricing } from '@jimmy-beef/shared';
+import type { ProductWithPricing, ProductCategory } from '@jimmy-beef/shared';
 import { api } from '@/trpc/client';
 
 interface Product {
@@ -14,7 +14,7 @@ interface Product {
   name: string;
   sku: string;
   description: string | null;
-  category: string | null;
+  category: ProductCategory | null;
   unit: string;
   basePrice: number;
   currentStock: number;
@@ -65,6 +65,11 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
       return <Badge variant="warning">{t('products.lowStock')}</Badge>;
     }
     return <Badge variant="success">{t('products.inStock')}</Badge>;
+  };
+
+  const getCategoryTranslation = (category: ProductCategory) => {
+    const categoryKey = category.toLowerCase();
+    return t(`categories.${categoryKey}`);
   };
 
   const handleIncrease = () => {
@@ -123,7 +128,7 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
                 <>
                   <span className="text-muted-foreground">•</span>
                   <Badge variant="outline" className="font-normal">
-                    {product.category}
+                    {getCategoryTranslation(product.category)}
                   </Badge>
                 </>
               )}
