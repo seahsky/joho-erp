@@ -13,7 +13,7 @@ interface Delivery {
   latitude: number | null;
   longitude: number | null;
   status: string;
-  driver: string;
+  areaTag: string;
   estimatedTime: string;
   deliverySequence?: number | null;
 }
@@ -60,8 +60,6 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
 
   const getMarkerColor = (status: string) => {
     switch (status) {
-      case 'out_for_delivery':
-        return 'text-blue-600';
       case 'ready_for_delivery':
         return 'text-yellow-600';
       case 'delivered':
@@ -141,7 +139,6 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
                   <div className="relative">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg border-2 border-white ${
                       delivery.status === 'delivered' ? 'bg-green-600' :
-                      delivery.status === 'out_for_delivery' ? 'bg-blue-600' :
                       'bg-orange-500'
                     }`}>
                       {delivery.deliverySequence}
@@ -149,7 +146,6 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
                     {/* Arrow pointer */}
                     <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
                       delivery.status === 'delivered' ? 'border-t-green-600' :
-                      delivery.status === 'out_for_delivery' ? 'border-t-blue-600' :
                       'border-t-orange-500'
                     }`}></div>
                   </div>
@@ -174,12 +170,13 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
               <p className="text-xs text-gray-600 mb-2">{popupInfo.orderId}</p>
               <p className="text-xs text-gray-500 mb-2">{popupInfo.address}</p>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Driver: {popupInfo.driver}</span>
+                <span className="text-gray-600">
+                  Area: {popupInfo.areaTag.toUpperCase()}
+                  {popupInfo.deliverySequence && ` • Seq: #${popupInfo.deliverySequence}`}
+                </span>
                 <span
                   className={`px-2 py-0.5 rounded-full ${
-                    popupInfo.status === 'out_for_delivery'
-                      ? 'bg-blue-100 text-blue-800'
-                      : popupInfo.status === 'ready_for_delivery'
+                    popupInfo.status === 'ready_for_delivery'
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-green-100 text-green-800'
                   }`}

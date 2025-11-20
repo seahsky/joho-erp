@@ -259,7 +259,6 @@ export default function OrdersPage() {
                 <option value="confirmed">{t('confirmed')}</option>
                 <option value="packing">{t('packing')}</option>
                 <option value="ready_for_delivery">{t('readyForDelivery')}</option>
-                <option value="out_for_delivery">{t('outForDelivery')}</option>
                 <option value="delivered">{t('delivered')}</option>
                 <option value="cancelled">{t('cancelled')}</option>
               </select>

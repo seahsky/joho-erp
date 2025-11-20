@@ -10,10 +10,9 @@ export const deliveryRouter = router({
     .input(
       z.object({
         status: z
-          .enum(['ready_for_delivery', 'out_for_delivery', 'delivered'])
+          .enum(['ready_for_delivery', 'delivered'])
           .optional(),
         areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
-        driverId: z.string().optional(),
         dateFrom: z.date().optional(),
         dateTo: z.date().optional(),
         page: z.number().default(1),
@@ -25,19 +24,13 @@ export const deliveryRouter = router({
         status: {
           in: input.status
             ? [input.status]
-            : ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+            : ['ready_for_delivery', 'delivered'],
         },
       };
 
       if (input.areaTag) {
         where.deliveryAddress = {
           is: { areaTag: input.areaTag },
-        };
-      }
-
-      if (input.driverId) {
-        where.delivery = {
-          is: { driverId: input.driverId },
         };
       }
 
@@ -76,19 +69,12 @@ export const deliveryRouter = router({
         longitude: order.customer?.deliveryAddress?.longitude ?? null,
         areaTag: order.deliveryAddress.areaTag,
         status: order.status,
-        driver: order.delivery?.driverName || 'Unassigned',
-        driverId: order.delivery?.driverId,
-        estimatedTime:
-          order.status === 'ready_for_delivery'
-            ? 'Pending'
-            : order.status === 'delivered'
-              ? 'Completed'
-              : '30 mins', // Default estimate for out_for_delivery
+        estimatedTime: order.status === 'delivered' ? 'Completed' : order.delivery?.estimatedArrival ? new Date(order.delivery.estimatedArrival).toLocaleTimeString() : 'Pending',
         items: order.items.length,
         totalAmount: order.totalAmount,
         requestedDeliveryDate: order.requestedDeliveryDate,
         deliveryInstructions: order.deliveryAddress.deliveryInstructions,
-        assignedAt: order.delivery?.assignedAt,
+        deliverySequence: order.delivery?.deliverySequence,
         deliveredAt: order.delivery?.deliveredAt,
       }));
 
@@ -98,53 +84,6 @@ export const deliveryRouter = router({
         page: input.page,
         totalPages: Math.ceil(total / input.limit),
       };
-    }),
-
-  // Assign driver to delivery
-  assignDriver: isAdminOrSales
-    .input(
-      z.object({
-        orderId: z.string(),
-        driverId: z.string(),
-        driverName: z.string(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      // Fetch current order to append to statusHistory
-      const currentOrder = await prisma.order.findUnique({
-        where: { id: input.orderId },
-      });
-
-      if (!currentOrder) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      const order = await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          status: 'out_for_delivery',
-          delivery: {
-            ...currentOrder.delivery,
-            driverId: input.driverId,
-            driverName: input.driverName,
-            assignedAt: new Date(),
-          },
-          statusHistory: [
-            ...currentOrder.statusHistory,
-            {
-              status: 'out_for_delivery',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              notes: `Assigned to driver: ${input.driverName}`,
-            },
-          ],
-        },
-      });
-
-      return order;
     }),
 
   // Mark delivery as completed
@@ -196,12 +135,9 @@ export const deliveryRouter = router({
     const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
     const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
-    const [readyForDelivery, outForDelivery, deliveredToday] = await Promise.all([
+    const [readyForDelivery, deliveredToday] = await Promise.all([
       prisma.order.count({
         where: { status: 'ready_for_delivery' },
-      }),
-      prisma.order.count({
-        where: { status: 'out_for_delivery' },
       }),
       prisma.order.count({
         where: {
@@ -220,7 +156,6 @@ export const deliveryRouter = router({
 
     return {
       readyForDelivery,
-      outForDelivery,
       deliveredToday,
     };
   }),
@@ -256,7 +191,7 @@ export const deliveryRouter = router({
             lt: endOfDay,
           },
           status: {
-            in: ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+            in: ['ready_for_delivery', 'delivered'],
           },
         },
         orderBy: {
@@ -280,7 +215,6 @@ export const deliveryRouter = router({
           distanceFromPrevious: wp.distanceFromPrevious,
           durationFromPrevious: wp.durationFromPrevious,
           status: order?.status || 'ready_for_delivery',
-          driver: order?.delivery?.driverName || null,
         };
       });
 
@@ -306,7 +240,7 @@ export const deliveryRouter = router({
       z.object({
         deliveryDate: z.string().datetime(),
         status: z
-          .enum(['ready_for_delivery', 'out_for_delivery', 'delivered'])
+          .enum(['ready_for_delivery', 'delivered'])
           .optional(),
       })
     )
@@ -325,7 +259,7 @@ export const deliveryRouter = router({
         status: {
           in: input.status
             ? [input.status]
-            : ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+            : ['ready_for_delivery', 'delivered'],
         },
       };
 
@@ -353,15 +287,12 @@ export const deliveryRouter = router({
         longitude: order.deliveryAddress.longitude,
         areaTag: order.deliveryAddress.areaTag,
         status: order.status,
-        driver: order.delivery?.driverName || 'Unassigned',
-        driverId: order.delivery?.driverId,
         deliverySequence: order.delivery?.deliverySequence || null,
         estimatedArrival: order.delivery?.estimatedArrival || null,
         items: order.items.length,
         totalAmount: order.totalAmount,
         requestedDeliveryDate: order.requestedDeliveryDate,
         deliveryInstructions: order.deliveryAddress.deliveryInstructions,
-        assignedAt: order.delivery?.assignedAt,
         deliveredAt: order.delivery?.deliveredAt,
       }));
 

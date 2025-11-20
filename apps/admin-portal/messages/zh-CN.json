@@ -32,7 +32,8 @@
     "signUp": "注册",
     "welcome": "欢迎",
     "items": "件",
-    "driver": "司机"
+    "area": "区域",
+    "sequence": "顺序"
   },
   "dashboard": {
     "title": "仪表板",
@@ -48,7 +49,7 @@
     "allTime": "全部时间",
     "requireProcessing": "需要处理",
     "activeAccounts": "活跃帐户",
-    "outForDelivery": "配送中",
+
     "latestOrders": "客户的最新订单",
     "noRecentOrders": "暂无最近订单",
     "ordersWillAppearHere": "客户下单后订单将显示在这里",
@@ -102,12 +103,12 @@
     "orderId": "订单编号",
     "customer": "客户",
     "address": "地址",
-    "driver": "司机",
+
     "estimatedTime": "预计送达",
     "packages": "包裹",
     "items": "件",
     "markAsDelivered": "标记为已送达",
-    "outForDelivery": "配送中",
+
     "readyForDelivery": "准备配送",
     "delivered": "已送达",
     "deliveriesInProgress": "进行中的配送",
@@ -131,7 +132,7 @@
     "packed": "已打包",
     "packing": "打包中",
     "readyForDelivery": "准备配送",
-    "outForDelivery": "配送中",
+
     "delivered": "已送达",
     "cancelled": "已取消",
     "loading": "加载订单中...",
@@ -791,7 +792,12 @@
     "routeStatus": "路线状态",
     "notOptimized": "尚未优化",
     "needsReoptimization": "需要重新优化",
-    "optimizeNow": "立即优化"
+    "optimizeNow": "立即优化",
+    "orderStatusReady": "准备交付",
+    "orderStatusPacking": "打包中",
+    "orderStatusConfirmed": "已确认",
+    "allOrdersReadyForProduct": "该产品的所有订单已准备好",
+    "autoRefreshEnabled": "每30秒自动刷新"
   },
   "settings": {
     "title": "设置",

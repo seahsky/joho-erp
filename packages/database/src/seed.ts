@@ -794,8 +794,6 @@ function createOrdersForCustomer(
     if (statusInfo.status === 'delivered') {
       // Historical orders: 2 days ago
       requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() - 2);
-    } else if (statusInfo.status === 'out_for_delivery') {
-      // Currently being delivered: today
     } else if (statusInfo.status === 'confirmed' || statusInfo.status === 'packing') {
       // Confirmed/packing orders: spread across today (33%), tomorrow (50%), day after (17%)
       const dateVariation = Math.random();
@@ -844,10 +842,8 @@ function createOrdersForCustomer(
     };
 
     // Add delivery info if applicable
-    if (statusInfo.status === 'out_for_delivery' || statusInfo.status === 'delivered') {
+    if (statusInfo.status === 'delivered') {
       order.delivery = {
-        driverId: statusInfo.driverId,
-        driverName: statusInfo.driverName,
         assignedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
       };
       order.statusHistory.push({
@@ -1409,7 +1405,6 @@ async function seed() {
       confirmed: 0,
       packing: 0,
       ready_for_delivery: 0,
-      out_for_delivery: 0,
       delivered: 0,
       cancelled: 0,
     };

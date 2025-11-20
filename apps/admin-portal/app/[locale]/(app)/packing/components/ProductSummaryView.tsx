@@ -11,6 +11,7 @@ import { CheckSquare, Square, Package2 } from 'lucide-react';
 interface OrderReference {
   orderNumber: string;
   quantity: number;
+  status: 'confirmed' | 'packing' | 'ready_for_delivery';
 }
 
 /**
@@ -91,6 +92,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
         <div className="divide-y divide-border">
         {validProductSummary.map((item, index) => {
           const isGathered = gatheredProducts.has(item.productId);
+          const allOrdersReady = item.orders?.every(order => order.status === 'ready_for_delivery') ?? false;
 
           return (
             <button
@@ -98,7 +100,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
               onClick={() => toggleProductGathered(item.productId)}
               className={`w-full text-left p-3 transition-all duration-200 hover:bg-muted/50 group ${
                 isGathered ? 'bg-success/10 hover:bg-success/15' : ''
-              }`}
+              } ${allOrdersReady ? 'bg-muted/30' : ''}`}
               style={{
                 animationDelay: `${index * 30}ms`,
                 animation: 'slideIn 0.3s ease-out',
@@ -146,7 +148,7 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
                       {item.orders.slice(0, 5).map((order) => (
                         <Badge
                           key={order.orderNumber}
-                          variant="secondary"
+                          variant={order.status === 'ready_for_delivery' ? 'success' : 'secondary'}
                           className="text-xs font-mono"
                         >
                           {order.orderNumber} ×{order.quantity}

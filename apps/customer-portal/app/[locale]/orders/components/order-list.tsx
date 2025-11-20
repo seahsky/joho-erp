@@ -124,7 +124,7 @@ export function OrderList() {
 
         {/* Scrollable Container */}
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-          {(['all', 'confirmed', 'out_for_delivery', 'delivered'] as const).map((status) => (
+          {(['all', 'confirmed', 'delivered'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -164,7 +164,7 @@ export function OrderList() {
                   {order.items.length === 1 ? t('itemCount', { count: order.items.length }) : t('itemCount_plural', { count: order.items.length })} •{' '}
                   <span className="font-semibold">{formatCurrency(order.totalAmount)}</span>
                 </p>
-                {order.status === 'out_for_delivery' && order.requestedDeliveryDate && (
+                {order.status === 'ready_for_delivery' && order.requestedDeliveryDate && (
                   <p className="text-sm text-muted-foreground">
                     {t('requested')} {formatDate(order.requestedDeliveryDate)}
                   </p>

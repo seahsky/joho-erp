@@ -24,7 +24,7 @@ export const dashboardRouter = router({
       // Active deliveries count
       prisma.order.count({
         where: {
-          status: { in: ['ready_for_delivery', 'out_for_delivery'] },
+          status: 'ready_for_delivery',
         },
       }),
 

@@ -16,7 +16,7 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 export default function DeliveriesPage() {
   const t = useTranslations('deliveries');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
-  const [statusFilter, _setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | undefined>(
+  const [statusFilter, _setStatusFilter] = useState<'ready_for_delivery' | undefined>(
     undefined
   );
   const [areaFilter, _setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | undefined>(undefined);
@@ -31,8 +31,6 @@ export default function DeliveriesPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'out_for_delivery':
-        return 'bg-blue-100 text-blue-800';
       case 'ready_for_delivery':
         return 'bg-yellow-100 text-yellow-800';
       case 'delivered':
@@ -131,8 +129,11 @@ export default function DeliveriesPage() {
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{t('driver')}: {delivery.driver}</span>
-                    {delivery.status === 'out_for_delivery' && (
+                    <span className="text-xs text-muted-foreground">
+                      {t('area')}: {delivery.areaTag.toUpperCase()}
+                      {delivery.deliverySequence && ` • ${t('sequence')}: #${delivery.deliverySequence}`}
+                    </span>
+                    {delivery.status === 'ready_for_delivery' && (
                       <Button size="sm" variant="ghost" className="h-7 text-xs">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         {t('markAsDelivered')}

@@ -536,7 +536,6 @@ export const orderRouter = router({
           'confirmed',
           'packing',
           'ready_for_delivery',
-          'out_for_delivery',
           'delivered',
           'cancelled',
         ]),

@@ -105,8 +105,7 @@
     "itemCount": "{count} item",
     "itemCount_plural": "{count} items",
     "requested": "Requested:",
-    "deliveredDate": "Delivered:",
-    "out_for_delivery": "Out for Delivery"
+    "deliveredDate": "Delivered:"
   },
   "profile": {
     "title": "My Profile",

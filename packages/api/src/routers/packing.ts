@@ -74,6 +74,7 @@ export const packingRouter = router({
             existing.orders.push({
               orderNumber: order.orderNumber,
               quantity: item.quantity,
+              status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
             });
           } else {
             productMap.set(productId, {
@@ -86,6 +87,7 @@ export const packingRouter = router({
                 {
                   orderNumber: order.orderNumber,
                   quantity: item.quantity,
+                  status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
                 },
               ],
             });
@@ -426,6 +428,7 @@ export const packingRouter = router({
             existing.orders.push({
               orderNumber: order.orderNumber,
               quantity: item.quantity,
+              status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
             });
           } else {
             productMap.set(productId, {
@@ -438,6 +441,7 @@ export const packingRouter = router({
                 {
                   orderNumber: order.orderNumber,
                   quantity: item.quantity,
+                  status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
                 },
               ],
             });

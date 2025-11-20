@@ -105,8 +105,7 @@
     "itemCount": "{count} 项",
     "itemCount_plural": "{count} 项",
     "requested": "要求：",
-    "deliveredDate": "已送达：",
-    "out_for_delivery": "配送中"
+    "deliveredDate": "已送达："
   },
   "profile": {
     "title": "我的资料",

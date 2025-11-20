@@ -32,7 +32,8 @@
     "signUp": "Sign Up",
     "welcome": "Welcome",
     "items": "items",
-    "driver": "Driver"
+    "area": "Area",
+    "sequence": "Sequence"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -48,7 +49,6 @@
     "allTime": "All time",
     "requireProcessing": "Require processing",
     "activeAccounts": "Active accounts",
-    "outForDelivery": "Out for delivery",
     "latestOrders": "Latest orders from your customers",
     "noRecentOrders": "No recent orders",
     "ordersWillAppearHere": "Orders will appear here when customers place them",
@@ -103,12 +103,10 @@
     "orderId": "Order ID",
     "customer": "Customer",
     "address": "Address",
-    "driver": "Driver",
     "estimatedTime": "ETA",
     "packages": "Packages",
     "items": "items",
     "markAsDelivered": "Mark Delivered",
-    "outForDelivery": "Out for Delivery",
     "readyForDelivery": "Ready for Delivery",
     "delivered": "Delivered",
     "deliveriesInProgress": "deliveries in progress",
@@ -132,7 +130,6 @@
     "packed": "Packed",
     "packing": "Packing",
     "readyForDelivery": "Ready for Delivery",
-    "outForDelivery": "Out for Delivery",
     "delivered": "Delivered",
     "cancelled": "Cancelled",
     "loading": "Loading orders...",
@@ -792,7 +789,12 @@
     "routeStatus": "Route Status",
     "notOptimized": "Not yet optimized",
     "needsReoptimization": "Needs re-optimization",
-    "optimizeNow": "Optimize Now"
+    "optimizeNow": "Optimize Now",
+    "orderStatusReady": "Ready for delivery",
+    "orderStatusPacking": "Packing in progress",
+    "orderStatusConfirmed": "Confirmed",
+    "allOrdersReadyForProduct": "All orders ready for this product",
+    "autoRefreshEnabled": "Auto-refreshing every 30 seconds"
   },
   "settings": {
     "title": "Settings",

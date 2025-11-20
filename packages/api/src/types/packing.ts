@@ -25,6 +25,7 @@ export interface ProductSummaryItem {
   orders: {
     orderNumber: string;
     quantity: number;
+    status: 'confirmed' | 'packing' | 'ready_for_delivery';
   }[];
 }
 

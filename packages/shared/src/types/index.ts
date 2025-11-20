@@ -10,7 +10,6 @@ export type OrderStatus =
   | 'confirmed'
   | 'packing'
   | 'ready_for_delivery'
-  | 'out_for_delivery'
   | 'delivered'
   | 'cancelled';
 

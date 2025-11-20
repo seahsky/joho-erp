@@ -3,12 +3,11 @@
 import * as React from 'react';
 import { cn } from '../../lib/utils';
 import { Badge, type BadgeProps } from '../badge';
-import { CheckCircle2, Clock, Truck, Package, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Clock, Package, XCircle, AlertTriangle } from 'lucide-react';
 
 export type StatusType =
   | 'confirmed'
   | 'packing'
-  | 'out_for_delivery'
   | 'ready_for_delivery'
   | 'delivered'
   | 'cancelled'
@@ -44,11 +43,6 @@ const statusConfig: Record<
     label: 'Packing',
     variant: 'warning',
     icon: Package,
-  },
-  out_for_delivery: {
-    label: 'Out for Delivery',
-    variant: 'info',
-    icon: Truck,
   },
   delivered: {
     label: 'Delivered',

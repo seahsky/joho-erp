@@ -4,7 +4,6 @@ export const ORDER_STATUS_LABELS = {
   confirmed: 'Confirmed',
   packing: 'Packing',
   ready_for_delivery: 'Ready for Delivery',
-  out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
 } as const;
@@ -15,7 +14,6 @@ export const ORDER_STATUS_DESCRIPTIONS = {
   confirmed: 'Order confirmed, preparing for packing',
   packing: 'Your order is being packed',
   ready_for_delivery: 'Order packed and ready for dispatch',
-  out_for_delivery: 'Your order is on the way',
   delivered: 'Order delivered',
   cancelled: 'Order cancelled',
 } as const;

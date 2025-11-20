@@ -32,7 +32,8 @@
     "signUp": "註冊",
     "welcome": "歡迎",
     "items": "件",
-    "driver": "司機"
+    "area": "區域",
+    "sequence": "順序"
   },
   "dashboard": {
     "title": "儀表板",
@@ -48,7 +49,7 @@
     "allTime": "全部時間",
     "requireProcessing": "需要處理",
     "activeAccounts": "活躍帳戶",
-    "outForDelivery": "配送中",
+
     "latestOrders": "客戶的最新訂單",
     "noRecentOrders": "暫無最近訂單",
     "ordersWillAppearHere": "客戶下單後訂單將顯示在這裡",
@@ -102,12 +103,12 @@
     "orderId": "訂單編號",
     "customer": "客戶",
     "address": "地址",
-    "driver": "司機",
+
     "estimatedTime": "預計送達",
     "packages": "包裹",
     "items": "件",
     "markAsDelivered": "標記為已送達",
-    "outForDelivery": "配送中",
+
     "readyForDelivery": "準備配送",
     "delivered": "已送達",
     "deliveriesInProgress": "進行中的配送",
@@ -131,7 +132,7 @@
     "packed": "已打包",
     "packing": "打包中",
     "readyForDelivery": "準備配送",
-    "outForDelivery": "配送中",
+
     "delivered": "已送達",
     "cancelled": "已取消",
     "loading": "載入訂單中...",
@@ -791,7 +792,12 @@
     "routeStatus": "路線狀態",
     "notOptimized": "尚未優化",
     "needsReoptimization": "需要重新優化",
-    "optimizeNow": "立即優化"
+    "optimizeNow": "立即優化",
+    "orderStatusReady": "準備交付",
+    "orderStatusPacking": "打包中",
+    "orderStatusConfirmed": "已確認",
+    "allOrdersReadyForProduct": "該產品的所有訂單已準備好",
+    "autoRefreshEnabled": "每30秒自動刷新"
   },
   "settings": {
     "title": "設定",

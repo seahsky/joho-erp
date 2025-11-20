@@ -24,6 +24,8 @@ export default function PackingPage() {
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
+  }, {
+    refetchInterval: 30000, // Auto-refresh every 30 seconds to reflect order changes
   });
 
   const optimizeRouteMutation = api.packing.optimizeRoute.useMutation();
