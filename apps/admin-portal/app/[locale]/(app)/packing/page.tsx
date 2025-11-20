@@ -190,7 +190,7 @@ export default function PackingPage() {
         {/* Main Packing Interface */}
         {totalOrders > 0 ? (
           <PackingLayout
-            summaryPanel={<ProductSummaryView productSummary={productSummary} />}
+            summaryPanel={<ProductSummaryView productSummary={productSummary} deliveryDate={deliveryDate} />}
             ordersPanel={
               <OrderListView
                 orders={orders}

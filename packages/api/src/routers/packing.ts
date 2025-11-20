@@ -141,17 +141,17 @@ export const packingRouter = router({
         });
       }
 
-      // Determine which items are packed
-      // For simplicity, we'll track this in memory or use a separate field
-      // In a real implementation, you might add a 'packedItems' field to the Order model
+      // Get packed items from database
+      const packedSkus = new Set(order.packing?.packedItems ?? []);
+
       const items = order.items.map((item) => ({
         sku: item.sku,
         productName: item.productName,
         quantity: item.quantity,
-        packed: false, // TODO: Track packed state in database
+        packed: packedSkus.has(item.sku), // Read from database
       }));
 
-      const allItemsPacked = items.every((item) => item.packed);
+      const allItemsPacked = items.length > 0 && items.every((item) => item.packed);
 
       return {
         orderId: order.id,
@@ -168,8 +168,7 @@ export const packingRouter = router({
 
   /**
    * Mark an individual item as packed/unpacked
-   * Note: This is a simplified implementation. In production, you would track
-   * packed items in the database.
+   * Persists packed state to database for optimistic UI updates
    */
   markItemPacked: isPacker
     .input(
@@ -193,29 +192,40 @@ export const packingRouter = router({
         });
       }
 
-      // Update order status to 'packing' if it's currently 'confirmed'
-      if (order.status === 'confirmed') {
-        await prisma.order.update({
-          where: {
-            id: input.orderId,
-          },
-          data: {
-            status: 'packing',
-            statusHistory: {
-              push: {
-                status: 'packing',
-                changedAt: new Date(),
-                changedBy: ctx.userId || 'system',
-                notes: 'Order moved to packing status',
-              },
-            },
-          },
-        });
-      }
+      // Get current packed items or initialize empty array
+      const packedItems = order.packing?.packedItems ?? [];
 
-      // In a real implementation, you would update a 'packedItems' array here
-      // For now, we'll just return success
-      return { success: true };
+      // Update packed items array
+      const updatedPackedItems = input.packed
+        ? [...new Set([...packedItems, input.itemSku])] // Add SKU (deduplicate)
+        : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
+
+      // Update order with packed items and move to packing status if confirmed
+      await prisma.order.update({
+        where: {
+          id: input.orderId,
+        },
+        data: {
+          status: order.status === 'confirmed' ? 'packing' : order.status,
+          packing: {
+            ...(order.packing ?? {}),
+            packedItems: updatedPackedItems,
+          },
+          statusHistory: order.status === 'confirmed' ? {
+            push: {
+              status: 'packing',
+              changedAt: new Date(),
+              changedBy: ctx.userId || 'system',
+              notes: 'Order moved to packing status',
+            },
+          } : order.statusHistory,
+        },
+      });
+
+      return {
+        success: true,
+        packedItems: updatedPackedItems,
+      };
     }),
 
   /**

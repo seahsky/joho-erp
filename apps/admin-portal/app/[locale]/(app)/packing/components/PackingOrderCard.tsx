@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StatusBadge, type StatusType, useToast, Card, CardContent, Button } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Loader2, Send, StickyNote } from 'lucide-react';
 import { api } from '@/trpc/client';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface PackingOrderCardProps {
   order: {
@@ -21,22 +22,64 @@ interface PackingOrderCardProps {
 export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProps) {
   const t = useTranslations('packing');
   const { toast } = useToast();
-  const [packedItems, setPackedItems] = useState<Set<string>>(new Set());
   const [packingNotes, setPackingNotes] = useState('');
+  const utils = api.useUtils();
 
   const { data: orderDetails, isLoading } = api.packing.getOrderDetails.useQuery({
     orderId: order.orderId,
   });
 
+  // Sync local notes state with server data on initial load
+  useEffect(() => {
+    if (orderDetails?.packingNotes) {
+      setPackingNotes(orderDetails.packingNotes);
+    }
+  }, [orderDetails?.packingNotes]);
+
   const markOrderReadyMutation = api.packing.markOrderReady.useMutation({
+    onMutate: async (variables) => {
+      const { orderId, notes } = variables;
+
+      // Cancel outgoing refetches
+      await utils.packing.getOrderDetails.cancel({ orderId });
+
+      // Snapshot for rollback
+      const previousOrderDetails = utils.packing.getOrderDetails.getData({ orderId });
+
+      // Optimistically update order status
+      utils.packing.getOrderDetails.setData(
+        { orderId },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            status: 'ready_for_delivery' as const,
+            packingNotes: notes,
+          };
+        }
+      );
+
+      return { previousOrderDetails };
+    },
+
     onSuccess: () => {
       toast({
         title: t('orderReady'),
         description: t('orderReadyDescription'),
       });
+      // Trigger parent refetch to update order list
       onOrderUpdated();
     },
-    onError: (error) => {
+
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousOrderDetails) {
+        utils.packing.getOrderDetails.setData(
+          { orderId: variables.orderId },
+          context.previousOrderDetails
+        );
+      }
+
       toast({
         title: t('errorMarkingReady'),
         description: error.message,
@@ -46,37 +89,118 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   });
 
   const markItemPackedMutation = api.packing.markItemPacked.useMutation({
-    onSuccess: () => {
-      // Success handled silently
+    // Optimistic update: Update cache before server responds
+    onMutate: async (variables) => {
+      const { orderId, itemSku, packed } = variables;
+
+      // Cancel any outgoing refetches (so they don't overwrite optimistic update)
+      await utils.packing.getOrderDetails.cancel({ orderId });
+
+      // Snapshot the previous value for rollback
+      const previousOrderDetails = utils.packing.getOrderDetails.getData({ orderId });
+
+      // Optimistically update orderDetails cache
+      utils.packing.getOrderDetails.setData(
+        { orderId },
+        (old) => {
+          if (!old) return old;
+
+          const updatedItems = old.items.map((item) =>
+            item.sku === itemSku ? { ...item, packed } : item
+          );
+
+          return {
+            ...old,
+            items: updatedItems,
+            allItemsPacked: updatedItems.length > 0 && updatedItems.every((item) => item.packed),
+          };
+        }
+      );
+
+      // Return context for rollback
+      return { previousOrderDetails };
     },
-    onError: (error) => {
+
+    // On error: rollback to previous state
+    onError: (error, variables, context) => {
+      // Restore previous cache state
+      if (context?.previousOrderDetails) {
+        utils.packing.getOrderDetails.setData(
+          { orderId: variables.orderId },
+          context.previousOrderDetails
+        );
+      }
+
       toast({
         title: t('errorMarkingItem'),
         description: error.message,
         variant: 'destructive',
       });
     },
+
+    // On success: cache already updated optimistically, no action needed
+    onSuccess: () => {
+      // Success handled silently - UI already updated optimistically
+    },
   });
 
-  const toggleItemPacked = (itemSku: string) => {
-    setPackedItems((prev) => {
-      const next = new Set(prev);
-      const isPacked = !next.has(itemSku);
+  const addPackingNotesMutation = api.packing.addPackingNotes.useMutation({
+    onMutate: async (variables) => {
+      const { orderId, notes } = variables;
 
-      if (isPacked) {
-        next.add(itemSku);
-      } else {
-        next.delete(itemSku);
+      await utils.packing.getOrderDetails.cancel({ orderId });
+
+      const previousOrderDetails = utils.packing.getOrderDetails.getData({ orderId });
+
+      // Optimistically update notes in cache
+      utils.packing.getOrderDetails.setData(
+        { orderId },
+        (old) => {
+          if (!old) return old;
+          return { ...old, packingNotes: notes };
+        }
+      );
+
+      return { previousOrderDetails };
+    },
+
+    onError: (error, variables, context) => {
+      if (context?.previousOrderDetails) {
+        utils.packing.getOrderDetails.setData(
+          { orderId: variables.orderId },
+          context.previousOrderDetails
+        );
       }
+      // Silent error - user can retry by typing again
+    },
 
-      // Call API to mark item
-      markItemPackedMutation.mutate({
-        orderId: order.orderId,
-        itemSku,
-        packed: isPacked,
-      });
+    onSuccess: () => {
+      // Success handled silently
+    },
+  });
 
-      return next;
+  // Debounced auto-save (500ms delay after typing stops)
+  const debouncedSaveNotes = useDebouncedCallback((notes: string) => {
+    addPackingNotesMutation.mutate({
+      orderId: order.orderId,
+      notes,
+    });
+  }, 500);
+
+  const toggleItemPacked = (itemSku: string) => {
+    if (!orderDetails) return;
+
+    // Find current packed state from server data
+    const currentItem = orderDetails.items.find((item) => item.sku === itemSku);
+    if (!currentItem) return;
+
+    const isPacked = currentItem.packed;
+
+    // Trigger mutation with optimistic update
+    markItemPackedMutation.mutate({
+      orderId: order.orderId,
+      itemSku,
+      packed: !isPacked,
     });
   };
 
@@ -114,10 +238,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   }
 
   const items = orderDetails.items || [];
-  const allItemsPacked = items.every((item) => packedItems.has(item.sku));
-  const packedCount = Array.from(packedItems).filter((sku) =>
-    items.some((item) => item.sku === sku)
-  ).length;
+  const allItemsPacked = orderDetails.allItemsPacked;
+  const packedCount = items.filter((item) => item.packed).length;
   const progressPercent = items.length > 0 ? (packedCount / items.length) * 100 : 0;
 
   return (
@@ -189,7 +311,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       {/* Items Checklist */}
       <div className="p-4 space-y-1.5">
         {items.map((item, index) => {
-          const isPacked = packedItems.has(item.sku);
+          const isPacked = item.packed;
 
           return (
             <button
@@ -244,12 +366,24 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
       {/* Notes Section */}
       <div className="px-4 pb-3">
-        <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-          {t('packingNotes')}
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-muted-foreground">
+            {t('packingNotes')}
+          </label>
+          {addPackingNotesMutation.isPending && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Saving...</span>
+            </div>
+          )}
+        </div>
         <textarea
           value={packingNotes}
-          onChange={(e) => setPackingNotes(e.target.value)}
+          onChange={(e) => {
+            const newNotes = e.target.value;
+            setPackingNotes(newNotes);
+            debouncedSaveNotes(newNotes);
+          }}
           placeholder={t('addNotes')}
           className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-xs font-medium text-foreground placeholder:text-muted-foreground bg-background"
           rows={2}

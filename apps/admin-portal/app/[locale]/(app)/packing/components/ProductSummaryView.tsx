@@ -36,6 +36,7 @@ interface ValidatedProductSummaryItem extends ProductSummaryItem {
 
 interface ProductSummaryViewProps {
   readonly productSummary: readonly ProductSummaryItem[];
+  readonly deliveryDate: Date;
 }
 
 /**
@@ -52,15 +53,42 @@ function hasProductId(item: ProductSummaryItem): item is ValidatedProductSummary
   return true;
 }
 
-export function ProductSummaryView({ productSummary }: ProductSummaryViewProps): React.JSX.Element {
+/**
+ * Format date for localStorage key (YYYY-MM-DD)
+ */
+function formatDateForStorage(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+export function ProductSummaryView({ productSummary, deliveryDate }: ProductSummaryViewProps): React.JSX.Element {
   const t = useTranslations('packing');
-  const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(new Set());
+
+  // Initialize gathered state from localStorage for this delivery date
+  const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+
+    const storageKey = `packing-gathered-${formatDateForStorage(deliveryDate)}`;
+    const stored = localStorage.getItem(storageKey);
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error('Failed to parse gathered products from localStorage:', error);
+        return new Set();
+      }
+    }
+
+    return new Set();
+  });
 
   // Filter out items without productId using type predicate for type safety
   const validProductSummary = productSummary.filter(hasProductId);
 
   /**
    * Toggles the gathered state of a product
+   * Persists to localStorage for the current delivery date
    */
   const toggleProductGathered = (productId: string): void => {
     setGatheredProducts((prev) => {
@@ -70,6 +98,13 @@ export function ProductSummaryView({ productSummary }: ProductSummaryViewProps):
       } else {
         next.add(productId);
       }
+
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        const storageKey = `packing-gathered-${formatDateForStorage(deliveryDate)}`;
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+      }
+
       return next;
     });
   };
