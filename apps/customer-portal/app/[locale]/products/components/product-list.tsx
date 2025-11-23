@@ -68,14 +68,18 @@ export function ProductList() {
   };
 
   const getStockBadge = (stock: number) => {
-    if (stock === 0) {
-      return <Badge variant="destructive" className="text-xs">{t('products.outOfStock')}</Badge>;
-    }
+    // Only show warning for low stock (< 10 units)
+    // No badge needed for normal stock levels since we only show in-stock products
     if (stock < 10) {
       return <Badge variant="warning" className="text-xs">{t('products.lowStock')}</Badge>;
     }
-    return <Badge variant="success" className="text-xs">{t('products.inStock')}</Badge>;
+    return null;
   };
+
+  // Filter products to only show in-stock items
+  const inStockProducts = React.useMemo(() => {
+    return products?.filter(p => p.currentStock > 0) || [];
+  }, [products]);
 
   const handleProductClick = (product: Product & ProductWithPricing) => {
     setSelectedProduct(product);
@@ -123,7 +127,7 @@ export function ProductList() {
     );
   }
 
-  const totalProducts = products?.length || 0;
+  const totalProducts = inStockProducts.length;
 
   return (
     <div className="space-y-6">
@@ -146,17 +150,17 @@ export function ProductList() {
       )}
 
       {/* Product Count */}
-      {products && products.length > 0 && (
+      {inStockProducts.length > 0 && (
         <div className="flex items-center justify-between">
           <Muted className="text-sm">
-            {t('products.showing', { count: products.length })}
+            {t('products.showing', { count: inStockProducts.length })}
           </Muted>
         </div>
       )}
 
       {/* Product List - Clean Minimalist Rows */}
       <div className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
-        {products?.map((product) => {
+        {inStockProducts.map((product) => {
           const productWithPricing = product as typeof product & ProductWithPricing;
 
           return (
@@ -301,7 +305,7 @@ export function ProductList() {
       </div>
 
       {/* Empty State */}
-      {products && products.length === 0 && (
+      {inStockProducts.length === 0 && (
         <div className="text-center py-16 border border-dashed border-border rounded-2xl">
           <Package className="h-20 w-20 mx-auto text-muted-foreground/50 mb-4" />
           <H4 className="text-xl font-semibold mb-2">{t('products.noProductsFound')}</H4>

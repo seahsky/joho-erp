@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType } from './generated/prisma';
+import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
@@ -340,6 +340,7 @@ const customers = [
     clerkUserId: 'user_seed_001',
     businessName: 'The Steakhouse Melbourne',
     abn: '12345678901',
+    acn: '123456789',
     contactPerson: {
       firstName: 'James',
       lastName: 'Wilson',
@@ -358,6 +359,72 @@ const customers = [
       longitude: 144.9983,
       deliveryInstructions: 'Rear entrance via back alley',
     },
+    directors: [
+      {
+        familyName: 'Wilson',
+        givenNames: 'James Robert',
+        residentialAddress: {
+          street: '42 Richmond Hill Road',
+          suburb: 'Richmond',
+          state: 'VIC',
+          postcode: '3121',
+          country: 'Australia',
+        },
+        dateOfBirth: new Date('1975-05-15'),
+        driverLicenseNumber: '12345678',
+        licenseState: 'VIC' as AustralianState,
+        licenseExpiry: new Date('2027-05-15'),
+        position: 'Managing Director',
+      },
+      {
+        familyName: 'Wilson',
+        givenNames: 'Sarah Jane',
+        residentialAddress: {
+          street: '42 Richmond Hill Road',
+          suburb: 'Richmond',
+          state: 'VIC',
+          postcode: '3121',
+          country: 'Australia',
+        },
+        dateOfBirth: new Date('1978-08-22'),
+        driverLicenseNumber: '87654321',
+        licenseState: 'VIC' as AustralianState,
+        licenseExpiry: new Date('2026-08-22'),
+        position: 'Director',
+      },
+    ],
+    financialDetails: {
+      bankName: 'ANZ Bank',
+      accountName: 'The Steakhouse Melbourne Pty Ltd',
+      bsb: '013-123',
+      accountNumber: '123456789',
+    },
+    tradeReferences: [
+      {
+        companyName: 'Premium Produce Suppliers',
+        contactPerson: 'John Smith',
+        phone: '03 9999 1111',
+        email: 'john@premiumproduce.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-01-14'),
+      },
+      {
+        companyName: 'Quality Seafood Distributors',
+        contactPerson: 'Mary Johnson',
+        phone: '03 9999 2222',
+        email: 'mary@qualityseafood.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-01-14'),
+      },
+      {
+        companyName: 'Fresh Vegetable Wholesalers',
+        contactPerson: 'David Brown',
+        phone: '03 9999 3333',
+        email: 'david@freshveg.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-01-15'),
+      },
+    ],
     creditApplication: {
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-15'),
@@ -372,6 +439,7 @@ const customers = [
     clerkUserId: 'user_seed_002',
     businessName: 'Brunswick Butcher Shop',
     abn: '23456789012',
+    acn: '234567890',
     contactPerson: {
       firstName: 'Maria',
       lastName: 'Rossi',
@@ -390,6 +458,48 @@ const customers = [
       longitude: 144.9597,
       deliveryInstructions: 'Please deliver before 7 AM',
     },
+    directors: [
+      {
+        familyName: 'Rossi',
+        givenNames: 'Maria Lucia',
+        residentialAddress: {
+          street: '45 Lygon Street',
+          suburb: 'Brunswick',
+          state: 'VIC',
+          postcode: '3056',
+          country: 'Australia',
+        },
+        dateOfBirth: new Date('1982-03-10'),
+        driverLicenseNumber: '23456789',
+        licenseState: 'VIC' as AustralianState,
+        licenseExpiry: new Date('2028-03-10'),
+        position: 'Managing Director',
+      },
+    ],
+    financialDetails: {
+      bankName: 'Westpac',
+      accountName: 'Brunswick Butcher Shop Pty Ltd',
+      bsb: '033-456',
+      accountNumber: '234567890',
+    },
+    tradeReferences: [
+      {
+        companyName: 'Melbourne Meat Market',
+        contactPerson: 'Tony Martinez',
+        phone: '03 9328 1234',
+        email: 'tony@melbmeatmarket.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-01-19'),
+      },
+      {
+        companyName: 'Wholesale Food Distributors',
+        contactPerson: 'Lisa Chen',
+        phone: '03 9999 4444',
+        email: 'lisa@wholesalefood.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-01-19'),
+      },
+    ],
     creditApplication: {
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-01-20'),
@@ -435,6 +545,7 @@ const customers = [
     clerkUserId: 'user_seed_004',
     businessName: 'Brighton Beach Bistro',
     abn: '45678901234',
+    acn: '456789012',
     contactPerson: {
       firstName: 'Sophie',
       lastName: 'Taylor',
@@ -453,6 +564,72 @@ const customers = [
       longitude: 144.9968,
       deliveryInstructions: 'Ring doorbell, someone always available',
     },
+    directors: [
+      {
+        familyName: 'Taylor',
+        givenNames: 'Sophie Anne',
+        residentialAddress: {
+          street: '12 Beach Road',
+          suburb: 'Brighton',
+          state: 'VIC',
+          postcode: '3186',
+          country: 'Australia',
+        },
+        dateOfBirth: new Date('1985-11-28'),
+        driverLicenseNumber: '45678901',
+        licenseState: 'VIC' as AustralianState,
+        licenseExpiry: new Date('2029-11-28'),
+        position: 'Managing Director',
+      },
+      {
+        familyName: 'Taylor',
+        givenNames: 'Michael James',
+        residentialAddress: {
+          street: '12 Beach Road',
+          suburb: 'Brighton',
+          state: 'VIC',
+          postcode: '3186',
+          country: 'Australia',
+        },
+        dateOfBirth: new Date('1983-07-14'),
+        driverLicenseNumber: '34567890',
+        licenseState: 'VIC' as AustralianState,
+        licenseExpiry: new Date('2027-07-14'),
+        position: 'Director & Head Chef',
+      },
+    ],
+    financialDetails: {
+      bankName: 'NAB',
+      accountName: 'Brighton Beach Bistro Pty Ltd',
+      bsb: '082-789',
+      accountNumber: '456789012',
+    },
+    tradeReferences: [
+      {
+        companyName: 'Bayside Seafood Co',
+        contactPerson: 'Andrew White',
+        phone: '03 9999 5555',
+        email: 'andrew@baysideseafood.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-02-04'),
+      },
+      {
+        companyName: 'Premium Wine Merchants',
+        contactPerson: 'Catherine Green',
+        phone: '03 9999 6666',
+        email: 'catherine@premiumwine.com.au',
+        verified: true,
+        verifiedAt: new Date('2025-02-04'),
+      },
+      {
+        companyName: 'Organic Produce Direct',
+        contactPerson: 'Robert Black',
+        phone: '03 9999 7777',
+        email: 'robert@organicproduce.com.au',
+        verified: false,
+        verifiedAt: undefined,
+      },
+    ],
     creditApplication: {
       status: 'approved' as CreditApplicationStatus,
       appliedAt: new Date('2025-02-05'),
@@ -863,11 +1040,13 @@ function createOrdersForCustomer(
         notes: 'Delivery completed',
       });
 
-      // Add proof of delivery for some delivered orders
+      // Add proof of delivery for delivered orders (vary between signature and photo)
       if ((statusInfo as any).hasProofOfDelivery) {
+        // Use photo type for some orders, signature for others
+        const usePhoto = Math.random() > 0.5;
         order.delivery.proofOfDelivery = {
-          type: 'signature' as ProofOfDeliveryType,
-          fileUrl: `https://example.com/pod/${orderNumber}.jpg`,
+          type: (usePhoto ? 'photo' : 'signature') as ProofOfDeliveryType,
+          fileUrl: `https://example.com/pod/${orderNumber}${usePhoto ? '_photo.jpg' : '_signature.jpg'}`,
           uploadedAt: new Date(Date.now() - 10 * 60 * 1000),
         };
       }
@@ -919,6 +1098,7 @@ function createOrdersForCustomer(
       order.packing = {
         packedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
         packedBy: 'admin_user',
+        packingSequence: Math.floor(Math.random() * 100) + 1, // Random sequence 1-100
         notes: 'All items packed and verified',
       };
     }
@@ -945,7 +1125,9 @@ async function seed() {
 
     // Clear existing data (children before parents to maintain referential integrity)
     console.log('🗑️  Clearing existing data in dependency order...');
-    console.log('   Step 1: Deleting child entities (Orders, Pricing, Transactions, Logs)...');
+    console.log('   Step 1: Deleting child entities (Orders, Pricing, Transactions, Logs, Routes)...');
+    await prisma.routeOptimization.deleteMany({});
+    console.log('      ✓ Route optimizations deleted');
     await prisma.order.deleteMany({});
     console.log('      ✓ Orders deleted');
     await prisma.inventoryTransaction.deleteMany({});
@@ -988,6 +1170,43 @@ async function seed() {
           email: 'orders@premiummeats.com.au',
           phone: '03 9999 0000',
         },
+        bankDetails: {
+          accountName: 'Premium Meat Suppliers Pty Ltd',
+          bsb: '063-000',
+          accountNumber: '12345678',
+          bankName: 'Commonwealth Bank',
+        },
+        deliverySettings: {
+          warehouseAddress: {
+            street: '123 Wholesale Drive',
+            suburb: 'Port Melbourne',
+            state: 'VIC',
+            postcode: '3207',
+            country: 'Australia',
+            latitude: -37.8416,
+            longitude: 144.9366,
+          },
+          orderCutoffTime: '14:00',
+        },
+        notificationSettings: {
+          emailRecipients: ['orders@premiummeats.com.au', 'admin@premiummeats.com.au'],
+          orderNotifications: {
+            newOrder: true,
+            orderConfirmed: true,
+            orderDelivered: true,
+          },
+          inventoryNotifications: {
+            lowStock: true,
+            outOfStock: true,
+          },
+          customerNotifications: {
+            newCustomer: true,
+            creditApplication: true,
+            creditApproved: true,
+          },
+          quietHoursEnabled: false,
+        },
+        logoUrl: 'https://example.com/logo.png',
       },
     });
     console.log(`✅ Company created: ${company.businessName}\n`);
@@ -1367,11 +1586,174 @@ async function seed() {
     );
     console.log(`✅ Created ${createdOrders.length} orders (all relationships validated)\n`);
 
+    // Create admin override orders (orders placed by admin on behalf of customers)
+    console.log('👨‍💼 Creating admin override orders...');
+    const adminOrders = [];
+
+    // Admin Order 1: Credit limit bypass for urgent order
+    const steakhouseCustomer = createdCustomers.find(c => c.businessName === 'The Steakhouse Melbourne');
+    if (steakhouseCustomer) {
+      const beefTenderloin = createdProducts.find(p => p.sku === 'BEEF-TENDER-3KG');
+      const scotchFillet = createdProducts.find(p => p.sku === 'BEEF-SCOTCH-5KG');
+
+      if (beefTenderloin && scotchFillet) {
+        const items = [
+          {
+            productId: beefTenderloin.id,
+            sku: beefTenderloin.sku,
+            productName: beefTenderloin.name,
+            unit: beefTenderloin.unit,
+            quantity: 10,
+            unitPrice: beefTenderloin.basePrice,
+            subtotal: 10 * beefTenderloin.basePrice,
+          },
+          {
+            productId: scotchFillet.id,
+            sku: scotchFillet.sku,
+            productName: scotchFillet.name,
+            unit: scotchFillet.unit,
+            quantity: 8,
+            unitPrice: scotchFillet.basePrice,
+            subtotal: 8 * scotchFillet.basePrice,
+          },
+        ];
+
+        const totals = calculateOrderTotals(items);
+
+        adminOrders.push({
+          orderNumber: generateOrderNumber(),
+          customerId: steakhouseCustomer.id,
+          customerName: steakhouseCustomer.businessName,
+          items,
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: steakhouseCustomer.deliveryAddress,
+          requestedDeliveryDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+          status: 'confirmed' as OrderStatus,
+          statusHistory: [
+            {
+              status: 'pending',
+              changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+              changedBy: 'admin_user_001',
+              notes: 'Order placed by admin on behalf of customer',
+            },
+            {
+              status: 'confirmed',
+              changedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+              changedBy: 'admin_user_001',
+              notes: 'Order confirmed - credit limit bypass approved',
+            },
+          ],
+          bypassCreditLimit: true,
+          bypassCreditReason: 'Long-standing customer with excellent payment history, approved by management for large event order',
+          placedOnBehalfOf: steakhouseCustomer.id,
+          placedByAdmin: 'admin_user_001',
+          adminNotes: 'Urgent order for corporate event, customer called directly - priority delivery requested',
+          internalNotes: 'Customer needs delivery before 8 AM for event setup',
+          orderedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          createdBy: 'admin_user_001',
+        });
+      }
+    }
+
+    // Admin Order 2: Cutoff time bypass with custom delivery address
+    const brunswickButcherForAdmin = createdCustomers.find(c => c.businessName === 'Brunswick Butcher Shop');
+    if (brunswickButcherForAdmin) {
+      const brisket = createdProducts.find(p => p.sku === 'BEEF-BRISKET-10KG');
+      const porkBelly = createdProducts.find(p => p.sku === 'PORK-BELLY-10KG');
+
+      if (brisket && porkBelly) {
+        const items = [
+          {
+            productId: brisket.id,
+            sku: brisket.sku,
+            productName: brisket.name,
+            unit: brisket.unit,
+            quantity: 5,
+            unitPrice: brisket.basePrice,
+            subtotal: 5 * brisket.basePrice,
+          },
+          {
+            productId: porkBelly.id,
+            sku: porkBelly.sku,
+            productName: porkBelly.name,
+            unit: porkBelly.unit,
+            quantity: 4,
+            unitPrice: porkBelly.basePrice,
+            subtotal: 4 * porkBelly.basePrice,
+          },
+        ];
+
+        const totals = calculateOrderTotals(items);
+
+        adminOrders.push({
+          orderNumber: generateOrderNumber(),
+          customerId: brunswickButcherForAdmin.id,
+          customerName: brunswickButcherForAdmin.businessName,
+          items,
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: brunswickButcherForAdmin.deliveryAddress,
+          useCustomAddress: true,
+          customDeliveryAddress: {
+            street: '88 Victoria Street',
+            suburb: 'Brunswick',
+            state: 'VIC',
+            postcode: '3056',
+            country: 'Australia',
+            areaTag: 'north' as AreaTag,
+            latitude: -37.7680,
+            longitude: 144.9610,
+            deliveryInstructions: 'Temporary location - food festival venue, Gate 2 entrance',
+          },
+          requestedDeliveryDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+          status: 'packing' as OrderStatus,
+          statusHistory: [
+            {
+              status: 'pending',
+              changedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+              changedBy: 'admin_user_002',
+              notes: 'Late order placed by admin after cutoff time',
+            },
+            {
+              status: 'confirmed',
+              changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+              changedBy: 'admin_user_002',
+              notes: 'Order confirmed - cutoff bypass approved',
+            },
+            {
+              status: 'packing',
+              changedAt: new Date(Date.now() - 30 * 60 * 1000),
+              changedBy: 'warehouse_user_001',
+              notes: 'Packing started for priority delivery',
+            },
+          ],
+          bypassCutoffTime: true,
+          placedOnBehalfOf: brunswickButcherForAdmin.id,
+          placedByAdmin: 'admin_user_002',
+          adminNotes: 'Customer running food festival, needs extra stock for weekend event at temporary venue',
+          internalNotes: 'Deliver to festival site, not regular business address',
+          orderedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+          createdBy: 'admin_user_002',
+        });
+      }
+    }
+
+    const createdAdminOrders = await Promise.all(
+      adminOrders.map((o) => prisma.order.create({ data: o }))
+    );
+    console.log(`✅ Created ${createdAdminOrders.length} admin override orders\n`);
+
+    // Merge admin orders with regular orders
+    const allCreatedOrders = [...createdOrders, ...createdAdminOrders];
+
     // Create sale inventory transactions for delivered orders
     console.log('📤 Creating sale inventory transactions for delivered orders...');
     const saleTransactions = [];
 
-    for (const order of createdOrders) {
+    for (const order of allCreatedOrders) {
       // Only create sale transactions for delivered orders
       if (order.status === 'delivered') {
         for (const item of order.items) {
@@ -1399,6 +1781,111 @@ async function seed() {
     );
     console.log(`✅ Created ${createdSaleTransactions.length} sale transactions for delivered orders\n`);
 
+    // Seed Route Optimizations
+    console.log('🗺️  Creating route optimizations...');
+    const routeOptimizations = [];
+
+    // Group orders by delivery date and area for route optimization
+    const ordersByDateAndArea = new Map<string, typeof allCreatedOrders>();
+
+    for (const order of allCreatedOrders) {
+      if (order.status === 'ready_for_delivery' || order.status === 'delivered') {
+        const dateKey = order.requestedDeliveryDate.toISOString().split('T')[0];
+        const areaTag = order.deliveryAddress.areaTag;
+        const key = `${dateKey}-${areaTag}`;
+
+        if (!ordersByDateAndArea.has(key)) {
+          ordersByDateAndArea.set(key, []);
+        }
+        ordersByDateAndArea.get(key)!.push(order);
+      }
+    }
+
+    // Create route optimizations for each date/area combination
+    for (const [key, ordersInRoute] of ordersByDateAndArea.entries()) {
+      const [dateStr, areaTag] = key.split('-');
+      const deliveryDate = new Date(dateStr);
+
+      // Skip if no orders
+      if (ordersInRoute.length === 0) continue;
+
+      // Sort orders by customer name for consistent route
+      ordersInRoute.sort((a, b) => a.customerName.localeCompare(b.customerName));
+
+      // Create waypoints for each order
+      const waypoints = ordersInRoute.map((order, index) => ({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        sequence: index + 1,
+        address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
+        latitude: order.deliveryAddress.latitude || -37.8136,
+        longitude: order.deliveryAddress.longitude || 144.9631,
+        estimatedArrival: new Date(deliveryDate.getTime() + (index + 1) * 30 * 60 * 1000), // 30 minutes apart
+        distanceFromPrevious: index === 0 ? 5000 : 3000 + Math.random() * 5000, // 3-8 km between stops
+        durationFromPrevious: index === 0 ? 900 : 600 + Math.random() * 600, // 10-20 minutes between stops
+      }));
+
+      // Calculate total distance and duration
+      const totalDistance = waypoints.reduce((sum, wp) => sum + (wp.distanceFromPrevious || 0), 0) / 1000; // Convert to km
+      const totalDuration = waypoints.reduce((sum, wp) => sum + (wp.durationFromPrevious || 0), 0);
+
+      // Create simple GeoJSON LineString (simplified for seed data)
+      const coordinates = waypoints.map(wp => [wp.longitude, wp.latitude]);
+      const routeGeometry = JSON.stringify({
+        type: 'LineString',
+        coordinates: coordinates,
+      });
+
+      routeOptimizations.push({
+        deliveryDate,
+        areaTag: areaTag as any,
+        orderCount: ordersInRoute.length,
+        totalDistance,
+        totalDuration,
+        routeGeometry,
+        waypoints,
+        optimizedBy: 'admin_user',
+        mapboxRouteData: {
+          routes: [{
+            distance: totalDistance * 1000,
+            duration: totalDuration,
+            geometry: routeGeometry,
+          }],
+          waypoints: waypoints.map(wp => ({
+            location: [wp.longitude, wp.latitude],
+            name: wp.address,
+          })),
+        },
+      });
+    }
+
+    // Also update delivery objects with route information
+    for (const route of routeOptimizations) {
+      for (const waypoint of route.waypoints) {
+        const order = allCreatedOrders.find(o => o.id === waypoint.orderId);
+        if (order && order.delivery) {
+          order.delivery.deliverySequence = waypoint.sequence;
+          order.delivery.estimatedArrival = waypoint.estimatedArrival;
+          // Update the order in database with delivery sequence
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              delivery: order.delivery,
+            },
+          });
+        }
+      }
+    }
+
+    const createdRouteOptimizations = await Promise.all(
+      routeOptimizations.map((r) => prisma.routeOptimization.create({ data: r }))
+    );
+    console.log(`✅ Created ${createdRouteOptimizations.length} route optimizations:`);
+    for (const route of createdRouteOptimizations) {
+      console.log(`   - ${route.deliveryDate.toISOString().split('T')[0]} ${route.areaTag}: ${route.orderCount} orders, ${route.totalDistance.toFixed(1)}km, ${Math.round(route.totalDuration / 60)} minutes`);
+    }
+    console.log('');
+
     // Summary by status
     const statusCounts: Record<string, number> = {
       pending: 0,
@@ -1409,7 +1896,7 @@ async function seed() {
       cancelled: 0,
     };
 
-    createdOrders.forEach((o) => {
+    allCreatedOrders.forEach((o) => {
       if (statusCounts[o.status] !== undefined) {
         statusCounts[o.status]++;
       }
@@ -1427,7 +1914,7 @@ async function seed() {
     console.log('📝 Creating audit logs...');
     const auditLogs = [];
 
-    // Customer creation logs
+    // Customer creation logs and credit application audit logs
     for (const customer of createdCustomers) {
       auditLogs.push({
         userId: customer.clerkUserId,
@@ -1447,10 +1934,52 @@ async function seed() {
         userAgent: 'Database Seed Script',
         timestamp: customer.createdAt,
       });
+
+      // Add credit application approval/rejection logs
+      if (customer.creditApplication.status === 'approved') {
+        auditLogs.push({
+          userId: 'admin_user',
+          action: 'approve' as AuditAction,
+          entity: 'credit_application',
+          entityId: customer.id,
+          changes: {
+            status: 'approved',
+            creditLimit: customer.creditApplication.creditLimit,
+            paymentTerms: customer.creditApplication.paymentTerms,
+          },
+          metadata: {
+            source: 'database_seed',
+            customerName: customer.businessName,
+            reviewedAt: customer.creditApplication.reviewedAt,
+          },
+          ipAddress: '127.0.0.1',
+          userAgent: 'Database Seed Script',
+          timestamp: customer.creditApplication.reviewedAt || customer.createdAt,
+        });
+      } else if (customer.creditApplication.status === 'rejected') {
+        auditLogs.push({
+          userId: 'admin_user',
+          action: 'reject' as AuditAction,
+          entity: 'credit_application',
+          entityId: customer.id,
+          changes: {
+            status: 'rejected',
+            reason: customer.creditApplication.notes,
+          },
+          metadata: {
+            source: 'database_seed',
+            customerName: customer.businessName,
+            reviewedAt: customer.creditApplication.reviewedAt,
+          },
+          ipAddress: '127.0.0.1',
+          userAgent: 'Database Seed Script',
+          timestamp: customer.creditApplication.reviewedAt || customer.createdAt,
+        });
+      }
     }
 
     // Order creation and status change logs
-    for (const order of createdOrders) {
+    for (const order of allCreatedOrders) {
       // Order creation log
       auditLogs.push({
         userId: order.createdBy,
@@ -1548,10 +2077,36 @@ async function seed() {
       });
     }
 
+    // Add delete audit log example for discontinued product
+    const discontinuedProduct = createdProducts.find(p => p.status === 'discontinued');
+    if (discontinuedProduct) {
+      auditLogs.push({
+        userId: 'admin_user',
+        action: 'delete' as AuditAction,
+        entity: 'product',
+        entityId: discontinuedProduct.id,
+        changes: {
+          sku: discontinuedProduct.sku,
+          name: discontinuedProduct.name,
+          status: 'discontinued',
+          reason: 'Product permanently discontinued - simulated deletion for audit trail',
+        },
+        metadata: {
+          source: 'database_seed',
+          category: discontinuedProduct.category,
+          finalStock: discontinuedProduct.currentStock,
+          note: 'This is a simulated delete action for testing audit logs - product not actually deleted',
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'Database Seed Script',
+        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      });
+    }
+
     const createdAuditLogs = await Promise.all(
       auditLogs.map((log) => prisma.auditLog.create({ data: log }))
     );
-    console.log(`✅ Created ${createdAuditLogs.length} audit log entries\n`);
+    console.log(`✅ Created ${createdAuditLogs.length} audit log entries (including approve, reject, delete actions)\n`);
 
     // Seed System Logs
     console.log('🔧 Creating system logs...');
@@ -1664,14 +2219,15 @@ async function seed() {
 
     console.log('\n✨ Database seeding completed successfully!\n');
     console.log('📝 Seeding Summary:');
-    console.log(`   - Company: ${company.businessName}`);
+    console.log(`   - Company: ${company.businessName} (with full settings)`);
     console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
     console.log(`   - Products: ${createdProducts.length} (active: ${createdProducts.filter(p => p.status === 'active').length}, discontinued: ${createdProducts.filter(p => p.status === 'discontinued').length}, out_of_stock: ${createdProducts.filter(p => p.status === 'out_of_stock').length})`);
     console.log(`   - Customers: ${createdCustomers.length} (active: ${createdCustomers.filter(c => c.status === 'active').length}, suspended: ${createdCustomers.filter(c => c.status === 'suspended').length}, closed: ${createdCustomers.filter(c => c.status === 'closed').length})`);
     console.log(`   - Customer Pricing: ${createdPricing.length}`);
-    console.log(`   - Orders: ${createdOrders.length}`);
+    console.log(`   - Orders: ${allCreatedOrders.length} (${createdOrders.length} regular + ${createdAdminOrders.length} admin override)`);
+    console.log(`   - Route Optimizations: ${createdRouteOptimizations.length}`);
     console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (purchase: ${createdInventoryTransactions.filter(t => t.type === 'purchase').length}, sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length}, transfer: ${createdInventoryTransactions.filter(t => t.type === 'transfer').length})`);
-    console.log(`   - Audit Logs: ${createdAuditLogs.length}`);
+    console.log(`   - Audit Logs: ${createdAuditLogs.length} (including approve/reject/delete actions)`);
     console.log(`   - System Logs: ${createdSystemLogs.length}\n`);
 
     // Post-seed validation: Verify all relationships are intact

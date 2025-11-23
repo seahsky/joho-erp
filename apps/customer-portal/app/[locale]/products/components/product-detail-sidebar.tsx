@@ -58,13 +58,12 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
   if (!product) return null;
 
   const getStockBadge = () => {
-    if (product.currentStock === 0) {
-      return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
-    }
+    // Only show warning for low stock (< 10 units)
+    // No badge needed for normal stock levels since we only show in-stock products
     if (product.currentStock < 10) {
       return <Badge variant="warning">{t('products.lowStock')}</Badge>;
     }
-    return <Badge variant="success">{t('products.inStock')}</Badge>;
+    return null;
   };
 
   const getCategoryTranslation = (category: ProductCategory) => {
@@ -139,9 +138,11 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
           <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-xl">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{t('products.stock')}:</span>
-              {getStockBadge()}
+              {getStockBadge() || (
+                <Muted className="text-sm">{t('products.unitsAvailable', { count: product.currentStock, unit: product.unit })}</Muted>
+              )}
             </div>
-            {product.currentStock > 0 && (
+            {getStockBadge() && (
               <Muted className="text-sm">
                 {t('products.unitsAvailable', { count: product.currentStock, unit: product.unit })}
               </Muted>
