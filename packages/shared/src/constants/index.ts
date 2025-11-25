@@ -18,6 +18,20 @@ export const ORDER_STATUS_DESCRIPTIONS = {
   cancelled: 'Order cancelled',
 } as const;
 
+// Order Cancellation Eligibility
+// Customers can only cancel orders in these statuses
+// Once confirmed, they must contact admin to cancel
+export const CUSTOMER_CANCELLABLE_STATUSES = ['pending'] as const;
+
+// Admin/Sales can cancel orders in any of these statuses
+// (with manager approval required for packing+ statuses)
+export const ADMIN_CANCELLABLE_STATUSES = [
+  'pending',
+  'confirmed',
+  'packing',
+  'ready_for_delivery',
+] as const;
+
 // Product Unit Labels
 export const PRODUCT_UNIT_LABELS = {
   kg: 'Kilogram',

@@ -17,9 +17,10 @@ import {
   CountUp,
   EmptyState,
 } from '@jimmy-beef/ui';
-import { Search, Package, Plus, Edit, Loader2, PackageX } from 'lucide-react';
+import { Search, Package, Plus, Edit, Loader2, PackageX, PackagePlus } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
+import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
 import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@jimmy-beef/shared';
 
@@ -37,8 +38,11 @@ type Product = {
 
 export default function ProductsPage() {
   const t = useTranslations('products');
+  const tStock = useTranslations('stockAdjustment');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showStockDialog, setShowStockDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const { data: products, isLoading, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
@@ -146,8 +150,19 @@ export default function ProductsPage() {
       key: 'actions',
       label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
-      render: () => (
+      render: (product) => (
         <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={tStock('buttons.adjustStock')}
+            onClick={() => {
+              setSelectedProduct(product);
+              setShowStockDialog(true);
+            }}
+          >
+            <PackagePlus className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="sm" aria-label={t('edit')}>
             <Edit className="h-4 w-4" />
           </Button>
@@ -191,6 +206,18 @@ export default function ProductsPage() {
       </div>
 
       <div className="flex gap-2 pt-2 border-t">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => {
+            setSelectedProduct(product);
+            setShowStockDialog(true);
+          }}
+        >
+          <PackagePlus className="h-4 w-4 mr-1" />
+          {tStock('buttons.adjustStock')}
+        </Button>
         <Button variant="outline" size="sm" className="flex-1">
           <Edit className="h-4 w-4 mr-1" />
           {t('edit')}
@@ -307,6 +334,17 @@ export default function ProductsPage() {
       <AddProductDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Stock Adjustment Dialog */}
+      <StockAdjustmentDialog
+        open={showStockDialog}
+        onOpenChange={(open) => {
+          setShowStockDialog(open);
+          if (!open) setSelectedProduct(null);
+        }}
+        product={selectedProduct}
         onSuccess={() => refetch()}
       />
     </div>

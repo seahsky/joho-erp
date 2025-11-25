@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState } from './generated/prisma';
+import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
@@ -1254,31 +1254,33 @@ async function seed() {
       // Skip out of stock products (they never had stock to begin with in this scenario)
       if (product.status === 'out_of_stock') continue;
 
-      // Initial purchase transaction (explains current stock)
+      // Initial stock received transaction (explains current stock)
       inventoryTransactions.push({
         productId: product.id,
-        type: 'purchase' as InventoryTransactionType,
+        type: 'adjustment' as InventoryTransactionType,
+        adjustmentType: 'stock_received' as AdjustmentType,
         quantity: product.currentStock,
         previousStock: 0,
         newStock: product.currentStock,
-        referenceType: 'purchase_order',
-        referenceId: product.id, // Using product ID as reference for initial stock
-        notes: `Initial stock purchase for ${product.name}`,
+        referenceType: 'manual',
+        notes: `Initial stock received for ${product.name} - Supplier delivery`,
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
       });
     }
 
-    // Create some adjustment transactions for discontinued products
+    // Create some adjustment transactions for discontinued products (damaged goods write-off)
     const discontinuedProducts = createdProducts.filter(p => p.status === 'discontinued');
     for (const product of discontinuedProducts) {
       inventoryTransactions.push({
         productId: product.id,
         type: 'adjustment' as InventoryTransactionType,
+        adjustmentType: 'damaged_goods' as AdjustmentType,
         quantity: -10,
         previousStock: product.currentStock + 10,
         newStock: product.currentStock,
-        notes: `Stock adjustment for ${product.name} - product discontinued`,
+        referenceType: 'manual',
+        notes: `Stock adjustment for ${product.name} - product discontinued, damaged goods written off`,
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       });
@@ -1299,17 +1301,18 @@ async function seed() {
       });
     }
 
-    // Create transfer transaction example
+    // Create stock count correction example
     const porkBelly = createdProducts.find(p => p.sku === 'PORK-BELLY-10KG');
     if (porkBelly) {
       inventoryTransactions.push({
         productId: porkBelly.id,
-        type: 'transfer' as InventoryTransactionType,
+        type: 'adjustment' as InventoryTransactionType,
+        adjustmentType: 'stock_count_correction' as AdjustmentType,
         quantity: -15,
         previousStock: porkBelly.currentStock + 15,
         newStock: porkBelly.currentStock,
-        referenceType: 'warehouse_transfer',
-        notes: 'Transfer to warehouse B',
+        referenceType: 'manual',
+        notes: 'Stock count correction - 15 units missing from quarterly stocktake',
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       });
@@ -2226,7 +2229,7 @@ async function seed() {
     console.log(`   - Customer Pricing: ${createdPricing.length}`);
     console.log(`   - Orders: ${allCreatedOrders.length} (${createdOrders.length} regular + ${createdAdminOrders.length} admin override)`);
     console.log(`   - Route Optimizations: ${createdRouteOptimizations.length}`);
-    console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (purchase: ${createdInventoryTransactions.filter(t => t.type === 'purchase').length}, sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length}, transfer: ${createdInventoryTransactions.filter(t => t.type === 'transfer').length})`);
+    console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length})`);
     console.log(`   - Audit Logs: ${createdAuditLogs.length} (including approve/reject/delete actions)`);
     console.log(`   - System Logs: ${createdSystemLogs.length}\n`);
 

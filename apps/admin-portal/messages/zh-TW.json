@@ -42,14 +42,16 @@
     "pendingOrders": "待處理訂單",
     "activeCustomers": "活躍客戶",
     "activeDeliveries": "進行中配送",
+    "pendingBackorders": "待審批缺貨訂單",
+    "backordersAwaitingApproval": "等待審批",
     "recentOrders": "最近訂單",
     "lowStockAlerts": "低庫存警報",
     "unitsLeft": "件剩餘",
     "viewAll": "檢視全部",
+    "viewBackorders": "檢視缺貨訂單",
     "allTime": "全部時間",
     "requireProcessing": "需要處理",
     "activeAccounts": "活躍帳戶",
-
     "latestOrders": "客戶的最新訂單",
     "noRecentOrders": "暫無最近訂單",
     "ordersWillAppearHere": "客戶下單後訂單將顯示在這裡",
@@ -132,7 +134,6 @@
     "packed": "已打包",
     "packing": "打包中",
     "readyForDelivery": "準備配送",
-
     "delivered": "已送達",
     "cancelled": "已取消",
     "loading": "載入訂單中...",
@@ -156,7 +157,72 @@
     "ordersWillAppear": "客戶下單後訂單將顯示在這裡",
     "viewDetails": "檢視詳情",
     "area": "區域",
-    "createOrderOnBehalf": "代客戶下單"
+    "createOrderOnBehalf": "代客戶下單",
+    "backorderStatus": "缺貨訂單狀態",
+    "allBackorderStatuses": "所有缺貨訂單狀態",
+    "backorderAlert": {
+      "title": "待審批的缺貨訂單",
+      "message": "您有 {count} 個缺貨訂單等待審批",
+      "reviewNow": "立即審閱",
+      "filterPending": "顯示待審批缺貨訂單"
+    },
+    "backorder": {
+      "none": "正常訂單",
+      "pending_approval": "待審批",
+      "approved": "已批准缺貨訂單",
+      "rejected": "已拒絕",
+      "partial_approved": "部分批准",
+      "reviewBackorder": "審閱缺貨訂單",
+      "approveBackorder": "批准缺貨訂單"
+    },
+    "backorderDialog": {
+      "title": "審閱缺貨訂單請求",
+      "description": "此訂單無法以目前庫存水平完全履行",
+      "orderDetails": "訂單詳情",
+      "orderNumber": "訂單編號",
+      "customer": "客戶",
+      "requestedDate": "要求配送日期",
+      "totalAmount": "總金額",
+      "stockAvailability": "庫存可用性",
+      "product": "產品",
+      "requestedQty": "要求數量",
+      "availableQty": "可用數量",
+      "shortfall": "缺貨數量",
+      "approvalDecision": "審批決定",
+      "approveAll": "批准全部（缺貨訂單）",
+      "approveAllDescription": "接受訂單，缺貨商品延遲履行",
+      "rejectAll": "拒絕訂單",
+      "rejectAllDescription": "由於庫存短缺拒絕訂單",
+      "partialApproval": "部分批准",
+      "partialApprovalDescription": "僅批准可用數量",
+      "approvedQuantity": "批准數量",
+      "estimatedFulfillment": "預計履行日期（可選）",
+      "estimatedFulfillmentPlaceholder": "庫存何時到貨？",
+      "rejectionReason": "拒絕原因",
+      "rejectionReasonPlaceholder": "請提供拒絕此訂單的原因",
+      "adminNotes": "管理員備註（內部）",
+      "adminNotesPlaceholder": "關於此缺貨訂單決定的內部備註",
+      "approve": "批准",
+      "approvePartial": "批准部分數量",
+      "reject": "拒絕訂單",
+      "cancel": "取消",
+      "approving": "批准中...",
+      "rejecting": "拒絕中..."
+    },
+    "backorderValidation": {
+      "quantityRequired": "請為所有項目指定批准數量",
+      "quantityExceedsAvailable": "批准數量不能超過可用庫存",
+      "quantityPositive": "批准數量必須為正數",
+      "rejectionReasonRequired": "請提供拒絕原因（至少10個字元）"
+    },
+    "backorderMessages": {
+      "approveSuccess": "缺貨訂單批准成功",
+      "approvePartialSuccess": "部分數量批准成功",
+      "rejectSuccess": "訂單已拒絕",
+      "approveError": "批准缺貨訂單失敗",
+      "rejectError": "拒絕訂單失敗",
+      "loadingOrder": "載入訂單詳情中..."
+    }
   },
   "orderOnBehalf": {
     "title": "代客戶建立訂單",
@@ -348,6 +414,59 @@
       "amountDiscountApplied": "${amount} 折扣已應用於 {count} 位客戶",
       "pricingCleared": "價格已清除",
       "pricingClearedDescription": "所有客戶特定價格已被清除"
+    }
+  },
+  "stockAdjustment": {
+    "dialog": {
+      "title": "調整庫存",
+      "description": "手動調整此產品的庫存數量"
+    },
+    "fields": {
+      "adjustmentType": "調整類型",
+      "quantity": "數量",
+      "quantityHint": "輸入正數增加庫存，負數減少庫存",
+      "notes": "備註",
+      "notesPlaceholder": "請輸入調整原因（必填）",
+      "currentStock": "目前庫存",
+      "newStock": "調整後庫存"
+    },
+    "types": {
+      "stock_received": "收到庫存",
+      "stock_count_correction": "庫存盤點修正",
+      "damaged_goods": "損壞商品",
+      "expired_stock": "過期庫存"
+    },
+    "typeDescriptions": {
+      "stock_received": "從供應商交貨或調撥添加庫存",
+      "stock_count_correction": "修正盤點發現的差異",
+      "damaged_goods": "核銷損壞的庫存",
+      "expired_stock": "核銷過期的庫存"
+    },
+    "buttons": {
+      "adjustStock": "調整庫存",
+      "save": "儲存調整",
+      "cancel": "取消"
+    },
+    "validation": {
+      "notesRequired": "庫存調整需要填寫備註",
+      "quantityRequired": "數量為必填項",
+      "cannotGoNegative": "庫存不能低於零"
+    },
+    "messages": {
+      "success": "庫存調整成功",
+      "error": "庫存調整失敗"
+    },
+    "history": {
+      "title": "庫存歷史",
+      "noTransactions": "暫無交易記錄",
+      "type": "類型",
+      "quantity": "數量",
+      "before": "調整前",
+      "after": "調整後",
+      "date": "日期",
+      "by": "操作人",
+      "notes": "備註",
+      "loadMore": "載入更多"
     }
   },
   "pricingDialog": {

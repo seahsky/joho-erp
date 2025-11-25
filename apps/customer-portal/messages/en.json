@@ -131,7 +131,13 @@
     "itemCount": "{count} item",
     "itemCount_plural": "{count} items",
     "requested": "Requested:",
-    "deliveredDate": "Delivered:"
+    "deliveredDate": "Delivered:",
+    "backorder": {
+      "pending_approval": "Awaiting Approval",
+      "approved": "Approved Backorder",
+      "rejected": "Backorder Rejected",
+      "partial_approved": "Partially Approved"
+    }
   },
   "profile": {
     "title": "My Profile",
@@ -399,7 +405,13 @@
     "customerNotFound": "Customer profile not found. Please sign in.",
     "emptyCart": "Your cart is empty",
     "emptyCartDescription": "Add some products to your cart before checking out",
-    "continueShopping": "Continue Shopping"
+    "continueShopping": "Continue Shopping",
+    "backorderWarning": {
+      "title": "Backorder Approval Required",
+      "message": "Some items in your order exceed current stock levels. Your order will be submitted for approval and you'll be notified of the decision.",
+      "insufficientStock": "Insufficient stock for some items",
+      "stockShortfall": "Stock Shortfall"
+    }
   },
   "orderDetails": {
     "title": "Order Details",
@@ -408,6 +420,13 @@
     "items": "Order Items",
     "deliveryAddress": "Delivery Address",
     "instructions": "Delivery Instructions",
-    "statusHistory": "Status History"
+    "statusHistory": "Status History",
+    "backorderStatus": "Backorder Status",
+    "backorderInfo": {
+      "pendingApproval": "This order is pending approval due to stock shortages.",
+      "approved": "This backorder has been approved and will be fulfilled as soon as stock is available.",
+      "rejected": "This backorder was rejected. Please contact us for more information.",
+      "partialApproval": "This order was partially approved. Some items will be fulfilled with available stock."
+    }
   }
 }

@@ -17,12 +17,15 @@ import {
   type StatusType,
   CountUp,
   EmptyState,
+  toast,
 } from '@jimmy-beef/ui';
-import { Search, ShoppingBag, Loader2, Eye, Package, PackageX, Plus } from 'lucide-react';
+import { Search, ShoppingBag, Loader2, Eye, Package, PackageX, Plus, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
+import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
+import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
 
 type Order = {
   id: string;
@@ -31,9 +34,23 @@ type Order = {
   orderedAt: Date;
   status: StatusType;
   totalAmount: number;
+  requestedDeliveryDate: Date;
+  backorderStatus: BackorderStatusType;
+  stockShortfall?: Record<
+    string,
+    {
+      requested: number;
+      available: number;
+      shortfall: number;
+    }
+  >;
   items: Array<{
+    productId: string;
     productName: string;
+    sku: string;
     quantity: number;
+    unit: string;
+    unitPrice: number;
   }>;
   deliveryAddress: {
     areaTag: string;
@@ -42,15 +59,60 @@ type Order = {
 
 export default function OrdersPage() {
   const t = useTranslations('orders');
+  const tAlert = useTranslations('orders.backorderAlert');
+  const tMessages = useTranslations('orders.backorderMessages');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [areaFilter, setAreaFilter] = useState<string>('');
+  const [backorderFilter, setBackorderFilter] = useState<string>('');
+  const [selectedOrder, setSelectedOrder] = useState<BackorderOrder | null>(null);
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+
+  const utils = api.useUtils();
 
   const { data, isLoading, error } = api.order.getAll.useQuery({
     status: statusFilter || undefined,
     areaTag: areaFilter || undefined,
     limit: 100,
+  });
+
+  const approveMutation = api.order.approveBackorder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: tMessages('approveSuccess'),
+        variant: 'default',
+      });
+      setIsApprovalDialogOpen(false);
+      setSelectedOrder(null);
+      utils.order.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: tMessages('approveError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const rejectMutation = api.order.rejectBackorder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: tMessages('rejectSuccess'),
+        variant: 'default',
+      });
+      setIsApprovalDialogOpen(false);
+      setSelectedOrder(null);
+      utils.order.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: tMessages('rejectError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   if (isLoading) {
@@ -75,23 +137,70 @@ export default function OrdersPage() {
     );
   }
 
-  const orders = (data?.orders ?? []) as Order[];
+  const orders = (data?.orders ?? []).map((order) => ({
+    ...order,
+    backorderStatus: (order.backorderStatus as BackorderStatusType) || 'none',
+    stockShortfall: order.stockShortfall as
+      | Record<string, { requested: number; available: number; shortfall: number }>
+      | undefined,
+  })) as Order[];
 
-  // Apply client-side search filter
+  // Apply client-side filters
   const filteredOrders = orders.filter((order) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      order.orderNumber.toLowerCase().includes(query) ||
-      order.customerName.toLowerCase().includes(query)
-    );
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        order.orderNumber.toLowerCase().includes(query) ||
+        order.customerName.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // Backorder status filter
+    if (backorderFilter) {
+      if (order.backorderStatus !== backorderFilter) return false;
+    }
+
+    return true;
   });
 
   const totalOrders = filteredOrders.length;
   const pendingOrders = filteredOrders.filter((o) => o.status === 'pending').length;
   const confirmedOrders = filteredOrders.filter((o) => o.status === 'confirmed').length;
   const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
+  const pendingBackorders = orders.filter((o) => o.backorderStatus === 'pending_approval').length;
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+  // Handler functions
+  const handleReviewBackorder = (order: Order) => {
+    setSelectedOrder({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      requestedDeliveryDate: order.requestedDeliveryDate,
+      items: order.items,
+      stockShortfall: order.stockShortfall || {},
+    });
+    setIsApprovalDialogOpen(true);
+  };
+
+  const handleApprove = async (data: {
+    orderId: string;
+    approvedQuantities?: Record<string, number>;
+    estimatedFulfillment?: Date;
+    notes?: string;
+  }) => {
+    await approveMutation.mutateAsync(data);
+  };
+
+  const handleReject = async (data: { orderId: string; reason: string }) => {
+    await rejectMutation.mutateAsync(data);
+  };
+
+  const handleFilterPendingBackorders = () => {
+    setBackorderFilter('pending_approval');
+  };
 
   const columns: TableColumn<Order>[] = [
     {
@@ -126,14 +235,28 @@ export default function OrdersPage() {
     {
       key: 'status',
       label: t('status'),
-      render: (order) => <StatusBadge status={order.status} />,
+      render: (order) => (
+        <div className="flex flex-col gap-1">
+          <StatusBadge status={order.status} />
+          <BackorderStatusBadge status={order.backorderStatus} />
+        </div>
+      ),
     },
     {
       key: 'actions',
       label: t('common.actions', { ns: 'common' }),
       className: 'text-right',
-      render: () => (
+      render: (order) => (
         <div className="flex justify-end gap-2">
+          {order.backorderStatus === 'pending_approval' && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => handleReviewBackorder(order)}
+            >
+              {t('backorder.reviewBackorder')}
+            </Button>
+          )}
           <Button variant="ghost" size="sm" aria-label={t('common.view', { ns: 'common' })}>
             <Eye className="h-4 w-4" />
           </Button>
@@ -144,12 +267,15 @@ export default function OrdersPage() {
 
   const mobileCard = (order: Order) => (
     <div className="space-y-3">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <h3 className="font-semibold text-base">{order.orderNumber}</h3>
           <p className="text-sm text-muted-foreground">{order.customerName}</p>
         </div>
-        <StatusBadge status={order.status} />
+        <div className="flex flex-col gap-1 items-end">
+          <StatusBadge status={order.status} />
+          <BackorderStatusBadge status={order.backorderStatus} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -172,10 +298,26 @@ export default function OrdersPage() {
       </div>
 
       <div className="flex gap-2 pt-2 border-t">
-        <Button variant="outline" size="sm" className="flex-1">
-          <Eye className="h-4 w-4 mr-1" />
-          {t('viewDetails')}
-        </Button>
+        {order.backorderStatus === 'pending_approval' ? (
+          <>
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1"
+              onClick={() => handleReviewBackorder(order)}
+            >
+              {t('backorder.reviewBackorder')}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <Button variant="outline" size="sm" className="flex-1">
+            <Eye className="h-4 w-4 mr-1" />
+            {t('viewDetails')}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -235,6 +377,26 @@ export default function OrdersPage() {
         </Card>
       </div>
 
+      {/* Pending Backorders Alert */}
+      {pendingBackorders > 0 && (
+        <Card className="mb-6 border-warning bg-warning/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <CardTitle className="text-base">{tAlert('title')}</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-sm">{tAlert('message', { count: pendingBackorders })}</p>
+              <Button variant="outline" size="sm" onClick={handleFilterPendingBackorders}>
+                {tAlert('reviewNow')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search and Filters */}
       <Card className="mb-6">
         <CardHeader className="p-4">
@@ -248,7 +410,7 @@ export default function OrdersPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
                 className="flex h-10 w-full md:w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={statusFilter}
@@ -272,6 +434,17 @@ export default function OrdersPage() {
                 <option value="south">{t('south')}</option>
                 <option value="east">{t('east')}</option>
                 <option value="west">{t('west')}</option>
+              </select>
+              <select
+                className="flex h-10 w-full md:w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={backorderFilter}
+                onChange={(e) => setBackorderFilter(e.target.value)}
+              >
+                <option value="">{t('allBackorderStatuses')}</option>
+                <option value="pending_approval">{t('backorder.pending_approval')}</option>
+                <option value="approved">{t('backorder.approved')}</option>
+                <option value="rejected">{t('backorder.rejected')}</option>
+                <option value="partial_approved">{t('backorder.partial_approved')}</option>
               </select>
             </div>
           </div>
@@ -324,6 +497,16 @@ export default function OrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Backorder Approval Dialog */}
+      <BackorderApprovalDialog
+        order={selectedOrder}
+        open={isApprovalDialogOpen}
+        onOpenChange={setIsApprovalDialogOpen}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isSubmitting={approveMutation.isPending || rejectMutation.isPending}
+      />
     </div>
   );
 }

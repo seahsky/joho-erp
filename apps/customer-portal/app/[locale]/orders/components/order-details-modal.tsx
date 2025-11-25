@@ -15,9 +15,10 @@ import {
   StatusBadge,
   type StatusType,
 } from '@jimmy-beef/ui';
-import { MapPin, Package } from 'lucide-react';
+import { MapPin, Package, Info } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
+import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 
 interface OrderItem {
   productName: string;
@@ -52,6 +53,22 @@ interface OrderDetailsModalProps {
 export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsModalProps) {
   const t = useTranslations('orderDetails');
   const tCommon = useTranslations('common');
+
+  // Helper function to get backorder info message based on status
+  const getBackorderInfoMessage = (status: BackorderStatusType) => {
+    switch (status) {
+      case 'pending_approval':
+        return t('backorderInfo.pendingApproval');
+      case 'approved':
+        return t('backorderInfo.approved');
+      case 'rejected':
+        return t('backorderInfo.rejected');
+      case 'partial_approved':
+        return t('backorderInfo.partialApproval');
+      default:
+        return null;
+    }
+  };
 
   const { data: order, isLoading, error } = api.order.getById.useQuery(
     { orderId: orderId! },
@@ -102,7 +119,12 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                     <H3 className="text-xl">#{order.orderNumber}</H3>
                     <Muted>{formatDate(order.orderedAt)}</Muted>
                   </div>
-                  <StatusBadge status={order.status as StatusType} />
+                  <div className="flex flex-col gap-1 items-end">
+                    <StatusBadge status={order.status as StatusType} />
+                    <BackorderStatusBadge
+                      status={(order.backorderStatus as BackorderStatusType) || 'none'}
+                    />
+                  </div>
                 </div>
 
                 {order.requestedDeliveryDate && (
@@ -113,6 +135,23 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                 )}
               </CardContent>
             </Card>
+
+            {/* Backorder Information */}
+            {order.backorderStatus && order.backorderStatus !== 'none' && (
+              <Card className="border-info bg-info/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-5 w-5 text-info mt-0.5 flex-shrink-0" />
+                    <div>
+                      <H3 className="text-base mb-1">{t('backorderStatus')}</H3>
+                      <p className="text-sm text-muted-foreground">
+                        {getBackorderInfoMessage((order.backorderStatus as BackorderStatusType) || 'none')}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Order Items */}
             <Card>

@@ -258,3 +258,43 @@ This is a Next.js-based ERP system with the following structure:
 3. Test builds frequently during development
 4. Run type checks before finalizing changes
 5. Verify all commands execute successfully
+
+## Documentation Standards
+
+### PRD vs FSD Document Guidelines
+
+This project maintains two key specification documents:
+
+1. **PRD (Product Requirements Document)** - `jimmy-beef-erp-prd.md`
+   - Contains comprehensive technical requirements
+   - Includes API specifications, data models, and technical architecture
+   - May contain code snippets, TypeScript interfaces, and implementation details
+   - Target audience: Developers, technical architects, and engineers
+
+2. **FSD (Functional Specification Document)** - `jimmy-beef-erp-fsd.md`
+   - Contains business logic and functional requirements ONLY
+   - Must be understandable by non-technical stakeholders
+   - NO code snippets, technical jargon, or implementation details
+   - Uses plain language to describe what the system does, not how
+   - Target audience: Business stakeholders, operations managers, end users
+
+### When Updating Documentation
+- Technical details (APIs, schemas, code) → PRD only
+- Business processes, workflows, user stories → Both PRD and FSD (FSD in plain language)
+- If content requires technical knowledge to understand → PRD only
+
+## Tooling Preferences
+
+### Serena MCP for Code and Document Operations
+Prefer using Serena MCP tools over native Read tools for code and document content:
+
+- Use Serena's symbolic tools (`find_symbol`, `get_symbols_overview`) for exploring code structure
+- Use Serena's `search_for_pattern` for searching within files
+- Use Serena for targeted code reading to minimize token usage
+- Only use native Read tool as a fallback when Serena tools are insufficient
+
+### Benefits of Serena MCP
+- Token-efficient: Read only necessary code portions
+- Semantic understanding: Navigate by symbols, not line numbers
+- Intelligent search: Pattern-based searching across codebase
+- Memory integration: Stores context about codebase for future reference

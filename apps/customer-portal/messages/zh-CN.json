@@ -131,7 +131,13 @@
     "itemCount": "{count} 项",
     "itemCount_plural": "{count} 项",
     "requested": "要求：",
-    "deliveredDate": "已送达："
+    "deliveredDate": "已送达：",
+    "backorder": {
+      "pending_approval": "等待审批",
+      "approved": "已批准缺货订单",
+      "rejected": "缺货订单已拒绝",
+      "partial_approved": "部分批准"
+    }
   },
   "profile": {
     "title": "我的资料",
@@ -229,7 +235,13 @@
     "customerNotFound": "未找到客户资料。请登录。",
     "emptyCart": "您的购物车是空的",
     "emptyCartDescription": "结账前请添加一些产品到购物车",
-    "continueShopping": "继续购物"
+    "continueShopping": "继续购物",
+    "backorderWarning": {
+      "title": "需要缺货订单审批",
+      "message": "您订单中的某些商品超出当前库存水平。您的订单将提交审批，我们会通知您审批结果。",
+      "insufficientStock": "某些商品库存不足",
+      "stockShortfall": "库存短缺"
+    }
   },
   "orderDetails": {
     "title": "订单详情",
@@ -238,6 +250,13 @@
     "items": "订单项目",
     "deliveryAddress": "配送地址",
     "instructions": "配送说明",
-    "statusHistory": "状态历史"
+    "statusHistory": "状态历史",
+    "backorderStatus": "缺货订单状态",
+    "backorderInfo": {
+      "pendingApproval": "由于库存短缺，此订单正在等待审批。",
+      "approved": "此缺货订单已获批准，一旦有库存即将发货。",
+      "rejected": "此缺货订单已被拒绝。请联系我们了解更多信息。",
+      "partialApproval": "此订单已部分批准。部分商品将使用可用库存发货。"
+    }
   }
 }

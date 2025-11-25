@@ -29,7 +29,10 @@ export type CreditApplicationStatus = 'pending' | 'approved' | 'rejected';
 export type ProductUnit = 'kg' | 'piece' | 'box' | 'carton';
 
 // Inventory Transaction Type
-export type InventoryTransactionType = 'purchase' | 'sale' | 'adjustment' | 'return' | 'damage';
+export type InventoryTransactionType = 'sale' | 'adjustment' | 'return';
+
+// Adjustment Type (for manual stock changes)
+export type AdjustmentType = 'stock_received' | 'stock_count_correction' | 'damaged_goods' | 'expired_stock';
 
 // Proof of Delivery Type
 export type PODType = 'signature' | 'photo';

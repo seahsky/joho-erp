@@ -12,6 +12,7 @@ import {
   isGreaterThan,
   sumMoney,
 } from '@jimmy-beef/shared';
+import { calculateAvailableCredit } from './order';
 
 /**
  * Cart Router
@@ -145,6 +146,7 @@ function calculateCartTotals(items: CartItem[], creditLimit: number): Cart {
 
 /**
  * Build cart response for user
+ * Uses available credit (excluding pending backorders) instead of raw credit limit
  */
 async function buildCartResponse(userId: string, customerId: string): Promise<Cart> {
   const items = getUserCartItems(userId);
@@ -164,7 +166,10 @@ async function buildCartResponse(userId: string, customerId: string): Promise<Ca
 
   const creditLimit = customer.creditApplication.creditLimit || 0; // In cents
 
-  return calculateCartTotals(items, creditLimit);
+  // Calculate available credit (excluding pending backorders)
+  const availableCredit = await calculateAvailableCredit(customerId, creditLimit);
+
+  return calculateCartTotals(items, availableCredit);
 }
 
 // ============================================================================

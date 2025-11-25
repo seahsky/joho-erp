@@ -242,4 +242,121 @@ export const productRouter = router({
         });
       }
     }),
+
+  // Admin: Adjust stock level (manual stock management)
+  adjustStock: isAdmin
+    .input(
+      z.object({
+        productId: z.string(),
+        adjustmentType: z.enum([
+          'stock_received',
+          'stock_count_correction',
+          'damaged_goods',
+          'expired_stock',
+        ]),
+        quantity: z.number(), // Positive to add, negative to reduce
+        notes: z.string().min(1, 'Notes are required'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { productId, adjustmentType, quantity, notes } = input;
+
+      // Get current product
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      // Calculate new stock level
+      const previousStock = product.currentStock;
+      const newStock = previousStock + quantity;
+
+      // Prevent negative stock
+      if (newStock < 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot reduce stock below zero. Current stock: ${previousStock}, requested change: ${quantity}`,
+        });
+      }
+
+      // Use transaction to create inventory transaction and update product atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Create inventory transaction record
+        await tx.inventoryTransaction.create({
+          data: {
+            productId,
+            type: 'adjustment',
+            adjustmentType,
+            quantity,
+            previousStock,
+            newStock,
+            referenceType: 'manual',
+            notes,
+            createdBy: ctx.userId || 'system',
+          },
+        });
+
+        // Update product stock
+        const updatedProduct = await tx.product.update({
+          where: { id: productId },
+          data: { currentStock: newStock },
+        });
+
+        return updatedProduct;
+      });
+
+      return result;
+    }),
+
+  // Admin: Get stock transaction history for a product
+  getStockHistory: isAdmin
+    .input(
+      z.object({
+        productId: z.string(),
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const { productId, limit, offset } = input;
+
+      // Verify product exists
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { id: true, name: true, sku: true, currentStock: true, unit: true },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      // Get transaction history
+      const [transactions, totalCount] = await Promise.all([
+        prisma.inventoryTransaction.findMany({
+          where: { productId },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
+        }),
+        prisma.inventoryTransaction.count({
+          where: { productId },
+        }),
+      ]);
+
+      return {
+        product,
+        transactions,
+        totalCount,
+        hasMore: offset + transactions.length < totalCount,
+      };
+    }),
 });

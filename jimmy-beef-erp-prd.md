@@ -66,7 +66,7 @@ A dual-portal ERP system for Jimmy Beef, an Australian B2B meat distributor, ena
 |**Authentication**|Clerk                |Latest   |User authentication & management           |
 |**Email**         |Resend               |Latest   |Transactional email service                |
 |**File Storage**  |AWS S3 or Vercel Blob|Latest   |Image/file uploads (POD photos, signatures)|
-|**Mapping**       |Google Maps API      |Latest   |Delivery routing and address validation    |
+|**Mapping**       |Mapbox + Google Maps |Latest   |Route optimization (Mapbox) + Navigation (Google Maps)|
 |**Accounting**    |Xero API             |OAuth 2.0|Invoice/credit note integration            |
 |**Hosting**       |Vercel or AWS        |-        |Application hosting                        |
 
@@ -632,22 +632,30 @@ interface Order {
   // Packing Information
   packing?: {
     packedAt?: Date;
-    packedBy?: string; // Clerk user ID (packer)
+    packedBy?: string;                // Clerk user ID (packer)
     notes?: string;
+    packingSequence?: number;         // Position in packing queue (1 = pack first)
+                                      // Calculated by route optimization (see Section 5.3.10.3)
+    packedItems?: string[];           // Array of SKUs that have been packed
   };
-  
+
   // Delivery Information
   delivery?: {
-    driverId?: string; // Clerk user ID
+    driverId?: string;                // Clerk user ID
     driverName?: string;
     assignedAt?: Date;
     deliveredAt?: Date;
     proofOfDelivery?: {
       type: 'signature' | 'photo';
-      fileUrl: string; // S3/Blob storage URL
+      fileUrl: string;                // S3/Blob storage URL
       uploadedAt: Date;
     };
     notes?: string;
+    deliverySequence?: number;        // Position in delivery route (1 = first stop)
+                                      // Calculated by route optimization (see Section 5.3.10.3)
+    routeId?: string;                 // Reference to RouteOptimization document ID
+    estimatedArrival?: Date;          // Calculated ETA from Mapbox optimization
+    actualArrival?: Date;             // Actual arrival time (for analytics)
   };
   
   // Admin Notes
@@ -661,7 +669,35 @@ interface Order {
     syncedAt?: Date;
     syncError?: string;
   };
-  
+
+  // Backorder Management
+  // When an order exceeds available stock, it becomes a backorder requiring admin approval
+  backorderStatus:
+    | 'none'              // Normal order (sufficient stock at time of order)
+    | 'pending_approval'  // Awaiting admin review (stock shortfall detected)
+    | 'approved'          // Admin approved backorder (will fulfill when stock arrives)
+    | 'rejected'          // Admin rejected backorder (order cancelled)
+    | 'partial_approved'; // Partial quantity approved (some items reduced)
+
+  stockShortfall?: {
+    // Records the stock situation when backorder was created
+    [productId: string]: {
+      requested: number;   // Quantity customer requested
+      available: number;   // Stock available at time of order
+      shortfall: number;   // requested - available
+    };
+  };
+
+  approvedQuantities?: {
+    // For partial approvals, stores the admin-approved quantities
+    [productId: string]: number;
+  };
+
+  backorderNotes?: string;        // Admin notes explaining approval/rejection decision
+  expectedFulfillment?: Date;     // Expected date when stock will arrive (for approved backorders)
+  reviewedBy?: string;            // Clerk user ID of admin who approved/rejected
+  reviewedAt?: Date;              // Timestamp when backorder was reviewed
+
   // Timestamps
   orderedAt: Date;
   createdBy: string; // Clerk user ID (customer or admin placing on behalf)
@@ -677,6 +713,7 @@ interface Order {
 - `{ status: 1, requestedDeliveryDate: 1 }`
 - `{ 'deliveryAddress.areaTag': 1, requestedDeliveryDate: 1 }`
 - `{ requestedDeliveryDate: 1, status: 1 }`
+- `{ backorderStatus: 1, createdAt: -1 }` - For querying pending backorders
 
 -----
 
@@ -686,30 +723,35 @@ interface Order {
 interface InventoryTransaction {
   _id: ObjectId;
   productId: ObjectId;
-  
+
   // Transaction Details
-  type: 
-    | 'purchase'      // Stock received from supplier
-    | 'sale'          // Stock sold (from order)
-    | 'adjustment'    // Manual adjustment (count discrepancy)
-    | 'return'        // Customer return
-    | 'damage';       // Damaged/expired stock write-off
-  
+  type:
+    | 'sale'          // Stock sold (from order) - automatic
+    | 'adjustment'    // Manual stock change by admin
+    | 'return';       // Customer return or order cancelled - automatic
+
+  // Adjustment Type (only set when type='adjustment')
+  adjustmentType?:
+    | 'stock_received'          // Adding stock from supplier delivery
+    | 'stock_count_correction'  // Fixing discrepancy from stocktake
+    | 'damaged_goods'           // Writing off damaged inventory
+    | 'expired_stock';          // Writing off expired inventory
+
   quantity: number; // Positive for additions, negative for reductions
-  
+
   // Before/After Snapshot
   previousStock: number;
   newStock: number; // previousStock + quantity
-  
+
   // Reference
   referenceType?: 'order' | 'manual';
   referenceId?: ObjectId; // Order ID if type is 'sale'
-  
+
   // Metadata
   notes?: string;
   performedBy: string; // Clerk user ID
   performedAt: Date;
-  
+
   createdAt: Date;
 }
 ```
@@ -719,6 +761,7 @@ interface InventoryTransaction {
 - `{ productId: 1, createdAt: -1 }`
 - `{ referenceId: 1, referenceType: 1 }`
 - `{ type: 1 }`
+- `{ adjustmentType: 1 }`
 
 -----
 
@@ -821,6 +864,72 @@ interface SystemLog {
 
 -----
 
+#### 4.1.10 RouteOptimization Collection
+
+```typescript
+interface RouteOptimization {
+  _id: ObjectId;
+
+  // Route Identity
+  deliveryDate: Date;          // Date for this optimized route
+  areaTag?: 'north' | 'south' | 'east' | 'west'; // Null if multi-area route
+  orderCount: number;          // Number of orders in this route
+
+  // Route Metrics
+  totalDistance: number;       // In kilometers
+  totalDuration: number;       // In seconds
+
+  // Route Geometry
+  routeGeometry: string;       // GeoJSON LineString from Mapbox
+  waypoints: {
+    orderId: ObjectId;
+    orderNumber: string;
+    latitude: number;
+    longitude: number;
+    address: string;
+    suburb: string;
+    sequenceNumber: number;    // Position in delivery route (1, 2, 3...)
+    estimatedArrival: Date;    // Calculated ETA from Mapbox
+  }[];
+
+  // Optimization Metadata
+  optimizedAt: Date;
+  optimizedBy: string;         // Clerk user ID who triggered optimization
+  mapboxRouteData?: JSON;      // Full Mapbox API response for reference
+
+  // Re-optimization Tracking
+  needsReoptimization: boolean;  // True if order count changed
+  lastOrderCount?: number;       // Previous order count before change
+
+  // Timestamps
+  createdAt: Date;
+}
+```
+
+**Indexes:**
+
+- `{ deliveryDate: 1, areaTag: 1 }` (compound)
+- `{ optimizedAt: -1 }`
+- `{ needsReoptimization: 1 }`
+
+**Description:**
+
+The RouteOptimization collection stores the results of Mapbox route optimization for each delivery date and area. It contains:
+
+- **Route Geometry:** GeoJSON LineString that can be visualized on a map showing the optimized delivery route
+- **Waypoints:** Ordered array of delivery stops with their sequence numbers and estimated arrival times
+- **Metrics:** Total distance and duration calculated by Mapbox for the entire route
+- **Re-optimization Tracking:** System automatically flags routes that need re-optimization when order count changes
+
+This data is used to:
+- Calculate `packingSequence` and `deliverySequence` for orders (see Section 5.3.10.3)
+- Display optimized routes to drivers in the delivery interface
+- Show estimated arrival times to customers
+- Provide route visualization on maps
+- Track optimization history and performance metrics
+
+-----
+
 ### 4.2 Data Relationships
 
 ```
@@ -841,6 +950,11 @@ Order (1) -----> (1) Customer
       (1) -----> (many) StatusHistory
       (1) -----> (1) Delivery (optional)
       (1) -----> (1) Xero Invoice (optional)
+      (1) -----> (1) RouteOptimization (optional, via routeId)
+
+RouteOptimization (1) -----> (many) Orders
+                  (1) -----> (1) DeliveryDate
+                  (1) -----> (1) AreaTag (optional)
 
 InventoryTransaction (1) -----> (1) Product
                      (1) -----> (1) Order (optional)
@@ -1328,12 +1442,16 @@ interface ProductForm {
 - Show current stock level
 - Show recent transactions (last 20)
 - Manual stock adjustment form:
-  
+
   ```typescript
   interface StockAdjustment {
-    type: 'purchase' | 'adjustment' | 'return' | 'damage';
-    quantity: number; // Can be positive or negative
-    notes: string; // Required for adjustments
+    adjustmentType:
+      | 'stock_received'          // Adding stock from supplier delivery
+      | 'stock_count_correction'  // Fixing discrepancy from stocktake
+      | 'damaged_goods'           // Writing off damaged inventory
+      | 'expired_stock';          // Writing off expired inventory
+    quantity: number; // Positive to add, negative to reduce
+    notes: string; // Required for all adjustments
   }
   ```
 - Low stock alert indicator
@@ -1525,6 +1643,41 @@ interface PackingSessionSummary {
 - Checklist per order item
 - Mark entire order as packed
 
+**Packing Sequence:**
+
+Orders are displayed to packers in optimal sequence calculated by the route optimization system (see Section 5.3.10.3 for detailed algorithm). The sequence ensures:
+- **LIFO van loading:** Last delivery is packed first, so it goes into the van first
+- **Area grouping:** Orders are grouped by delivery area (North, East, South, West)
+- **Route optimization:** Sequence follows reverse delivery order for efficient unloading
+
+**How Packing Sequence is Determined:**
+
+1. **Automatic Optimization:** When packer opens packing interface for a delivery date:
+   - System checks if route optimization exists for that date
+   - If missing or order count changed: Automatically trigger Mapbox route optimization
+   - Orders receive `packingSequence` numbers (1, 2, 3...) in LIFO order
+   - Frontend displays "Optimizing routes..." during calculation (~2-5 seconds)
+
+2. **Manual Optimization:** Admin/packer can click "Optimize Route" button to force re-optimization
+
+3. **Display Order:** Orders in "Order-by-Order View" are sorted by `packingSequence` (ascending)
+   - Order with packingSequence=1 appears first (pack this first)
+   - Order with packingSequence=8 appears last (pack this last)
+
+**Example:**
+```
+Delivery Route (optimized):
+  North Stop 1 → North Stop 2 → North Stop 3 → East Stop 4
+
+Packing Order (reverse for LIFO):
+  1. East Stop 4 (last delivery, goes in van first)
+  2. North Stop 3
+  3. North Stop 2
+  4. North Stop 1 (first delivery, goes in van last)
+```
+
+**Rationale:** When driver arrives at North Stop 1 (first delivery), the order is at the back/top of the van load, easily accessible without unloading other orders.
+
 **Order Card:**
 
 ```typescript
@@ -1564,10 +1717,16 @@ interface PackingOrderCard {
 **API Endpoints:**
 
 ```typescript
-packing.getSession // Get packing session for date
+packing.getSession // Get packing session for date (basic - alphabetical order)
+packing.getOptimizedSession // Get packing session with optimized sequencing
 packing.markItemPacked
 packing.markOrderReady // Mark order as ready for delivery
 packing.addPackingNotes
+
+// Route Optimization
+packing.optimizeRoute({ deliveryDate, force?, areaTag? }) // Trigger Mapbox optimization
+packing.getRouteStatus({ deliveryDate }) // Check if route needs re-optimization
+packing.getRouteDetails({ deliveryDate, areaTag? }) // Get route geometry for map
 ```
 
 -----
@@ -1611,33 +1770,79 @@ interface DeliverySchedule {
 
 **Route Optimization:**
 
-**Area-Based Grouping:**
+The system uses **Mapbox Directions API** to automatically calculate optimal delivery routes. The optimization process:
 
-- Group orders by areaTag (North, South, East, West)
-- Within each area, sort by suburb alphabetically
-- Provide suggested sequence number
+- Solves the traveling salesman problem (TSP) for each delivery area
+- Calculates total distance, duration, and individual ETAs for each stop
+- Generates route geometry (GeoJSON LineString) for map visualization
+- Assigns delivery sequence numbers (1 = first stop, 2 = second stop, etc.)
+- Stores optimization results in RouteOptimization collection (see Section 4.1.10)
 
-**Simple Route Suggestion:**
+**Route Optimization Workflow:**
+
+1. **Automatic Trigger:** Route optimization runs when:
+   - Packer opens packing interface (if not already optimized)
+   - Last order for a delivery date is marked 'ready_for_delivery'
+   - Order count changes for an already-optimized date
+
+2. **Manual Trigger:** Admin/packer can force re-optimization via "Optimize Route" button
+
+3. **Optimization Process:**
+   - Group orders by area (North, East, South, West)
+   - For each area: Call Mapbox with all delivery coordinates
+   - Mapbox returns optimized route with waypoint sequence
+   - System assigns `deliverySequence` numbers following the optimized route
+   - System calculates `packingSequence` in reverse (LIFO van loading)
+
+**Delivery Sequence:**
+
+Drivers see orders sorted by `deliverySequence` (ascending). This ensures:
+- Efficient route following (minimal backtracking)
+- Accurate ETAs for customers
+- Fuel efficiency
+- Time optimization
+
+**Example Route Optimization Result:**
 
 ```typescript
-interface RouteSuggestion {
-  areaTag: string;
-  stops: {
-    sequenceNumber: number;
+interface RouteOptimizationResult {
+  deliveryDate: Date;
+  areaTag: 'north' | 'south' | 'east' | 'west';
+  totalDistance: number;     // In kilometers (e.g., 45.3)
+  totalDuration: number;     // In seconds (e.g., 5400 = 90 minutes)
+  routeGeometry: string;     // GeoJSON LineString for map display
+  waypoints: {
     orderId: string;
     orderNumber: string;
     customerName: string;
     address: string;
-    suburb: string;
+    latitude: number;
+    longitude: number;
+    sequenceNumber: number;  // Delivery order (1, 2, 3...)
+    estimatedArrival: Date;  // Calculated ETA
   }[];
 }
 ```
 
-**Google Maps Integration:**
+**Mapbox + Google Maps Integration:**
 
-- For each delivery address, show “Open in Google Maps” button
-- Generate Google Maps link: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
-- Optional: Generate multi-stop route URL with waypoints
+- **Mapbox Directions API:** Used for route optimization calculations (TSP solver)
+- **Google Maps:** Used for driver navigation links
+
+For each delivery address, driver sees:
+- **"Open in Google Maps" button** with navigation link
+- Google Maps URL: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+- Optional: Multi-stop route URL with waypoints for full route navigation
+
+**Configuration:**
+
+```
+MAPBOX_ACCESS_TOKEN=pk.ey...
+WAREHOUSE_LATITUDE=-33.8688
+WAREHOUSE_LONGITUDE=151.2093
+```
+
+For detailed route optimization algorithm, see Section 5.3.10.3.
 
 **Delivery Card:**
 
@@ -1725,12 +1930,16 @@ interface ProofOfDeliveryForm {
 **API Endpoints:**
 
 ```typescript
-delivery.getSchedule // Get deliveries for date
-delivery.assignDriver // Admin assigns driver
-delivery.markOutForDelivery // Driver marks as out
-delivery.uploadProofOfDelivery // Driver uploads POD
+delivery.getSchedule // Get deliveries for date (sorted by deliverySequence)
+delivery.assignDriver // Admin assigns driver to order
+delivery.markOutForDelivery // Driver marks as out for delivery
+delivery.uploadProofOfDelivery // Driver uploads POD (photo/signature)
 delivery.markDelivered // Driver marks as delivered
-delivery.getRouteSuggestion // Get optimized route
+delivery.returnOrder // Driver returns undelivered order to warehouse
+
+// Route Optimization
+delivery.getRouteOptimization // Get Mapbox-optimized route with geometry
+delivery.getRouteDetails // Get route waypoints and ETAs
 ```
 
 -----
@@ -1767,33 +1976,28 @@ interface InventoryDashboard {
 
 **Stock Management:**
 
-**Receive Stock:**
+**Adjust Stock (Unified Form):**
 
-```typescript
-interface ReceiveStockForm {
-  productId: string;
-  quantity: number; // Must be > 0
-  notes?: string; // e.g., "Received from Supplier X, Invoice #123"
-}
-```
-
-**Adjust Stock:**
+All manual stock changes use a single form with adjustment types:
 
 ```typescript
 interface StockAdjustmentForm {
   productId: string;
-  adjustmentType: 'adjustment' | 'return' | 'damage';
-  quantity: number; // Positive or negative
-  reason: string; // Required
-  notes?: string;
+  adjustmentType:
+    | 'stock_received'          // Adding stock from supplier delivery
+    | 'stock_count_correction'  // Fixing discrepancy from stocktake
+    | 'damaged_goods'           // Writing off damaged inventory
+    | 'expired_stock';          // Writing off expired inventory
+  quantity: number; // Positive to add, negative to reduce
+  notes: string; // Required for all adjustments
 }
 ```
 
 **Stock History:**
 
 - Show InventoryTransaction records for selected product
-- Display: Date, Type, Quantity, Before/After, Performed by, Notes
-- Filter by: Date range, Transaction type
+- Display: Date, Type, AdjustmentType, Quantity, Before/After, Performed by, Notes
+- Filter by: Date range, Transaction type, Adjustment type
 - Export to CSV
 
 **Low Stock Alerts:**
@@ -1804,23 +2008,1177 @@ interface StockAdjustmentForm {
 
 **Business Logic:**
 
-- Validate quantity > 0 for purchases
 - Prevent negative stock (block if adjustment would result in negative)
-- Create InventoryTransaction record for audit trail
+- Create InventoryTransaction record with type='adjustment' and adjustmentType for audit trail
 - Update Product.currentStock atomically
 - Send email alert when stock falls below threshold
 - Log all changes to AuditLog
+- Notes are required for all stock adjustments
 
 **API Endpoints:**
 
 ```typescript
+product.adjustStock // Admin only - unified stock adjustment
+product.getStockHistory // Admin only - transaction history for a product
 inventory.getDashboard
 inventory.getProductStock
-inventory.receiveStock // Admin only
-inventory.adjustStock // Admin only
-inventory.getTransactionHistory
 inventory.getLowStockAlerts
 ```
+
+-----
+
+### 5.3.10 Order Workflow & Route Optimization
+
+This section provides comprehensive documentation of the order lifecycle, state transitions, route optimization strategy, and integration timing that powers the ERP system's order fulfillment process.
+
+#### 5.3.10.1 Order State Machine
+
+**State Definitions:**
+
+```typescript
+type OrderStatus =
+  | 'pending'           // Order created, awaiting admin confirmation
+  | 'confirmed'         // Admin/sales confirmed, ready for packing
+  | 'packing'           // Packer is actively packing the order
+  | 'ready_for_delivery' // Packing complete, ready for driver assignment
+  | 'out_for_delivery'  // Driver has taken order for delivery
+  | 'delivered'         // Order successfully delivered with POD
+  | 'cancelled';        // Order cancelled (can happen at any stage before delivery)
+```
+
+**State Transition Diagram:**
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Order Created
+
+    pending --> confirmed: Admin/Sales Confirms
+    pending --> cancelled: Admin/Customer Cancels
+
+    confirmed --> packing: Packer Accesses Order (Auto)
+    confirmed --> cancelled: Admin Cancels
+
+    packing --> ready_for_delivery: Packer Marks Complete
+    packing --> confirmed: Packer Abandons (Timeout)
+    packing --> cancelled: Admin Cancels
+
+    ready_for_delivery --> out_for_delivery: Driver Starts Delivery
+    ready_for_delivery --> packing: Packer Reopens
+    ready_for_delivery --> cancelled: Admin Cancels
+
+    out_for_delivery --> delivered: Driver Completes + POD
+    out_for_delivery --> ready_for_delivery: Driver Returns Order
+
+    delivered --> [*]: Order Complete
+    cancelled --> [*]: Order Terminated
+
+    note right of pending
+        Inventory: REDUCED at creation
+        Credit Limit: CHECKED at creation
+        Cutoff Time: VALIDATED at creation
+    end note
+
+    note right of delivered
+        Xero: Invoice CREATED
+        Email: Delivery confirmation SENT
+        Stock: Already reduced at creation
+    end note
+
+    note right of cancelled
+        Inventory: RESTORED to stock
+        Xero: Credit note if invoice exists
+        Email: Cancellation notice SENT
+    end note
+```
+
+**Valid State Transitions:**
+
+| From Status | To Status | Trigger | Actor | Automatic? |
+|-------------|-----------|---------|-------|------------|
+| *Order Created* | `pending` | Order submission | Customer/Admin | ✅ Yes |
+| `pending` | `confirmed` | Order confirmation | Admin/Sales | ❌ Manual |
+| `pending` | `cancelled` | Order cancellation | Admin/Customer | ❌ Manual |
+| `confirmed` | `packing` | Packer opens order | Packer | ✅ Yes (auto-transition) |
+| `confirmed` | `cancelled` | Order cancellation | Admin | ❌ Manual |
+| `packing` | `ready_for_delivery` | All items packed | Packer | ❌ Manual |
+| `packing` | `confirmed` | Session timeout/abandon | System | ✅ Yes (after 30 min idle) |
+| `packing` | `cancelled` | Order cancellation | Admin | ❌ Manual |
+| `ready_for_delivery` | `out_for_delivery` | Driver starts run | Driver | ❌ Manual |
+| `ready_for_delivery` | `packing` | Packer reopens | Packer | ❌ Manual |
+| `ready_for_delivery` | `cancelled` | Order cancellation | Admin | ❌ Manual |
+| `out_for_delivery` | `delivered` | Delivery complete + POD | Driver | ❌ Manual |
+| `out_for_delivery` | `ready_for_delivery` | Failed delivery | Driver | ❌ Manual |
+| `delivered` | *Order Complete* | N/A | System | ✅ Yes (terminal state) |
+| `cancelled` | *Order Terminated* | N/A | System | ✅ Yes (terminal state) |
+
+**Invalid State Transitions (BLOCKED):**
+
+These transitions are **NOT ALLOWED** and should be rejected by the API:
+
+| From | To | Reason |
+|------|-----|--------|
+| `pending` | `packing` | Must be confirmed first |
+| `pending` | `ready_for_delivery` | Must go through packing |
+| `pending` | `out_for_delivery` | Must go through packing |
+| `pending` | `delivered` | Cannot skip workflow |
+| `confirmed` | `ready_for_delivery` | Must go through packing |
+| `confirmed` | `out_for_delivery` | Must go through packing |
+| `confirmed` | `delivered` | Must go through packing |
+| `packing` | `out_for_delivery` | Must mark ready first |
+| `packing` | `delivered` | Must complete delivery workflow |
+| `delivered` | *any other status* | Terminal state, cannot change |
+| `cancelled` | *any other status* | Terminal state, cannot change |
+| *any status* | `pending` | Cannot go backward to pending |
+
+-----
+
+#### 5.3.10.2 State Transition Specifications
+
+##### Pending → Confirmed
+
+**Business Rules:**
+
+- **Prerequisites:**
+  - Customer must have approved credit application
+  - All order items must be in stock
+  - Order total doesn't exceed available credit limit
+  - Requested delivery date is valid and in the future
+
+- **Validations:**
+  - Check if inventory still available (stock might have changed since order creation)
+  - Recalculate credit limit in case of other pending orders
+  - Verify delivery date is achievable
+  - Validate customer account is still active
+
+- **Who Can Confirm:**
+  - Admin role: ✅ Yes
+  - Sales role: ✅ Yes
+  - All other roles: ❌ No
+
+- **Actions on Confirmation:**
+  - Update order status to 'confirmed'
+  - Record who confirmed and when in statusHistory
+  - Send email to customer: "Order Confirmed - Being Prepared for Packing"
+  - Send email to warehouse: "New Order Confirmed - Prepare for Packing"
+  - Optional: Assign to packing queue with priority
+
+- **API Specification:**
+
+```typescript
+order.confirm: protectedProcedure
+  .input(z.object({
+    orderId: z.string(),
+    notes: z.string().optional(),
+    priority: z.enum(['normal', 'urgent']).default('normal'),
+  }))
+  .use(isAdminOrSales)
+  .mutation(async ({ input, ctx }) => {
+    // 1. Validate current status (must be 'pending')
+    // 2. Validate prerequisites (stock, credit, delivery date, customer status)
+    // 3. Update order to 'confirmed'
+    // 4. Add statusHistory entry
+    // 5. Send notifications
+    // 6. Log to audit trail
+  })
+```
+
+##### Confirmed → Packing
+
+**Business Rules:**
+
+- **Trigger:** Automatic when packer accesses order in packing interface
+- **Session Management:** Packing session has 30-minute timeout
+- **Who Can Trigger:**
+  - Packer role: ✅ Yes (by accessing order)
+  - Admin role: ✅ Yes (can manually set to packing)
+
+- **Actions on Transition:**
+  - Update order status to 'packing'
+  - Record packer ID and start time
+  - Generate packing session ID
+  - Set 30-minute timeout (auto-revert to 'confirmed' if abandoned)
+  - NO email notifications (internal state change)
+
+- **Session Timeout Handling:**
+  - Background job runs every 5 minutes
+  - Orders in 'packing' status with no activity for 30+ minutes are reverted to 'confirmed'
+  - Warehouse manager is notified of timeout
+
+##### Packing → Ready for Delivery
+
+**Business Rules:**
+
+- **Prerequisites:**
+  - All order items must be marked as packed
+  - Must be same packer who started the session (or admin override)
+
+- **Validations:**
+  - Verify all items have been checked in packing interface
+  - Optional: Verify packed quantities match ordered quantities
+
+- **Actions on Completion:**
+  - Update order status to 'ready_for_delivery'
+  - Record packing completion time and packer ID
+  - Save packed items details
+  - Trigger route optimization if this was the last order for the day
+  - Send notification to delivery team
+  - Optional: Send notification to customer that order is packed
+
+##### Ready for Delivery → Out for Delivery
+
+**Business Rules:**
+
+- **Who Can Trigger:**
+  - Driver role: ✅ Yes (self-assigns)
+  - Admin role: ✅ Yes (can assign to specific driver)
+
+- **Prerequisites:**
+  - Order in 'ready_for_delivery' status
+  - Driver authenticated
+  - Delivery date is today or in the past
+
+- **Actions on Transition:**
+  - Update order status to 'out_for_delivery'
+  - Record driver ID, driver name, assignment time
+  - Optional: Record estimated delivery time (from route optimization)
+  - Send email to customer: "Your Order Is On the Way - Driver [Name] en route"
+  - Optional: Send tracking notification to admin
+
+##### Out for Delivery → Delivered
+
+**Business Rules:**
+
+- **Prerequisites (STRICT):**
+  - Order in 'out_for_delivery' status
+  - Must be same driver who started delivery
+  - Proof of delivery (POD) REQUIRED - photo or signature
+
+- **POD Validation:**
+  - Allowed file types: JPEG, PNG, WebP
+  - Maximum file size: 5MB
+  - Minimum image dimensions: 200x200 pixels
+
+- **Actions on Completion:**
+  - Update order status to 'delivered'
+  - Upload POD to file storage (S3/Vercel Blob)
+  - Record delivery timestamp, POD URL, recipient name
+  - Optional: Record GPS coordinates
+  - Send email to customer: "Order Delivered - Thank you!" (includes POD link)
+  - **Trigger Xero invoice creation** (asynchronous queue)
+  - Log to audit trail
+
+- **Xero Integration:**
+  - Invoice creation is triggered automatically but runs asynchronously
+  - If Xero sync fails, order remains 'delivered' and admin is notified
+  - Retry logic: 3 attempts with 1-minute delay
+  - Manual fallback: Admin can manually trigger sync from order details
+
+##### Order Cancellation (Any Status → Cancelled)
+
+**Business Rules:**
+
+- **Cannot Cancel:** Orders with status 'delivered' (use return/refund process instead)
+
+- **Who Can Cancel:**
+
+| Status | Customer | Admin | Sales | Manager | Notes |
+|--------|----------|-------|-------|---------|-------|
+| `pending` | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No | Customer can self-cancel |
+| `confirmed` | ❌ No | ✅ Yes | ✅ Yes | ❌ No | Customer cannot cancel - must contact admin |
+| `packing` | ❌ No | ✅ Yes* | ✅ Yes* | ❌ No | *Requires manager approval |
+| `ready_for_delivery` | ❌ No | ✅ Yes* | ✅ Yes* | ❌ No | *Requires manager approval |
+| `out_for_delivery` | ❌ No | ✅ Yes* | ✅ Yes* | ❌ No | *Requires manager approval |
+| `delivered` | ❌ No | ❌ No | ❌ No | ❌ No | Use return process |
+
+- **Actions on Cancellation:**
+  - Update order status to 'cancelled'
+  - Record who cancelled, when, and reason
+  - **Restore inventory immediately** - create InventoryTransaction records (type='return')
+  - Increment Product.currentStock for each item
+  - If Xero invoice exists: Queue credit note creation (asynchronous)
+  - Send email to customer: "Order Cancelled - [Reason]"
+  - If order was 'out_for_delivery': Send URGENT notification to driver to return
+  - Log to audit trail
+
+- **Inventory Restoration:**
+
+```typescript
+// For each order item, create InventoryTransaction
+{
+  productId: item.productId,
+  type: 'return',
+  quantity: item.quantity,  // Positive (adding back to stock)
+  previousStock: product.currentStock,
+  newStock: product.currentStock + item.quantity,
+  referenceType: 'order',
+  referenceId: order.id,
+  notes: `Cancelled order ${order.orderNumber} - restoring ${item.quantity} units`,
+  performedBy: userId,
+}
+```
+
+-----
+
+#### 5.3.10.2.1 Backorder Management System
+
+This section documents the backorder workflow for handling orders that exceed available stock levels.
+
+##### Overview
+
+When a customer places an order that exceeds current stock availability, the system automatically creates a **backorder** requiring admin approval. This allows the business to:
+- Accept orders for items that are temporarily out of stock
+- Give admins control over whether to commit to fulfilling stock shortfalls
+- Offer partial fulfillment when only some quantities are available
+- Maintain customer relationships by not outright rejecting orders
+
+##### Backorder Status Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> none: Sufficient Stock
+    [*] --> pending_approval: Stock Shortfall Detected
+
+    none --> confirmed: Normal order flow continues
+
+    pending_approval --> approved: Admin Approves Full Order
+    pending_approval --> partial_approved: Admin Approves Partial
+    pending_approval --> rejected: Admin Rejects
+
+    approved --> confirmed: Order proceeds (stock reduced)
+    partial_approved --> confirmed: Order proceeds with approved qty
+
+    rejected --> cancelled: Order cancelled (no stock change)
+```
+
+##### Backorder Status Definitions
+
+```typescript
+type BackorderStatus =
+  | 'none'              // Normal order - sufficient stock at time of order
+  | 'pending_approval'  // Stock shortfall detected - awaiting admin review
+  | 'approved'          // Admin approved full backorder
+  | 'rejected'          // Admin rejected backorder
+  | 'partial_approved'; // Admin approved partial quantities
+```
+
+##### Stock Validation at Order Creation
+
+When an order is created, the system validates stock availability:
+
+```typescript
+interface StockValidationResult {
+  requiresBackorder: boolean;
+  stockShortfall: Record<string, {
+    requested: number;   // Quantity customer requested
+    available: number;   // Current stock level
+    shortfall: number;   // requested - available
+  }>;
+}
+
+function validateStockWithBackorder(
+  items: Array<{ productId: string; quantity: number }>,
+  products: Array<{ id: string; currentStock: number }>
+): StockValidationResult {
+  const stockShortfall: StockValidationResult['stockShortfall'] = {};
+  let requiresBackorder = false;
+
+  for (const item of items) {
+    const product = products.find(p => p.id === item.productId);
+    if (product && item.quantity > product.currentStock) {
+      requiresBackorder = true;
+      stockShortfall[item.productId] = {
+        requested: item.quantity,
+        available: product.currentStock,
+        shortfall: item.quantity - product.currentStock,
+      };
+    }
+  }
+
+  return { requiresBackorder, stockShortfall };
+}
+```
+
+##### Credit Limit Calculation with Backorders
+
+**Critical Business Rule:** Pending backorders do NOT count against available credit.
+
+Only orders with `backorderStatus` NOT equal to `'pending_approval'` count against the credit limit:
+
+```typescript
+async function calculateAvailableCredit(customerId: string): Promise<number> {
+  const customer = await db.customer.findUnique({ where: { id: customerId } });
+
+  // Sum only orders that are NOT pending_approval backorders
+  const outstandingOrders = await db.order.aggregate({
+    where: {
+      customerId,
+      status: { in: ['pending', 'confirmed', 'packing', 'ready_for_delivery'] },
+      backorderStatus: { not: 'pending_approval' },  // Exclude pending backorders
+    },
+    _sum: { totalAmount: true },
+  });
+
+  const outstandingBalance = outstandingOrders._sum.totalAmount || 0;
+  return customer.creditLimit - outstandingBalance;
+}
+```
+
+**Rationale:** Pending backorders are not guaranteed to proceed, so they shouldn't block the customer's ability to place other orders while waiting for approval.
+
+##### Inventory Timing for Backorders
+
+**Stock is NOT reduced when backorder is created** (unlike normal orders).
+
+**Stock is reduced ONLY when backorder is approved:**
+
+| Order Type | When Stock is Reduced |
+|------------|----------------------|
+| Normal order | Immediately at order creation |
+| Backorder (pending) | NOT reduced |
+| Backorder (approved) | At time of approval |
+| Backorder (partial) | Only approved quantities reduced at approval |
+| Backorder (rejected) | Never reduced |
+
+##### API Endpoints
+
+**Get Pending Backorders (Admin/Sales only):**
+
+```typescript
+// order.getPendingBackorders
+input: z.object({
+  customerId: z.string().optional(),
+  dateFrom: z.date().optional(),
+  dateTo: z.date().optional(),
+  limit: z.number().default(50),
+  cursor: z.string().optional(),
+});
+
+output: {
+  orders: Array<{
+    id: string;
+    orderNumber: string;
+    customerId: string;
+    customerName: string;
+    totalAmount: number;
+    requestedDeliveryDate: Date;
+    items: Array<{
+      productId: string;
+      productName: string;
+      sku: string;
+      quantity: number;
+      unit: string;
+      unitPrice: number;
+    }>;
+    stockShortfall: Record<string, {
+      requested: number;
+      available: number;
+      shortfall: number;
+    }>;
+    createdAt: Date;
+  }>;
+  nextCursor?: string;
+};
+```
+
+**Approve Backorder (Admin/Sales only):**
+
+```typescript
+// order.approveBackorder
+input: z.object({
+  orderId: z.string(),
+  approvedQuantities: z.record(z.string(), z.number()).optional(), // For partial approval
+  expectedFulfillment: z.date().optional(),
+  notes: z.string().optional(),
+});
+
+// Process:
+// 1. If approvedQuantities provided → partial_approved, recalculate order totals
+// 2. If no approvedQuantities → approved (full approval)
+// 3. Set order.status = 'confirmed'
+// 4. Create inventory transactions (reduce stock)
+// 5. Set reviewedBy, reviewedAt, backorderNotes
+// 6. Send approval email to customer
+```
+
+**Reject Backorder (Admin/Sales only):**
+
+```typescript
+// order.rejectBackorder
+input: z.object({
+  orderId: z.string(),
+  reason: z.string().min(10), // Minimum 10 characters required
+});
+
+// Process:
+// 1. Set backorderStatus = 'rejected'
+// 2. Set order.status = 'cancelled'
+// 3. Set reviewedBy, reviewedAt, backorderNotes = reason
+// 4. NO inventory changes (stock was never reduced)
+// 5. Send rejection email to customer
+```
+
+##### Partial Approval Logic
+
+When admin approves partial quantities:
+
+1. **Update Order Items:** Quantities adjusted to approved amounts
+2. **Recalculate Totals:** subtotal, taxAmount, totalAmount recalculated
+3. **Store Original Request:** Original quantities preserved in `stockShortfall`
+4. **Store Approved Quantities:** Admin-approved quantities stored in `approvedQuantities`
+5. **Reduce Inventory:** Only approved quantities are deducted from stock
+
+```typescript
+// Example partial approval:
+// Original order: Product A = 100 units (only 60 available)
+// Admin approves: 60 units
+
+// Result:
+stockShortfall: { 'productA': { requested: 100, available: 60, shortfall: 40 } }
+approvedQuantities: { 'productA': 60 }
+// Order item quantity updated to 60
+// Order totals recalculated for 60 units
+// 60 units deducted from inventory
+```
+
+##### Email Notifications
+
+| Trigger | Email Function | Recipient | Content |
+|---------|---------------|-----------|---------|
+| Backorder created | `sendBackorderSubmittedEmail` | Customer | Stock shortfall details, expected review timeline |
+| Backorder created | `sendBackorderAdminNotification` | Admin | Order details, stock shortfall, action required |
+| Full approval | `sendBackorderApprovedEmail` | Customer | Confirmation, expected fulfillment date |
+| Partial approval | `sendBackorderPartialApprovalEmail` | Customer | Original vs approved quantities, notes |
+| Rejection | `sendBackorderRejectedEmail` | Customer | Rejection reason, alternative actions |
+
+##### UI Components
+
+**Admin Portal:**
+- `BackorderStatusBadge` - Visual indicator of backorder status
+- `BackorderApprovalDialog` - Full approval workflow with three options
+- `StockShortfallPanel` - Visual display of stock availability per product
+
+**Customer Portal:**
+- `BackorderStatusBadge` - Customer-friendly status indicator
+- Order details shows backorder status with explanatory text
+
+-----
+
+#### 5.3.10.3 Route Optimization & Packing Sequence
+
+This section documents the sophisticated route optimization system that determines both packing and delivery sequences.
+
+##### Overview
+
+The system uses **Mapbox Directions API** with a **LIFO (Last-In-First-Out) van loading strategy** to ensure optimal delivery efficiency and correct unloading order.
+
+**Key Principle:** Orders are packed in REVERSE delivery sequence so that the last delivery goes into the van first, making it accessible first when the driver reaches that location.
+
+##### Algorithm Details
+
+**Step 1: Group Orders by Delivery Area**
+
+Orders are grouped into four geographic areas:
+- North
+- East
+- South
+- West
+
+Area assignment is based on the `deliveryAddress.areaTag` field, which is determined by suburb lookup in the SuburbAreaMapping collection.
+
+**Step 2: Optimize Routes Using Mapbox**
+
+For each area:
+1. Extract all order coordinates (latitude, longitude)
+2. Call Mapbox Directions API Optimization endpoint
+3. Mapbox solves the traveling salesman problem (TSP) to find the shortest route
+4. Receive optimized waypoint sequence, total distance, total duration, and route geometry
+
+**Step 3: Calculate Delivery Sequence**
+
+Orders are assigned delivery sequence numbers (1, 2, 3...) following the Mapbox-optimized route:
+- First stop in route = delivery sequence 1
+- Second stop = delivery sequence 2
+- And so on...
+
+**Step 4: Calculate Packing Sequence (LIFO Strategy)**
+
+Packing sequence is calculated in REVERSE order:
+
+1. **Area Processing Order:** Areas are processed for delivery in order: North → East → South → West
+2. **Packing Order:** Areas are packed in REVERSE: West → South → East → North
+3. **Within Each Area:** Orders are packed in reverse delivery sequence
+
+**Example:**
+
+```
+Delivery Route (Mapbox-optimized):
+  North Area: Stop 1 (deliverySeq=1), Stop 2 (deliverySeq=2), Stop 3 (deliverySeq=3)
+  East Area:  Stop 4 (deliverySeq=4), Stop 5 (deliverySeq=5)
+  South Area: Stop 6 (deliverySeq=6), Stop 7 (deliverySeq=7)
+  West Area:  Stop 8 (deliverySeq=8)
+
+Packing Order (LIFO - reverse for van loading):
+  packingSeq=1: West Stop 8    (last delivered, goes in van first)
+  packingSeq=2: South Stop 7
+  packingSeq=3: South Stop 6
+  packingSeq=4: East Stop 5
+  packingSeq=5: East Stop 4
+  packingSeq=6: North Stop 3
+  packingSeq=7: North Stop 2
+  packingSeq=8: North Stop 1   (first delivered, goes in van last)
+```
+
+**Rationale:** When the driver arrives at the first delivery (North Stop 1), it's at the back/top of the van load, easily accessible. They don't need to unload other orders to reach it.
+
+##### When Route Optimization Runs
+
+**Automatic Triggers:**
+
+1. **When packer opens packing interface** for a delivery date
+   - System checks if route optimization exists for that date
+   - If missing or order count changed: Automatically trigger optimization
+   - Frontend shows "Optimizing routes..." loading state
+
+2. **When order count changes** for an already-optimized date
+   - If new orders are confirmed after optimization
+   - System marks existing optimization as `needsReoptimization: true`
+   - Next packer session triggers automatic re-optimization
+
+**Manual Triggers:**
+
+- Admin or packer can click "Optimize Route" button in packing interface
+- Forces re-optimization even if route already exists
+- Useful for: Order changes, priority adjustments, manual route tweaking
+
+**Conditions for Running:**
+
+- At least one order with status: 'confirmed', 'packing', or 'ready_for_delivery'
+- Orders have valid delivery coordinates (latitude/longitude)
+- Mapbox access token is configured
+
+##### Database Fields
+
+**Order.packing:**
+
+```typescript
+packing?: {
+  packedAt?: Date;
+  packedBy?: string;                // Clerk user ID (packer)
+  notes?: string;
+  packingSequence?: number;         // Position in packing queue (1 = pack first)
+  packedItems?: string[];           // Array of SKUs that have been packed
+}
+```
+
+**Order.delivery:**
+
+```typescript
+delivery?: {
+  driverId?: string;
+  driverName?: string;
+  assignedAt?: Date;
+  deliveredAt?: Date;
+  proofOfDelivery?: ProofOfDelivery;
+  notes?: string;
+  deliverySequence?: number;        // Position in delivery route (1 = first stop)
+  routeId?: string;                 // Reference to RouteOptimization document
+  estimatedArrival?: DateTime;      // Calculated arrival time from Mapbox
+  actualArrival?: DateTime;         // Actual arrival (for analytics)
+}
+```
+
+**RouteOptimization Collection:**
+
+See Section 4.1.10 for complete schema.
+
+Key fields:
+- `deliveryDate`: Date for this optimized route
+- `areaTag`: Geographic area (or null for multi-area routes)
+- `orderCount`: Number of orders in route
+- `totalDistance`: Total route distance in kilometers
+- `totalDuration`: Total route duration in seconds
+- `routeGeometry`: GeoJSON LineString from Mapbox (for map visualization)
+- `waypoints`: Ordered array of delivery stops with coordinates and ETAs
+- `needsReoptimization`: Flag indicating if order count changed
+
+##### Packing Interface Integration
+
+**View 1: Product Summary**
+
+Displays aggregated product quantities across ALL orders for the delivery date:
+- "50kg Beef Rump"
+- "30kg Pork Loin"
+- "20kg Chicken Breast"
+
+This allows packer to gather all products from warehouse efficiently before packing individual orders.
+
+**View 2: Order List** (Sequence-based)
+
+Displays orders sorted by `packingSequence` (ascending):
+- Orders appear in optimal packing order
+- Packer packs #1 first, #2 second, etc.
+- Each order card shows: Customer, address, items, area tag
+
+**Frontend Auto-Optimization:**
+
+```typescript
+// When packer opens packing page
+useEffect(() => {
+  if (!session.routeOptimization || session.routeOptimization.needsReoptimization) {
+    // Automatically trigger route optimization
+    await optimizeRouteMutation.mutateAsync({
+      deliveryDate: deliveryDate.toISOString(),
+      force: false,
+    });
+    await refetch(); // Refresh session with optimized sequences
+  }
+}, [session?.deliveryDate]);
+```
+
+##### Mapbox Configuration
+
+**Required Environment Variables:**
+
+```
+MAPBOX_ACCESS_TOKEN=pk.ey...
+WAREHOUSE_LATITUDE=-33.8688
+WAREHOUSE_LONGITUDE=151.2093
+```
+
+**API Endpoint Used:**
+
+`https://api.mapbox.com/optimized-trips/v1/mapbox/driving`
+
+**Request Parameters:**
+- `coordinates`: Warehouse + all delivery stops
+- `source`: first (start from warehouse)
+- `destination`: first (return to warehouse)
+- `roundtrip`: true
+- `geometries`: geojson
+- `overview`: full
+- `steps`: false
+
+**Response Data Used:**
+- `trips[0].distance`: Total distance (meters)
+- `trips[0].duration`: Total duration (seconds)
+- `trips[0].geometry`: Route LineString (GeoJSON)
+- `waypoints`: Optimized order of stops with arrival estimates
+
+##### API Endpoints
+
+```typescript
+// Get packing session (basic - alphabetical order)
+packing.getSession
+
+// Get packing session with optimized sequencing
+packing.getOptimizedSession
+
+// Trigger route optimization
+packing.optimizeRoute({
+  deliveryDate: Date,
+  force?: boolean,  // Force re-optimization even if exists
+  areaTag?: string, // Optimize specific area only
+})
+
+// Check optimization status
+packing.getRouteStatus({
+  deliveryDate: Date
+})
+
+// Get route details for visualization
+packing.getRouteDetails({
+  deliveryDate: Date,
+  areaTag?: string,
+})
+```
+
+-----
+
+#### 5.3.10.4 Email Notification Matrix
+
+Complete mapping of trigger events to email notifications.
+
+| Trigger Event | Email Template | Recipients | Timing | Priority |
+|---------------|----------------|------------|--------|----------|
+| **Order Created** | `order_confirmation` | Customer | Immediate | High |
+| **Order Created** | `new_order_notification` | Admin/Sales | Immediate | Medium |
+| **Order Confirmed** | `order_confirmed` | Customer | Immediate | High |
+| **Order Confirmed** | `new_order_to_warehouse` | Warehouse Team | Immediate | Medium |
+| **Packing Started** | None | N/A | N/A | N/A |
+| **Packing Session Timeout** | `packing_timeout_alert` | Warehouse Manager | On Timeout | Medium |
+| **Packing Complete** | `order_ready_for_delivery` | Delivery Team | Immediate | Medium |
+| **Packing Complete** (optional) | `order_packed` | Customer | Immediate | Low |
+| **Out for Delivery** | `order_out_for_delivery` | Customer | Immediate | High |
+| **Out for Delivery** (optional) | `delivery_started_tracking` | Admin | Immediate | Low |
+| **Delivered** | `order_delivered` | Customer | Immediate | High |
+| **Delivered** (optional) | `delivery_completed_report` | Admin | Immediate | Low |
+| **Cancelled (pending)** | `order_cancelled` | Customer | Immediate | High |
+| **Cancelled (packing+)** | `order_cancelled_urgent` | Customer | Immediate | High |
+| **Cancelled (packing+)** | `order_cancelled_warehouse` | Warehouse Team | Immediate | High |
+| **Cancelled (out_for_delivery)** | `order_cancelled_driver` | Driver | Immediate | Critical |
+| **Low Stock Alert** | `low_stock_alert` | Warehouse Manager/Admin | When stock < threshold | Medium |
+| **Xero Sync Success** | `xero_sync_success` | Admin (optional) | After sync | Low |
+| **Xero Sync Failure** | `xero_sync_error` | Admin | After failure | High |
+| **Credit Note Created** | `credit_note_issued` | Customer | After creation | High |
+| **Backorder Submitted** | `backorder_submitted` | Customer | Immediate | High |
+| **Backorder Submitted** | `backorder_admin_notification` | Admin | Immediate | High |
+| **Backorder Approved** | `backorder_approved` | Customer | Immediate | High |
+| **Backorder Rejected** | `backorder_rejected` | Customer | Immediate | High |
+| **Backorder Partial Approved** | `backorder_partial_approved` | Customer | Immediate | High |
+| **Route Optimization Complete** | `route_optimized` | Warehouse Manager | After optimization | Low |
+
+**Email Implementation Strategy:**
+
+- **Synchronous (Blocking):** Customer-facing critical notifications (order created, confirmed, out for delivery, delivered, cancelled)
+- **Asynchronous (Queued):** Internal notifications, Xero sync results, daily digests
+- **Batched:** Low stock alerts (sent hourly digest rather than per-product)
+
+-----
+
+#### 5.3.10.5 Integration Timing
+
+Detailed documentation of when integrations occur during the order lifecycle.
+
+##### Inventory Management Integration
+
+**When Inventory Is Reduced:**
+
+**Timing:** IMMEDIATELY at order creation (status = 'pending')
+
+**Rationale:**
+- Reserve stock to prevent overselling
+- Ensure accurate real-time inventory levels
+- Prevent concurrent orders from depleting stock below zero
+
+**Implementation:**
+```typescript
+// In order.create mutation
+await db.$transaction(async (tx) => {
+  // 1. Validate stock availability
+  for (const item of orderData.items) {
+    const product = await tx.product.findUnique({ where: { id: item.productId } });
+    if (product.currentStock < item.quantity) {
+      throw new Error(`Insufficient stock for ${product.name}`);
+    }
+  }
+
+  // 2. Reduce stock atomically
+  for (const item of orderData.items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { currentStock: { decrement: item.quantity } },
+    });
+
+    // 3. Create inventory transaction
+    await tx.inventoryTransaction.create({
+      data: {
+        productId: item.productId,
+        type: 'sale',
+        quantity: -item.quantity,  // Negative for reduction
+        referenceType: 'order',
+        performedBy: userId,
+      },
+    });
+  }
+
+  // 4. Create order
+  const order = await tx.order.create({ data: { ...orderData, status: 'pending' } });
+});
+```
+
+**When Inventory Is Restored:**
+
+**Timing:** IMMEDIATELY when order is cancelled (any status → 'cancelled')
+
+**Implementation:**
+```typescript
+// In order.cancel mutation
+await db.$transaction(async (tx) => {
+  // 1. Restore inventory for each item
+  for (const item of order.items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { currentStock: { increment: item.quantity } },
+    });
+
+    // 2. Create inventory transaction
+    await tx.inventoryTransaction.create({
+      data: {
+        productId: item.productId,
+        type: 'return',
+        quantity: item.quantity,  // Positive for restoration
+        referenceType: 'order',
+        referenceId: order.id,
+        notes: `Inventory restored - order cancelled: ${reason}`,
+        performedBy: userId,
+      },
+    });
+  }
+
+  // 3. Update order to cancelled
+  await tx.order.update({
+    where: { id: orderId },
+    data: { status: 'cancelled', cancellation: { ... } },
+  });
+});
+```
+
+##### Xero Integration Timing
+
+**Invoice Creation:**
+
+**Timing:** AUTOMATICALLY when order status = 'delivered' (asynchronous queue)
+
+**Process:**
+1. Order is marked 'delivered' (synchronous operation completes)
+2. System queues background job: `xero:create-invoice`
+3. Job processor creates Xero invoice (does not block delivery)
+4. On success: Store invoiceId in order.xero
+5. On failure: Store error message, notify admin, retry up to 3 times
+
+**Error Handling:**
+- If Xero sync fails: Order remains 'delivered' (delivery is critical, accounting is not)
+- Admin receives email notification of sync failure
+- Admin can manually trigger retry from order details page
+- System retries 3 times with 1-minute delay between attempts
+
+**Credit Note Creation:**
+
+**Timing:** AUTOMATICALLY when order is cancelled AND invoice exists
+
+**Process:**
+1. Order cancellation completes (status → 'cancelled', inventory restored)
+2. System checks: Does order.xero.invoiceId exist?
+3. If YES: Queue background job: `xero:create-credit-note`
+4. Job processor creates Xero credit note
+5. On success: Store creditNoteId in order.xero
+6. Customer receives email notification with credit note details
+
+##### Route Optimization Timing
+
+**When Optimization Is Triggered:**
+
+1. **Automatic (Frontend):**
+   - Packer opens packing interface for a delivery date
+   - System checks if RouteOptimization exists for that date
+   - If missing OR needsReoptimization=true: Trigger optimization
+   - Frontend shows loading state during optimization (~2-5 seconds)
+
+2. **Automatic (Backend):**
+   - When last order for a delivery date is marked 'ready_for_delivery'
+   - System checks if route optimization exists
+   - If not: Trigger optimization for next day's deliveries
+
+3. **Manual:**
+   - Admin/Packer clicks "Optimize Route" button
+   - Can force re-optimization even if already done
+
+**Optimization Process:**
+
+```typescript
+async function optimizeDeliveryRoute(deliveryDate: Date) {
+  // 1. Fetch orders for date (status: confirmed, packing, ready_for_delivery)
+  const orders = await getOrdersForDate(deliveryDate);
+
+  // 2. Group by area (North, East, South, West)
+  const ordersByArea = groupOrdersByArea(orders);
+
+  // 3. For each area: Call Mapbox Optimization API
+  const areaRoutes = await Promise.all(
+    Array.from(ordersByArea).map(([area, areaOrders]) =>
+      optimizeAreaRoute(area, areaOrders, warehouseCoords, mapboxToken)
+    )
+  );
+
+  // 4. Calculate delivery sequences (1, 2, 3... following Mapbox route)
+  // 5. Calculate packing sequences (reverse order for LIFO)
+  const sequences = calculateSequences(areaRoutes);
+
+  // 6. Save RouteOptimization document
+  const routeOptimization = await createRouteOptimization({
+    deliveryDate,
+    totalDistance: sum(areaRoutes.map(r => r.distance)),
+    totalDuration: sum(areaRoutes.map(r => r.duration)),
+    waypoints: flatten(areaRoutes.map(r => r.waypoints)),
+  });
+
+  // 7. Update orders with sequences
+  await updateOrderSequences(sequences, routeOptimization.id);
+
+  return routeOptimization;
+}
+```
+
+**Dependencies:**
+
+Route optimization must complete BEFORE:
+- Packer views optimized order list
+- Driver views delivery route
+- Estimated arrival times are shown to customers
+
+Route optimization can occur AFTER:
+- Order confirmation
+- Packing starts (can be optimized during packing)
+
+##### Email Notification Timing
+
+**Synchronous Emails (Sent Immediately, Block API Response):**
+
+- Order confirmation (at order creation)
+- Order confirmed (pending → confirmed)
+- Order out for delivery (ready_for_delivery → out_for_delivery)
+- Order delivered (out_for_delivery → delivered)
+- Order cancelled (any → cancelled)
+
+**Asynchronous Emails (Queued, Do Not Block):**
+
+- Xero sync success/failure notifications
+- Route optimization complete
+- Daily packing schedule digest
+- Weekly order summary reports
+- Low stock alerts (hourly batched digest)
+
+**Implementation Pattern:**
+
+```typescript
+// Synchronous (blocks until sent)
+await sendEmail('order_confirmed', customer.email, { order });
+
+// Asynchronous (queued)
+await queueEmail('xero_sync_error', admin.email, { order, error }, {
+  priority: 'high',
+  retryAttempts: 3,
+});
+```
+
+-----
+
+#### 5.3.10.6 Error Handling & Edge Cases
+
+##### Concurrent Status Updates
+
+**Problem:** Two users try to update the same order status simultaneously
+
+**Solution:** Optimistic concurrency control with version field
+
+**Implementation:**
+
+```typescript
+// Add version field to Order model
+model Order {
+  version: Int @default(0)
+  // ... other fields
+}
+
+// In status update mutations
+async function updateOrderStatus(orderId: string, newStatus: OrderStatus, currentVersion: number) {
+  const updatedOrder = await db.order.update({
+    where: {
+      id: orderId,
+      version: currentVersion,  // Only update if version matches
+    },
+    data: {
+      status: newStatus,
+      version: { increment: 1 },
+    },
+  });
+
+  if (!updatedOrder) {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: 'Order has been modified. Please refresh and try again.',
+    });
+  }
+}
+```
+
+##### Failed Xero Sync After Delivery
+
+**Problem:** Order is delivered successfully, but Xero invoice creation fails
+
+**Behavior:**
+- Order remains in 'delivered' status (delivery is not rolled back)
+- Error message stored in `order.xero.syncError`
+- Admin receives email notification
+- System retries 3 times with 1-minute delay
+- If still fails: Admin can manually trigger retry from order details page
+
+**Rationale:** Delivery is the business-critical event. Accounting sync can be retried without affecting customer service.
+
+##### Packer Session Timeout
+
+**Problem:** Packer starts packing but abandons the session without marking complete
+
+**Solution:**
+- Background job runs every 5 minutes
+- Orders in 'packing' status with no activity for 30+ minutes
+- Automatically reverted to 'confirmed' status
+- Warehouse manager receives email notification
+- Order becomes available for another packer
+
+##### Driver Returns Undelivered Order
+
+**Problem:** Driver cannot deliver order (customer not available, address incorrect, etc.)
+
+**Solution:** Driver can return order to 'ready_for_delivery' status
+
+**API:**
+
+```typescript
+delivery.returnOrder: protectedProcedure
+  .input(z.object({
+    orderId: z.string(),
+    reason: z.string(),
+  }))
+  .use(isDriver)
+  .mutation(async ({ input, ctx }) => {
+    // Revert from 'out_for_delivery' to 'ready_for_delivery'
+    // Record return reason
+    // Notify admin/warehouse manager
+  })
+```
+
+##### Emergency Cancellation During Delivery
+
+**Problem:** Order must be cancelled while driver is en route
+
+**Solution:**
+- Requires manager approval
+- Urgent SMS/email sent to driver: "RETURN ORDER [#] TO WAREHOUSE"
+- Inventory restored when driver confirms return
+- Customer receives cancellation email with explanation
+- Special flag: `cancellation.cancelledDuringDelivery = true`
+
+##### Route Re-optimization Needed
+
+**Problem:** New orders confirmed after route optimization completed
+
+**Solution:**
+- System marks existing RouteOptimization as `needsReoptimization: true`
+- Next time packer opens interface: Automatic re-optimization triggered
+- Orders already packed are NOT re-sequenced (keep existing packingSequence)
+- Only new/unpacked orders get new sequences
+
+##### Validation Matrix
+
+| Validation | pending | confirmed | packing | ready_for_delivery | out_for_delivery | delivered | cancelled |
+|------------|---------|-----------|---------|-------------------|-----------------|-----------|-----------|
+| Can confirm | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Can start packing | ❌ | ✅ | ✅* | ❌ | ❌ | ❌ | ❌ |
+| Can mark ready | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Can assign driver | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Can mark delivered | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Can cancel (customer) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Can cancel (admin) | ✅ | ✅ | ✅** | ✅** | ✅** | ❌ | ❌ |
+| Inventory reduced | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌*** |
+| Has packing sequence | ❌ | ✅**** | ✅ | ✅ | ✅ | ✅ | Varies |
+| Has delivery sequence | ❌ | ✅**** | ✅ | ✅ | ✅ | ✅ | Varies |
+| Xero invoice exists | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | Varies |
+
+\* Re-entry to existing packing session
+\** Requires manager approval
+\*** Inventory restored immediately on cancellation
+\**** If route optimization has run
 
 -----
 
@@ -2440,14 +3798,68 @@ RESEND_ADMIN_EMAIL=admin@jimmybeef.com.au
 **Email Templates:**
 
 1. **Customer Registration Confirmation**
-1. **Credit Application Approval**
-1. **Credit Application Rejection**
-1. **Order Confirmation**
-1. **Order Dispatched (Out for Delivery)**
-1. **Order Delivered**
-1. **Low Stock Alert (Internal)**
-1. **New Order Notification (Internal)**
-1. **Xero Sync Error (Internal)**
+2. **Credit Application Approval** ✅ Implemented
+3. **Credit Application Rejection** ✅ Implemented
+4. **Order Confirmation**
+5. **Order Dispatched (Out for Delivery)**
+6. **Order Delivered**
+7. **Low Stock Alert (Internal)**
+8. **New Order Notification (Internal)**
+9. **Xero Sync Error (Internal)**
+10. **Driver URGENT Cancellation (Internal)** ✅ Implemented
+11. **Backorder Submitted**
+12. **Backorder Approved** ✅ Implemented
+13. **Backorder Rejected** ✅ Implemented
+14. **Backorder Partial Approval** ✅ Implemented
+
+**Implemented Email Functions:**
+
+```typescript
+// packages/api/src/services/email.ts
+
+// Credit Application Emails
+export async function sendCreditApprovedEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  contactPerson: string;
+  creditLimit: number;      // in cents
+  paymentTerms: string;
+  notes?: string;
+}): Promise<{ success: boolean; message: string }>
+
+export async function sendCreditRejectedEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  contactPerson: string;
+  reason: string;
+}): Promise<{ success: boolean; message: string }>
+
+// Driver Urgent Cancellation Email
+export async function sendDriverUrgentCancellationEmail(params: {
+  driverEmail: string;
+  driverName: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryAddress: string;
+  cancellationReason: string;
+}): Promise<{ success: boolean; message: string }>
+
+// Backorder Emails (previously implemented)
+export async function sendBackorderSubmittedEmail(params: {...})
+export async function sendBackorderApprovedEmail(params: {...})
+export async function sendBackorderRejectedEmail(params: {...})
+export async function sendBackorderPartialApprovalEmail(params: {...})
+export async function sendBackorderAdminNotification(params: {...})
+```
+
+**Email Trigger Points:**
+
+| Email Function | Triggered By | Location |
+|----------------|--------------|----------|
+| `sendCreditApprovedEmail` | `customer.approveCredit` mutation | `packages/api/src/routers/customer.ts` |
+| `sendCreditRejectedEmail` | `customer.rejectCredit` mutation | `packages/api/src/routers/customer.ts` |
+| `sendDriverUrgentCancellationEmail` | `order.updateStatus` when cancelling order with assigned driver | `packages/api/src/routers/order.ts` |
+| `sendBackorder*` | Order creation/approval with backorder status | `packages/api/src/routers/order.ts` |
 
 **Implementation:**
 
@@ -3178,14 +4590,6 @@ Sutherland,NSW,2232,south
 - Integration with accounting software beyond Xero
 - SMS notifications for order updates
 - Advanced route optimization algorithms
-
------
-
-## Document Revision History
-
-|Version|Date      |Author          |Changes             |
-|-------|----------|----------------|--------------------|
-|1.0    |2025-11-13|System Architect|Initial PRD creation|
 
 -----
 

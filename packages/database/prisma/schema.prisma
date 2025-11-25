@@ -82,17 +82,30 @@ enum OrderStatus {
   cancelled
 }
 
+enum BackorderStatus {
+  none                // Normal order (within stock)
+  pending_approval    // Awaiting admin review
+  approved           // Admin approved backorder
+  rejected           // Admin rejected backorder
+  partial_approved   // Partial quantity approved
+}
+
 enum ProofOfDeliveryType {
   signature
   photo
 }
 
 enum InventoryTransactionType {
-  purchase
-  sale
-  adjustment
-  return
-  transfer
+  sale        // Automatic - order placed
+  adjustment  // Manual - admin stock changes
+  return      // Automatic - order cancelled
+}
+
+enum AdjustmentType {
+  stock_received          // Adding stock from supplier delivery
+  stock_count_correction  // Fixing discrepancy from stocktake
+  damaged_goods           // Writing off damaged inventory
+  expired_stock           // Writing off expired inventory
 }
 
 enum AuditAction {
@@ -214,6 +227,15 @@ model Order {
   placedOnBehalfOf        String?             // Customer ID when admin places order
   placedByAdmin           String?             // Admin user ID who placed the order
 
+  // Backorder fields
+  backorderStatus         BackorderStatus     @default(none)
+  stockShortfall          Json?               // {productId: {requested: X, available: Y, shortfall: Z}}
+  approvedQuantities      Json?               // {productId: approvedQty} - For partial approvals
+  backorderNotes          String?             // Admin notes on approval/rejection
+  expectedFulfillment     DateTime?           // Expected date when stock will arrive
+  reviewedBy              String?             // Admin who approved/rejected
+  reviewedAt              DateTime?           // When backorder was reviewed
+
   // Relations
   customer                Customer            @relation(fields: [customerId], references: [id])
 
@@ -226,6 +248,7 @@ model Order {
   @@index([orderedAt(sort: Desc)])
   @@index([xero.invoiceId])
   @@index([createdAt(sort: Desc)])
+  @@index([backorderStatus, createdAt(sort: Desc)])
   @@map("orders")
 }
 
@@ -256,6 +279,7 @@ model InventoryTransaction {
   id                  String                      @id @default(auto()) @map("_id") @db.ObjectId
   productId           String                      @db.ObjectId
   type                InventoryTransactionType
+  adjustmentType      AdjustmentType?             // Only set when type='adjustment'
   quantity            Float
   previousStock       Float
   newStock            Float
@@ -273,6 +297,7 @@ model InventoryTransaction {
   @@index([productId, createdAt(sort: Desc)])
   @@index([referenceId, referenceType])
   @@index([type])
+  @@index([adjustmentType])
   @@map("inventorytransactions")
 }
 

@@ -13,7 +13,7 @@ import {
   H3,
   Muted,
 } from '@jimmy-beef/ui';
-import { ShoppingCart, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { ShoppingCart, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
 import { useToast } from '@jimmy-beef/ui';
@@ -21,6 +21,7 @@ import { useToast } from '@jimmy-beef/ui';
 export function OrderSummary() {
   const t = useTranslations('checkout');
   const tCommon = useTranslations('common');
+  const tBackorder = useTranslations('checkout.backorderWarning');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -141,6 +142,23 @@ export function OrderSummary() {
 
   return (
     <div className="space-y-4">
+      {/* Backorder Warning for Credit Customers */}
+      {customer.creditApplication.status === 'approved' && (
+        <Card className="border-info bg-info/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <Info className="h-5 w-5 text-info mt-0.5 flex-shrink-0" />
+              <div>
+                <H3 className="text-base mb-1">{tBackorder('title')}</H3>
+                <p className="text-sm text-muted-foreground">
+                  {tBackorder('message')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Order Items */}
       <Card>
         <CardHeader>

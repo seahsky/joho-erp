@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, isAdminOrSales } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
+import { sendTestEmail } from '../services/email';
 
 export const notificationRouter = router({
   /**
@@ -116,11 +117,7 @@ export const notificationRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // TODO: Implement actual email sending
-      // For now, just return success
-      return {
-        success: true,
-        message: `Test email sent to ${input.recipient}`,
-      };
+      const result = await sendTestEmail(input.recipient);
+      return result;
     }),
 });

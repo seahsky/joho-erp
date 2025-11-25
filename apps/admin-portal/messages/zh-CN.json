@@ -42,14 +42,16 @@
     "pendingOrders": "待处理订单",
     "activeCustomers": "活跃客户",
     "activeDeliveries": "进行中配送",
+    "pendingBackorders": "待审批缺货订单",
+    "backordersAwaitingApproval": "等待审批",
     "recentOrders": "最近订单",
     "lowStockAlerts": "低库存警报",
     "unitsLeft": "件剩余",
     "viewAll": "查看全部",
+    "viewBackorders": "查看缺货订单",
     "allTime": "全部时间",
     "requireProcessing": "需要处理",
     "activeAccounts": "活跃帐户",
-
     "latestOrders": "客户的最新订单",
     "noRecentOrders": "暂无最近订单",
     "ordersWillAppearHere": "客户下单后订单将显示在这里",
@@ -132,7 +134,6 @@
     "packed": "已打包",
     "packing": "打包中",
     "readyForDelivery": "准备配送",
-
     "delivered": "已送达",
     "cancelled": "已取消",
     "loading": "加载订单中...",
@@ -156,7 +157,72 @@
     "ordersWillAppear": "客户下单后订单将显示在这里",
     "viewDetails": "查看详情",
     "area": "区域",
-    "createOrderOnBehalf": "代客户下单"
+    "createOrderOnBehalf": "代客户下单",
+    "backorderStatus": "缺货订单状态",
+    "allBackorderStatuses": "所有缺货订单状态",
+    "backorderAlert": {
+      "title": "待审批的缺货订单",
+      "message": "您有 {count} 个缺货订单等待审批",
+      "reviewNow": "立即审阅",
+      "filterPending": "显示待审批缺货订单"
+    },
+    "backorder": {
+      "none": "正常订单",
+      "pending_approval": "待审批",
+      "approved": "已批准缺货订单",
+      "rejected": "已拒绝",
+      "partial_approved": "部分批准",
+      "reviewBackorder": "审阅缺货订单",
+      "approveBackorder": "批准缺货订单"
+    },
+    "backorderDialog": {
+      "title": "审阅缺货订单请求",
+      "description": "此订单无法以当前库存水平完全履行",
+      "orderDetails": "订单详情",
+      "orderNumber": "订单编号",
+      "customer": "客户",
+      "requestedDate": "要求配送日期",
+      "totalAmount": "总金额",
+      "stockAvailability": "库存可用性",
+      "product": "产品",
+      "requestedQty": "要求数量",
+      "availableQty": "可用数量",
+      "shortfall": "缺货数量",
+      "approvalDecision": "审批决定",
+      "approveAll": "批准全部（缺货订单）",
+      "approveAllDescription": "接受订单，缺货商品延迟履行",
+      "rejectAll": "拒绝订单",
+      "rejectAllDescription": "由于库存短缺拒绝订单",
+      "partialApproval": "部分批准",
+      "partialApprovalDescription": "仅批准可用数量",
+      "approvedQuantity": "批准数量",
+      "estimatedFulfillment": "预计履行日期（可选）",
+      "estimatedFulfillmentPlaceholder": "库存何时到货？",
+      "rejectionReason": "拒绝原因",
+      "rejectionReasonPlaceholder": "请提供拒绝此订单的原因",
+      "adminNotes": "管理员备注（内部）",
+      "adminNotesPlaceholder": "关于此缺货订单决定的内部备注",
+      "approve": "批准",
+      "approvePartial": "批准部分数量",
+      "reject": "拒绝订单",
+      "cancel": "取消",
+      "approving": "批准中...",
+      "rejecting": "拒绝中..."
+    },
+    "backorderValidation": {
+      "quantityRequired": "请为所有项目指定批准数量",
+      "quantityExceedsAvailable": "批准数量不能超过可用库存",
+      "quantityPositive": "批准数量必须为正数",
+      "rejectionReasonRequired": "请提供拒绝原因（至少10个字符）"
+    },
+    "backorderMessages": {
+      "approveSuccess": "缺货订单批准成功",
+      "approvePartialSuccess": "部分数量批准成功",
+      "rejectSuccess": "订单已拒绝",
+      "approveError": "批准缺货订单失败",
+      "rejectError": "拒绝订单失败",
+      "loadingOrder": "加载订单详情中..."
+    }
   },
   "orderOnBehalf": {
     "title": "代客户创建订单",
@@ -348,6 +414,59 @@
       "amountDiscountApplied": "${amount} 折扣已应用于 {count} 位客户",
       "pricingCleared": "价格已清除",
       "pricingClearedDescription": "所有客户特定价格已被清除"
+    }
+  },
+  "stockAdjustment": {
+    "dialog": {
+      "title": "调整库存",
+      "description": "手动调整此产品的库存数量"
+    },
+    "fields": {
+      "adjustmentType": "调整类型",
+      "quantity": "数量",
+      "quantityHint": "输入正数增加库存，负数减少库存",
+      "notes": "备注",
+      "notesPlaceholder": "请输入调整原因（必填）",
+      "currentStock": "当前库存",
+      "newStock": "调整后库存"
+    },
+    "types": {
+      "stock_received": "收到库存",
+      "stock_count_correction": "库存盘点修正",
+      "damaged_goods": "损坏商品",
+      "expired_stock": "过期库存"
+    },
+    "typeDescriptions": {
+      "stock_received": "从供应商交货或调拨添加库存",
+      "stock_count_correction": "修正盘点发现的差异",
+      "damaged_goods": "核销损坏的库存",
+      "expired_stock": "核销过期的库存"
+    },
+    "buttons": {
+      "adjustStock": "调整库存",
+      "save": "保存调整",
+      "cancel": "取消"
+    },
+    "validation": {
+      "notesRequired": "库存调整需要填写备注",
+      "quantityRequired": "数量为必填项",
+      "cannotGoNegative": "库存不能低于零"
+    },
+    "messages": {
+      "success": "库存调整成功",
+      "error": "库存调整失败"
+    },
+    "history": {
+      "title": "库存历史",
+      "noTransactions": "暂无交易记录",
+      "type": "类型",
+      "quantity": "数量",
+      "before": "调整前",
+      "after": "调整后",
+      "date": "日期",
+      "by": "操作人",
+      "notes": "备注",
+      "loadMore": "加载更多"
     }
   },
   "pricingDialog": {

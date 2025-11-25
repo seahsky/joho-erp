@@ -9,6 +9,7 @@ import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
 import { useToast } from '@jimmy-beef/ui';
 import { OrderDetailsModal } from './order-details-modal';
+import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 
 export function OrderList() {
   const t = useTranslations('orders');
@@ -154,7 +155,12 @@ export function OrderList() {
                   <H3 className="text-lg">#{order.orderNumber}</H3>
                   <Muted>{formatDate(order.orderedAt)}</Muted>
                 </div>
-                <StatusBadge status={order.status as StatusType} />
+                <div className="flex flex-col gap-1 items-end">
+                  <StatusBadge status={order.status as StatusType} />
+                  <BackorderStatusBadge
+                    status={(order.backorderStatus as BackorderStatusType) || 'none'}
+                  />
+                </div>
               </div>
 
               {/* Order Details */}

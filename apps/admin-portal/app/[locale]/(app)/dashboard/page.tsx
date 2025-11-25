@@ -3,19 +3,23 @@
 export const dynamic = 'force-dynamic';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, Small, CountUp, EmptyState, type StatusType } from '@jimmy-beef/ui';
-import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle } from 'lucide-react';
+import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@jimmy-beef/shared';
 
 export default function DashboardPage() {
   const t = useTranslations();
+  const router = useRouter();
 
   const { data: stats, isLoading: statsLoading } = api.dashboard.getStats.useQuery();
   const { data: recentOrders, isLoading: ordersLoading } = api.dashboard.getRecentOrders.useQuery({ limit: 4 });
   const { data: lowStockItems, isLoading: stockLoading } = api.dashboard.getLowStockItems.useQuery({ limit: 3 });
+  const { data: pendingBackorders, isLoading: backordersLoading } = api.order.getPendingBackorders.useQuery({});
 
-  const isLoading = statsLoading || ordersLoading || stockLoading;
+  const isLoading = statsLoading || ordersLoading || stockLoading || backordersLoading;
+  const pendingBackordersCount = pendingBackorders?.items.length || 0;
 
   if (isLoading) {
     return (
@@ -27,8 +31,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards Skeleton */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 mb-6 md:mb-8">
+          {[...Array(5)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-24" />
@@ -104,7 +108,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 mb-6 md:mb-8">
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -166,6 +170,23 @@ export default function DashboardPage() {
               <CountUp end={stats?.activeDeliveries || 0} />
             </div>
             <Small className="text-muted-foreground mt-1">{t('dashboard.outForDelivery')}</Small>
+          </CardContent>
+        </Card>
+
+        <Card className="stat-card animate-fade-in-up delay-400 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => router.push('/orders?backorderStatus=pending_approval')}>
+          <div className="stat-card-gradient" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-medium">{t('dashboard.pendingBackorders')}</CardTitle>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6 relative">
+            <div className="stat-value tabular-nums">
+              <CountUp end={pendingBackordersCount} />
+            </div>
+            <Small className="text-muted-foreground mt-1">{t('dashboard.backordersAwaitingApproval')}</Small>
           </CardContent>
         </Card>
       </div>

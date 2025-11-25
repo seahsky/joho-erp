@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } 
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
 import { paginatePrismaQuery } from '@jimmy-beef/shared';
+import { sendCreditApprovedEmail, sendCreditRejectedEmail } from '../services/email';
 
 // Validation schemas for credit application
 const residentialAddressSchema = z.object({
@@ -470,7 +471,19 @@ export const customerRouter = router({
         },
       });
 
-      // TODO: Send approval email to customer
+      // Send approval email to customer
+      const contactPerson = customer.contactPerson as { firstName: string; lastName: string; email: string };
+      await sendCreditApprovedEmail({
+        customerEmail: contactPerson.email,
+        customerName: customer.businessName,
+        contactPerson: `${contactPerson.firstName} ${contactPerson.lastName}`,
+        creditLimit: input.creditLimit,
+        paymentTerms: input.paymentTerms,
+        notes: input.notes,
+      }).catch((error) => {
+        console.error('Failed to send credit approved email:', error);
+      });
+
       // TODO: Sync to Xero as contact
       // TODO: Log to audit trail
 
@@ -511,7 +524,17 @@ export const customerRouter = router({
         },
       });
 
-      // TODO: Send rejection email to customer
+      // Send rejection email to customer
+      const contactPerson = customer.contactPerson as { firstName: string; lastName: string; email: string };
+      await sendCreditRejectedEmail({
+        customerEmail: contactPerson.email,
+        customerName: customer.businessName,
+        contactPerson: `${contactPerson.firstName} ${contactPerson.lastName}`,
+        reason: input.notes,
+      }).catch((error) => {
+        console.error('Failed to send credit rejected email:', error);
+      });
+
       // TODO: Log to audit trail
 
       return customer;
