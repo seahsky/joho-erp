@@ -22,7 +22,7 @@ export const userRouter = router({
         userId: z.string().min(1, 'User ID is required'),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input: _input }) => {
       // TODO: Implement Clerk SDK integration
       throw new TRPCError({
         code: 'NOT_IMPLEMENTED',
@@ -40,7 +40,7 @@ export const userRouter = router({
         role: z.enum(['admin', 'sales', 'driver', 'viewer']),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input: _input }) => {
       // TODO: Implement Clerk SDK integration
       // This would update user metadata in Clerk
       throw new TRPCError({
@@ -58,7 +58,7 @@ export const userRouter = router({
         userId: z.string().min(1, 'User ID is required'),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input: _input }) => {
       // TODO: Implement Clerk SDK integration
       // This would ban or delete the user in Clerk
       throw new TRPCError({
@@ -79,7 +79,7 @@ export const userRouter = router({
         role: z.enum(['admin', 'sales', 'driver', 'viewer']),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input: _input }) => {
       // TODO: Implement Clerk SDK integration
       // This would create an invitation in Clerk
       throw new TRPCError({
