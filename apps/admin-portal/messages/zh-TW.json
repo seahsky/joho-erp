@@ -332,8 +332,16 @@
     },
     "sections": {
       "productDetails": "產品詳情",
+      "productImage": "產品圖片",
       "inventoryPricing": "庫存與定價",
       "customerPricing": "客戶特定價格（可選）"
+    },
+    "image": {
+      "uploadTitle": "點擊上傳",
+      "uploadSubtitle": "支援PNG、JPG格式，最大2MB",
+      "change": "更換",
+      "remove": "刪除",
+      "uploading": "上傳中..."
     },
     "fields": {
       "sku": "貨號",

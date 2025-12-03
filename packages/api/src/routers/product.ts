@@ -147,6 +147,7 @@ export const productRouter = router({
         currentStock: z.number().min(0).default(0),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).default('active'),
+        imageUrl: z.string().url().optional(), // R2 public URL for product image
         // Optional customer-specific pricing to be created with the product
         customerPricing: z
           .array(
@@ -221,6 +222,7 @@ export const productRouter = router({
         currentStock: z.number().min(0).optional(),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
+        imageUrl: z.string().url().nullish(), // R2 public URL (null to remove)
       })
     )
     .mutation(async ({ input }) => {

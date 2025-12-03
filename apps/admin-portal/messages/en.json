@@ -331,8 +331,16 @@
     },
     "sections": {
       "productDetails": "Product Details",
+      "productImage": "Product Image",
       "inventoryPricing": "Inventory & Pricing",
       "customerPricing": "Customer-Specific Pricing (Optional)"
+    },
+    "image": {
+      "uploadTitle": "Click to upload",
+      "uploadSubtitle": "PNG, JPG up to 2MB",
+      "change": "Change",
+      "remove": "Remove",
+      "uploading": "Uploading..."
     },
     "fields": {
       "sku": "SKU",

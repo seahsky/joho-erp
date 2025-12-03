@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
   AccordionContent,
   Badge,
+  ProductImageUpload,
 } from '@jimmy-beef/ui';
 import {
   Loader2,
@@ -31,6 +32,7 @@ import { formatCurrency, parseToCents } from '@jimmy-beef/shared';
 import type { ProductCategory } from '@jimmy-beef/shared';
 import { useToast } from '@jimmy-beef/ui';
 import { useTranslations } from 'next-intl';
+import imageCompression from 'browser-image-compression';
 
 type Customer = {
   id: string;
@@ -71,6 +73,10 @@ export function AddProductDialog({
   const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
 
+  // Image state
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [tempProductId] = useState(() => crypto.randomUUID());
+
   // Pricing state
   const [pricingMap, setPricingMap] = useState<Map<string, PricingEntry>>(new Map());
   const [customerSearch, setCustomerSearch] = useState('');
@@ -82,6 +88,56 @@ export function AddProductDialog({
   const { data: customersData } = api.customer.getAll.useQuery({
     limit: 1000,
   });
+
+  // Image upload mutations
+  const uploadUrlMutation = api.upload.getProductImageUploadUrl.useMutation();
+  const deleteImageMutation = api.upload.deleteProductImage.useMutation();
+
+  // Handle image upload with compression
+  const handleImageUpload = useCallback(async (file: File): Promise<string> => {
+    // Compress image before upload
+    const compressionOptions = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+      fileType: 'image/jpeg' as const,
+    };
+
+    let processedFile = file;
+    try {
+      processedFile = await imageCompression(file, compressionOptions);
+    } catch (error) {
+      console.warn('Image compression failed, using original:', error);
+    }
+
+    // Get presigned URL
+    const { uploadUrl, publicUrl } = await uploadUrlMutation.mutateAsync({
+      productId: tempProductId,
+      filename: file.name,
+      contentType: processedFile.type as 'image/jpeg' | 'image/png' | 'image/jpg' | 'image/webp',
+      contentLength: processedFile.size,
+    });
+
+    // Upload to R2
+    const response = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: processedFile,
+      headers: {
+        'Content-Type': processedFile.type,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    return publicUrl;
+  }, [tempProductId, uploadUrlMutation]);
+
+  // Handle image delete
+  const handleImageDelete = useCallback(async (url: string): Promise<void> => {
+    await deleteImageMutation.mutateAsync({ imageUrl: url });
+  }, [deleteImageMutation]);
 
   const createProductMutation = api.product.create.useMutation({
     onSuccess: (result) => {
@@ -290,6 +346,7 @@ export function AddProductDialog({
       currentStock: parseInt(currentStock) || 0,
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
+      imageUrl: imageUrl || undefined,
       customerPricing: customerPricing.length > 0 ? customerPricing : undefined,
     });
   };
@@ -305,6 +362,7 @@ export function AddProductDialog({
     setCurrentStock('0');
     setLowStockThreshold('');
     setStatus('active');
+    setImageUrl(null);
     setPricingMap(new Map());
     setCustomerSearch('');
     setBulkDiscountPercent('');
@@ -380,6 +438,26 @@ export function AddProductDialog({
                 placeholder={t('productForm.fields.categoryPlaceholder')}
               />
             </div>
+          </div>
+
+          {/* Product Image */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">{t('productForm.sections.productImage')}</h3>
+            <ProductImageUpload
+              value={imageUrl}
+              onChange={setImageUrl}
+              onUpload={handleImageUpload}
+              onDelete={handleImageDelete}
+              disabled={createProductMutation.isPending}
+              isUploading={uploadUrlMutation.isPending}
+              labels={{
+                uploadTitle: t('productForm.image.uploadTitle'),
+                uploadSubtitle: t('productForm.image.uploadSubtitle'),
+                change: t('productForm.image.change'),
+                remove: t('productForm.image.remove'),
+                uploading: t('productForm.image.uploading'),
+              }}
+            />
           </div>
 
           {/* Inventory Details */}

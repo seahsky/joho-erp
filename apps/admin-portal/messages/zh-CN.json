@@ -332,8 +332,16 @@
     },
     "sections": {
       "productDetails": "产品详情",
+      "productImage": "产品图片",
       "inventoryPricing": "库存与定价",
       "customerPricing": "客户特定价格（可选）"
+    },
+    "image": {
+      "uploadTitle": "点击上传",
+      "uploadSubtitle": "支持PNG、JPG格式，最大2MB",
+      "change": "更换",
+      "remove": "删除",
+      "uploading": "上传中..."
     },
     "fields": {
       "sku": "货号",

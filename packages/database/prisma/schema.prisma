@@ -141,6 +141,7 @@ model Product {
   lowStockThreshold   Float?
   status              ProductStatus       @default(active)
   xeroItemId          String?
+  imageUrl            String?             // R2 public URL for product image
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 

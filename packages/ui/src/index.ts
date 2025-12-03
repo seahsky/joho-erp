@@ -18,6 +18,7 @@ export * from './components/toast';
 export * from './components/toaster';
 export * from './components/use-toast';
 export * from './components/image-upload';
+export * from './components/product-image-upload';
 
 // Mobile Components
 export * from './components/mobile';
