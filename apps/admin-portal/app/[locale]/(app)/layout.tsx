@@ -1,5 +1,6 @@
 import { AdminLayoutWrapper } from '@/components/admin-layout-wrapper';
 import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import type { SerializableUser } from '@/types/user';
 
 export default async function AppLayout({
@@ -13,18 +14,21 @@ export default async function AppLayout({
   // Fetch current user data from Clerk
   const clerkUser = await currentUser();
 
+  // Redirect unauthenticated users to landing page
+  if (!clerkUser) {
+    redirect(`/${locale}`);
+  }
+
   // Serialize Clerk User to plain object for Client Components
   // This prevents "Only plain objects can be passed to Client Components" error
-  const user: SerializableUser = clerkUser
-    ? {
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
-        emailAddress:
-          clerkUser.primaryEmailAddress?.emailAddress ||
-          clerkUser.emailAddresses?.[0]?.emailAddress ||
-          null,
-      }
-    : null;
+  const user: SerializableUser = {
+    firstName: clerkUser.firstName,
+    lastName: clerkUser.lastName,
+    emailAddress:
+      clerkUser.primaryEmailAddress?.emailAddress ||
+      clerkUser.emailAddresses?.[0]?.emailAddress ||
+      null,
+  };
 
   return (
     <AdminLayoutWrapper locale={locale} user={user}>
