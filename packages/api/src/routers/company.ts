@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, isAdminOrSales } from '../trpc';
 import { prisma } from '@jimmy-beef/database';
 import { TRPCError } from '@trpc/server';
+import * as xeroService from '../services/xero';
 
 export const companyRouter = router({
   /**
@@ -176,13 +177,48 @@ export const companyRouter = router({
       });
     }
 
-    // TODO: Implement actual Xero API connection test
-    // For now, just return success if settings exist
+    // Test the actual Xero connection
+    const result = await xeroService.testConnection();
+
     return {
-      success: true,
-      message: 'Xero connection test successful',
-      connected: true,
+      success: result.success,
+      message: result.message,
+      connected: result.success,
+      tenantName: result.tenantName,
     };
+  }),
+
+  /**
+   * Get Xero connection status
+   */
+  getXeroStatus: isAdminOrSales.query(async () => {
+    const status = await xeroService.getConnectionStatus();
+
+    return {
+      connected: status.connected,
+      tenantId: status.tenantId,
+      tokenExpiry: status.tokenExpiry,
+      needsRefresh: status.needsRefresh,
+    };
+  }),
+
+  /**
+   * Disconnect from Xero
+   */
+  disconnectXero: isAdminOrSales.mutation(async () => {
+    try {
+      await xeroService.disconnect();
+
+      return {
+        success: true,
+        message: 'Successfully disconnected from Xero',
+      };
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to disconnect from Xero',
+      });
+    }
   }),
 
   /**

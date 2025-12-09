@@ -515,6 +515,7 @@ type XeroSettings {
   tenantId            String?
   refreshToken        String?
   tokenExpiry         DateTime?
+  accessToken         String?
 }
 
 type DirectorDetails {
