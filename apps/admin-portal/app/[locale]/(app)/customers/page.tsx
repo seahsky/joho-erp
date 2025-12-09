@@ -47,6 +47,7 @@ type Customer = {
 
 export default function CustomersPage() {
   const t = useTranslations('customers');
+  const tCommon = useTranslations('common');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, error } = api.customer.getAll.useQuery({
@@ -109,7 +110,7 @@ export default function CustomersPage() {
     },
     {
       key: 'status',
-      label: t('common.status', { ns: 'common' }),
+      label: tCommon('status'),
       render: (customer) => <StatusBadge status={customer.status} />,
     },
     {
@@ -132,7 +133,7 @@ export default function CustomersPage() {
     },
     {
       key: 'actions',
-      label: t('common.actions', { ns: 'common' }),
+      label: tCommon('actions'),
       className: 'text-right',
       render: (customer) => (
         <div className="flex justify-end gap-2">

@@ -38,6 +38,8 @@ type Product = {
 
 export default function ProductsPage() {
   const t = useTranslations('products');
+  const tCommon = useTranslations('common');
+  const tProductForm = useTranslations('productForm');
   const tStock = useTranslations('stockAdjustment');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -139,7 +141,7 @@ export default function ProductsPage() {
     },
     {
       key: 'status',
-      label: t('common.status', { ns: 'common' }),
+      label: tCommon('status'),
       render: (product) => (
         <Badge className={getStatusColor(product.status)}>
           {String(product.status).replace(/_/g, ' ')}
@@ -148,7 +150,7 @@ export default function ProductsPage() {
     },
     {
       key: 'actions',
-      label: t('common.actions', { ns: 'common' }),
+      label: tCommon('actions'),
       className: 'text-right',
       render: (product) => (
         <div className="flex justify-end gap-2">
@@ -240,7 +242,7 @@ export default function ProductsPage() {
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="mr-2 h-4 w-4" />
-          {t('productForm.buttons.addProduct', { ns: 'productForm' })}
+          {tProductForm('buttons.addProduct')}
         </Button>
       </div>
 

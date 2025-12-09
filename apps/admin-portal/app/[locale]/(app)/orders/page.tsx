@@ -59,6 +59,7 @@ type Order = {
 
 export default function OrdersPage() {
   const t = useTranslations('orders');
+  const tCommon = useTranslations('common');
   const tAlert = useTranslations('orders.backorderAlert');
   const tMessages = useTranslations('orders.backorderMessages');
   const router = useRouter();
@@ -244,7 +245,7 @@ export default function OrdersPage() {
     },
     {
       key: 'actions',
-      label: t('common.actions', { ns: 'common' }),
+      label: tCommon('actions'),
       className: 'text-right',
       render: (order) => (
         <div className="flex justify-end gap-2">
@@ -257,7 +258,7 @@ export default function OrdersPage() {
               {t('backorder.reviewBackorder')}
             </Button>
           )}
-          <Button variant="ghost" size="sm" aria-label={t('common.view', { ns: 'common' })}>
+          <Button variant="ghost" size="sm" aria-label={tCommon('view')}>
             <Eye className="h-4 w-4" />
           </Button>
         </div>
