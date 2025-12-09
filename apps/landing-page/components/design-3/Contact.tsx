@@ -1,7 +1,7 @@
 'use client'
 
 import { ScrollReveal } from '../shared/ScrollReveal'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { useState } from 'react'
 
 export function OrganicContact() {

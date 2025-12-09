@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { ScrollReveal, StaggerContainer, StaggerItem } from '../shared/ScrollReveal'
 import Image from 'next/image'
 
