@@ -8,10 +8,11 @@ import { Card, CardDescription, CardHeader, CardTitle, LanguageSwitcher } from '
 export const dynamic = 'force-dynamic';
 
 export default async function Home({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   console.log('[Home Page] Component starting with locale:', locale);
 
   let user, t;

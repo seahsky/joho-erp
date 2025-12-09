@@ -1,7 +1,7 @@
 'use client'
 
 import { ScrollReveal, StaggerContainer, StaggerItem } from '../shared/ScrollReveal'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 
 const certifications = [
   { code: 'HACCP', name: 'HACCP_CERTIFIED', status: 'VERIFIED', description: 'HAZARD ANALYSIS CRITICAL CONTROL POINTS' },

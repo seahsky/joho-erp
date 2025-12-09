@@ -399,10 +399,10 @@ export default function CreditReviewPage({ params }: PageProps) {
                   </div>
                   <Button
                     onClick={handleApprove}
-                    disabled={approveMutation.isLoading}
+                    disabled={approveMutation.isPending}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
-                    {approveMutation.isLoading ? t('buttons.approving') : t('buttons.approve')}
+                    {approveMutation.isPending ? t('buttons.approving') : t('buttons.approve')}
                   </Button>
                 </div>
               </Card>
@@ -426,11 +426,11 @@ export default function CreditReviewPage({ params }: PageProps) {
                   </div>
                   <Button
                     onClick={handleReject}
-                    disabled={rejectMutation.isLoading}
+                    disabled={rejectMutation.isPending}
                     variant="destructive"
                     className="w-full"
                   >
-                    {rejectMutation.isLoading ? t('buttons.rejecting') : t('buttons.reject')}
+                    {rejectMutation.isPending ? t('buttons.rejecting') : t('buttons.reject')}
                   </Button>
                 </div>
               </Card>

@@ -4,11 +4,12 @@ import type { SerializableUser } from '@/types/user';
 
 export default async function AppLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   // Fetch current user data from Clerk
   const clerkUser = await currentUser();
 
