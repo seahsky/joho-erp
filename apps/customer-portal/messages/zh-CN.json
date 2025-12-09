@@ -1,10 +1,15 @@
 {
+  "metadata": {
+    "title": "客户门户 - Jimmy Beef",
+    "description": "为您的企业订购优质肉品"
+  },
   "navigation": {
     "home": "首页",
     "products": "产品",
     "myOrders": "我的订单",
     "profile": "个人资料",
-    "cart": "购物车"
+    "cart": "购物车",
+    "tagline": "优质批发"
   },
   "common": {
     "loading": "加载中...",
@@ -76,6 +81,8 @@
     "perUnit": "每{unit}",
     "unitsAvailable": "{count}{unit} 可用",
     "noProductsFound": "未找到产品",
+    "emptyWithCategory": "尝试选择其他类别或清除筛选条件。",
+    "emptyWithSearch": "尝试调整您的搜索词。",
     "allProducts": "全部产品",
     "filterByCategory": "按类别筛选",
     "clearFilters": "清除筛选",
@@ -257,6 +264,176 @@
       "approved": "此缺货订单已获批准，一旦有库存即将发货。",
       "rejected": "此缺货订单已被拒绝。请联系我们了解更多信息。",
       "partialApproval": "此订单已部分批准。部分商品将使用可用库存发货。"
+    }
+  },
+  "onboarding": {
+    "progress": {
+      "step": "第 {current} 步，共 {total} 步"
+    },
+    "messages": {
+      "success": "信用申请已成功提交！",
+      "error": "提交申请失败，请重试。",
+      "notAuthenticated": "您必须登录才能完成此申请。",
+      "mustAgreeToTerms": "您必须同意条款和条件。"
+    },
+    "businessInfo": {
+      "title": "企业信息",
+      "description": "告诉我们关于您的企业",
+      "fields": {
+        "accountType": "账户类型",
+        "accountTypePlaceholder": "选择账户类型",
+        "businessName": "注册企业名称",
+        "tradingName": "商号（如不同）",
+        "abn": "澳洲商业号码 (ABN)",
+        "acn": "澳洲公司号码 (ACN)",
+        "firstName": "名字",
+        "lastName": "姓氏",
+        "email": "电子邮件",
+        "phone": "电话",
+        "mobile": "手机",
+        "street": "街道地址",
+        "suburb": "市郊",
+        "state": "州",
+        "postcode": "邮递区号",
+        "areaTag": "配送区域",
+        "areaTagPlaceholder": "选择配送区域",
+        "deliveryInstructions": "配送说明",
+        "requestedCreditLimit": "申请信用额度 ($)",
+        "forecastPurchase": "预计采购额（未来3个月）"
+      },
+      "sections": {
+        "contactPerson": "联系人",
+        "deliveryAddress": "配送地址",
+        "creditRequest": "信用申请"
+      },
+      "accountTypes": {
+        "soleTrader": "个体经营者",
+        "partnership": "合伙企业",
+        "company": "公司",
+        "other": "其他"
+      },
+      "areaTags": {
+        "north": "北区",
+        "south": "南区",
+        "east": "东区",
+        "west": "西区"
+      },
+      "validation": {
+        "accountTypeRequired": "账户类型为必填项",
+        "businessNameRequired": "企业名称为必填项",
+        "abnInvalid": "ABN 必须为 11 位数字",
+        "acnInvalid": "ACN 必须为 9 位数字",
+        "firstNameRequired": "名字为必填项",
+        "lastNameRequired": "姓氏为必填项",
+        "emailRequired": "电子邮件为必填项",
+        "phoneRequired": "电话为必填项",
+        "streetRequired": "街道地址为必填项",
+        "suburbRequired": "市郊为必填项",
+        "stateRequired": "州为必填项",
+        "postcodeInvalid": "邮递区号必须为 4 位数字",
+        "areaTagRequired": "配送区域为必填项"
+      },
+      "buttons": {
+        "next": "下一步"
+      }
+    },
+    "directors": {
+      "title": "董事/业主详情",
+      "description": "请提供至少一位董事或业主的详细信息",
+      "directorNumber": "董事 #{number}",
+      "fields": {
+        "familyName": "姓氏",
+        "givenNames": "名字",
+        "dateOfBirth": "出生日期",
+        "position": "职位",
+        "street": "街道地址",
+        "suburb": "市郊",
+        "state": "州",
+        "postcode": "邮递区号",
+        "driverLicenseNumber": "驾照号码",
+        "licenseState": "驾照签发州",
+        "licenseExpiry": "驾照有效期"
+      },
+      "sections": {
+        "residentialAddress": "住宅地址"
+      },
+      "validation": {
+        "allFieldsRequired": "所有董事信息字段均为必填项"
+      },
+      "buttons": {
+        "addDirector": "添加另一位董事",
+        "remove": "删除",
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "financial": {
+      "title": "财务信息",
+      "description": "请提供您的企业银行账户信息",
+      "fields": {
+        "bankName": "银行名称",
+        "accountName": "账户名称",
+        "bsb": "银行识别码 (BSB)",
+        "accountNumber": "账户号码"
+      },
+      "placeholders": {
+        "bankName": "例如：Commonwealth Bank",
+        "accountName": "账户持有人姓名",
+        "accountNumber": "例如：12345678"
+      },
+      "validation": {
+        "allFieldsRequired": "所有财务字段均为必填项，BSB 必须为 6 位数字"
+      },
+      "buttons": {
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "tradeReferences": {
+      "title": "贸易推荐人",
+      "description": "添加贸易推荐人（可选但建议提供）",
+      "noReferences": "尚未添加贸易推荐人",
+      "referenceNumber": "推荐人 #{number}",
+      "fields": {
+        "companyName": "公司名称",
+        "contactPerson": "联系人",
+        "phone": "电话",
+        "email": "电子邮件"
+      },
+      "buttons": {
+        "addFirst": "添加贸易推荐人",
+        "addAnother": "添加另一位推荐人",
+        "remove": "删除",
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "review": {
+      "title": "审核并提交",
+      "description": "请在提交前审核您的申请",
+      "sections": {
+        "businessInfo": "企业信息",
+        "directors": "董事/业主",
+        "financialInfo": "财务信息",
+        "tradeReferences": "贸易推荐人"
+      },
+      "fields": {
+        "accountType": "账户类型",
+        "businessName": "企业名称",
+        "abn": "ABN",
+        "acn": "ACN",
+        "bankName": "银行",
+        "accountName": "账户名称",
+        "bsb": "BSB"
+      },
+      "noPosition": "未指定职位",
+      "termsAgreement": "我同意条款和条件，并确认所提供的所有信息真实准确。",
+      "termsLink": "条款和条件",
+      "buttons": {
+        "back": "返回",
+        "submit": "提交申请",
+        "submitting": "提交中..."
+      }
     }
   }
 }

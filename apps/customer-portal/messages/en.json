@@ -1,10 +1,15 @@
 {
+  "metadata": {
+    "title": "Customer Portal - Jimmy Beef",
+    "description": "Order premium meat products for your business"
+  },
   "navigation": {
     "home": "Home",
     "products": "Products",
     "myOrders": "My Orders",
     "profile": "Profile",
-    "cart": "Cart"
+    "cart": "Cart",
+    "tagline": "Premium Wholesale"
   },
   "common": {
     "loading": "Loading...",
@@ -76,6 +81,8 @@
     "perUnit": "per {unit}",
     "unitsAvailable": "{count}{unit} available",
     "noProductsFound": "No products found",
+    "emptyWithCategory": "Try selecting a different category or clear your filters.",
+    "emptyWithSearch": "Try adjusting your search terms.",
     "allProducts": "All Products",
     "filterByCategory": "Filter by Category",
     "clearFilters": "Clear Filters",

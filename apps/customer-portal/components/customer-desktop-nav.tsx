@@ -78,7 +78,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                   Jimmy Beef
                 </span>
                 <span className="text-xs tracking-wider uppercase text-neutral-500 font-medium">
-                  Premium Wholesale
+                  {t('tagline')}
                 </span>
               </div>
             </Link>

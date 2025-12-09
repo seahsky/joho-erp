@@ -1,10 +1,15 @@
 {
+  "metadata": {
+    "title": "客戶門戶 - Jimmy Beef",
+    "description": "為您的企業訂購優質肉品"
+  },
   "navigation": {
     "home": "首頁",
     "products": "產品",
     "myOrders": "我的訂單",
     "profile": "個人資料",
-    "cart": "購物車"
+    "cart": "購物車",
+    "tagline": "優質批發"
   },
   "common": {
     "loading": "載入中...",
@@ -76,6 +81,8 @@
     "perUnit": "每{unit}",
     "unitsAvailable": "{count}{unit} 可用",
     "noProductsFound": "未找到產品",
+    "emptyWithCategory": "嘗試選擇其他類別或清除篩選條件。",
+    "emptyWithSearch": "嘗試調整您的搜尋詞。",
     "allProducts": "全部產品",
     "filterByCategory": "按類別篩選",
     "clearFilters": "清除篩選",
@@ -257,6 +264,176 @@
       "approved": "此缺貨訂單已獲批准，一旦有庫存即將發貨。",
       "rejected": "此缺貨訂單已被拒絕。請聯絡我們了解更多資訊。",
       "partialApproval": "此訂單已部分批准。部分商品將使用可用庫存發貨。"
+    }
+  },
+  "onboarding": {
+    "progress": {
+      "step": "第 {current} 步，共 {total} 步"
+    },
+    "messages": {
+      "success": "信用申請已成功提交！",
+      "error": "提交申請失敗，請重試。",
+      "notAuthenticated": "您必須登入才能完成此申請。",
+      "mustAgreeToTerms": "您必須同意條款和條件。"
+    },
+    "businessInfo": {
+      "title": "企業資訊",
+      "description": "告訴我們關於您的企業",
+      "fields": {
+        "accountType": "帳戶類型",
+        "accountTypePlaceholder": "選擇帳戶類型",
+        "businessName": "註冊企業名稱",
+        "tradingName": "商號（如不同）",
+        "abn": "澳洲商業號碼 (ABN)",
+        "acn": "澳洲公司號碼 (ACN)",
+        "firstName": "名字",
+        "lastName": "姓氏",
+        "email": "電子郵件",
+        "phone": "電話",
+        "mobile": "手機",
+        "street": "街道地址",
+        "suburb": "市郊",
+        "state": "州",
+        "postcode": "郵遞區號",
+        "areaTag": "配送區域",
+        "areaTagPlaceholder": "選擇配送區域",
+        "deliveryInstructions": "配送說明",
+        "requestedCreditLimit": "申請信用額度 ($)",
+        "forecastPurchase": "預計採購額（未來3個月）"
+      },
+      "sections": {
+        "contactPerson": "聯絡人",
+        "deliveryAddress": "配送地址",
+        "creditRequest": "信用申請"
+      },
+      "accountTypes": {
+        "soleTrader": "獨資經營者",
+        "partnership": "合夥企業",
+        "company": "公司",
+        "other": "其他"
+      },
+      "areaTags": {
+        "north": "北區",
+        "south": "南區",
+        "east": "東區",
+        "west": "西區"
+      },
+      "validation": {
+        "accountTypeRequired": "帳戶類型為必填項",
+        "businessNameRequired": "企業名稱為必填項",
+        "abnInvalid": "ABN 必須為 11 位數字",
+        "acnInvalid": "ACN 必須為 9 位數字",
+        "firstNameRequired": "名字為必填項",
+        "lastNameRequired": "姓氏為必填項",
+        "emailRequired": "電子郵件為必填項",
+        "phoneRequired": "電話為必填項",
+        "streetRequired": "街道地址為必填項",
+        "suburbRequired": "市郊為必填項",
+        "stateRequired": "州為必填項",
+        "postcodeInvalid": "郵遞區號必須為 4 位數字",
+        "areaTagRequired": "配送區域為必填項"
+      },
+      "buttons": {
+        "next": "下一步"
+      }
+    },
+    "directors": {
+      "title": "董事/業主詳情",
+      "description": "請提供至少一位董事或業主的詳細資訊",
+      "directorNumber": "董事 #{number}",
+      "fields": {
+        "familyName": "姓氏",
+        "givenNames": "名字",
+        "dateOfBirth": "出生日期",
+        "position": "職位",
+        "street": "街道地址",
+        "suburb": "市郊",
+        "state": "州",
+        "postcode": "郵遞區號",
+        "driverLicenseNumber": "駕照號碼",
+        "licenseState": "駕照簽發州",
+        "licenseExpiry": "駕照有效期"
+      },
+      "sections": {
+        "residentialAddress": "住宅地址"
+      },
+      "validation": {
+        "allFieldsRequired": "所有董事資訊欄位均為必填項"
+      },
+      "buttons": {
+        "addDirector": "新增另一位董事",
+        "remove": "刪除",
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "financial": {
+      "title": "財務資訊",
+      "description": "請提供您的企業銀行帳戶資訊",
+      "fields": {
+        "bankName": "銀行名稱",
+        "accountName": "帳戶名稱",
+        "bsb": "銀行識別碼 (BSB)",
+        "accountNumber": "帳戶號碼"
+      },
+      "placeholders": {
+        "bankName": "例如：Commonwealth Bank",
+        "accountName": "帳戶持有人姓名",
+        "accountNumber": "例如：12345678"
+      },
+      "validation": {
+        "allFieldsRequired": "所有財務欄位均為必填項，BSB 必須為 6 位數字"
+      },
+      "buttons": {
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "tradeReferences": {
+      "title": "貿易推薦人",
+      "description": "新增貿易推薦人（選填但建議提供）",
+      "noReferences": "尚未新增貿易推薦人",
+      "referenceNumber": "推薦人 #{number}",
+      "fields": {
+        "companyName": "公司名稱",
+        "contactPerson": "聯絡人",
+        "phone": "電話",
+        "email": "電子郵件"
+      },
+      "buttons": {
+        "addFirst": "新增貿易推薦人",
+        "addAnother": "新增另一位推薦人",
+        "remove": "刪除",
+        "back": "返回",
+        "next": "下一步"
+      }
+    },
+    "review": {
+      "title": "審核並提交",
+      "description": "請在提交前審核您的申請",
+      "sections": {
+        "businessInfo": "企業資訊",
+        "directors": "董事/業主",
+        "financialInfo": "財務資訊",
+        "tradeReferences": "貿易推薦人"
+      },
+      "fields": {
+        "accountType": "帳戶類型",
+        "businessName": "企業名稱",
+        "abn": "ABN",
+        "acn": "ACN",
+        "bankName": "銀行",
+        "accountName": "帳戶名稱",
+        "bsb": "BSB"
+      },
+      "noPosition": "未指定職位",
+      "termsAgreement": "我同意條款和條件，並確認所提供的所有資訊真實準確。",
+      "termsLink": "條款和條件",
+      "buttons": {
+        "back": "返回",
+        "submit": "提交申請",
+        "submitting": "提交中..."
+      }
     }
   }
 }

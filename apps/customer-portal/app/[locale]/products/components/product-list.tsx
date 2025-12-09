@@ -310,7 +310,7 @@ export function ProductList() {
           <Package className="h-20 w-20 mx-auto text-muted-foreground/50 mb-4" />
           <H4 className="text-xl font-semibold mb-2">{t('products.noProductsFound')}</H4>
           <Muted className="text-sm mb-6">
-            {selectedCategory ? 'Try selecting a different category or clear your filters.' : 'Try adjusting your search terms.'}
+            {selectedCategory ? t('products.emptyWithCategory') : t('products.emptyWithSearch')}
           </Muted>
           {selectedCategory && (
             <Button
