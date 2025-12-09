@@ -1,7 +1,7 @@
 'use client'
 
 import { useDesign, DesignTheme } from './DesignContext'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { useState } from 'react'
 
 const designs: { id: DesignTheme; label: string; icon: string }[] = [

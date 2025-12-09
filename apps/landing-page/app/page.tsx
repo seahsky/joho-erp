@@ -5,7 +5,7 @@ import { DesignSwitcher } from '@/components/shared/DesignSwitcher'
 import { EditorialDesign } from '@/components/design-1'
 import { IndustrialDesign } from '@/components/design-2'
 import { OrganicDesign } from '@/components/design-3'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 
 function LandingPageContent() {
   const { theme } = useDesign()

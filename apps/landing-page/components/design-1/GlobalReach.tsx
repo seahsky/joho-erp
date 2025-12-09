@@ -1,7 +1,7 @@
 'use client'
 
 import { ScrollReveal } from '../shared/ScrollReveal'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { useCountUp } from '@/hooks/useScrollReveal'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 

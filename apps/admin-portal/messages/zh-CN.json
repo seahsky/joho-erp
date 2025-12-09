@@ -1164,5 +1164,8 @@
       "cutoffDescription": "在此时间之后下的订单将安排次日配送",
       "clickMap": "点击地图上的任意位置设置仓库位置"
     }
+  },
+  "landing": {
+    "subtitle": "您的牛肉配送完整ERP解决方案"
   }
 }

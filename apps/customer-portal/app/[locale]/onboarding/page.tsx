@@ -195,7 +195,7 @@ export default function OnboardingPage() {
             onAgreementChange={setAgreedToTerms}
             onSubmit={handleSubmit}
             onBack={() => setCurrentStep('references')}
-            isSubmitting={registerMutation.isLoading}
+            isSubmitting={registerMutation.isPending}
           />
         )}
       </div>

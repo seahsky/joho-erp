@@ -1163,5 +1163,8 @@
       "cutoffDescription": "Orders placed after this time will be scheduled for next-day delivery",
       "clickMap": "Click anywhere on the map to set warehouse location"
     }
+  },
+  "landing": {
+    "subtitle": "Your complete ERP solution for beef distribution"
   }
 }
