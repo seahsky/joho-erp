@@ -4,6 +4,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "prisma generate",
     "type-check": "tsc --noEmit",
     "seed": "tsx src/seed.ts",
     "prisma:generate": "prisma generate",
