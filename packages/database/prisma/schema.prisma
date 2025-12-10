@@ -123,6 +123,19 @@ enum SystemLogLevel {
   debug
 }
 
+enum XeroSyncJobType {
+  sync_contact
+  create_invoice
+  create_credit_note
+}
+
+enum XeroSyncJobStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -375,6 +388,30 @@ model SuburbAreaMapping {
   @@map("suburbareamappings")
 }
 
+// Xero Sync Job Model
+model XeroSyncJob {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  type                XeroSyncJobType
+  status              XeroSyncJobStatus   @default(pending)
+  entityType          String              // 'customer' | 'order'
+  entityId            String              @db.ObjectId
+  payload             Json?
+  attempts            Int                 @default(0)
+  maxAttempts         Int                 @default(3)
+  lastAttemptAt       DateTime?
+  nextAttemptAt       DateTime?
+  error               String?
+  result              Json?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  completedAt         DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([entityType, entityId])
+  @@index([type, status])
+  @@map("xerosyncjobs")
+}
+
 // Route Optimization Model
 model RouteOptimization {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
@@ -490,8 +527,11 @@ type XeroInfo {
   invoiceId           String?
   invoiceNumber       String?
   invoiceStatus       String?
+  creditNoteId        String?
+  creditNoteNumber    String?
   syncedAt            DateTime?
   syncError           String?
+  lastSyncJobId       String?
 }
 
 type CompanyAddress {

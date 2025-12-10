@@ -428,3 +428,455 @@ export async function xeroApiRequest<T>(
 
   return response.json();
 }
+
+// ============================================================================
+// Xero API Types
+// ============================================================================
+
+/**
+ * Xero Contact structure
+ */
+export interface XeroContact {
+  ContactID?: string;
+  Name: string;
+  FirstName?: string;
+  LastName?: string;
+  EmailAddress?: string;
+  Phones?: Array<{
+    PhoneType: 'DEFAULT' | 'DDI' | 'MOBILE' | 'FAX';
+    PhoneNumber: string;
+  }>;
+  Addresses?: Array<{
+    AddressType: 'POBOX' | 'STREET' | 'DELIVERY';
+    AddressLine1?: string;
+    City?: string;
+    Region?: string;
+    PostalCode?: string;
+    Country?: string;
+  }>;
+  IsCustomer: boolean;
+  DefaultCurrency?: string;
+  PaymentTerms?: {
+    Sales?: {
+      Day: number;
+      Type: 'DAYSAFTERBILLDATE' | 'DAYSAFTERBILLMONTH' | 'OFCURRENTMONTH' | 'OFFOLLOWINGMONTH';
+    };
+  };
+}
+
+export interface XeroContactsResponse {
+  Contacts: XeroContact[];
+}
+
+/**
+ * Xero Invoice line item
+ */
+export interface XeroLineItem {
+  Description: string;
+  Quantity: number;
+  UnitAmount: number; // In dollars (Xero uses decimal)
+  AccountCode: string;
+  TaxType: string;
+  ItemCode?: string; // Optional SKU reference
+}
+
+/**
+ * Xero Invoice structure
+ */
+export interface XeroInvoice {
+  InvoiceID?: string;
+  InvoiceNumber?: string;
+  Type: 'ACCREC' | 'ACCPAY';
+  Contact: { ContactID: string };
+  LineItems: XeroLineItem[];
+  Date: string; // YYYY-MM-DD
+  DueDate: string; // YYYY-MM-DD
+  Status: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED';
+  CurrencyCode: string;
+  Reference?: string;
+  LineAmountTypes: 'Exclusive' | 'Inclusive' | 'NoTax';
+}
+
+export interface XeroInvoicesResponse {
+  Invoices: XeroInvoice[];
+}
+
+/**
+ * Xero Credit Note structure
+ */
+export interface XeroCreditNote {
+  CreditNoteID?: string;
+  CreditNoteNumber?: string;
+  Type: 'ACCRECCREDIT' | 'ACCPAYCREDIT';
+  Contact: { ContactID: string };
+  LineItems: XeroLineItem[];
+  Date: string;
+  Status: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED';
+  CurrencyCode: string;
+  Reference?: string;
+  LineAmountTypes: 'Exclusive' | 'Inclusive' | 'NoTax';
+}
+
+export interface XeroCreditNotesResponse {
+  CreditNotes: XeroCreditNote[];
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Format a date for Xero API (YYYY-MM-DD)
+ */
+export function formatXeroDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Parse payment terms to extract number of days
+ * Handles formats like "Net 30", "30 days", "Net 14", etc.
+ */
+export function parsePaymentTerms(terms: string | null | undefined): number | null {
+  if (!terms) return null;
+  const match = terms.match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
+ * Get the Xero sales account code from environment or default
+ */
+function getXeroSalesAccountCode(): string {
+  return process.env.XERO_SALES_ACCOUNT_CODE || '200';
+}
+
+// ============================================================================
+// Customer Type (for sync functions)
+// ============================================================================
+
+interface CustomerForXeroSync {
+  id: string;
+  businessName: string;
+  xeroContactId?: string | null;
+  contactPerson: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    mobile?: string | null;
+  };
+  deliveryAddress: {
+    street: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  };
+  billingAddress?: {
+    street: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  } | null;
+  creditApplication: {
+    paymentTerms?: string | null;
+  };
+}
+
+interface OrderItemForXeroSync {
+  productId: string;
+  sku: string;
+  productName: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number; // In cents
+  subtotal: number; // In cents
+}
+
+interface OrderForXeroSync {
+  id: string;
+  orderNumber: string;
+  items: OrderItemForXeroSync[];
+  subtotal: number; // In cents
+  taxAmount: number; // In cents
+  totalAmount: number; // In cents
+  xero?: {
+    invoiceId?: string | null;
+    invoiceNumber?: string | null;
+    invoiceStatus?: string | null;
+  } | null;
+  delivery?: {
+    deliveredAt?: Date | null;
+  } | null;
+}
+
+// ============================================================================
+// Contact Sync
+// ============================================================================
+
+/**
+ * Map a customer to Xero Contact format
+ */
+function mapCustomerToXeroContact(customer: CustomerForXeroSync): XeroContact {
+  const contact = customer.contactPerson;
+  const deliveryAddr = customer.deliveryAddress;
+  const billingAddr = customer.billingAddress || customer.deliveryAddress;
+
+  // Parse payment terms (e.g., "Net 30" -> 30 days)
+  const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms);
+
+  const phones: XeroContact['Phones'] = [
+    { PhoneType: 'DEFAULT', PhoneNumber: contact.phone },
+  ];
+
+  if (contact.mobile) {
+    phones.push({ PhoneType: 'MOBILE', PhoneNumber: contact.mobile });
+  }
+
+  return {
+    Name: customer.businessName,
+    FirstName: contact.firstName,
+    LastName: contact.lastName,
+    EmailAddress: contact.email,
+    Phones: phones,
+    Addresses: [
+      {
+        AddressType: 'STREET',
+        AddressLine1: deliveryAddr.street,
+        City: deliveryAddr.suburb,
+        Region: deliveryAddr.state,
+        PostalCode: deliveryAddr.postcode,
+        Country: 'Australia',
+      },
+      {
+        AddressType: 'POBOX',
+        AddressLine1: billingAddr.street,
+        City: billingAddr.suburb,
+        Region: billingAddr.state,
+        PostalCode: billingAddr.postcode,
+        Country: 'Australia',
+      },
+    ],
+    IsCustomer: true,
+    DefaultCurrency: 'AUD',
+    PaymentTerms: paymentDays
+      ? {
+          Sales: {
+            Day: paymentDays,
+            Type: 'DAYSAFTERBILLDATE',
+          },
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Sync a customer to Xero as a Contact
+ * Creates a new contact or updates an existing one
+ */
+export async function syncContactToXero(customer: CustomerForXeroSync): Promise<{
+  success: boolean;
+  contactId?: string;
+  error?: string;
+}> {
+  try {
+    const contactPayload = mapCustomerToXeroContact(customer);
+
+    if (customer.xeroContactId) {
+      // Update existing contact
+      const response = await xeroApiRequest<XeroContactsResponse>(
+        `/Contacts/${customer.xeroContactId}`,
+        { method: 'POST', body: { Contacts: [contactPayload] } }
+      );
+      return { success: true, contactId: response.Contacts[0].ContactID };
+    }
+
+    // Create new contact
+    const response = await xeroApiRequest<XeroContactsResponse>('/Contacts', {
+      method: 'POST',
+      body: { Contacts: [contactPayload] },
+    });
+
+    return { success: true, contactId: response.Contacts[0].ContactID };
+  } catch (error) {
+    console.error('Failed to sync contact to Xero:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync contact',
+    };
+  }
+}
+
+// ============================================================================
+// Invoice Creation
+// ============================================================================
+
+/**
+ * Create an invoice in Xero from an order
+ */
+export async function createInvoiceInXero(
+  order: OrderForXeroSync,
+  customer: CustomerForXeroSync
+): Promise<{
+  success: boolean;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  error?: string;
+}> {
+  try {
+    if (!customer.xeroContactId) {
+      return { success: false, error: 'Customer not synced to Xero' };
+    }
+
+    // Check for duplicate invoice
+    if (order.xero?.invoiceId) {
+      return { success: false, error: 'Invoice already exists for this order' };
+    }
+
+    // Calculate due date from payment terms
+    const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms) || 30;
+    const invoiceDate = order.delivery?.deliveredAt || new Date();
+    const dueDate = new Date(invoiceDate);
+    dueDate.setDate(dueDate.getDate() + paymentDays);
+
+    // Map order items to Xero line items
+    const lineItems: XeroLineItem[] = order.items.map((item) => ({
+      Description: `${item.productName} (${item.sku})`,
+      Quantity: item.quantity,
+      UnitAmount: item.unitPrice / 100, // Convert cents to dollars
+      AccountCode: getXeroSalesAccountCode(),
+      TaxType: 'OUTPUT', // 10% GST for Australian sales
+      ItemCode: item.sku,
+    }));
+
+    const invoice: XeroInvoice = {
+      Type: 'ACCREC',
+      Contact: { ContactID: customer.xeroContactId },
+      LineItems: lineItems,
+      Date: formatXeroDate(invoiceDate),
+      DueDate: formatXeroDate(dueDate),
+      Status: 'AUTHORISED', // Auto-approve invoices
+      CurrencyCode: 'AUD',
+      Reference: order.orderNumber,
+      LineAmountTypes: 'Exclusive', // Prices exclude GST, GST added
+    };
+
+    const response = await xeroApiRequest<XeroInvoicesResponse>('/Invoices', {
+      method: 'POST',
+      body: { Invoices: [invoice] },
+    });
+
+    const createdInvoice = response.Invoices[0];
+    return {
+      success: true,
+      invoiceId: createdInvoice.InvoiceID,
+      invoiceNumber: createdInvoice.InvoiceNumber,
+    };
+  } catch (error) {
+    console.error('Failed to create invoice in Xero:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create invoice',
+    };
+  }
+}
+
+// ============================================================================
+// Credit Note Creation
+// ============================================================================
+
+/**
+ * Allocate a credit note to an invoice in Xero
+ */
+async function allocateCreditNoteToInvoice(
+  creditNoteId: string,
+  invoiceId: string,
+  amount: number // In dollars
+): Promise<void> {
+  await xeroApiRequest(`/CreditNotes/${creditNoteId}/Allocations`, {
+    method: 'PUT',
+    body: {
+      Allocations: [
+        {
+          Invoice: { InvoiceID: invoiceId },
+          Amount: amount,
+          Date: formatXeroDate(new Date()),
+        },
+      ],
+    },
+  });
+}
+
+/**
+ * Create a credit note in Xero for a cancelled order
+ */
+export async function createCreditNoteInXero(
+  order: OrderForXeroSync,
+  customer: CustomerForXeroSync
+): Promise<{
+  success: boolean;
+  creditNoteId?: string;
+  creditNoteNumber?: string;
+  error?: string;
+}> {
+  try {
+    if (!customer.xeroContactId) {
+      return { success: false, error: 'Customer not synced to Xero' };
+    }
+
+    if (!order.xero?.invoiceId) {
+      return { success: false, error: 'Order has no invoice to credit' };
+    }
+
+    // Map order items to credit note line items
+    const lineItems: XeroLineItem[] = order.items.map((item) => ({
+      Description: `Credit: ${item.productName} (${item.sku})`,
+      Quantity: item.quantity,
+      UnitAmount: item.unitPrice / 100, // Convert cents to dollars
+      AccountCode: getXeroSalesAccountCode(),
+      TaxType: 'OUTPUT',
+    }));
+
+    const creditNote: XeroCreditNote = {
+      Type: 'ACCRECCREDIT',
+      Contact: { ContactID: customer.xeroContactId },
+      LineItems: lineItems,
+      Date: formatXeroDate(new Date()),
+      Status: 'AUTHORISED',
+      CurrencyCode: 'AUD',
+      Reference: `Credit for Order ${order.orderNumber}`,
+      LineAmountTypes: 'Exclusive',
+    };
+
+    const response = await xeroApiRequest<XeroCreditNotesResponse>('/CreditNotes', {
+      method: 'POST',
+      body: { CreditNotes: [creditNote] },
+    });
+
+    const createdCreditNote = response.CreditNotes[0];
+
+    // Allocate credit note to original invoice
+    if (createdCreditNote.CreditNoteID && order.xero.invoiceId) {
+      try {
+        await allocateCreditNoteToInvoice(
+          createdCreditNote.CreditNoteID,
+          order.xero.invoiceId,
+          order.totalAmount / 100 // Convert cents to dollars
+        );
+      } catch (allocError) {
+        console.error('Failed to allocate credit note to invoice:', allocError);
+        // Continue even if allocation fails - credit note is still created
+      }
+    }
+
+    return {
+      success: true,
+      creditNoteId: createdCreditNote.CreditNoteID,
+      creditNoteNumber: createdCreditNote.CreditNoteNumber,
+    };
+  } catch (error) {
+    console.error('Failed to create credit note in Xero:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create credit note',
+    };
+  }
+}
