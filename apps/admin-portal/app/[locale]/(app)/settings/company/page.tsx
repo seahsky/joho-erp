@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { api } from '@/trpc/client';
 import {
   Card,
@@ -372,7 +373,14 @@ export default function CompanySettingsPage() {
             <div className="flex items-center gap-4">
               {logoUrl && (
                 <div className="w-24 h-24 border-2 border-border rounded-lg flex items-center justify-center overflow-hidden">
-                  <img src={logoUrl} alt="Company Logo" className="w-full h-full object-contain" />
+                  <Image
+                    src={logoUrl}
+                    alt="Company Logo"
+                    className="w-full h-full object-contain"
+                    width={96}
+                    height={96}
+                    unoptimized
+                  />
                 </div>
               )}
               <div className="flex-1 space-y-2">
