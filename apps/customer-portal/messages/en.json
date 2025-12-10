@@ -236,6 +236,10 @@
       "notAuthenticated": "You must be signed in to complete this application.",
       "mustAgreeToTerms": "You must agree to the terms and conditions."
     },
+    "applicationPdf": {
+      "viewPrint": "View/Print Application",
+      "ariaLabel": "View or print credit application form (opens in new tab)"
+    },
     "businessInfo": {
       "title": "Business Information",
       "description": "Tell us about your business",

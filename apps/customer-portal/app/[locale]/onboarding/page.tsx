@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
+import { FileText } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { BusinessInfoStep } from './components/business-info-step';
 import { DirectorsStep } from './components/directors-step';
@@ -147,6 +148,22 @@ export default function OnboardingPage() {
           />
         </div>
       </div>
+
+      {/* Application PDF Link */}
+      {process.env.NEXT_PUBLIC_APPLICATION_PDF_URL && (
+        <div className="mb-6 flex justify-center">
+          <a
+            href={process.env.NEXT_PUBLIC_APPLICATION_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+            aria-label={t('applicationPdf.ariaLabel')}
+          >
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            {t('applicationPdf.viewPrint')}
+          </a>
+        </div>
+      )}
 
       {/* Step Content */}
       <div className="rounded-lg border bg-white p-6 shadow-sm">

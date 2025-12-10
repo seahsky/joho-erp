@@ -276,6 +276,10 @@
       "notAuthenticated": "您必須登入才能完成此申請。",
       "mustAgreeToTerms": "您必須同意條款和條件。"
     },
+    "applicationPdf": {
+      "viewPrint": "檢視/列印申請表",
+      "ariaLabel": "檢視或列印信用申請表（在新分頁中開啟）"
+    },
     "businessInfo": {
       "title": "企業資訊",
       "description": "告訴我們關於您的企業",
