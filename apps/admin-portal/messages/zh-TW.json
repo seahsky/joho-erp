@@ -1168,5 +1168,67 @@
   },
   "landing": {
     "subtitle": "您的牛肉配送完整ERP解決方案"
+  },
+  "xeroSync": {
+    "title": "Xero 同步",
+    "subtitle": "監控和管理 Xero 發票同步",
+    "loading": "載入中...",
+    "stats": {
+      "pending": "待處理任務",
+      "failed": "失敗任務",
+      "completedToday": "今日完成"
+    },
+    "jobs": {
+      "title": "同步任務",
+      "description": "檢視和管理所有 Xero 同步任務",
+      "type": "類型",
+      "entity": "實體",
+      "status": "狀態",
+      "created": "建立時間",
+      "error": "錯誤",
+      "actions": "操作",
+      "empty": "未找到同步任務",
+      "page": "第 {page} 頁，共 {total} 頁",
+      "previous": "上一頁",
+      "next": "下一頁"
+    },
+    "filter": {
+      "allStatus": "所有狀態",
+      "allTypes": "所有類型"
+    },
+    "status": {
+      "pending": "待處理",
+      "processing": "處理中",
+      "completed": "已完成",
+      "failed": "失敗"
+    },
+    "type": {
+      "syncContact": "同步聯絡人",
+      "createInvoice": "建立發票",
+      "createCreditNote": "建立貸項通知單"
+    },
+    "retrySuccess": "任務已加入重試佇列",
+    "retrySuccessDescription": "同步任務將很快處理",
+    "retryError": "重試任務失敗",
+    "invoiceQueued": "發票建立已排隊",
+    "invoiceQueuedDescription": "發票將很快在 Xero 中建立",
+    "invoiceError": "發票建立排隊失敗",
+    "contactQueued": "聯絡人同步已排隊",
+    "contactQueuedDescription": "客戶將很快同步到 Xero",
+    "contactError": "聯絡人同步排隊失敗",
+    "awaitingDelivery": "等待配送",
+    "awaitingDeliveryHint": "訂單配送後將建立發票",
+    "awaitingApproval": "等待審批",
+    "awaitingApprovalHint": "信用審批後將同步客戶",
+    "syncFailed": "同步失敗",
+    "credited": "已貸記",
+    "invoiced": "已開票",
+    "synced": "已同步",
+    "notSynced": "未同步",
+    "invoice": "發票",
+    "creditNote": "貸項通知單",
+    "createInvoice": "建立發票",
+    "syncContact": "同步聯絡人",
+    "xeroContact": "Xero 聯絡人"
   }
 }

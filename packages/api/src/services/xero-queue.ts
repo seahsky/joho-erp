@@ -35,7 +35,7 @@ export async function enqueueXeroJob(
       type: type as XeroSyncJobType,
       entityType,
       entityId,
-      payload: payload || null,
+      payload: payload ? JSON.parse(JSON.stringify(payload)) : undefined,
       status: 'pending' as XeroSyncJobStatus,
       nextAttemptAt: new Date(),
     },
@@ -108,7 +108,7 @@ async function processJob(job: XeroSyncJob): Promise<void> {
         where: { id: job.id },
         data: {
           status: 'completed',
-          result: result as Record<string, unknown>,
+          result: JSON.parse(JSON.stringify(result)),
           completedAt: new Date(),
           error: null,
         },

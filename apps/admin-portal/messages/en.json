@@ -1167,5 +1167,67 @@
   },
   "landing": {
     "subtitle": "Your complete ERP solution for beef distribution"
+  },
+  "xeroSync": {
+    "title": "Xero Sync",
+    "subtitle": "Monitor and manage Xero invoice synchronization",
+    "loading": "Loading...",
+    "stats": {
+      "pending": "Pending Jobs",
+      "failed": "Failed Jobs",
+      "completedToday": "Completed Today"
+    },
+    "jobs": {
+      "title": "Sync Jobs",
+      "description": "View and manage all Xero sync jobs",
+      "type": "Type",
+      "entity": "Entity",
+      "status": "Status",
+      "created": "Created",
+      "error": "Error",
+      "actions": "Actions",
+      "empty": "No sync jobs found",
+      "page": "Page {page} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "filter": {
+      "allStatus": "All Status",
+      "allTypes": "All Types"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "type": {
+      "syncContact": "Sync Contact",
+      "createInvoice": "Create Invoice",
+      "createCreditNote": "Create Credit Note"
+    },
+    "retrySuccess": "Job queued for retry",
+    "retrySuccessDescription": "The sync job will be processed shortly",
+    "retryError": "Failed to retry job",
+    "invoiceQueued": "Invoice creation queued",
+    "invoiceQueuedDescription": "The invoice will be created in Xero shortly",
+    "invoiceError": "Failed to queue invoice creation",
+    "contactQueued": "Contact sync queued",
+    "contactQueuedDescription": "The customer will be synced to Xero shortly",
+    "contactError": "Failed to queue contact sync",
+    "awaitingDelivery": "Awaiting Delivery",
+    "awaitingDeliveryHint": "Invoice will be created when order is delivered",
+    "awaitingApproval": "Awaiting Approval",
+    "awaitingApprovalHint": "Customer will be synced when credit is approved",
+    "syncFailed": "Sync Failed",
+    "credited": "Credited",
+    "invoiced": "Invoiced",
+    "synced": "Synced",
+    "notSynced": "Not Synced",
+    "invoice": "Invoice",
+    "creditNote": "Credit Note",
+    "createInvoice": "Create Invoice",
+    "syncContact": "Sync Contact",
+    "xeroContact": "Xero Contact"
   }
 }
