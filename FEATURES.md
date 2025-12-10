@@ -18,7 +18,7 @@ joho-foods-erp/
 
 ## 🎯 Completed Features
 
-### 1. Database Layer (@joho-foods/database)
+### 1. Database Layer (@joho-erp/database)
 
 **9 MongoDB Collections** with complete TypeScript types:
 
@@ -32,7 +32,7 @@ joho-foods-erp/
 - **SuburbAreaMapping**: Delivery zone management
 - **SystemLog**: Application logging
 
-### 2. API Layer (@joho-foods/api)
+### 2. API Layer (@joho-erp/api)
 
 **Type-Safe tRPC Procedures**:
 
@@ -64,7 +64,7 @@ joho-foods-erp/
 - Admin-only procedures
 - Role-specific middleware (sales, packer, driver, manager)
 
-### 3. Shared Package (@joho-foods/shared)
+### 3. Shared Package (@joho-erp/shared)
 
 **TypeScript Types**:
 - User roles (customer, admin, sales, packer, driver, manager)
@@ -88,7 +88,7 @@ joho-foods-erp/
 - Order cutoff time checking
 - Stock status determination
 
-### 4. UI Component Library (@joho-foods/ui)
+### 4. UI Component Library (@joho-erp/ui)
 
 **shadcn-Inspired Components**:
 - **Button**: Multiple variants (default, destructive, outline, ghost, link) and sizes
@@ -361,7 +361,7 @@ mapStyle="mapbox://styles/mapbox/streets-v12"
 
 ### Using the Components
 ```typescript
-import { Button, Card, Badge } from '@joho-foods/ui';
+import { Button, Card, Badge } from '@joho-erp/ui';
 
 <Card>
   <CardHeader>
