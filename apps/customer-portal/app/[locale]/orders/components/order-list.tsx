@@ -3,11 +3,11 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@jimmy-beef/ui';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@joho-erp/ui';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
-import { useToast } from '@jimmy-beef/ui';
+import { formatCurrency } from '@joho-erp/shared';
+import { useToast } from '@joho-erp/ui';
 import { OrderDetailsModal } from './order-details-modal';
 import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 

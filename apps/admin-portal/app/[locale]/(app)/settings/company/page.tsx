@@ -12,7 +12,7 @@ import {
   Input,
   Label,
   useToast,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Building2, Save, Loader2, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Card, CardContent, CardHeader, H3, Badge } from '@jimmy-beef/ui';
+import { Button, Card, CardContent, CardHeader, H3, Badge } from '@joho-erp/ui';
 import { AlertTriangle, ShoppingCart } from 'lucide-react';
-import { formatAUD } from '@jimmy-beef/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useRouter } from 'next/navigation';
 
 interface CartSummaryProps {

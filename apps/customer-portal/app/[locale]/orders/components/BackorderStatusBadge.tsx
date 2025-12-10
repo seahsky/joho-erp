@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@jimmy-beef/ui';
+import { Badge } from '@joho-erp/ui';
 import { Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

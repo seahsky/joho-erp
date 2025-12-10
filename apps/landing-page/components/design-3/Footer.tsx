@@ -20,7 +20,7 @@ export function OrganicFooter() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl">🥩</span>
-              <h3 className="font-fraunces text-2xl">Jimmy Beef</h3>
+              <h3 className="font-fraunces text-2xl">Joho Foods</h3>
             </div>
             <p className="font-nunito text-white/70 max-w-sm leading-relaxed">
               Premium beef, pork, and chicken from family farms.
@@ -83,7 +83,7 @@ export function OrganicFooter() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-nunito text-sm text-white/50">
-            © {new Date().getFullYear()} Jimmy Beef. All rights reserved.
+            © {new Date().getFullYear()} Joho Foods. All rights reserved.
           </p>
           <div className="flex items-center gap-2 font-nunito text-sm text-white/50">
             <span>Made with</span>

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../button';
-import { useLocalStorage } from '@jimmy-beef/shared';
+import { useLocalStorage } from '@joho-erp/shared';
 
 export interface DesktopSidebarProps {
   children: React.ReactNode | ((collapsed: boolean) => React.ReactNode);

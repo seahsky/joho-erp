@@ -1,6 +1,6 @@
 import { prisma } from './prisma';
 import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState } from './generated/prisma';
-import { createMoney, multiplyMoney, addMoney, toCents } from '@jimmy-beef/shared';
+import { createMoney, multiplyMoney, addMoney, toCents } from '@joho-erp/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
 // Melbourne suburbs with coordinates and area tags

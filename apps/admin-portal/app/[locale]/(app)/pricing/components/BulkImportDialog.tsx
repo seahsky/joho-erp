@@ -8,11 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Loader2, Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { parseToCents } from '@jimmy-beef/shared';
+import { parseToCents } from '@joho-erp/shared';
 
 interface BulkImportDialogProps {
   open: boolean;

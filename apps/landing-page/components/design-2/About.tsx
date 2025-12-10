@@ -67,7 +67,7 @@ export function IndustrialAbout() {
 
             <ScrollReveal delay={0.3}>
               <p className="font-mono text-sm text-industrial-gray leading-relaxed">
-                Jimmy Beef operates a vertically integrated supply chain that ensures
+                Joho Foods operates a vertically integrated supply chain that ensures
                 quality control from source to delivery. Our systems are designed for
                 reliability, traceability, and efficiency — the cornerstones of modern
                 food service operations.

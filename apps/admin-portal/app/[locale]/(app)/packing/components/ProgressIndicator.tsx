@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@jimmy-beef/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
 

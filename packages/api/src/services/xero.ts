@@ -7,11 +7,11 @@
  * Environment variables required:
  * - XERO_CLIENT_ID: Xero OAuth Client ID
  * - XERO_CLIENT_SECRET: Xero OAuth Client Secret
- * - XERO_REDIRECT_URI: OAuth callback URL (e.g., https://admin.jimmybeef.com.au/api/xero/auth-callback)
+ * - XERO_REDIRECT_URI: OAuth callback URL (e.g., https://admin.johofoods.com/api/xero/auth-callback)
  * - XERO_SCOPES: Space-separated OAuth scopes (e.g., "accounting.transactions accounting.contacts")
  */
 
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import crypto from 'crypto';
 
 // Xero OAuth endpoints

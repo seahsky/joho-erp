@@ -39,7 +39,7 @@ export function EditorialContact() {
               </h2>
               <p className="font-dm text-lg text-editorial-charcoal/70 mt-6 leading-relaxed">
                 Whether you&apos;re a restaurant, hotel, retailer, or distributor,
-                we&apos;d love to discuss how Jimmy Beef can serve your needs.
+                we&apos;d love to discuss how Joho Foods can serve your needs.
               </p>
 
               {/* Contact info */}
@@ -52,7 +52,7 @@ export function EditorialContact() {
                   </div>
                   <div>
                     <p className="font-dm text-sm text-editorial-charcoal/50 uppercase tracking-wider">Email</p>
-                    <p className="font-cormorant text-xl text-editorial-charcoal">partners@jimmybeef.com</p>
+                    <p className="font-cormorant text-xl text-editorial-charcoal">partners@johofoods.com</p>
                   </div>
                 </div>
 

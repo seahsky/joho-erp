@@ -3,7 +3,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@jimmy-beef/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@joho-erp/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +58,7 @@ export default async function Home({
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Jimmy Beef</h1>
+            <h1 className="text-2xl font-bold">Joho Foods</h1>
           </div>
           <div className="flex gap-4 items-center">
             <LanguageSwitcher />

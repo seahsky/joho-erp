@@ -12,11 +12,11 @@ import {
   Skeleton,
   H3,
   Muted,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { ShoppingCart, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
-import { useToast } from '@jimmy-beef/ui';
+import { formatCurrency } from '@joho-erp/shared';
+import { useToast } from '@joho-erp/ui';
 
 export function OrderSummary() {
   const t = useTranslations('checkout');

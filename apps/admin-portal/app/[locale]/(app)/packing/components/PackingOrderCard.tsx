@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StatusBadge, type StatusType, useToast, Card, CardContent, Button } from '@jimmy-beef/ui';
+import { StatusBadge, type StatusType, useToast, Card, CardContent, Button } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Loader2, Send, StickyNote } from 'lucide-react';
 import { api } from '@/trpc/client';

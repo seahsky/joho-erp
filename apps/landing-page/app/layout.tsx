@@ -48,7 +48,7 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: 'Jimmy Beef | Premium Meat Supplier',
+  title: 'Joho Foods | Premium Meat Supplier',
   description: 'Your trusted partner for premium beef, pork, and chicken. Supplying quality meats to businesses worldwide.',
   keywords: ['meat supplier', 'beef', 'pork', 'chicken', 'B2B', 'wholesale meat', 'premium meat'],
 }

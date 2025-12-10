@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "客户门户 - Jimmy Beef",
+    "title": "客户门户 - Joho Foods",
     "description": "为您的企业订购优质肉品"
   },
   "navigation": {
@@ -33,13 +33,13 @@
     "placeOrder": "下订单"
   },
   "home": {
-    "title": "Jimmy Beef - 优质肉品经销商",
+    "title": "Joho Foods - 优质肉品经销商",
     "subtitle": "您值得信赖的优质肉品合作伙伴",
-    "heroTitle": "欢迎来到 Jimmy Beef",
+    "heroTitle": "欢迎来到 Joho Foods",
     "heroDescription": "新鲜配送至您企业的优质肉品",
     "getStarted": "开始使用",
     "features": {
-      "title": "为什么选择 Jimmy Beef？",
+      "title": "为什么选择 Joho Foods？",
       "quality": {
         "title": "优质品质",
         "description": "精心挑选和处理的最优质肉品"

@@ -1,13 +1,13 @@
-# Jimmy Beef ERP System
+# Joho Foods ERP System
 
-A dual-portal ERP system for Jimmy Beef, an Australian B2B meat distributor, built with Next.js, tRPC, and MongoDB.
+A dual-portal ERP system for Joho Foods, an Australian B2B meat distributor, built with Next.js, tRPC, and MongoDB.
 
 ## Project Structure
 
 This is a monorepo managed with npm workspaces and Turbo.
 
 ```
-jimmy-beef-erp/
+joho-foods-erp/
 ├── apps/
 │   ├── customer-portal/    # Customer-facing application (port 3000)
 │   └── admin-portal/        # Admin/operations application (port 3001)

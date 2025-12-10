@@ -16,13 +16,13 @@ import {
   Badge,
   CountUp,
   EmptyState,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Search, Package, Plus, Edit, Loader2, PackageX, PackagePlus } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
 import { useTranslations } from 'next-intl';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency } from '@joho-erp/shared';
 
 type Product = {
   id: string;

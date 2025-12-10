@@ -3,8 +3,8 @@
  * Business logic for calculating delivery routes and packing sequences
  */
 
-import { prisma } from "@jimmy-beef/database";
-import type { AreaTag } from "@jimmy-beef/database";
+import { prisma } from "@joho-erp/database";
+import type { AreaTag } from "@joho-erp/database";
 import {
   optimizeRoutesByArea,
   calculateArrivalTimes,

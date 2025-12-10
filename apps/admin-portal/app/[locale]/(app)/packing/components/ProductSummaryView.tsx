@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Card, CardContent } from '@jimmy-beef/ui';
+import { Badge, Card, CardContent } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Package2 } from 'lucide-react';
 

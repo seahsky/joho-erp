@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Card, CardContent, H4, Muted, useToast } from '@jimmy-beef/ui';
+import { Button, Card, CardContent, H4, Muted, useToast } from '@joho-erp/ui';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { formatAUD } from '@jimmy-beef/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 
 interface CartItemProps {

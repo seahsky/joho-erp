@@ -18,11 +18,11 @@ import {
   type StatusType,
   CountUp,
   EmptyState,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency } from '@joho-erp/shared';
 
 type Customer = {
   id: string;

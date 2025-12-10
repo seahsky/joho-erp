@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, isPacker } from "../trpc";
-import { prisma } from "@jimmy-beef/database";
+import { prisma } from "@joho-erp/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
 import {

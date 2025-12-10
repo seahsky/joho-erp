@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
   Badge,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Users, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

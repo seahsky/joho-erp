@@ -2,12 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, Small, CountUp, EmptyState, type StatusType } from '@jimmy-beef/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatusBadge, Skeleton, H1, Muted, Small, CountUp, EmptyState, type StatusType } from '@joho-erp/ui';
 import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency } from '@joho-erp/shared';
 
 export default function DashboardPage() {
   const t = useTranslations();

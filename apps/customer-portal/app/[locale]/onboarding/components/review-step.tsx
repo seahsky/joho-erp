@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Button } from '@jimmy-beef/ui';
+import { Button } from '@joho-erp/ui';
 import type { BusinessInfo, DirectorInfo, FinancialInfo, TradeReferenceInfo } from '../page';
 
 interface ReviewStepProps {

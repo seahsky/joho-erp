@@ -10,11 +10,11 @@ import {
   Button,
   Input,
   Label,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatAUD } from '@jimmy-beef/shared';
+import { formatAUD } from '@joho-erp/shared';
 import {
   ShoppingCart,
   Plus,
@@ -25,7 +25,7 @@ import {
   FileText,
   Shield,
 } from 'lucide-react';
-import { useToast } from '@jimmy-beef/ui';
+import { useToast } from '@joho-erp/ui';
 
 type OrderItem = {
   productId: string;

@@ -16,7 +16,7 @@ import {
   Badge,
   CountUp,
   EmptyState,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import {
   DollarSign,
   Plus,
@@ -28,7 +28,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency, formatDate } from '@jimmy-beef/shared';
+import { formatCurrency, formatDate } from '@joho-erp/shared';
 import { SetPriceDialog } from './components/SetPriceDialog';
 import { BulkImportDialog } from './components/BulkImportDialog';
 

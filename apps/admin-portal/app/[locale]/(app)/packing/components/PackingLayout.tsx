@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Package, ClipboardList } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription } from '@jimmy-beef/ui';
+import { Card, CardHeader, CardTitle, CardDescription } from '@joho-erp/ui';
 
 interface PackingLayoutProps {
   summaryPanel: ReactNode;

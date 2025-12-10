@@ -4,11 +4,11 @@ import * as React from 'react';
 import { AdminMobileDrawer } from './admin-mobile-drawer';
 import { AdminDesktopSidebar } from './admin-desktop-sidebar';
 import { TopNavigationBar } from './top-navigation-bar';
-import { MobileAppBar } from '@jimmy-beef/ui';
-import { useIsMobileOrTablet } from '@jimmy-beef/ui';
+import { MobileAppBar } from '@joho-erp/ui';
+import { useIsMobileOrTablet } from '@joho-erp/ui';
 import { UserButton } from '@clerk/nextjs';
 import { Bell } from 'lucide-react';
-import { Button } from '@jimmy-beef/ui';
+import { Button } from '@joho-erp/ui';
 import type { SerializableUser } from '@/types/user';
 
 export function AdminLayoutWrapper({

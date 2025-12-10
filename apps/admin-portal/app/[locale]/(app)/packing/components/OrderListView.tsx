@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Filter, Package2 } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
-import { Card, CardContent, Button } from '@jimmy-beef/ui';
+import { Card, CardContent, Button } from '@joho-erp/ui';
 
 interface OrderListViewProps {
   orders: Array<{

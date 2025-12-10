@@ -1,7 +1,7 @@
 /**
  * Money Utilities using dinero.js v2
  *
- * This module provides type-safe, currency-aware money operations for the Jimmy Beef ERP system.
+ * This module provides type-safe, currency-aware money operations for the Joho Foods ERP system.
  * All monetary values are stored as integers (cents) to avoid floating-point precision errors.
  *
  * @example

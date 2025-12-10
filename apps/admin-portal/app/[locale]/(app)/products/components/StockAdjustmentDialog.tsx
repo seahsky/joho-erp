@@ -11,7 +11,7 @@ import {
   Input,
   Label,
   Badge,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import {
   Loader2,
   Package,
@@ -21,7 +21,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { useToast } from '@jimmy-beef/ui';
+import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
 

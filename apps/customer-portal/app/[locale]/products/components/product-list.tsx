@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@jimmy-beef/ui';
+import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
 import { Package, Plus } from 'lucide-react';
 import { api } from '@/trpc/client';
-import type { ProductWithPricing, ProductCategory } from '@jimmy-beef/shared';
-import { formatAUD } from '@jimmy-beef/shared';
+import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategoryFilter } from './category-filter';
 

@@ -13,7 +13,7 @@ import {
   Label,
   useToast,
   Badge,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

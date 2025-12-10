@@ -23,7 +23,7 @@ import {
   Input,
   Label,
   useToast,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 
 export default function DeliverySettingsPage() {
   const { toast } = useToast();

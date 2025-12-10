@@ -1,6 +1,6 @@
 # **FUNCTIONAL SPECIFICATION DOCUMENT (FSD)**
 
-## **Jimmy Beef ERP System**
+## **Joho Foods ERP System**
 
 **Version:** 1.0
 **Date:** November 24, 2025
@@ -30,13 +30,13 @@
 
 ### **1.1 Purpose**
 
-This document describes how the Jimmy Beef ERP system works from a business perspective. It explains what users can do, how processes flow, and what rules govern the system's behavior. This document does not cover technical implementation details.
+This document describes how the Joho Foods ERP system works from a business perspective. It explains what users can do, how processes flow, and what rules govern the system's behavior. This document does not cover technical implementation details.
 
 ### **1.2 Scope**
 
 The system consists of two web portals:
 - **Customer Portal** - For business customers to browse products and place orders
-- **Admin Portal** - For Jimmy Beef staff to manage operations
+- **Admin Portal** - For Joho Foods staff to manage operations
 
 ### **1.3 Business Objectives**
 
@@ -53,7 +53,7 @@ The system consists of two web portals:
 
 ### **2.1 What the System Does**
 
-The Jimmy Beef ERP system manages the entire order-to-delivery workflow for a B2B meat distribution business in Australia:
+The Joho Foods ERP system manages the entire order-to-delivery workflow for a B2B meat distribution business in Australia:
 
 1. **Customers** register online, apply for credit terms, browse products with their negotiated pricing, and place orders
 2. **Sales/Admin staff** approve credit applications, manage customer accounts, and confirm orders
@@ -80,7 +80,7 @@ The Jimmy Beef ERP system manages the entire order-to-delivery workflow for a B2
 
 ### **3.1 Customer (External User)**
 
-**Who They Are:** Business buyers purchasing meat products from Jimmy Beef
+**Who They Are:** Business buyers purchasing meat products from Joho Foods
 
 **What They Can Do:**
 - Register for a new account and apply for credit terms
@@ -1716,7 +1716,7 @@ Jan 20: Customer calls to return entire order → Order cancelled
    - Provide contact information for questions
 
 4. **Professional:**
-   - Jimmy Beef branding
+   - Joho Foods branding
    - Consistent formatting
    - Proper grammar and spelling
 
@@ -1858,7 +1858,7 @@ Jan 20: Customer calls to return entire order → Order cancelled
 | **Stock Shortfall** | The difference between requested quantity and available stock that triggers a backorder |
 | **Suburb Area Mapping** | Database linking suburbs to delivery areas |
 | **Suspended Account** | Customer account temporarily disabled (cannot login or order) |
-| **Xero** | Cloud-based accounting software used by Jimmy Beef |
+| **Xero** | Cloud-based accounting software used by Joho Foods |
 
 ---
 

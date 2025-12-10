@@ -59,7 +59,7 @@ export function OrganicWhyUs() {
             <span>💚</span> Why Choose Us
           </span>
           <h2 className="font-fraunces text-4xl lg:text-5xl font-semibold text-organic-earth">
-            The Jimmy Beef <span className="text-organic-terracotta italic">Difference</span>
+            The Joho Foods <span className="text-organic-terracotta italic">Difference</span>
           </h2>
           <p className="font-nunito text-lg text-organic-earth/60 mt-4 max-w-2xl mx-auto">
             More than just a supplier — we&apos;re your partner in quality.
@@ -90,7 +90,7 @@ export function OrganicWhyUs() {
         <ScrollReveal className="mt-20">
           <div className="bg-organic-sage/10 rounded-3xl p-8 lg:p-12 text-center">
             <p className="font-fraunces text-xl lg:text-2xl text-organic-earth italic leading-relaxed max-w-3xl mx-auto">
-              &ldquo;Working with Jimmy Beef has transformed our menu. The quality is
+              &ldquo;Working with Joho Foods has transformed our menu. The quality is
               exceptional, and their team truly cares about our success.&rdquo;
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">

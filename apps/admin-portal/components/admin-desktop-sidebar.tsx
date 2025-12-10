@@ -8,7 +8,7 @@ import {
   DesktopSidebar,
   SidebarItem,
   SidebarSection,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Settings } from 'lucide-react';
 import { ADMIN_NAV_ITEMS } from '@/config/navigation';
 

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { H1, Muted } from '@jimmy-beef/ui';
+import { H1, Muted } from '@joho-erp/ui';
 import { OrderSummary } from './components/order-summary';
 
 export default function CheckoutPage() {

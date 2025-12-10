@@ -15,9 +15,9 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { formatAUD } from '@jimmy-beef/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { StockShortfallPanel, type StockShortfallItem } from './StockShortfallPanel';
 import { Loader2 } from 'lucide-react';
 

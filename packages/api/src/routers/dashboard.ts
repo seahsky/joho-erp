@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, isAdminOrSales } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 
 export const dashboardRouter = router({
   // Get dashboard statistics

@@ -18,11 +18,11 @@
     "noFallthroughCasesInSwitch": true,
     "incremental": true,
     "paths": {
-      "@jimmy-beef/api": ["./packages/api/src"],
-      "@jimmy-beef/database": ["./packages/database/src"],
-      "@jimmy-beef/email": ["./packages/email/src"],
-      "@jimmy-beef/shared": ["./packages/shared/src"],
-      "@jimmy-beef/ui": ["./packages/ui/src"]
+      "@joho-erp/api": ["./packages/api/src"],
+      "@joho-erp/database": ["./packages/database/src"],
+      "@joho-erp/email": ["./packages/email/src"],
+      "@joho-erp/shared": ["./packages/shared/src"],
+      "@joho-erp/ui": ["./packages/ui/src"]
     }
   },
   "include": [],

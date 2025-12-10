@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription } from '@jimmy-beef/ui';
+import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription } from '@joho-erp/ui';
 import { Package, Calendar, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';

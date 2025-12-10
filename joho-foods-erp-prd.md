@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 
-## Jimmy Beef ERP System
+## Joho Foods ERP System
 
 **Version:** 1.0  
 **Date:** November 13, 2025  
@@ -27,18 +27,18 @@
 
 ### 1.1 Purpose
 
-A dual-portal ERP system for Jimmy Beef, an Australian B2B meat distributor, enabling customers to place orders online and internal staff to manage operations, packing, and delivery logistics.
+A dual-portal ERP system for Joho Foods, an Australian B2B meat distributor, enabling customers to place orders online and internal staff to manage operations, packing, and delivery logistics.
 
 ### 1.2 System Components
 
-**Portal 1: Customer Portal** (`customer.jimmybeef.com.au`)
+**Portal 1: Customer Portal** (`customer.johofoods.com.au`)
 
 - Customer registration and authentication
 - Product catalog with customer-specific pricing
 - Order placement and tracking
 - Profile management
 
-**Portal 2: Admin Portal** (`admin.jimmybeef.com.au`)
+**Portal 2: Admin Portal** (`admin.johofoods.com.au`)
 
 - Company settings management
 - Customer and pricing administration
@@ -107,7 +107,7 @@ A dual-portal ERP system for Jimmy Beef, an Australian B2B meat distributor, ena
 ### 2.3 Project Structure
 
 ```
-jimmy-beef-erp/
+joho-foods-erp/
 ├── apps/
 │   ├── customer-portal/          # Customer-facing application
 │   │   ├── src/
@@ -3190,7 +3190,7 @@ delivery.returnOrder: protectedProcedure
 
 1. Admin clicks “Connect Xero” in Company Settings
 1. Redirect to Xero OAuth authorization URL
-1. User authorizes Jimmy Beef ERP
+1. User authorizes Joho Foods ERP
 1. Xero redirects back with authorization code
 1. Exchange code for access token and refresh token
 1. Store tokens (encrypted) in Company.xero
@@ -3791,8 +3791,8 @@ await clerk.users.updateUser(userId, {
 ```typescript
 // Environment variables
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=noreply@jimmybeef.com.au
-RESEND_ADMIN_EMAIL=admin@jimmybeef.com.au
+RESEND_FROM_EMAIL=noreply@johofoods.com.au
+RESEND_ADMIN_EMAIL=admin@johofoods.com.au
 ```
 
 **Email Templates:**
@@ -3974,7 +3974,7 @@ npm install xero-node
 // Environment variables
 XERO_CLIENT_ID=your_client_id
 XERO_CLIENT_SECRET=your_client_secret
-XERO_REDIRECT_URI=https://admin.jimmybeef.com.au/xero/callback
+XERO_REDIRECT_URI=https://admin.johofoods.com.au/xero/callback
 XERO_SCOPES=accounting.transactions accounting.contacts
 ```
 
@@ -4362,8 +4362,8 @@ async function uploadProofOfDelivery(file: File, orderId: string): Promise<strin
 
 **Infrastructure:**
 
-- **Customer Portal:** Vercel (customer.jimmybeef.com.au)
-- **Admin Portal:** Vercel (admin.jimmybeef.com.au)
+- **Customer Portal:** Vercel (customer.johofoods.com.au)
+- **Admin Portal:** Vercel (admin.johofoods.com.au)
 - **Database:** MongoDB Atlas (shared cluster or dedicated)
 - **File Storage:** Vercel Blob or AWS S3
 - **Email:** Resend
@@ -4382,12 +4382,12 @@ CLERK_SECRET_KEY=sk_...
 
 # Resend
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=noreply@jimmybeef.com.au
+RESEND_FROM_EMAIL=noreply@johofoods.com.au
 
 # Xero
 XERO_CLIENT_ID=...
 XERO_CLIENT_SECRET=...
-XERO_REDIRECT_URI=https://admin.jimmybeef.com.au/xero/callback
+XERO_REDIRECT_URI=https://admin.johofoods.com.au/xero/callback
 
 # Google Maps
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
@@ -4401,7 +4401,7 @@ AWS_REGION=ap-southeast-2
 AWS_S3_BUCKET=...
 
 # Application
-NEXT_PUBLIC_API_URL=https://api.jimmybeef.com.au
+NEXT_PUBLIC_API_URL=https://api.johofoods.com.au
 NODE_ENV=production
 ```
 

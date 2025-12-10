@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, H2, Muted, Skeleton, Card, CardContent, useToast } from '@jimmy-beef/ui';
+import { Button, H2, Muted, Skeleton, Card, CardContent, useToast } from '@joho-erp/ui';
 import { ShoppingCart, Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';

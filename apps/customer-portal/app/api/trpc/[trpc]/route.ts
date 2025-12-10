@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
-import { appRouter, createContext, type UserRole } from '@jimmy-beef/api';
+import { appRouter, createContext, type UserRole } from '@joho-erp/api';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
 const handler = async (req: Request) => {

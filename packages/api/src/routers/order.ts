@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@jimmy-beef/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
 import {
   sendBackorderSubmittedEmail,
   sendBackorderApprovedEmail,

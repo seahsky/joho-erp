@@ -9,8 +9,8 @@ export function generateStaticParams() {
 }
 
 export const metadata: Metadata = {
-  title: 'Admin Portal - Jimmy Beef ERP',
-  description: 'Administrative dashboard for Jimmy Beef operations',
+  title: 'Admin Portal - Joho Foods ERP',
+  description: 'Administrative dashboard for Joho Foods operations',
 };
 
 export default async function LocaleLayout({

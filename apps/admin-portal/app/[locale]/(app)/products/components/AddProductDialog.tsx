@@ -16,7 +16,7 @@ import {
   AccordionContent,
   Badge,
   ProductImageUpload,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import {
   Loader2,
   DollarSign,
@@ -28,9 +28,9 @@ import {
   Square,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency, parseToCents } from '@jimmy-beef/shared';
-import type { ProductCategory } from '@jimmy-beef/shared';
-import { useToast } from '@jimmy-beef/ui';
+import { formatCurrency, parseToCents } from '@joho-erp/shared';
+import type { ProductCategory } from '@joho-erp/shared';
+import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import imageCompression from 'browser-image-compression';
 

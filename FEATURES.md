@@ -1,11 +1,11 @@
-# Jimmy Beef ERP - Features & Implementation Guide
+# Joho Foods ERP - Features & Implementation Guide
 
 ## 📦 Architecture Overview
 
 This is a **full-stack TypeScript monorepo** built with modern technologies:
 
 ```
-jimmy-beef-erp/
+joho-foods-erp/
 ├── apps/
 │   ├── customer-portal/    # Port 3000 - Customer-facing application
 │   └── admin-portal/        # Port 3001 - Admin & operations
@@ -18,7 +18,7 @@ jimmy-beef-erp/
 
 ## 🎯 Completed Features
 
-### 1. Database Layer (@jimmy-beef/database)
+### 1. Database Layer (@joho-foods/database)
 
 **9 MongoDB Collections** with complete TypeScript types:
 
@@ -32,7 +32,7 @@ jimmy-beef-erp/
 - **SuburbAreaMapping**: Delivery zone management
 - **SystemLog**: Application logging
 
-### 2. API Layer (@jimmy-beef/api)
+### 2. API Layer (@joho-foods/api)
 
 **Type-Safe tRPC Procedures**:
 
@@ -64,7 +64,7 @@ jimmy-beef-erp/
 - Admin-only procedures
 - Role-specific middleware (sales, packer, driver, manager)
 
-### 3. Shared Package (@jimmy-beef/shared)
+### 3. Shared Package (@joho-foods/shared)
 
 **TypeScript Types**:
 - User roles (customer, admin, sales, packer, driver, manager)
@@ -88,7 +88,7 @@ jimmy-beef-erp/
 - Order cutoff time checking
 - Stock status determination
 
-### 4. UI Component Library (@jimmy-beef/ui)
+### 4. UI Component Library (@joho-foods/ui)
 
 **shadcn-Inspired Components**:
 - **Button**: Multiple variants (default, destructive, outline, ghost, link) and sizes
@@ -361,7 +361,7 @@ mapStyle="mapbox://styles/mapbox/streets-v12"
 
 ### Using the Components
 ```typescript
-import { Button, Card, Badge } from '@jimmy-beef/ui';
+import { Button, Card, Badge } from '@joho-foods/ui';
 
 <Card>
   <CardHeader>
@@ -440,7 +440,7 @@ import { Button, Card, Badge } from '@jimmy-beef/ui';
 
 ## 🎉 Summary
 
-This MVP delivers a **production-ready foundation** for the Jimmy Beef ERP system:
+This MVP delivers a **production-ready foundation** for the Joho Foods ERP system:
 
 - ✅ **Full-stack TypeScript** monorepo
 - ✅ **Type-safe API** with tRPC

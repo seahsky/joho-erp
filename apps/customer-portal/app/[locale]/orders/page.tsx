@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { OrderList } from './components/order-list';
-import { H2, Muted } from '@jimmy-beef/ui';
+import { H2, Muted } from '@joho-erp/ui';
 
 export const dynamic = 'force-dynamic';
 

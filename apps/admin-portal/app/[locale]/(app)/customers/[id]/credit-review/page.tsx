@@ -4,10 +4,10 @@ import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { Button, Card, Badge, Input, Label } from '@jimmy-beef/ui';
+import { Button, Card, Badge, Input, Label } from '@joho-erp/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { formatCurrency, formatDate, parseToCents } from '@jimmy-beef/shared';
+import { formatCurrency, formatDate, parseToCents } from '@joho-erp/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;

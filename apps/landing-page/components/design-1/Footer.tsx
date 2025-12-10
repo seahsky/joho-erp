@@ -9,7 +9,7 @@ export function EditorialFooter() {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <h3 className="font-cormorant text-3xl font-semibold">Jimmy Beef</h3>
+            <h3 className="font-cormorant text-3xl font-semibold">Joho Foods</h3>
             <p className="font-dm text-white/60 mt-4 max-w-sm">
               Your trusted partner for premium beef, pork, and chicken.
               Delivering quality worldwide since 2010.
@@ -66,7 +66,7 @@ export function EditorialFooter() {
         {/* Bottom bar */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-dm text-sm text-white/40">
-            © {new Date().getFullYear()} Jimmy Beef. All rights reserved.
+            © {new Date().getFullYear()} Joho Foods. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a href="#" className="font-dm text-xs text-white/40 hover:text-white/60 transition-colors">

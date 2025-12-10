@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Home, Package, ShoppingBag, User, ShoppingCart } from 'lucide-react';
-import { LanguageSwitcher, Badge } from '@jimmy-beef/ui';
+import { LanguageSwitcher, Badge } from '@joho-erp/ui';
 import { api } from '@/trpc/client';
 
 interface NavItem {
@@ -75,7 +75,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
 
               <div className="flex flex-col">
                 <span className="text-xl font-semibold tracking-tight text-neutral-900 group-hover:text-[hsl(0,67%,35%)] transition-colors duration-300">
-                  Jimmy Beef
+                  Joho Foods
                 </span>
                 <span className="text-xs tracking-wider uppercase text-neutral-500 font-medium">
                   {t('tagline')}

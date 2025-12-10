@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { paginatePrismaQuery } from '@jimmy-beef/shared';
+import { paginatePrismaQuery } from '@joho-erp/shared';
 import { sendCreditApprovedEmail, sendCreditRejectedEmail } from '../services/email';
 
 // Validation schemas for credit application

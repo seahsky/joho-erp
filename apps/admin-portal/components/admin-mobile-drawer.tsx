@@ -4,10 +4,10 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { MobileDrawer, DrawerItem, DrawerSection } from '@jimmy-beef/ui';
+import { MobileDrawer, DrawerItem, DrawerSection } from '@joho-erp/ui';
 import { Settings, User, Moon, Globe, LogOut } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
-import { formatUserName } from '@jimmy-beef/shared';
+import { formatUserName } from '@joho-erp/shared';
 import type { SerializableUser } from '@/types/user';
 import { ADMIN_NAV_ITEMS } from '@/config/navigation';
 

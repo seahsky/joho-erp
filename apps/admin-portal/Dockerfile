@@ -24,7 +24,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 # Generate Prisma Client with Linux binaries for Docker environment
 # This ensures the correct platform-specific query engine is included
-RUN pnpm --filter @jimmy-beef/database exec prisma generate
+RUN pnpm --filter @joho-erp/database exec prisma generate
 
 # Accept build arguments for NEXT_PUBLIC_* environment variables
 # These are embedded into the Next.js bundle at build time

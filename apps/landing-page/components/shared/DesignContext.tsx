@@ -17,7 +17,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
-    const saved = localStorage.getItem('jimmy-beef-design') as DesignTheme | null
+    const saved = localStorage.getItem('joho-foods-design') as DesignTheme | null
     if (saved && ['editorial', 'industrial', 'organic'].includes(saved)) {
       setTheme(saved)
     }
@@ -25,7 +25,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return
-    localStorage.setItem('jimmy-beef-design', theme)
+    localStorage.setItem('joho-foods-design', theme)
     document.body.className = `design-${theme}`
   }, [theme, mounted])
 

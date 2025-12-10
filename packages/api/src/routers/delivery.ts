@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, isAdminOrSales } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getRouteOptimization } from '../services/route-optimizer';
 

@@ -54,7 +54,7 @@ export function IndustrialContact() {
             {/* Contact data */}
             <div className="space-y-6">
               {[
-                { label: 'EMAIL', value: 'partners@jimmybeef.com', icon: '@' },
+                { label: 'EMAIL', value: 'partners@johofoods.com', icon: '@' },
                 { label: 'PHONE', value: '+61 3 9000 0000', icon: '#' },
                 { label: 'LOCATION', value: 'MELBOURNE, AUSTRALIA', icon: '◉' },
               ].map((item) => (

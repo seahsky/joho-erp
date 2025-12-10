@@ -18,12 +18,12 @@ import {
   CountUp,
   EmptyState,
   toast,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Search, ShoppingBag, Loader2, Eye, Package, PackageX, Plus, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency } from '@joho-erp/shared';
 import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
 

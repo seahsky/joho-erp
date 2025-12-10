@@ -15,7 +15,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { generateState, getAuthorizationUrl } from '@jimmy-beef/api/services/xero';
+import { generateState, getAuthorizationUrl } from '@joho-erp/api/services/xero';
 
 // State cookie configuration
 const STATE_COOKIE_NAME = 'xero_oauth_state';

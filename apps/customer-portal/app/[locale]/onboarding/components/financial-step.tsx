@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@jimmy-beef/ui';
+import { Button, Input, Label } from '@joho-erp/ui';
 import type { FinancialInfo } from '../page';
 
 interface FinancialStepProps {

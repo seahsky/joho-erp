@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import {
   Building2,
   Truck,

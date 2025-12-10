@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "Customer Portal - Jimmy Beef",
+    "title": "Customer Portal - Joho Foods",
     "description": "Order premium meat products for your business"
   },
   "navigation": {
@@ -33,13 +33,13 @@
     "placeOrder": "Place Order"
   },
   "home": {
-    "title": "Jimmy Beef - Quality Meat Distributor",
+    "title": "Joho Foods - Quality Meat Distributor",
     "subtitle": "Your trusted partner for premium meat products",
-    "heroTitle": "Welcome to Jimmy Beef",
+    "heroTitle": "Welcome to Joho Foods",
     "heroDescription": "Premium quality meat products delivered fresh to your business",
     "getStarted": "Get Started",
     "features": {
-      "title": "Why Choose Jimmy Beef?",
+      "title": "Why Choose Joho Foods?",
       "quality": {
         "title": "Premium Quality",
         "description": "Only the finest cuts of meat, carefully selected and processed"

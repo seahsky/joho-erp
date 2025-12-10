@@ -79,7 +79,7 @@ export function EditorialWhyUs() {
             Why Choose Us
           </span>
           <h2 className="font-cormorant text-5xl lg:text-6xl font-semibold text-editorial-charcoal mt-4">
-            The Jimmy Beef <span className="italic text-editorial-burgundy">Difference</span>
+            The Joho Foods <span className="italic text-editorial-burgundy">Difference</span>
           </h2>
           <p className="font-dm text-lg text-editorial-charcoal/60 mt-6">
             More than a supplier — we&apos;re your partner in culinary excellence.

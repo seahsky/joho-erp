@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@jimmy-beef/ui';
+import { Button, Input, Label } from '@joho-erp/ui';
 import type { DirectorInfo } from '../page';
 
 interface DirectorsStepProps {

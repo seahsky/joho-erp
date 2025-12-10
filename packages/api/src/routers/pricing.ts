@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@jimmy-beef/shared';
+import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@joho-erp/shared';
 
 export const pricingRouter = router({
   /**

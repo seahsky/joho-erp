@@ -47,7 +47,7 @@ export function EditorialAbout() {
           <div className="lg:col-span-7 space-y-8">
             <ScrollReveal delay={0.2}>
               <p className="font-cormorant text-3xl leading-relaxed text-editorial-charcoal">
-                For over fifteen years, <span className="text-editorial-burgundy">Jimmy Beef</span> has been
+                For over fifteen years, <span className="text-editorial-burgundy">Joho Foods</span> has been
                 the trusted partner for discerning culinary establishments across the globe.
               </p>
             </ScrollReveal>
@@ -64,7 +64,7 @@ export function EditorialAbout() {
             <ScrollReveal delay={0.4}>
               <p className="font-dm text-lg text-editorial-charcoal/70 leading-relaxed">
                 Our team of expert butchers brings generations of knowledge to every cut,
-                ensuring that when you partner with Jimmy Beef, you receive nothing less
+                ensuring that when you partner with Joho Foods, you receive nothing less
                 than excellence.
               </p>
             </ScrollReveal>
@@ -102,7 +102,7 @@ export function EditorialAbout() {
               and reliability that modern businesses demand.
             </blockquote>
             <cite className="font-dm text-sm tracking-wider uppercase text-editorial-burgundy mt-6 block not-italic">
-              — The Jimmy Beef Team
+              — The Joho Foods Team
             </cite>
           </div>
         </ScrollReveal>

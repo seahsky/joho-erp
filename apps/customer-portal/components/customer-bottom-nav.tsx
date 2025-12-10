@@ -1,7 +1,7 @@
 'use client';
 
 import { Home, Package, ShoppingCart, User, ShoppingBag } from 'lucide-react';
-import { BottomNavigation, type BottomNavItem } from '@jimmy-beef/ui';
+import { BottomNavigation, type BottomNavItem } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 

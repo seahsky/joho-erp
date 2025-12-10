@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { BottomSheet, Button, Badge } from '@jimmy-beef/ui';
+import { BottomSheet, Button, Badge } from '@joho-erp/ui';
 import { Filter, X, Check } from 'lucide-react';
-import { cn } from '@jimmy-beef/ui';
-import type { ProductCategory } from '@jimmy-beef/shared';
+import { cn } from '@joho-erp/ui';
+import type { ProductCategory } from '@joho-erp/shared';
 
 interface CategoryFilterProps {
   categories: ProductCategory[];

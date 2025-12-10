@@ -4,19 +4,19 @@
  * This service handles all email sending functionality using the Resend API.
  * Environment variables required:
  * - RESEND_API_KEY: Resend API key
- * - RESEND_FROM_EMAIL: From email address (e.g., noreply@jimmybeef.com.au)
+ * - RESEND_FROM_EMAIL: From email address (e.g., noreply@johofoods.com)
  * - RESEND_ADMIN_EMAIL: Admin email for notifications
  */
 
 import { Resend } from 'resend';
-import { formatAUD } from '@jimmy-beef/shared';
+import { formatAUD } from '@joho-erp/shared';
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Email configuration from environment variables
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@jimmybeef.com.au';
-const ADMIN_EMAIL = process.env.RESEND_ADMIN_EMAIL || 'admin@jimmybeef.com.au';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@johofoods.com';
+const ADMIN_EMAIL = process.env.RESEND_ADMIN_EMAIL || 'admin@johofoods.com';
 
 /**
  * Send a test email
@@ -31,10 +31,10 @@ export async function sendTestEmail(recipient: string): Promise<{ success: boole
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient,
-      subject: 'Test Email from Jimmy Beef ERP',
+      subject: 'Test Email from Joho Foods ERP',
       html: `
         <h1>Test Email</h1>
-        <p>This is a test email from the Jimmy Beef ERP system.</p>
+        <p>This is a test email from the Joho Foods ERP system.</p>
         <p>If you're receiving this, the email service is working correctly!</p>
       `,
     });
@@ -170,13 +170,13 @@ export async function sendBackorderSubmittedEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -330,13 +330,13 @@ export async function sendBackorderApprovedEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -467,13 +467,13 @@ export async function sendBackorderRejectedEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -632,13 +632,13 @@ export async function sendBackorderPartialApprovalEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -772,7 +772,7 @@ export async function sendBackorderAdminNotification(params: {
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -827,7 +827,7 @@ export async function sendCreditApprovedEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: customerEmail,
-      subject: 'Credit Application Approved - Jimmy Beef',
+      subject: 'Credit Application Approved - Joho Foods',
       html: `
         <!DOCTYPE html>
         <html>
@@ -886,13 +886,13 @@ export async function sendCreditApprovedEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -934,7 +934,7 @@ export async function sendCreditRejectedEmail(params: {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: customerEmail,
-      subject: 'Credit Application Update - Jimmy Beef',
+      subject: 'Credit Application Update - Joho Foods',
       html: `
         <!DOCTYPE html>
         <html>
@@ -980,13 +980,13 @@ export async function sendCreditRejectedEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Best regards,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>
@@ -1093,13 +1093,13 @@ export async function sendDriverUrgentCancellationEmail(params: {
 
                   <p style="margin: 20px 0 0 0; font-size: 16px;">
                     Thank you,<br/>
-                    <strong>Jimmy Beef Team</strong>
+                    <strong>Joho Foods Team</strong>
                   </p>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Jimmy Beef. All rights reserved.</p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>

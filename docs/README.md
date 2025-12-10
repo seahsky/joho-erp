@@ -1,4 +1,4 @@
-# Jimmy's Beef ERP - Documentation
+# Joho Foods ERP - Documentation
 
 ## Security Documentation
 

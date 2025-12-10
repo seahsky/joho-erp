@@ -25,7 +25,7 @@ import {
   exchangeCodeForTokens,
   getConnectedTenants,
   storeTokens,
-} from '@jimmy-beef/api/services/xero';
+} from '@joho-erp/api/services/xero';
 
 // State cookie name (must match connect route)
 const STATE_COOKIE_NAME = 'xero_oauth_state';

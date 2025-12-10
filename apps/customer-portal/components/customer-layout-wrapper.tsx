@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { CustomerBottomNav } from './customer-bottom-nav';
 import { CustomerDesktopNav } from './customer-desktop-nav';
-import { useIsMobileOrTablet } from '@jimmy-beef/ui';
+import { useIsMobileOrTablet } from '@joho-erp/ui';
 
 export function CustomerLayoutWrapper({
   children,

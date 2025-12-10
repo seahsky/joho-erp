@@ -265,13 +265,13 @@ This is a Next.js-based ERP system with the following structure:
 
 This project maintains two key specification documents:
 
-1. **PRD (Product Requirements Document)** - `jimmy-beef-erp-prd.md`
+1. **PRD (Product Requirements Document)** - `joho-foods-erp-prd.md`
    - Contains comprehensive technical requirements
    - Includes API specifications, data models, and technical architecture
    - May contain code snippets, TypeScript interfaces, and implementation details
    - Target audience: Developers, technical architects, and engineers
 
-2. **FSD (Functional Specification Document)** - `jimmy-beef-erp-fsd.md`
+2. **FSD (Functional Specification Document)** - `joho-foods-erp-fsd.md`
    - Contains business logic and functional requirements ONLY
    - Must be understandable by non-technical stakeholders
    - NO code snippets, technical jargon, or implementation details

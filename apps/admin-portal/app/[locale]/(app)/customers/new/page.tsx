@@ -12,11 +12,11 @@ import {
   Button,
   Input,
   Label,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
-import { parseToCents } from '@jimmy-beef/shared';
+import { parseToCents } from '@joho-erp/shared';
 
 // Type definitions
 type DirectorInfo = {

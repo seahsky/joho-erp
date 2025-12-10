@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
-import { prisma } from '@jimmy-beef/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import {
   createMoney,
@@ -11,7 +11,7 @@ import {
   ZERO_AUD,
   isGreaterThan,
   sumMoney,
-} from '@jimmy-beef/shared';
+} from '@joho-erp/shared';
 import { calculateAvailableCredit } from './order';
 
 /**

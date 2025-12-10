@@ -43,9 +43,9 @@ export function IndustrialHero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              JIMMY
+              JOHO
               <br />
-              <span className="text-industrial-red">BEEF</span>
+              <span className="text-industrial-red">FOODS</span>
             </motion.h1>
 
             <motion.p

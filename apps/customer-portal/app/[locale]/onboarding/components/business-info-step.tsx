@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@jimmy-beef/ui';
-import { parseToCents } from '@jimmy-beef/shared';
+import { Button, Input, Label } from '@joho-erp/ui';
+import { parseToCents } from '@joho-erp/shared';
 import type { BusinessInfo } from '../page';
 
 interface BusinessInfoStepProps {

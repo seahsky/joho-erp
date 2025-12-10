@@ -10,7 +10,7 @@ export function IndustrialFooter() {
           {/* Brand */}
           <div className="md:col-span-2">
             <h3 className="font-bebas text-4xl text-industrial-white">
-              JIMMY<span className="text-industrial-red">BEEF</span>
+              JOHO<span className="text-industrial-red">FOODS</span>
             </h3>
             <p className="font-mono text-xs text-industrial-gray mt-4 max-w-sm leading-relaxed">
               {'// PREMIUM MEAT SUPPLIER'}
@@ -71,7 +71,7 @@ export function IndustrialFooter() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-industrial-gray/20 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-mono text-xs text-industrial-gray">
-            © {new Date().getFullYear()} JIMMY_BEEF {'// ALL_RIGHTS_RESERVED'}
+            © {new Date().getFullYear()} JOHO_FOODS {'// ALL_RIGHTS_RESERVED'}
           </p>
           <div className="flex gap-6">
             <a href="#" className="font-mono text-xs text-industrial-gray hover:text-industrial-white transition-colors">

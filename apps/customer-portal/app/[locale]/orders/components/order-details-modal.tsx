@@ -14,10 +14,10 @@ import {
   Muted,
   StatusBadge,
   type StatusType,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { MapPin, Package, Info } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@jimmy-beef/shared';
+import { formatCurrency } from '@joho-erp/shared';
 import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 
 interface OrderItem {

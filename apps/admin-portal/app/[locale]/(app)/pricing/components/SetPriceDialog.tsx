@@ -10,11 +10,11 @@ import {
   Button,
   Input,
   Label,
-} from '@jimmy-beef/ui';
+} from '@joho-erp/ui';
 import { Loader2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatCurrency, parseToCents, formatCentsForInput } from '@jimmy-beef/shared';
+import { formatCurrency, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
 type Customer = {
   id: string;

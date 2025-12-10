@@ -75,7 +75,7 @@ export function OrganicAbout() {
 
             <ScrollReveal delay={0.3}>
               <p className="font-nunito text-lg text-organic-earth/70 leading-relaxed">
-                Jimmy Beef began with a simple belief: that better-tasting meat comes from
+                Joho Foods began with a simple belief: that better-tasting meat comes from
                 animals raised with care on open pastures. Today, we partner with over
                 50 family farms to bring you premium beef, pork, and chicken that you
                 can trust.
@@ -117,14 +117,14 @@ export function OrganicAbout() {
             </span>
             <blockquote className="font-fraunces text-xl lg:text-2xl text-organic-earth italic leading-relaxed">
               We believe that when you care for the land and the animals, the quality
-              speaks for itself. That&apos;s the Jimmy Beef promise.
+              speaks for itself. That&apos;s the Joho Foods promise.
             </blockquote>
             <div className="mt-6 flex items-center justify-center gap-3">
               <div className="w-12 h-12 rounded-full bg-organic-sage flex items-center justify-center text-white text-xl">
                 🌾
               </div>
               <cite className="font-nunito text-sm text-organic-earth/60 not-italic">
-                The Jimmy Beef Family
+                The Joho Foods Family
               </cite>
             </div>
           </div>

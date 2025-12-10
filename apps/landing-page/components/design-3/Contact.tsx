@@ -43,7 +43,7 @@ export function OrganicContact() {
             {/* Contact info */}
             <div className="space-y-6">
               {[
-                { icon: '📧', label: 'Email', value: 'partners@jimmybeef.com' },
+                { icon: '📧', label: 'Email', value: 'partners@johofoods.com' },
                 { icon: '📞', label: 'Phone', value: '+61 3 9000 0000' },
                 { icon: '📍', label: 'Location', value: 'Melbourne, Australia' },
               ].map((item) => (

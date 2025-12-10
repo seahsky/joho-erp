@@ -24,7 +24,7 @@ export function TopNavigationBar() {
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-base leading-tight tracking-tight text-foreground">
-                Jimmy Beef
+                Joho Foods
               </span>
               <span className="text-[10px] leading-tight text-muted-foreground uppercase tracking-wider font-medium">
                 Admin Portal

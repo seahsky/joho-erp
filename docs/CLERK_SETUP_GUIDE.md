@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to configure Clerk to support Role-Based Access Control (RBAC) in the Jimmy's Beef ERP system.
+This guide explains how to configure Clerk to support Role-Based Access Control (RBAC) in the Joho Foods ERP system.
 
 ## Initial Setup
 

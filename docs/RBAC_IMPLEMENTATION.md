@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the RBAC security implementation for the Jimmy's Beef ERP system. RBAC ensures that users can only access endpoints and data appropriate for their role.
+This document describes the RBAC security implementation for the Joho Foods ERP system. RBAC ensures that users can only access endpoints and data appropriate for their role.
 
 ## Role Hierarchy
 
