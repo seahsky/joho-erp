@@ -13,6 +13,7 @@
 
 import { prisma } from '@joho-erp/database';
 import crypto from 'crypto';
+import { encrypt, decrypt } from '../utils/encryption';
 
 // Xero OAuth endpoints
 const XERO_AUTH_URL = 'https://login.xero.com/identity/connect/authorize';
@@ -174,6 +175,7 @@ export async function getConnectedTenants(accessToken: string): Promise<XeroTena
 
 /**
  * Store OAuth tokens in the database
+ * Tokens are encrypted if XERO_TOKEN_ENCRYPTION_KEY is set
  */
 export async function storeTokens(
   accessToken: string,
@@ -195,6 +197,10 @@ export async function storeTokens(
     clientSecret?: string;
   } | null;
 
+  // Encrypt tokens before storage
+  const encryptedAccessToken = encrypt(accessToken);
+  const encryptedRefreshToken = encrypt(refreshToken);
+
   await prisma.company.update({
     where: { id: company.id },
     data: {
@@ -202,10 +208,9 @@ export async function storeTokens(
         clientId: existingSettings?.clientId || '',
         clientSecret: existingSettings?.clientSecret || '',
         tenantId: tenantId || null,
-        refreshToken: refreshToken,
+        refreshToken: encryptedRefreshToken,
         tokenExpiry: tokenExpiry,
-        // Store access token temporarily (consider encrypting in production)
-        accessToken: accessToken,
+        accessToken: encryptedAccessToken,
       },
     },
   });
@@ -213,6 +218,7 @@ export async function storeTokens(
 
 /**
  * Get stored tokens from the database
+ * Tokens are decrypted if encryption is enabled
  */
 export async function getStoredTokens(): Promise<{
   accessToken: string | null;
@@ -235,9 +241,13 @@ export async function getStoredTokens(): Promise<{
     tenantId?: string;
   };
 
+  // Decrypt tokens (handles unencrypted tokens for migration)
+  const accessToken = settings.accessToken ? decrypt(settings.accessToken) : null;
+  const refreshToken = settings.refreshToken ? decrypt(settings.refreshToken) : null;
+
   return {
-    accessToken: settings.accessToken || null,
-    refreshToken: settings.refreshToken || null,
+    accessToken,
+    refreshToken,
     tokenExpiry: settings.tokenExpiry ? new Date(settings.tokenExpiry) : null,
     tenantId: settings.tenantId || null,
   };
@@ -602,10 +612,97 @@ interface OrderForXeroSync {
     invoiceId?: string | null;
     invoiceNumber?: string | null;
     invoiceStatus?: string | null;
+    creditNoteId?: string | null;
+    creditNoteNumber?: string | null;
   } | null;
   delivery?: {
     deliveredAt?: Date | null;
   } | null;
+}
+
+// ============================================================================
+// Duplicate Detection Helpers
+// ============================================================================
+
+/**
+ * Search for an existing contact in Xero by email address
+ * Used for duplicate detection before creating new contacts
+ */
+async function findExistingContactByEmail(email: string): Promise<string | null> {
+  try {
+    // URL encode the email for the where clause
+    const whereClause = encodeURIComponent(`EmailAddress=="${email}"`);
+    const response = await xeroApiRequest<XeroContactsResponse>(
+      `/Contacts?where=${whereClause}`
+    );
+
+    if (response.Contacts && response.Contacts.length > 0) {
+      return response.Contacts[0].ContactID || null;
+    }
+    return null;
+  } catch {
+    // If search fails, return null and proceed with creation
+    // (Xero will return error if duplicate exists)
+    return null;
+  }
+}
+
+/**
+ * Search for an existing invoice in Xero by reference (order number)
+ * Used for duplicate detection before creating new invoices
+ */
+async function findExistingInvoiceByReference(reference: string): Promise<{
+  invoiceId: string;
+  invoiceNumber: string;
+  status: string;
+} | null> {
+  try {
+    const whereClause = encodeURIComponent(`Reference=="${reference}"`);
+    const response = await xeroApiRequest<XeroInvoicesResponse>(
+      `/Invoices?where=${whereClause}`
+    );
+
+    if (response.Invoices && response.Invoices.length > 0) {
+      const invoice = response.Invoices[0];
+      return {
+        invoiceId: invoice.InvoiceID || '',
+        invoiceNumber: invoice.InvoiceNumber || '',
+        status: invoice.Status,
+      };
+    }
+    return null;
+  } catch {
+    // If search fails, return null and proceed with creation
+    return null;
+  }
+}
+
+/**
+ * Search for an existing credit note in Xero by reference
+ * Used for duplicate detection before creating new credit notes
+ */
+async function findExistingCreditNoteByReference(reference: string): Promise<{
+  creditNoteId: string;
+  creditNoteNumber: string;
+} | null> {
+  try {
+    const whereClause = encodeURIComponent(`Reference=="${reference}"`);
+    const response = await xeroApiRequest<XeroCreditNotesResponse>(
+      `/CreditNotes?where=${whereClause}`
+    );
+
+    if (response.CreditNotes && response.CreditNotes.length > 0) {
+      const creditNote = response.CreditNotes[0];
+      return {
+        creditNoteId: creditNote.CreditNoteID || '',
+        creditNoteNumber: creditNote.CreditNoteNumber || '',
+      };
+    }
+    return null;
+  } catch {
+    // If search fails, return null and proceed with creation
+    return null;
+  }
 }
 
 // ============================================================================
@@ -671,6 +768,7 @@ function mapCustomerToXeroContact(customer: CustomerForXeroSync): XeroContact {
 /**
  * Sync a customer to Xero as a Contact
  * Creates a new contact or updates an existing one
+ * Includes duplicate detection to prevent creating duplicate contacts
  */
 export async function syncContactToXero(customer: CustomerForXeroSync): Promise<{
   success: boolean;
@@ -680,8 +778,8 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
   try {
     const contactPayload = mapCustomerToXeroContact(customer);
 
+    // If customer already has a Xero contact ID, update the existing contact
     if (customer.xeroContactId) {
-      // Update existing contact
       const response = await xeroApiRequest<XeroContactsResponse>(
         `/Contacts/${customer.xeroContactId}`,
         { method: 'POST', body: { Contacts: [contactPayload] } }
@@ -689,7 +787,19 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
-    // Create new contact
+    // Check for existing contact by email to prevent duplicates
+    const existingContactId = await findExistingContactByEmail(customer.contactPerson.email);
+
+    if (existingContactId) {
+      // Contact already exists in Xero - update it instead of creating duplicate
+      const response = await xeroApiRequest<XeroContactsResponse>(
+        `/Contacts/${existingContactId}`,
+        { method: 'POST', body: { Contacts: [contactPayload] } }
+      );
+      return { success: true, contactId: response.Contacts[0].ContactID };
+    }
+
+    // No existing contact found - create new one
     const response = await xeroApiRequest<XeroContactsResponse>('/Contacts', {
       method: 'POST',
       body: { Contacts: [contactPayload] },
@@ -711,6 +821,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
 
 /**
  * Create an invoice in Xero from an order
+ * Includes duplicate detection to prevent creating duplicate invoices
  */
 export async function createInvoiceInXero(
   order: OrderForXeroSync,
@@ -726,9 +837,25 @@ export async function createInvoiceInXero(
       return { success: false, error: 'Customer not synced to Xero' };
     }
 
-    // Check for duplicate invoice
+    // Check local record for existing invoice
     if (order.xero?.invoiceId) {
-      return { success: false, error: 'Invoice already exists for this order' };
+      return {
+        success: true,
+        invoiceId: order.xero.invoiceId,
+        invoiceNumber: order.xero.invoiceNumber || undefined,
+        error: undefined,
+      };
+    }
+
+    // Check Xero directly for existing invoice by order number (Reference field)
+    // This catches cases where invoice was created but local record wasn't updated
+    const existingInvoice = await findExistingInvoiceByReference(order.orderNumber);
+    if (existingInvoice) {
+      return {
+        success: true,
+        invoiceId: existingInvoice.invoiceId,
+        invoiceNumber: existingInvoice.invoiceNumber,
+      };
     }
 
     // Calculate due date from payment terms
@@ -807,6 +934,7 @@ async function allocateCreditNoteToInvoice(
 
 /**
  * Create a credit note in Xero for a cancelled order
+ * Includes duplicate detection to prevent creating duplicate credit notes
  */
 export async function createCreditNoteInXero(
   order: OrderForXeroSync,
@@ -824,6 +952,27 @@ export async function createCreditNoteInXero(
 
     if (!order.xero?.invoiceId) {
       return { success: false, error: 'Order has no invoice to credit' };
+    }
+
+    // Check local record for existing credit note
+    if (order.xero.creditNoteId) {
+      return {
+        success: true,
+        creditNoteId: order.xero.creditNoteId,
+        creditNoteNumber: order.xero.creditNoteNumber || undefined,
+      };
+    }
+
+    // Check Xero directly for existing credit note by reference
+    // This catches cases where credit note was created but local record wasn't updated
+    const creditNoteReference = `Credit for Order ${order.orderNumber}`;
+    const existingCreditNote = await findExistingCreditNoteByReference(creditNoteReference);
+    if (existingCreditNote) {
+      return {
+        success: true,
+        creditNoteId: existingCreditNote.creditNoteId,
+        creditNoteNumber: existingCreditNote.creditNoteNumber,
+      };
     }
 
     // Map order items to credit note line items

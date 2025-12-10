@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { Button, Card, Badge, Input, Label } from '@joho-erp/ui';
 import { ArrowLeft } from 'lucide-react';
+import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
 import { useState } from 'react';
 import { formatCurrency, formatDate, parseToCents } from '@joho-erp/shared';
 
@@ -121,7 +122,7 @@ export default function CreditReviewPage({ params }: PageProps) {
             {customer.businessName}
           </p>
         </div>
-        <div>
+        <div className="flex flex-col gap-2 items-end">
           <Badge
             variant={
               creditApp.status === 'approved'
@@ -133,6 +134,7 @@ export default function CreditReviewPage({ params }: PageProps) {
           >
             {creditApp.status.toUpperCase()}
           </Badge>
+          <XeroCustomerSyncBadge customerId={resolvedParams.id} creditStatus={creditApp.status} />
         </div>
       </div>
 

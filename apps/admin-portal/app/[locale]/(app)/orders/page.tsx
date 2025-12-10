@@ -26,6 +26,7 @@ import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
+import { XeroOrderSyncBadge } from '@/components/xero-sync-badge';
 
 type Order = {
   id: string;
@@ -240,6 +241,7 @@ export default function OrdersPage() {
         <div className="flex flex-col gap-1">
           <StatusBadge status={order.status} />
           <BackorderStatusBadge status={order.backorderStatus} />
+          <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} />
         </div>
       ),
     },
@@ -276,6 +278,7 @@ export default function OrdersPage() {
         <div className="flex flex-col gap-1 items-end">
           <StatusBadge status={order.status} />
           <BackorderStatusBadge status={order.backorderStatus} />
+          <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} />
         </div>
       </div>
 

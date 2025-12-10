@@ -14,7 +14,9 @@ import {
   useToast,
   Badge,
 } from '@joho-erp/ui';
-import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2 } from 'lucide-react';
+import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2, RefreshCcw, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 // Simple Switch component using checkbox
@@ -32,7 +34,10 @@ function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean
 
 export default function IntegrationsSettingsPage() {
   const t = useTranslations('settings.integrations');
+  const tXeroSync = useTranslations('xeroSync');
   const { toast } = useToast();
+  const params = useParams();
+  const locale = params.locale as string;
   const [hasChanges, setHasChanges] = useState(false);
 
   // Form state
@@ -284,8 +289,30 @@ export default function IntegrationsSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Xero Sync Dashboard Link */}
+        {isConnected && (
+          <Link href={`/${locale}/settings/xero-sync`}>
+            <Card className="animate-fade-in-up delay-100 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <RefreshCcw className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{tXeroSync('title')}</CardTitle>
+                      <CardDescription>{tXeroSync('subtitle')}</CardDescription>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
+
         {/* Future Integrations Placeholder */}
-        <Card className="animate-fade-in-up delay-100">
+        <Card className="animate-fade-in-up delay-200">
           <CardHeader>
             <CardTitle>{t('futureIntegrations.title')}</CardTitle>
             <CardDescription>{t('futureIntegrations.description')}</CardDescription>
