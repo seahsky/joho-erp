@@ -11,6 +11,7 @@ import { companyRouter } from './routers/company';
 import { notificationRouter } from './routers/notification';
 import { userRouter } from './routers/user';
 import { uploadRouter } from './routers/upload';
+import { xeroRouter } from './routers/xero';
 
 export const appRouter = router({
   customer: customerRouter,
@@ -25,6 +26,7 @@ export const appRouter = router({
   notification: notificationRouter,
   user: userRouter,
   upload: uploadRouter,
+  xero: xeroRouter,
 });
 
 export type AppRouter = typeof appRouter;

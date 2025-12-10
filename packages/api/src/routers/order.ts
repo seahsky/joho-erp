@@ -967,6 +967,15 @@ export const orderRouter = router({
           });
         }
 
+        // If order has a Xero invoice, create a credit note
+        const xeroInfo = currentOrder.xero as { invoiceId?: string | null } | null;
+        if (xeroInfo?.invoiceId) {
+          const { enqueueXeroJob } = await import('../services/xero-queue');
+          await enqueueXeroJob('create_credit_note', 'order', input.orderId).catch((error) => {
+            console.error('Failed to enqueue Xero credit note creation:', error);
+          });
+        }
+
         // TODO: Log to audit trail
 
         return order;

@@ -484,7 +484,12 @@ export const customerRouter = router({
         console.error('Failed to send credit approved email:', error);
       });
 
-      // TODO: Sync to Xero as contact
+      // Sync to Xero as contact
+      const { enqueueXeroJob } = await import('../services/xero-queue');
+      await enqueueXeroJob('sync_contact', 'customer', customer.id).catch((error) => {
+        console.error('Failed to enqueue Xero contact sync:', error);
+      });
+
       // TODO: Log to audit trail
 
       return customer;

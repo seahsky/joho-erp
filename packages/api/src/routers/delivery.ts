@@ -127,6 +127,12 @@ export const deliveryRouter = router({
         },
       });
 
+      // Enqueue Xero invoice creation
+      const { enqueueXeroJob } = await import('../services/xero-queue');
+      await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
+        console.error('Failed to enqueue Xero invoice creation:', error);
+      });
+
       return order;
     }),
 
