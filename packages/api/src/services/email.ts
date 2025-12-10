@@ -1120,3 +1120,458 @@ export async function sendDriverUrgentCancellationEmail(params: {
     return { success: false, message: String(error) };
   }
 }
+
+/**
+ * Send order confirmation email to customer
+ */
+export async function sendOrderConfirmationEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  orderNumber: string;
+  orderDate: Date;
+  requestedDeliveryDate: Date;
+  items: Array<{
+    productName: string;
+    sku: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number; // In cents
+    subtotal: number; // In cents
+  }>;
+  subtotal: number; // In cents
+  taxAmount: number; // In cents
+  totalAmount: number; // In cents
+  deliveryAddress: {
+    street: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  };
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { customerEmail, customerName, orderNumber, orderDate, requestedDeliveryDate, items, subtotal, taxAmount, totalAmount, deliveryAddress } = params;
+
+    const itemsHtml = items
+      .map(
+        (item) => `
+        <tr>
+          <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb;">
+            <strong>${item.productName}</strong><br/>
+            <span style="color: #6b7280; font-size: 14px;">SKU: ${item.sku}</span>
+          </td>
+          <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+            ${item.quantity} ${item.unit}
+          </td>
+          <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">
+            ${formatAUD(item.unitPrice)}
+          </td>
+          <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">
+            ${formatAUD(item.subtotal)}
+          </td>
+        </tr>
+      `
+      )
+      .join('');
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: customerEmail,
+      subject: `Order Confirmation - #${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order Confirmation</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Order Confirmed!</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">Dear ${customerName},</p>
+
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">
+                    Thank you for your order! We've received your order <strong>#${orderNumber}</strong> and it's being processed.
+                  </p>
+
+                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>What happens next?</strong><br/>
+                      We'll prepare your order for packing and notify you when it's ready for delivery.
+                    </p>
+                  </div>
+
+                  <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Order Details</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Order Number:</td>
+                      <td style="padding: 8px 0; text-align: right;"><strong>${orderNumber}</strong></td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Order Date:</td>
+                      <td style="padding: 8px 0; text-align: right;">${orderDate.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Requested Delivery:</td>
+                      <td style="padding: 8px 0; text-align: right;">${requestedDeliveryDate.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                    </tr>
+                  </table>
+
+                  <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Order Items</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                      <tr style="background-color: #f3f4f6;">
+                        <th style="padding: 12px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e7eb;">Product</th>
+                        <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+                        <th style="padding: 12px 8px; text-align: right; font-weight: 600; border-bottom: 2px solid #e5e7eb;">Unit Price</th>
+                        <th style="padding: 12px 8px; text-align: right; font-weight: 600; border-bottom: 2px solid #e5e7eb;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${itemsHtml}
+                    </tbody>
+                  </table>
+
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Subtotal:</td>
+                      <td style="padding: 8px 0; text-align: right;">${formatAUD(subtotal)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">GST (10%):</td>
+                      <td style="padding: 8px 0; text-align: right;">${formatAUD(taxAmount)}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #e5e7eb;">
+                      <td style="padding: 12px 0; font-size: 18px;"><strong>Total:</strong></td>
+                      <td style="padding: 12px 0; text-align: right; font-size: 18px;"><strong style="color: #10b981;">${formatAUD(totalAmount)}</strong></td>
+                    </tr>
+                  </table>
+
+                  <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Delivery Address</h2>
+                  <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px;">
+                    <p style="margin: 0; font-size: 16px;">
+                      ${deliveryAddress.street}<br/>
+                      ${deliveryAddress.suburb}, ${deliveryAddress.state} ${deliveryAddress.postcode}
+                    </p>
+                  </div>
+
+                  <p style="margin: 30px 0 0 0; font-size: 14px; color: #6b7280;">
+                    If you have any questions about your order, please don't hesitate to contact us.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    Thank you for your business!<br/>
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send order confirmation email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('Order confirmation email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending order confirmation email:', error);
+    return { success: false, message: String(error) };
+  }
+}
+
+/**
+ * Send order out for delivery email to customer
+ */
+export async function sendOrderOutForDeliveryEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  orderNumber: string;
+  driverName?: string;
+  deliveryAddress: {
+    street: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  };
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { customerEmail, customerName, orderNumber, driverName, deliveryAddress } = params;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: customerEmail,
+      subject: `Your Order is On the Way - #${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order Out for Delivery</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🚚 Your Order is On the Way!</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">Dear ${customerName},</p>
+
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">
+                    Great news! Your order <strong>#${orderNumber}</strong> is out for delivery${driverName ? ` with ${driverName}` : ''}.
+                  </p>
+
+                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Delivery Address:</strong><br/>
+                      ${deliveryAddress.street}<br/>
+                      ${deliveryAddress.suburb}, ${deliveryAddress.state} ${deliveryAddress.postcode}
+                    </p>
+                  </div>
+
+                  <p style="margin: 20px 0 0 0; font-size: 14px; color: #6b7280;">
+                    Please ensure someone is available to receive the delivery. If you have any questions, please contact us.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    Best regards,<br/>
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send out for delivery email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('Out for delivery email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending out for delivery email:', error);
+    return { success: false, message: String(error) };
+  }
+}
+
+/**
+ * Send order delivered email to customer
+ */
+export async function sendOrderDeliveredEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  orderNumber: string;
+  deliveredAt: Date;
+  totalAmount: number; // In cents
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { customerEmail, customerName, orderNumber, deliveredAt, totalAmount } = params;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: customerEmail,
+      subject: `Order Delivered - #${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order Delivered</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Order Delivered!</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">Dear ${customerName},</p>
+
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">
+                    Your order <strong>#${orderNumber}</strong> has been successfully delivered.
+                  </p>
+
+                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Delivery Details:</strong><br/>
+                      Delivered on: ${deliveredAt.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}<br/>
+                      Order Total: <strong>${formatAUD(totalAmount)}</strong>
+                    </p>
+                  </div>
+
+                  <p style="margin: 20px 0; font-size: 16px;">
+                    An invoice will follow shortly via email.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 14px; color: #6b7280;">
+                    Thank you for your business! If you have any questions or feedback, please don't hesitate to contact us.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    Best regards,<br/>
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send order delivered email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('Order delivered email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending order delivered email:', error);
+    return { success: false, message: String(error) };
+  }
+}
+
+/**
+ * Send order cancelled email to customer
+ */
+export async function sendOrderCancelledEmail(params: {
+  customerEmail: string;
+  customerName: string;
+  orderNumber: string;
+  cancellationReason: string;
+  totalAmount: number; // In cents
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { customerEmail, customerName, orderNumber, cancellationReason, totalAmount } = params;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: customerEmail,
+      subject: `Order Cancelled - #${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order Cancelled</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #6b7280;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Order Cancelled</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">Dear ${customerName},</p>
+
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">
+                    Your order <strong>#${orderNumber}</strong> has been cancelled.
+                  </p>
+
+                  <div style="background-color: #f3f4f6; border-left: 4px solid #6b7280; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Order Details:</strong><br/>
+                      Order Number: ${orderNumber}<br/>
+                      Order Total: ${formatAUD(totalAmount)}<br/><br/>
+                      <strong>Cancellation Reason:</strong><br/>
+                      ${cancellationReason}
+                    </p>
+                  </div>
+
+                  <p style="margin: 20px 0; font-size: 16px;">
+                    If a payment was made, a refund will be processed within 5-7 business days.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 14px; color: #6b7280;">
+                    If you have any questions about this cancellation, please contact us.
+                  </p>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    Best regards,<br/>
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send order cancelled email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('Order cancelled email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending order cancelled email:', error);
+    return { success: false, message: String(error) };
+  }
+}

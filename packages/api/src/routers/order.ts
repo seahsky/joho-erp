@@ -10,6 +10,10 @@ import {
   sendBackorderPartialApprovalEmail,
   sendBackorderAdminNotification,
   sendDriverUrgentCancellationEmail,
+  sendOrderConfirmationEmail,
+  sendOrderOutForDeliveryEmail,
+  sendOrderDeliveredEmail,
+  sendOrderCancelledEmail,
 } from '../services/email';
 import { clerkClient } from '@clerk/nextjs/server';
 
@@ -218,38 +222,77 @@ export const orderRouter = router({
       // Determine backorder status
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
 
-      // Create order
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
-          customerId: customer.id,
-          customerName: customer.businessName,
-          items: orderItems,
-          subtotal: totals.subtotal,
-          taxAmount: totals.taxAmount,
-          totalAmount: totals.totalAmount,
-          deliveryAddress: input.deliveryAddress || customer.deliveryAddress,
-          requestedDeliveryDate: deliveryDate,
-          status: 'pending',
-          statusHistory: [
-            {
-              status: 'pending',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              notes: stockValidation.requiresBackorder
-                ? 'Order created - Requires backorder approval due to insufficient stock'
-                : 'Order created',
-            },
-          ],
-          orderedAt: new Date(),
-          createdBy: ctx.userId,
+      // Create order with stock reservation in a transaction
+      // For normal orders: Reduce stock immediately
+      // For backorders: Stock is NOT reduced (only when approved)
+      const order = await prisma.$transaction(async (tx) => {
+        // Create the order
+        const newOrder = await tx.order.create({
+          data: {
+            orderNumber,
+            customerId: customer.id,
+            customerName: customer.businessName,
+            items: orderItems,
+            subtotal: totals.subtotal,
+            taxAmount: totals.taxAmount,
+            totalAmount: totals.totalAmount,
+            deliveryAddress: input.deliveryAddress || customer.deliveryAddress,
+            requestedDeliveryDate: deliveryDate,
+            status: 'pending',
+            statusHistory: [
+              {
+                status: 'pending',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                notes: stockValidation.requiresBackorder
+                  ? 'Order created - Requires backorder approval due to insufficient stock'
+                  : 'Order created',
+              },
+            ],
+            orderedAt: new Date(),
+            createdBy: ctx.userId,
 
-          // Backorder fields
-          backorderStatus,
-          stockShortfall: stockValidation.requiresBackorder
-            ? stockValidation.stockShortfall
-            : undefined,
-        },
+            // Backorder fields
+            backorderStatus,
+            stockShortfall: stockValidation.requiresBackorder
+              ? stockValidation.stockShortfall
+              : undefined,
+          },
+        });
+
+        // If NOT a backorder, reduce stock immediately
+        if (!stockValidation.requiresBackorder) {
+          for (const item of orderItems) {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) continue;
+
+            const previousStock = product.currentStock;
+            const newStock = previousStock - item.quantity;
+
+            // Create inventory transaction (sale)
+            await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'sale',
+                quantity: -item.quantity,
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: newOrder.id,
+                notes: `Stock reserved for order ${orderNumber}`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
+            });
+          }
+        }
+
+        return newOrder;
       });
 
       // Send backorder notification emails if required
@@ -292,8 +335,42 @@ export const orderRouter = router({
         });
       }
 
-      // TODO: Reduce inventory (normal orders only - backorders reserve on approval)
-      // TODO: Send order confirmation email (for non-backorder orders)
+      // Send order confirmation email (for non-backorder orders)
+      if (!stockValidation.requiresBackorder) {
+        const deliveryAddr = (input.deliveryAddress || customer.deliveryAddress) as {
+          street: string;
+          suburb: string;
+          state: string;
+          postcode: string;
+        };
+
+        await sendOrderConfirmationEmail({
+          customerEmail: customer.contactPerson.email,
+          customerName: customer.businessName,
+          orderNumber: order.orderNumber,
+          orderDate: order.orderedAt,
+          requestedDeliveryDate: deliveryDate,
+          items: orderItems.map((item) => ({
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: {
+            street: deliveryAddr.street,
+            suburb: deliveryAddr.suburb,
+            state: deliveryAddr.state,
+            postcode: deliveryAddr.postcode,
+          },
+        }).catch((error) => {
+          console.error('Failed to send order confirmation email:', error);
+        });
+      }
 
       return order;
     }),
@@ -468,61 +545,135 @@ export const orderRouter = router({
       // 13. Determine backorder status
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
 
-      // 14. Create order
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
-          customerId: customer.id,
+      // 14. Create order with stock reservation in a transaction
+      // For normal orders: Reduce stock immediately
+      // For backorders: Stock is NOT reduced (only when approved)
+      const order = await prisma.$transaction(async (tx) => {
+        // Create the order
+        const newOrder = await tx.order.create({
+          data: {
+            orderNumber,
+            customerId: customer.id,
+            customerName: customer.businessName,
+            items: orderItems,
+            subtotal: totals.subtotal,
+            taxAmount: totals.taxAmount,
+            totalAmount: totals.totalAmount,
+            deliveryAddress,
+            requestedDeliveryDate: deliveryDate,
+            status: stockValidation.requiresBackorder ? 'pending' : 'confirmed', // Backorders need approval
+            statusHistory: [
+              {
+                status: stockValidation.requiresBackorder ? 'pending' : 'confirmed',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                notes: stockValidation.requiresBackorder
+                  ? 'Order placed by admin - Requires backorder approval due to insufficient stock'
+                  : 'Order placed by admin on behalf of customer',
+              },
+            ],
+            orderedAt: new Date(),
+            createdBy: ctx.userId,
+
+            // Admin-specific fields
+            bypassCreditLimit: input.bypassCreditLimit,
+            bypassCreditReason: input.bypassCreditReason,
+            bypassCutoffTime: input.bypassCutoffTime,
+            useCustomAddress: input.useCustomAddress,
+            customDeliveryAddress: input.useCustomAddress && input.customDeliveryAddress ? {
+              street: input.customDeliveryAddress.street,
+              suburb: input.customDeliveryAddress.suburb,
+              state: input.customDeliveryAddress.state,
+              postcode: input.customDeliveryAddress.postcode,
+              country: 'Australia',
+              areaTag: input.customDeliveryAddress.areaTag,
+              deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
+            } : undefined,
+            adminNotes: input.adminNotes,
+            internalNotes: input.internalNotes,
+            placedOnBehalfOf: customer.id,
+            placedByAdmin: ctx.userId,
+
+            // Backorder fields
+            backorderStatus,
+            stockShortfall: stockValidation.requiresBackorder
+              ? stockValidation.stockShortfall
+              : undefined,
+          },
+        });
+
+        // If NOT a backorder, reduce stock immediately
+        if (!stockValidation.requiresBackorder) {
+          for (const item of orderItems) {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) continue;
+
+            const previousStock = product.currentStock;
+            const newStock = previousStock - item.quantity;
+
+            // Create inventory transaction (sale)
+            await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'sale',
+                quantity: -item.quantity,
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: newOrder.id,
+                notes: `Stock reserved for order ${orderNumber} (placed by admin)`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
+            });
+          }
+        }
+
+        return newOrder;
+      });
+
+      // Send order confirmation email to customer (for non-backorder orders)
+      if (!stockValidation.requiresBackorder) {
+        const deliveryAddr = deliveryAddress as {
+          street: string;
+          suburb: string;
+          state: string;
+          postcode: string;
+        };
+
+        await sendOrderConfirmationEmail({
+          customerEmail: customer.contactPerson.email,
           customerName: customer.businessName,
-          items: orderItems,
+          orderNumber: order.orderNumber,
+          orderDate: order.orderedAt,
+          requestedDeliveryDate: deliveryDate,
+          items: orderItems.map((item) => ({
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
           subtotal: totals.subtotal,
           taxAmount: totals.taxAmount,
           totalAmount: totals.totalAmount,
-          deliveryAddress,
-          requestedDeliveryDate: deliveryDate,
-          status: stockValidation.requiresBackorder ? 'pending' : 'confirmed', // Backorders need approval
-          statusHistory: [
-            {
-              status: stockValidation.requiresBackorder ? 'pending' : 'confirmed',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              notes: stockValidation.requiresBackorder
-                ? 'Order placed by admin - Requires backorder approval due to insufficient stock'
-                : 'Order placed by admin on behalf of customer',
-            },
-          ],
-          orderedAt: new Date(),
-          createdBy: ctx.userId,
+          deliveryAddress: {
+            street: deliveryAddr.street,
+            suburb: deliveryAddr.suburb,
+            state: deliveryAddr.state,
+            postcode: deliveryAddr.postcode,
+          },
+        }).catch((error) => {
+          console.error('Failed to send order confirmation email:', error);
+        });
+      }
 
-          // Admin-specific fields
-          bypassCreditLimit: input.bypassCreditLimit,
-          bypassCreditReason: input.bypassCreditReason,
-          bypassCutoffTime: input.bypassCutoffTime,
-          useCustomAddress: input.useCustomAddress,
-          customDeliveryAddress: input.useCustomAddress && input.customDeliveryAddress ? {
-            street: input.customDeliveryAddress.street,
-            suburb: input.customDeliveryAddress.suburb,
-            state: input.customDeliveryAddress.state,
-            postcode: input.customDeliveryAddress.postcode,
-            country: 'Australia',
-            areaTag: input.customDeliveryAddress.areaTag,
-            deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
-          } : undefined,
-          adminNotes: input.adminNotes,
-          internalNotes: input.internalNotes,
-          placedOnBehalfOf: customer.id,
-          placedByAdmin: ctx.userId,
-
-          // Backorder fields
-          backorderStatus,
-          stockShortfall: stockValidation.requiresBackorder
-            ? stockValidation.stockShortfall
-            : undefined,
-        },
-      });
-
-      // TODO: Send order confirmation email to customer
-      // TODO: Reduce inventory
       // TODO: Log to audit trail
 
       return order;
@@ -730,6 +881,98 @@ export const orderRouter = router({
         }
       }
 
+      // Handle stock restoration when cancelling
+      // Only restore stock if:
+      // 1. Order is being cancelled
+      // 2. Order had stock reserved (NOT a pending backorder)
+      const shouldRestoreStock =
+        input.newStatus === 'cancelled' &&
+        currentOrder.backorderStatus !== 'pending_approval';
+
+      if (shouldRestoreStock) {
+        // Restore stock in a transaction
+        const order = await prisma.$transaction(async (tx) => {
+          // Update order status
+          const updatedOrder = await tx.order.update({
+            where: { id: input.orderId },
+            data: {
+              status: input.newStatus,
+              statusHistory: [
+                ...currentOrder.statusHistory,
+                {
+                  status: input.newStatus,
+                  changedAt: new Date(),
+                  changedBy: ctx.userId,
+                  notes: input.notes,
+                },
+              ],
+            },
+          });
+
+          // Get current product stock levels
+          const productIds = (currentOrder.items as any[]).map((item: any) => item.productId);
+          const products = await tx.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, currentStock: true },
+          });
+
+          // Create a map of current stock levels
+          const stockMap = new Map(products.map((p) => [p.id, p.currentStock]));
+
+          // Restore stock for each item
+          for (const item of currentOrder.items as any[]) {
+            const currentStock = stockMap.get(item.productId) || 0;
+            const newStock = currentStock + item.quantity;
+
+            // Create inventory transaction (return)
+            await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'return',
+                quantity: item.quantity, // Positive for returns
+                previousStock: currentStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: input.orderId,
+                notes: `Stock restored from cancelled order ${currentOrder.orderNumber}`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
+            });
+          }
+
+          return updatedOrder;
+        });
+
+        // Send cancellation email to customer
+        const customer = await prisma.customer.findUnique({
+          where: { id: currentOrder.customerId },
+          select: { contactPerson: true, businessName: true },
+        });
+
+        if (customer) {
+          await sendOrderCancelledEmail({
+            customerEmail: customer.contactPerson.email,
+            customerName: customer.businessName,
+            orderNumber: currentOrder.orderNumber,
+            cancellationReason: input.notes || 'No reason provided',
+            totalAmount: currentOrder.totalAmount,
+          }).catch((error) => {
+            console.error('Failed to send order cancelled email:', error);
+          });
+        }
+
+        // TODO: Log to audit trail
+
+        return order;
+      }
+
+      // Normal status update (no stock restoration needed)
       const order = await prisma.order.update({
         where: { id: input.orderId },
         data: {
@@ -746,7 +989,70 @@ export const orderRouter = router({
         },
       });
 
-      // TODO: Send notification emails based on status
+      // Send notification emails based on status
+      const customer = await prisma.customer.findUnique({
+        where: { id: currentOrder.customerId },
+        select: { contactPerson: true, businessName: true },
+      });
+
+      if (customer) {
+        // Send appropriate email based on new status
+        switch (input.newStatus) {
+          case 'cancelled':
+            // Already handled above in shouldRestoreStock branch, but handle for pending backorders
+            await sendOrderCancelledEmail({
+              customerEmail: customer.contactPerson.email,
+              customerName: customer.businessName,
+              orderNumber: currentOrder.orderNumber,
+              cancellationReason: input.notes || 'No reason provided',
+              totalAmount: currentOrder.totalAmount,
+            }).catch((error) => {
+              console.error('Failed to send order cancelled email:', error);
+            });
+            break;
+
+          case 'ready_for_delivery':
+            // Send "out for delivery" email when order is ready to go out
+            {
+              const deliveryAddr = currentOrder.deliveryAddress as {
+                street: string;
+                suburb: string;
+                state: string;
+                postcode: string;
+              };
+              const delivery = currentOrder.delivery as { driverName?: string } | null;
+
+              await sendOrderOutForDeliveryEmail({
+                customerEmail: customer.contactPerson.email,
+                customerName: customer.businessName,
+                orderNumber: currentOrder.orderNumber,
+                driverName: delivery?.driverName,
+                deliveryAddress: {
+                  street: deliveryAddr.street,
+                  suburb: deliveryAddr.suburb,
+                  state: deliveryAddr.state,
+                  postcode: deliveryAddr.postcode,
+                },
+              }).catch((error) => {
+                console.error('Failed to send out for delivery email:', error);
+              });
+            }
+            break;
+
+          case 'delivered':
+            await sendOrderDeliveredEmail({
+              customerEmail: customer.contactPerson.email,
+              customerName: customer.businessName,
+              orderNumber: currentOrder.orderNumber,
+              deliveredAt: new Date(),
+              totalAmount: currentOrder.totalAmount,
+            }).catch((error) => {
+              console.error('Failed to send order delivered email:', error);
+            });
+            break;
+        }
+      }
+
       // TODO: Log to audit trail
 
       return order;
@@ -883,34 +1189,102 @@ export const orderRouter = router({
       // Set delivery date (tomorrow by default)
       const deliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      // Create new order with confirmed status
-      const newOrder = await prisma.order.create({
-        data: {
-          orderNumber,
-          customerId: customer.id,
-          customerName: customer.businessName,
-          items: newOrderItems,
-          subtotal: totals.subtotal,
-          taxAmount: totals.taxAmount,
-          totalAmount: totals.totalAmount,
-          deliveryAddress: originalOrder.deliveryAddress, // Use same delivery address
-          requestedDeliveryDate: deliveryDate,
-          status: 'confirmed',
-          statusHistory: [
-            {
-              status: 'confirmed',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              notes: `Reordered from order ${originalOrder.orderNumber}`,
+      // Create new order with stock reservation in a transaction
+      const newOrder = await prisma.$transaction(async (tx) => {
+        // Create the order
+        const createdOrder = await tx.order.create({
+          data: {
+            orderNumber,
+            customerId: customer.id,
+            customerName: customer.businessName,
+            items: newOrderItems,
+            subtotal: totals.subtotal,
+            taxAmount: totals.taxAmount,
+            totalAmount: totals.totalAmount,
+            deliveryAddress: originalOrder.deliveryAddress, // Use same delivery address
+            requestedDeliveryDate: deliveryDate,
+            status: 'confirmed',
+            statusHistory: [
+              {
+                status: 'confirmed',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                notes: `Reordered from order ${originalOrder.orderNumber}`,
+              },
+            ],
+            orderedAt: new Date(),
+            createdBy: ctx.userId,
+          },
+        });
+
+        // Reduce stock for all items
+        for (const item of newOrderItems) {
+          const product = products.find((p) => p.id === item.productId);
+          if (!product) continue;
+
+          const previousStock = product.currentStock;
+          const newStock = previousStock - item.quantity;
+
+          // Create inventory transaction (sale)
+          await tx.inventoryTransaction.create({
+            data: {
+              productId: item.productId,
+              type: 'sale',
+              quantity: -item.quantity,
+              previousStock,
+              newStock,
+              referenceType: 'order',
+              referenceId: createdOrder.id,
+              notes: `Stock reserved for reorder ${orderNumber} (original: ${originalOrder.orderNumber})`,
+              createdBy: ctx.userId,
             },
-          ],
-          orderedAt: new Date(),
-          createdBy: ctx.userId,
-        },
+          });
+
+          // Update product stock
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { currentStock: newStock },
+          });
+        }
+
+        return createdOrder;
       });
 
-      // TODO: Reduce inventory
-      // TODO: Send order confirmation email
+      // Send order confirmation email
+      const deliveryAddr = originalOrder.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+
+      await sendOrderConfirmationEmail({
+        customerEmail: customer.contactPerson.email,
+        customerName: customer.businessName,
+        orderNumber: newOrder.orderNumber,
+        orderDate: newOrder.orderedAt,
+        requestedDeliveryDate: deliveryDate,
+        items: newOrderItems.map((item) => ({
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+        subtotal: totals.subtotal,
+        taxAmount: totals.taxAmount,
+        totalAmount: totals.totalAmount,
+        deliveryAddress: {
+          street: deliveryAddr.street,
+          suburb: deliveryAddr.suburb,
+          state: deliveryAddr.state,
+          postcode: deliveryAddr.postcode,
+        },
+      }).catch((error) => {
+        console.error('Failed to send order confirmation email:', error);
+      });
+
       // TODO: Send notification to admin
 
       return newOrder;
