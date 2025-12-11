@@ -13,7 +13,7 @@
 
 import { prisma } from '@joho-erp/database';
 import crypto from 'crypto';
-import { encrypt, decrypt } from '../utils/encryption';
+import { encrypt, decrypt, isEncryptionEnabled } from '../utils/encryption';
 
 // Xero OAuth endpoints
 const XERO_AUTH_URL = 'https://login.xero.com/identity/connect/authorize';
@@ -332,6 +332,175 @@ export async function testConnection(): Promise<{
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Detailed connection test result
+ */
+export interface XeroConnectionTestResult {
+  success: boolean;
+  message: string;
+  details: {
+    tokenValid: boolean;
+    tokenExpiresInMinutes: number | null;
+    tenantConnected: boolean;
+    tenantName: string | null;
+    canReadContacts: boolean;
+    canReadInvoices: boolean;
+    canWriteContacts: boolean;
+    encryptionEnabled: boolean;
+  };
+  errors: string[];
+}
+
+// Test contact used for write permission verification
+const TEST_CONTACT: XeroContact = {
+  Name: '_JOHO_ERP_TEST_CONTACT',
+  FirstName: 'Test',
+  LastName: 'Contact',
+  EmailAddress: 'joho-erp-test@localhost.invalid',
+  IsCustomer: true,
+};
+
+/**
+ * Test the Xero connection with detailed verification of all permissions
+ * Tests: token validity, tenant connection, read contacts, read invoices, write contacts
+ */
+export async function testConnectionDetailed(): Promise<XeroConnectionTestResult> {
+  const errors: string[] = [];
+  const details = {
+    tokenValid: false,
+    tokenExpiresInMinutes: null as number | null,
+    tenantConnected: false,
+    tenantName: null as string | null,
+    canReadContacts: false,
+    canReadInvoices: false,
+    canWriteContacts: false,
+    encryptionEnabled: isEncryptionEnabled(),
+  };
+
+  try {
+    // Step 1: Check token validity and get valid token (auto-refresh if needed)
+    const tokens = await getStoredTokens();
+    if (!tokens || !tokens.refreshToken) {
+      errors.push('Xero is not connected. Please authenticate first.');
+      return {
+        success: false,
+        message: 'Xero is not connected',
+        details,
+        errors,
+      };
+    }
+
+    // Calculate token expiry
+    if (tokens.tokenExpiry) {
+      const minutesRemaining = Math.round((tokens.tokenExpiry.getTime() - Date.now()) / (1000 * 60));
+      details.tokenExpiresInMinutes = Math.max(0, minutesRemaining);
+    }
+
+    // Get valid access token (will refresh if expired)
+    let accessToken: string;
+    let tenantId: string;
+    try {
+      const validTokens = await getValidAccessToken();
+      accessToken = validTokens.accessToken;
+      tenantId = validTokens.tenantId;
+      details.tokenValid = true;
+
+      // Update expiry after potential refresh
+      const refreshedTokens = await getStoredTokens();
+      if (refreshedTokens?.tokenExpiry) {
+        const minutesRemaining = Math.round((refreshedTokens.tokenExpiry.getTime() - Date.now()) / (1000 * 60));
+        details.tokenExpiresInMinutes = Math.max(0, minutesRemaining);
+      }
+    } catch (error) {
+      errors.push(`Token error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return {
+        success: false,
+        message: 'Failed to get valid access token',
+        details,
+        errors,
+      };
+    }
+
+    // Step 2: Test tenant connection
+    try {
+      const tenants = await getConnectedTenants(accessToken);
+      if (tenants.length > 0) {
+        details.tenantConnected = true;
+        // Find the tenant matching our stored tenantId
+        const matchingTenant = tenants.find(t => t.tenantId === tenantId);
+        details.tenantName = matchingTenant?.tenantName || tenants[0].tenantName;
+      } else {
+        errors.push('No Xero organizations connected');
+      }
+    } catch (error) {
+      errors.push(`Tenant connection error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Step 3: Test read contacts permission
+    try {
+      await xeroApiRequest<XeroContactsResponse>('/Contacts?page=1&pageSize=1');
+      details.canReadContacts = true;
+    } catch (error) {
+      errors.push(`Read contacts error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Step 4: Test read invoices permission
+    try {
+      await xeroApiRequest<XeroInvoicesResponse>('/Invoices?page=1&pageSize=1');
+      details.canReadInvoices = true;
+    } catch (error) {
+      errors.push(`Read invoices error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Step 5: Test write contacts permission
+    try {
+      // First, search for existing test contact
+      const existingContactId = await findExistingContactByEmail(TEST_CONTACT.EmailAddress!);
+
+      if (existingContactId) {
+        // Update existing test contact (proves write works)
+        await xeroApiRequest<XeroContactsResponse>(
+          `/Contacts/${existingContactId}`,
+          { method: 'POST', body: { Contacts: [TEST_CONTACT] } }
+        );
+      } else {
+        // Create new test contact (proves write works)
+        await xeroApiRequest<XeroContactsResponse>('/Contacts', {
+          method: 'POST',
+          body: { Contacts: [TEST_CONTACT] },
+        });
+      }
+      details.canWriteContacts = true;
+    } catch (error) {
+      errors.push(`Write contacts error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Determine overall success
+    const success = details.tokenValid &&
+      details.tenantConnected &&
+      details.canReadContacts &&
+      details.canReadInvoices &&
+      details.canWriteContacts;
+
+    return {
+      success,
+      message: success
+        ? 'All Xero connection tests passed'
+        : 'Some Xero connection tests failed',
+      details,
+      errors,
+    };
+  } catch (error) {
+    errors.push(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return {
+      success: false,
+      message: 'Connection test failed with unexpected error',
+      details,
+      errors,
     };
   }
 }

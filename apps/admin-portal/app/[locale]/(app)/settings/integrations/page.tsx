@@ -14,7 +14,7 @@ import {
   useToast,
   Badge,
 } from '@joho-erp/ui';
-import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2, RefreshCcw, ChevronRight } from 'lucide-react';
+import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2, RefreshCcw, ChevronRight, ChevronDown, Shield, Clock, Users, FileText, Edit3, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -32,6 +32,25 @@ function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean
   );
 }
 
+// Type for detailed test results
+interface TestResultDetails {
+  tokenValid: boolean;
+  tokenExpiresInMinutes: number | null;
+  tenantConnected: boolean;
+  tenantName: string | null;
+  canReadContacts: boolean;
+  canReadInvoices: boolean;
+  canWriteContacts: boolean;
+  encryptionEnabled: boolean;
+}
+
+interface TestResult {
+  success: boolean;
+  message: string;
+  details: TestResultDetails;
+  errors: string[];
+}
+
 export default function IntegrationsSettingsPage() {
   const t = useTranslations('settings.integrations');
   const tXeroSync = useTranslations('xeroSync');
@@ -46,6 +65,10 @@ export default function IntegrationsSettingsPage() {
   const [tenantId, setTenantId] = useState('');
   const [autoSync, setAutoSync] = useState(true);
   const [syncFrequency, setSyncFrequency] = useState('hourly');
+
+  // Test results state
+  const [testResults, setTestResults] = useState<TestResult | null>(null);
+  const [showTestResults, setShowTestResults] = useState(false);
 
   // Load data
   const { data: settings, isLoading } = api.company.getSettings.useQuery();
@@ -70,13 +93,17 @@ export default function IntegrationsSettingsPage() {
 
   // Test connection mutation
   const testConnectionMutation = api.company.testXeroConnection.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setTestResults(data as TestResult);
+      setShowTestResults(true);
       toast({
-        title: t('xero.testSuccess'),
-        description: t('xero.testSuccessDescription'),
+        title: data.success ? t('xero.testSuccess') : t('xero.testFailed'),
+        description: data.message,
+        variant: data.success ? 'default' : 'destructive',
       });
     },
     onError: (error) => {
+      setTestResults(null);
       toast({
         title: t('xero.testFailed'),
         description: error.message,
@@ -277,6 +304,152 @@ export default function IntegrationsSettingsPage() {
                 )}
               </Button>
             </div>
+
+            {/* Test Results Section */}
+            {testResults && (
+              <div className="pt-4 border-t">
+                <button
+                  onClick={() => setShowTestResults(!showTestResults)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <TestTube2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold text-sm">{t('xero.testResults.title')}</span>
+                    {testResults.success ? (
+                      <Badge variant="default" className="bg-success text-success-foreground">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        {t('xero.testResults.allPassed')}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        {t('xero.testResults.someFailed')}
+                      </Badge>
+                    )}
+                  </div>
+                  {showTestResults ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+
+                {showTestResults && (
+                  <div className="mt-4 space-y-3">
+                    {/* Token Status */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.tokenValid')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {testResults.details.tokenExpiresInMinutes !== null && (
+                          <span className="text-xs text-muted-foreground">
+                            {t('xero.testResults.expiresIn', { minutes: testResults.details.tokenExpiresInMinutes })}
+                          </span>
+                        )}
+                        {testResults.details.tokenValid ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tenant Connection */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Plug className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.tenantConnected')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {testResults.details.tenantName && (
+                          <span className="text-xs text-muted-foreground">
+                            {testResults.details.tenantName}
+                          </span>
+                        )}
+                        {testResults.details.tenantConnected ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Read Contacts */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.canReadContacts')}</span>
+                      </div>
+                      {testResults.details.canReadContacts ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+
+                    {/* Read Invoices */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.canReadInvoices')}</span>
+                      </div>
+                      {testResults.details.canReadInvoices ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+
+                    {/* Write Contacts */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Edit3 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.canWriteContacts')}</span>
+                      </div>
+                      {testResults.details.canWriteContacts ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+
+                    {/* Encryption Status */}
+                    <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{t('xero.testResults.encryptionEnabled')}</span>
+                      </div>
+                      {testResults.details.encryptionEnabled ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {t('xero.testResults.notConfigured')}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Errors */}
+                    {testResults.errors.length > 0 && (
+                      <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          <span className="text-sm font-medium text-destructive">
+                            {t('xero.testResults.errors')}
+                          </span>
+                        </div>
+                        <ul className="text-xs text-destructive space-y-1">
+                          {testResults.errors.map((error, index) => (
+                            <li key={index}>• {error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Last Sync Info */}
             {isConnected && (

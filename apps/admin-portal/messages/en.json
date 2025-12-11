@@ -1011,7 +1011,21 @@
         "testSuccessDescription": "Successfully connected to Xero",
         "testFailed": "Connection Failed",
         "lastSync": "Last Sync",
-        "never": "Never"
+        "never": "Never",
+        "testResults": {
+          "title": "Connection Test Results",
+          "allPassed": "All Passed",
+          "someFailed": "Some Failed",
+          "tokenValid": "Token Valid",
+          "expiresIn": "Expires in {minutes} min",
+          "tenantConnected": "Tenant Connected",
+          "canReadContacts": "Read Contacts",
+          "canReadInvoices": "Read Invoices",
+          "canWriteContacts": "Write Contacts",
+          "encryptionEnabled": "Token Encryption",
+          "notConfigured": "Not Configured",
+          "errors": "Errors"
+        }
       },
       "futureIntegrations": {
         "title": "More Integrations",

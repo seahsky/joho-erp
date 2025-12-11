@@ -1012,7 +1012,21 @@
         "testSuccessDescription": "已成功连接到Xero",
         "testFailed": "连接失败",
         "lastSync": "上次同步",
-        "never": "从未"
+        "never": "从未",
+        "testResults": {
+          "title": "连接测试结果",
+          "allPassed": "全部通过",
+          "someFailed": "部分失败",
+          "tokenValid": "令牌有效",
+          "expiresIn": "{minutes}分钟后过期",
+          "tenantConnected": "租户已连接",
+          "canReadContacts": "读取联系人",
+          "canReadInvoices": "读取发票",
+          "canWriteContacts": "写入联系人",
+          "encryptionEnabled": "令牌加密",
+          "notConfigured": "未配置",
+          "errors": "错误"
+        }
       },
       "futureIntegrations": {
         "title": "更多集成",

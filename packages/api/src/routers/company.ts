@@ -165,7 +165,7 @@ export const companyRouter = router({
     }),
 
   /**
-   * Test Xero connection
+   * Test Xero connection with detailed verification
    */
   testXeroConnection: isAdminOrSales.mutation(async () => {
     const company = await prisma.company.findFirst();
@@ -177,14 +177,16 @@ export const companyRouter = router({
       });
     }
 
-    // Test the actual Xero connection
-    const result = await xeroService.testConnection();
+    // Use detailed test for comprehensive verification
+    const result = await xeroService.testConnectionDetailed();
 
     return {
       success: result.success,
       message: result.message,
       connected: result.success,
-      tenantName: result.tenantName,
+      tenantName: result.details.tenantName,
+      details: result.details,
+      errors: result.errors,
     };
   }),
 
