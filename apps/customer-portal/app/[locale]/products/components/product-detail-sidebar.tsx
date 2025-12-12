@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { MobileDrawer } from '@joho-erp/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@joho-erp/ui';
@@ -18,6 +19,7 @@ interface Product {
   unit: string;
   basePrice: number;
   currentStock: number;
+  imageUrl: string | null;
 }
 
 interface ProductDetailSidebarProps {
@@ -112,8 +114,21 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
       <div className="space-y-6 pb-6">
         {/* Product Image */}
         <div className="relative bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-2xl overflow-hidden aspect-square flex items-center justify-center group">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-          <Package className="h-32 w-32 text-neutral-400 dark:text-neutral-600 transition-transform duration-300 group-hover:scale-110" />
+          {product.imageUrl ? (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, 420px"
+              priority
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+              <Package className="h-32 w-32 text-neutral-400 dark:text-neutral-600 transition-transform duration-300 group-hover:scale-110" />
+            </>
+          )}
         </div>
 
         {/* Product Info */}

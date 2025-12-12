@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
 import { Package, Plus } from 'lucide-react';
@@ -19,6 +20,7 @@ interface Product {
   unit: string;
   basePrice: number;
   currentStock: number;
+  imageUrl: string | null;
 }
 
 export function ProductList() {
@@ -174,10 +176,20 @@ export function ProductList() {
             >
               {/* Desktop Layout: Horizontal Row */}
               <div className="hidden md:flex items-center gap-6 p-4">
-                {/* Icon */}
+                {/* Product Image */}
                 <div className="flex-shrink-0">
-                  <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
-                    <Package className="h-8 w-8 text-neutral-400 dark:text-neutral-600" />
+                  <div className="relative h-16 w-16 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 overflow-hidden">
+                    {product.imageUrl ? (
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                      />
+                    ) : (
+                      <Package className="h-8 w-8 text-neutral-400 dark:text-neutral-600" />
+                    )}
                   </div>
                 </div>
 
@@ -245,11 +257,21 @@ export function ProductList() {
 
               {/* Mobile Layout: Two-Row Card */}
               <div className="md:hidden p-4 space-y-3">
-                {/* Top Row: Icon + Info */}
+                {/* Top Row: Image + Info */}
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 flex items-center justify-center">
-                      <Package className="h-7 w-7 text-neutral-400 dark:text-neutral-600" />
+                    <div className="relative h-14 w-14 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 flex items-center justify-center overflow-hidden">
+                      {product.imageUrl ? (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="56px"
+                        />
+                      ) : (
+                        <Package className="h-7 w-7 text-neutral-400 dark:text-neutral-600" />
+                      )}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
