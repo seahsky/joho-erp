@@ -3,6 +3,16 @@
     "title": "Customer Portal - Joho Foods",
     "description": "Order premium meat products for your business"
   },
+  "auth": {
+    "signIn": {
+      "title": "Joho Foods",
+      "subtitle": "Sign in to access your customer portal"
+    },
+    "signUp": {
+      "title": "Joho Foods",
+      "subtitle": "Create an account to order premium meat products"
+    }
+  },
   "navigation": {
     "home": "Home",
     "products": "Products",

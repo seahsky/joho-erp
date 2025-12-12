@@ -15,7 +15,7 @@ import {
 } from '@joho-erp/ui';
 import { ShoppingCart, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 
 export function OrderSummary() {
@@ -173,10 +173,10 @@ export function OrderSummary() {
               <div className="flex-1">
                 <p className="font-medium">{item.productName}</p>
                 <Muted className="text-sm">
-                  {item.quantity} × {formatCurrency(item.unitPrice)}
+                  {item.quantity} × {formatAUD(item.unitPrice)}
                 </Muted>
               </div>
-              <p className="font-semibold">{formatCurrency(item.subtotal)}</p>
+              <p className="font-semibold">{formatAUD(item.subtotal)}</p>
             </div>
           ))}
         </CardContent>
@@ -214,22 +214,22 @@ export function OrderSummary() {
         <CardContent className="space-y-3">
           <div className="flex justify-between">
             <Muted>{tCommon('subtotal')}</Muted>
-            <p className="font-medium">{formatCurrency(subtotal)}</p>
+            <p className="font-medium">{formatAUD(subtotal)}</p>
           </div>
           <div className="flex justify-between">
             <Muted>{tCommon('tax')}</Muted>
-            <p className="font-medium">{formatCurrency(gst)}</p>
+            <p className="font-medium">{formatAUD(gst)}</p>
           </div>
           <div className="border-t pt-3 flex justify-between">
             <p className="text-lg font-semibold">{tCommon('total')}</p>
-            <p className="text-lg font-bold">{formatCurrency(total)}</p>
+            <p className="text-lg font-bold">{formatAUD(total)}</p>
           </div>
 
           {/* Credit limit warning if applicable */}
           {customer.creditApplication.status === 'approved' && (
             <div className="pt-3 border-t">
               <Muted className="text-sm">
-                {t('availableCredit')}: {formatCurrency(customer.creditApplication.creditLimit)}
+                {t('availableCredit')}: {formatAUD(customer.creditApplication.creditLimit)}
               </Muted>
             </div>
           )}

@@ -3,6 +3,16 @@
     "title": "客户门户 - Joho Foods",
     "description": "为您的企业订购优质肉品"
   },
+  "auth": {
+    "signIn": {
+      "title": "Joho Foods",
+      "subtitle": "登录以访问您的客户门户"
+    },
+    "signUp": {
+      "title": "Joho Foods",
+      "subtitle": "创建账户以订购优质肉品"
+    }
+  },
   "navigation": {
     "home": "首页",
     "products": "产品",

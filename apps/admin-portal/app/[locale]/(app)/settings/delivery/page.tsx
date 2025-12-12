@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -26,6 +27,8 @@ import {
 } from '@joho-erp/ui';
 
 export default function DeliverySettingsPage() {
+  const t = useTranslations('settings.delivery');
+  const tCommon = useTranslations('common');
   const { toast } = useToast();
 
   // Form state
@@ -103,8 +106,8 @@ export default function DeliverySettingsPage() {
       }
     } catch (error) {
       toast({
-        title: 'Geocoding failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
+        title: t('geocodingFailed'),
+        description: error instanceof Error ? error.message : t('unknownError'),
         variant: 'destructive',
       });
     }
@@ -136,8 +139,8 @@ export default function DeliverySettingsPage() {
   const handleSave = async () => {
     if (!street || !suburb || !state || !postcode) {
       toast({
-        title: 'Validation error',
-        description: 'Please fill in all required address fields',
+        title: t('validationError'),
+        description: t('fillRequiredFields'),
         variant: 'destructive',
       });
       return;
@@ -159,15 +162,15 @@ export default function DeliverySettingsPage() {
       });
 
       toast({
-        title: 'Settings saved',
-        description: 'Delivery settings updated successfully',
+        title: t('settingsSaved'),
+        description: t('settingsSavedDescription'),
       });
 
       setHasChanges(false);
     } catch (error) {
       toast({
-        title: 'Save failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
+        title: t('saveFailed'),
+        description: error instanceof Error ? error.message : t('unknownError'),
         variant: 'destructive',
       });
     }
@@ -178,7 +181,7 @@ export default function DeliverySettingsPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground font-medium">Loading settings...</p>
+          <p className="text-muted-foreground font-medium">{tCommon('loading')}</p>
         </div>
       </div>
     );
@@ -191,10 +194,10 @@ export default function DeliverySettingsPage() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Warehouse className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-2xl md:text-4xl font-bold">Delivery Configuration</h1>
+            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
           </div>
           <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            Configure warehouse location, routes, and delivery windows
+            {t('subtitle')}
           </p>
         </div>
 
@@ -207,12 +210,12 @@ export default function DeliverySettingsPage() {
           {saveSettingsMutation.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Saving...
+              {t('saving')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              {t('saveChanges')}
             </>
           )}
         </Button>
@@ -226,7 +229,7 @@ export default function DeliverySettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Navigation2 className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Warehouse Location</CardTitle>
+                  <CardTitle className="text-base">{t('warehouseLocation')}</CardTitle>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {latitude.toFixed(6)}, {longitude.toFixed(6)}
@@ -264,7 +267,7 @@ export default function DeliverySettingsPage() {
 
               <div className="p-4 bg-muted/50 border-t">
                 <p className="text-xs text-muted-foreground">
-                  💡 Click anywhere on the map to set warehouse location
+                  💡 {t('clickMap')}
                 </p>
               </div>
             </CardContent>
@@ -278,9 +281,9 @@ export default function DeliverySettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Search className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Address Search</CardTitle>
+                <CardTitle className="text-base">{t('addressSearch')}</CardTitle>
               </div>
-              <CardDescription>Search for warehouse address using Mapbox</CardDescription>
+              <CardDescription>{t('searchDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
@@ -289,7 +292,7 @@ export default function DeliverySettingsPage() {
                   value={addressSearch}
                   onChange={(e) => setAddressSearch(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search for warehouse address..."
+                  placeholder={t('searchPlaceholder')}
                 />
                 <Button
                   onClick={handleSearch}
@@ -299,7 +302,7 @@ export default function DeliverySettingsPage() {
                   {geocodeMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    'Search'
+                    tCommon('search')
                   )}
                 </Button>
               </div>
@@ -329,63 +332,63 @@ export default function DeliverySettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Warehouse Address</CardTitle>
+                <CardTitle className="text-base">{t('warehouseAddress')}</CardTitle>
               </div>
-              <CardDescription>Enter warehouse address manually</CardDescription>
+              <CardDescription>{t('manualEntryDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="street">Street Address *</Label>
+                <Label htmlFor="street">{t('streetAddress')} *</Label>
                 <Input
                   id="street"
                   type="text"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
-                  placeholder="123 Industrial Way"
+                  placeholder={t('streetPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="suburb">Suburb *</Label>
+                  <Label htmlFor="suburb">{t('suburb')} *</Label>
                   <Input
                     id="suburb"
                     type="text"
                     value={suburb}
                     onChange={(e) => setSuburb(e.target.value)}
-                    placeholder="Melbourne"
+                    placeholder={t('suburbPlaceholder')}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="postcode">Postcode *</Label>
+                  <Label htmlFor="postcode">{t('postcode')} *</Label>
                   <Input
                     id="postcode"
                     type="text"
                     value={postcode}
                     onChange={(e) => setPostcode(e.target.value)}
-                    placeholder="3000"
+                    placeholder={t('postcodePlaceholder')}
                     maxLength={4}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
+                <Label htmlFor="state">{t('state')} *</Label>
                 <select
                   id="state"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="VIC">Victoria</option>
-                  <option value="NSW">New South Wales</option>
-                  <option value="QLD">Queensland</option>
-                  <option value="SA">South Australia</option>
-                  <option value="WA">Western Australia</option>
-                  <option value="TAS">Tasmania</option>
-                  <option value="NT">Northern Territory</option>
-                  <option value="ACT">Australian Capital Territory</option>
+                  <option value="VIC">{t('states.VIC')}</option>
+                  <option value="NSW">{t('states.NSW')}</option>
+                  <option value="QLD">{t('states.QLD')}</option>
+                  <option value="SA">{t('states.SA')}</option>
+                  <option value="WA">{t('states.WA')}</option>
+                  <option value="TAS">{t('states.TAS')}</option>
+                  <option value="NT">{t('states.NT')}</option>
+                  <option value="ACT">{t('states.ACT')}</option>
                 </select>
               </div>
             </CardContent>
@@ -396,13 +399,13 @@ export default function DeliverySettingsPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Operations</CardTitle>
+                <CardTitle className="text-base">{t('operations')}</CardTitle>
               </div>
-              <CardDescription>Configure delivery windows and cutoff times</CardDescription>
+              <CardDescription>{t('operationsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="cutoffTime">Order Cut-off Time</Label>
+                <Label htmlFor="cutoffTime">{t('orderCutoffTime')}</Label>
                 <Input
                   id="cutoffTime"
                   type="time"
@@ -410,18 +413,18 @@ export default function DeliverySettingsPage() {
                   onChange={(e) => setCutoffTime(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Orders placed after this time will be scheduled for next-day delivery
+                  {t('cutoffDescription')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="deliveryWindow">Delivery Window</Label>
+                <Label htmlFor="deliveryWindow">{t('deliveryWindow')}</Label>
                 <Input
                   id="deliveryWindow"
                   type="text"
                   value={deliveryWindow}
                   onChange={(e) => setDeliveryWindow(e.target.value)}
-                  placeholder="9:00-17:00"
+                  placeholder={t('deliveryWindowPlaceholder')}
                 />
               </div>
             </CardContent>
@@ -432,7 +435,7 @@ export default function DeliverySettingsPage() {
       {/* Unsaved Changes Indicator */}
       {hasChanges && (
         <div className="fixed bottom-6 right-6 bg-warning text-warning-foreground px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
-          Unsaved changes
+          {t('unsavedChanges')}
         </div>
       )}
     </div>
