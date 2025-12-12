@@ -20,6 +20,7 @@ import {
 import { Search, Package, Plus, Edit, Loader2, PackageX, PackagePlus } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
+import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
 import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@joho-erp/shared';
@@ -28,12 +29,15 @@ type Product = {
   id: string;
   sku: string;
   name: string;
-  category?: string;
+  description?: string | null;
+  category?: string | null;
   unit: string;
+  packageSize?: number | null;
   basePrice: number;
   currentStock: number;
-  lowStockThreshold?: number;
+  lowStockThreshold?: number | null;
   status: 'active' | 'discontinued' | 'out_of_stock';
+  imageUrl?: string | null;
 };
 
 export default function ProductsPage() {
@@ -43,6 +47,7 @@ export default function ProductsPage() {
   const tStock = useTranslations('stockAdjustment');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -165,7 +170,15 @@ export default function ProductsPage() {
           >
             <PackagePlus className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" aria-label={t('edit')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('edit')}
+            onClick={() => {
+              setSelectedProduct(product);
+              setShowEditDialog(true);
+            }}
+          >
             <Edit className="h-4 w-4" />
           </Button>
         </div>
@@ -220,7 +233,15 @@ export default function ProductsPage() {
           <PackagePlus className="h-4 w-4 mr-1" />
           {tStock('buttons.adjustStock')}
         </Button>
-        <Button variant="outline" size="sm" className="flex-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => {
+            setSelectedProduct(product);
+            setShowEditDialog(true);
+          }}
+        >
           <Edit className="h-4 w-4 mr-1" />
           {t('edit')}
         </Button>
@@ -336,6 +357,17 @@ export default function ProductsPage() {
       <AddProductDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        open={showEditDialog}
+        onOpenChange={(open) => {
+          setShowEditDialog(open);
+          if (!open) setSelectedProduct(null);
+        }}
+        product={selectedProduct}
         onSuccess={() => refetch()}
       />
 

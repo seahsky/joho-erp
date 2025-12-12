@@ -329,6 +329,10 @@
       "title": "Add New Product",
       "description": "Create a new product and optionally set customer-specific pricing"
     },
+    "editDialog": {
+      "title": "Edit Product",
+      "description": "Update product details and pricing"
+    },
     "sections": {
       "productDetails": "Product Details",
       "productImage": "Product Image",
@@ -401,7 +405,8 @@
     "buttons": {
       "cancel": "Cancel",
       "createProduct": "Create Product",
-      "addProduct": "Add Product"
+      "addProduct": "Add Product",
+      "updateProduct": "Update Product"
     },
     "validation": {
       "skuNamePriceRequired": "SKU, name, and base price are required",
@@ -413,6 +418,8 @@
     "messages": {
       "productCreated": "Product created successfully",
       "productCreatedWith": "Product created with",
+      "productUpdated": "Product updated successfully",
+      "errorUpdating": "Error updating product",
       "customPrices": "custom prices",
       "customPrice": "custom price",
       "errorCreating": "Error creating product",

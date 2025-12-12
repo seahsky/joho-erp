@@ -330,6 +330,10 @@
       "title": "添加新产品",
       "description": "创建新产品并可选择设置客户特定价格"
     },
+    "editDialog": {
+      "title": "编辑产品",
+      "description": "更新产品详情和价格"
+    },
     "sections": {
       "productDetails": "产品详情",
       "productImage": "产品图片",
@@ -402,7 +406,8 @@
     "buttons": {
       "cancel": "取消",
       "createProduct": "创建产品",
-      "addProduct": "添加产品"
+      "addProduct": "添加产品",
+      "updateProduct": "更新产品"
     },
     "validation": {
       "skuNamePriceRequired": "货号、名称和基础价格为必填项",
@@ -414,6 +419,8 @@
     "messages": {
       "productCreated": "产品创建成功",
       "productCreatedWith": "产品已创建，包含",
+      "productUpdated": "产品更新成功",
+      "errorUpdating": "更新产品时出错",
       "customPrices": "个自定义价格",
       "customPrice": "个自定义价格",
       "errorCreating": "创建产品时出错",

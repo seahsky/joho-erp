@@ -111,10 +111,11 @@ export function AddProductDialog({
     }
 
     // Get presigned URL
+    // Note: After compression, file is always JPEG regardless of original type
     const { uploadUrl, publicUrl } = await uploadUrlMutation.mutateAsync({
       productId: tempProductId,
       filename: file.name,
-      contentType: processedFile.type as 'image/jpeg' | 'image/png' | 'image/jpg' | 'image/webp',
+      contentType: 'image/jpeg',
       contentLength: processedFile.size,
     });
 
@@ -123,7 +124,7 @@ export function AddProductDialog({
       method: 'PUT',
       body: processedFile,
       headers: {
-        'Content-Type': processedFile.type,
+        'Content-Type': 'image/jpeg',
       },
     });
 

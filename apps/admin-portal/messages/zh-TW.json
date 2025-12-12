@@ -330,6 +330,10 @@
       "title": "添加新產品",
       "description": "創建新產品並可選擇設置客戶特定價格"
     },
+    "editDialog": {
+      "title": "編輯產品",
+      "description": "更新產品詳情和價格"
+    },
     "sections": {
       "productDetails": "產品詳情",
       "productImage": "產品圖片",
@@ -402,7 +406,8 @@
     "buttons": {
       "cancel": "取消",
       "createProduct": "創建產品",
-      "addProduct": "添加產品"
+      "addProduct": "添加產品",
+      "updateProduct": "更新產品"
     },
     "validation": {
       "skuNamePriceRequired": "貨號、名稱和基礎價格為必填項",
@@ -414,6 +419,8 @@
     "messages": {
       "productCreated": "產品創建成功",
       "productCreatedWith": "產品已創建，包含",
+      "productUpdated": "產品更新成功",
+      "errorUpdating": "更新產品時出錯",
       "customPrices": "個自定義價格",
       "customPrice": "個自定義價格",
       "errorCreating": "創建產品時出錯",
