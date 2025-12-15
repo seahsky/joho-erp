@@ -432,6 +432,20 @@
       "message": "Some items in your order exceed current stock levels. Your order will be submitted for approval and you'll be notified of the decision.",
       "insufficientStock": "Insufficient stock for some items",
       "stockShortfall": "Stock Shortfall"
+    },
+    "deliveryDate": {
+      "label": "Delivery Date",
+      "selectDate": "Select delivery date",
+      "cutoffWarning": "Order cutoff time ({time}) has passed for today.",
+      "nextAvailable": "Earliest delivery available: {date}",
+      "minDateTomorrow": "Earliest delivery is tomorrow"
+    },
+    "credit": {
+      "creditLimit": "Credit Limit",
+      "outstandingBalance": "Outstanding Balance",
+      "availableCredit": "Available Credit",
+      "exceedsCredit": "Exceeds Credit Limit",
+      "exceedsCreditMessage": "Your order total ({total}) exceeds your available credit ({available}). Please contact sales for assistance."
     }
   },
   "orderDetails": {

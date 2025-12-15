@@ -16,6 +16,7 @@ import {
   sendOrderCancelledEmail,
 } from '../services/email';
 import { clerkClient } from '@clerk/nextjs/server';
+import { getCutoffInfo as getCutoffInfoService } from '../services/order-validation';
 
 // Helper: Validate stock and calculate shortfall for backorder support
 interface StockValidationResult {
@@ -59,7 +60,7 @@ export async function calculateAvailableCredit(customerId: string, creditLimit: 
     where: {
       customerId,
       status: {
-        in: ['pending', 'confirmed', 'packing', 'ready_for_delivery'],
+        in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
       // Exclude pending backorders (they don't count until approved)
       backorderStatus: {
@@ -81,6 +82,26 @@ export async function calculateAvailableCredit(customerId: string, creditLimit: 
   const availableCredit = creditLimit - outstandingBalance;
 
   return availableCredit;
+}
+
+// Helper: Get outstanding balance for a customer
+export async function getOutstandingBalance(customerId: string): Promise<number> {
+  const outstandingOrders = await prisma.order.findMany({
+    where: {
+      customerId,
+      status: {
+        in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+      },
+      backorderStatus: {
+        not: 'pending_approval',
+      },
+    },
+    select: {
+      totalAmount: true,
+    },
+  });
+
+  return outstandingOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 }
 
 export const orderRouter = router({
@@ -1704,5 +1725,310 @@ export const orderRouter = router({
       });
 
       return updatedOrder;
+    }),
+
+  // ============================================================================
+  // CUTOFF TIME & CREDIT INFO QUERIES
+  // ============================================================================
+
+  // Get cutoff time information for the UI
+  getCutoffInfo: protectedProcedure
+    .input(
+      z.object({
+        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      const cutoffInfo = await getCutoffInfoService(input?.areaTag);
+      return cutoffInfo;
+    }),
+
+  // Get available credit information for a customer
+  getAvailableCreditInfo: protectedProcedure.query(async ({ ctx }) => {
+    // Get customer by clerkUserId
+    const customer = await prisma.customer.findUnique({
+      where: { clerkUserId: ctx.userId },
+      select: {
+        id: true,
+        creditApplication: true,
+      },
+    });
+
+    if (!customer) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Customer not found',
+      });
+    }
+
+    const creditLimit = customer.creditApplication.creditLimit;
+    const outstandingBalance = await getOutstandingBalance(customer.id);
+    const availableCredit = creditLimit - outstandingBalance;
+
+    return {
+      creditLimit, // In cents
+      outstandingBalance, // In cents
+      availableCredit, // In cents
+      currency: 'AUD',
+    };
+  }),
+
+  // ============================================================================
+  // ORDER CONFIRMATION (Admin)
+  // ============================================================================
+
+  // Confirm a pending order (Admin/Sales only)
+  confirmOrder: isAdminOrSales
+    .input(
+      z.object({
+        orderId: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, notes } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate current status
+      if (order.status !== 'pending') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot confirm order with status '${order.status}'. Only pending orders can be confirmed.`,
+        });
+      }
+
+      // Re-validate stock availability for non-backorders
+      if (order.backorderStatus === 'none') {
+        const orderItems = order.items as Array<{ productId: string; quantity: number }>;
+        const productIds = orderItems.map((item) => item.productId);
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+        });
+
+        for (const item of orderItems) {
+          const product = products.find((p) => p.id === item.productId);
+          if (product && product.currentStock < item.quantity) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Required: ${item.quantity}`,
+            });
+          }
+        }
+      }
+
+      // Re-validate credit limit
+      const creditLimit = order.customer.creditApplication.creditLimit;
+      const availableCredit = await calculateAvailableCredit(order.customerId, creditLimit);
+
+      // Need to exclude this order's amount from available credit since it's already counted
+      const adjustedAvailableCredit = availableCredit + order.totalAmount;
+      if (order.totalAmount > adjustedAvailableCredit) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Order total exceeds available credit. Available: $${(adjustedAvailableCredit / 100).toFixed(2)}`,
+        });
+      }
+
+      // Validate delivery date is in the future
+      const now = new Date();
+      if (order.requestedDeliveryDate < now) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Requested delivery date is in the past. Please update the delivery date.',
+        });
+      }
+
+      // Update order status to confirmed
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'confirmed',
+          statusHistory: {
+            push: {
+              status: 'confirmed',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: notes || 'Order confirmed by admin',
+            },
+          },
+        },
+        include: { customer: true },
+      });
+
+      // Send confirmation email to customer
+      const deliveryAddr = order.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+
+      const orderItems = order.items as Array<{
+        productName: string;
+        sku: string;
+        quantity: number;
+        unit: string;
+        unitPrice: number;
+        subtotal: number;
+      }>;
+
+      await sendOrderConfirmationEmail({
+        customerEmail: updatedOrder.customer.contactPerson.email,
+        customerName: updatedOrder.customer.businessName,
+        orderNumber: updatedOrder.orderNumber,
+        orderDate: updatedOrder.orderedAt,
+        requestedDeliveryDate: updatedOrder.requestedDeliveryDate,
+        items: orderItems.map((item) => ({
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+        subtotal: updatedOrder.subtotal,
+        taxAmount: updatedOrder.taxAmount,
+        totalAmount: updatedOrder.totalAmount,
+        deliveryAddress: {
+          street: deliveryAddr.street,
+          suburb: deliveryAddr.suburb,
+          state: deliveryAddr.state,
+          postcode: deliveryAddr.postcode,
+        },
+      }).catch((error) => {
+        console.error('Failed to send order confirmation email:', error);
+      });
+
+      return updatedOrder;
+    }),
+
+  // ============================================================================
+  // CUSTOMER ORDER CANCELLATION
+  // ============================================================================
+
+  // Cancel own order (Customer only - pending orders)
+  cancelMyOrder: protectedProcedure
+    .input(
+      z.object({
+        orderId: z.string(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, reason } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate ownership - order must belong to the customer
+      if (order.customer.clerkUserId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only cancel your own orders',
+        });
+      }
+
+      // Validate status - only pending orders can be cancelled by customer
+      if (order.status !== 'pending') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only pending orders can be cancelled. Please contact customer service for assistance.',
+        });
+      }
+
+      // Cancel the order and restore stock in a transaction
+      const cancelledOrder = await prisma.$transaction(async (tx) => {
+        // For normal orders (not backorders), restore the stock
+        if (order.backorderStatus === 'none') {
+          const orderItems = order.items as Array<{ productId: string; quantity: number }>;
+
+          for (const item of orderItems) {
+            // Get current product stock
+            const product = await tx.product.findUnique({
+              where: { id: item.productId },
+            });
+
+            if (product) {
+              const previousStock = product.currentStock;
+              const newStock = previousStock + item.quantity;
+
+              // Create inventory transaction (return)
+              await tx.inventoryTransaction.create({
+                data: {
+                  productId: item.productId,
+                  type: 'return',
+                  quantity: item.quantity, // Positive for return
+                  previousStock,
+                  newStock,
+                  referenceType: 'order',
+                  referenceId: order.id,
+                  notes: `Stock restored from cancelled order ${order.orderNumber}`,
+                  createdBy: ctx.userId,
+                },
+              });
+
+              // Update product stock
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { currentStock: newStock },
+              });
+            }
+          }
+        }
+
+        // Update order status
+        const updated = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'cancelled',
+            statusHistory: {
+              push: {
+                status: 'cancelled',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                notes: reason || 'Cancelled by customer',
+              },
+            },
+          },
+          include: { customer: true },
+        });
+
+        return updated;
+      });
+
+      // Send cancellation email to customer
+      await sendOrderCancelledEmail({
+        customerEmail: cancelledOrder.customer.contactPerson.email,
+        customerName: cancelledOrder.customer.businessName,
+        orderNumber: cancelledOrder.orderNumber,
+        cancellationReason: reason || 'Cancelled by customer',
+        totalAmount: cancelledOrder.totalAmount,
+      }).catch((error) => {
+        console.error('Failed to send order cancelled email:', error);
+      });
+
+      return cancelledOrder;
     }),
 });

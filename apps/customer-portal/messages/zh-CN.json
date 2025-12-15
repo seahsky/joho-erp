@@ -258,6 +258,20 @@
       "message": "您订单中的某些商品超出当前库存水平。您的订单将提交审批，我们会通知您审批结果。",
       "insufficientStock": "某些商品库存不足",
       "stockShortfall": "库存短缺"
+    },
+    "deliveryDate": {
+      "label": "配送日期",
+      "selectDate": "选择配送日期",
+      "cutoffWarning": "今天的订单截止时间 ({time}) 已过。",
+      "nextAvailable": "最早可配送日期：{date}",
+      "minDateTomorrow": "最早配送为明天"
+    },
+    "credit": {
+      "creditLimit": "信用额度",
+      "outstandingBalance": "未结余额",
+      "availableCredit": "可用信用额度",
+      "exceedsCredit": "超出信用额度",
+      "exceedsCreditMessage": "您的订单总额 ({total}) 超出了可用信用额度 ({available})。请联系销售人员。"
     }
   },
   "orderDetails": {

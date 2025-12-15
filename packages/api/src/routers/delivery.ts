@@ -1,8 +1,13 @@
 import { z } from 'zod';
-import { router, isAdminOrSales } from '../trpc';
+import { router, isAdminOrSales, isDriver } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getRouteOptimization } from '../services/route-optimizer';
+import {
+  sendOrderOutForDeliveryEmail,
+  sendOrderDeliveredEmail,
+} from '../services/email';
+import { enqueueXeroJob } from '../services/xero-queue';
 
 export const deliveryRouter = router({
   // Get all deliveries with filtering
@@ -303,5 +308,467 @@ export const deliveryRouter = router({
       }));
 
       return deliveries;
+    }),
+
+  // ============================================================================
+  // DRIVER PROCEDURES
+  // ============================================================================
+
+  // Get deliveries assigned to the current driver
+  getDriverDeliveries: isDriver
+    .input(
+      z.object({
+        date: z.date().optional(), // Defaults to today
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      // Use provided date or default to today (in Sydney timezone)
+      const targetDate = input?.date || new Date();
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Get orders assigned to this driver
+      const orders = await prisma.order.findMany({
+        where: {
+          requestedDeliveryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          status: {
+            in: ['ready_for_delivery', 'out_for_delivery'],
+          },
+          delivery: {
+            is: {
+              driverId: ctx.userId,
+            },
+          },
+        },
+        orderBy: [
+          { delivery: { deliverySequence: 'asc' } },
+          { orderNumber: 'asc' },
+        ],
+        include: {
+          customer: {
+            select: {
+              contactPerson: true,
+              deliveryAddress: true,
+            },
+          },
+        },
+      });
+
+      const deliveries = orders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
+        deliveryInstructions: order.deliveryAddress.deliveryInstructions,
+        latitude: order.deliveryAddress.latitude,
+        longitude: order.deliveryAddress.longitude,
+        areaTag: order.deliveryAddress.areaTag,
+        status: order.status,
+        deliverySequence: order.delivery?.deliverySequence || null,
+        estimatedArrival: order.delivery?.estimatedArrival || null,
+        startedAt: order.delivery?.startedAt || null,
+        itemCount: order.items.length,
+        totalAmount: order.totalAmount,
+        hasProofOfDelivery: !!order.delivery?.proofOfDelivery,
+        proofOfDeliveryType: order.delivery?.proofOfDelivery?.type || null,
+        contactPhone: order.customer?.contactPerson?.phone || null,
+      }));
+
+      return {
+        date: targetDate,
+        deliveries,
+        total: deliveries.length,
+        outForDelivery: deliveries.filter((d) => d.status === 'out_for_delivery').length,
+        readyForDelivery: deliveries.filter((d) => d.status === 'ready_for_delivery').length,
+      };
+    }),
+
+  // Mark order as out for delivery (driver starts delivery)
+  markOutForDelivery: isDriver
+    .input(
+      z.object({
+        orderId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate status
+      if (order.status !== 'ready_for_delivery') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot start delivery for order with status '${order.status}'. Order must be 'ready_for_delivery'.`,
+        });
+      }
+
+      // Validate driver assignment
+      if (order.delivery?.driverId && order.delivery.driverId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This order is assigned to a different driver',
+        });
+      }
+
+      // Update order status
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'out_for_delivery',
+          delivery: {
+            ...order.delivery,
+            driverId: ctx.userId,
+            startedAt: new Date(),
+          },
+          statusHistory: {
+            push: {
+              status: 'out_for_delivery',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: 'Driver started delivery',
+            },
+          },
+        },
+        include: { customer: true },
+      });
+
+      // Send notification email to customer
+      const deliveryAddr = updatedOrder.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+      await sendOrderOutForDeliveryEmail({
+        customerEmail: updatedOrder.customer.contactPerson.email,
+        customerName: updatedOrder.customer.businessName,
+        orderNumber: updatedOrder.orderNumber,
+        driverName: updatedOrder.delivery?.driverName ?? undefined,
+        deliveryAddress: {
+          street: deliveryAddr.street,
+          suburb: deliveryAddr.suburb,
+          state: deliveryAddr.state,
+          postcode: deliveryAddr.postcode,
+        },
+      }).catch((error) => {
+        console.error('Failed to send out for delivery email:', error);
+      });
+
+      return updatedOrder;
+    }),
+
+  // Upload proof of delivery (photo or signature)
+  uploadProofOfDelivery: isDriver
+    .input(
+      z.object({
+        orderId: z.string(),
+        type: z.enum(['photo', 'signature']),
+        fileUrl: z.string().url(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, type, fileUrl } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate status (must be out_for_delivery)
+      if (order.status !== 'out_for_delivery') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot upload POD for order with status '${order.status}'. Order must be 'out_for_delivery'.`,
+        });
+      }
+
+      // Validate driver assignment
+      if (order.delivery?.driverId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This order is assigned to a different driver',
+        });
+      }
+
+      // Update order with POD
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          delivery: {
+            ...order.delivery,
+            proofOfDelivery: {
+              type,
+              fileUrl,
+              uploadedAt: new Date(),
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Proof of delivery uploaded successfully',
+        proofOfDelivery: updatedOrder.delivery?.proofOfDelivery,
+      };
+    }),
+
+  // Complete delivery (requires POD)
+  completeDelivery: isDriver
+    .input(
+      z.object({
+        orderId: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, notes } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate status
+      if (order.status !== 'out_for_delivery') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot complete delivery for order with status '${order.status}'. Order must be 'out_for_delivery'.`,
+        });
+      }
+
+      // Validate driver assignment
+      if (order.delivery?.driverId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This order is assigned to a different driver',
+        });
+      }
+
+      // Validate POD exists
+      if (!order.delivery?.proofOfDelivery) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Proof of delivery is required before completing delivery. Please upload a photo or signature.',
+        });
+      }
+
+      // Update order status
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'delivered',
+          delivery: {
+            ...order.delivery,
+            deliveredAt: new Date(),
+            actualArrival: new Date(),
+            notes: notes || order.delivery.notes,
+          },
+          statusHistory: {
+            push: {
+              status: 'delivered',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: notes || 'Delivery completed by driver',
+            },
+          },
+        },
+        include: { customer: true },
+      });
+
+      // Send delivery confirmation email to customer
+      await sendOrderDeliveredEmail({
+        customerEmail: updatedOrder.customer.contactPerson.email,
+        customerName: updatedOrder.customer.businessName,
+        orderNumber: updatedOrder.orderNumber,
+        deliveredAt: updatedOrder.delivery?.deliveredAt || new Date(),
+        totalAmount: updatedOrder.totalAmount,
+      }).catch((error) => {
+        console.error('Failed to send delivery confirmation email:', error);
+      });
+
+      // Enqueue Xero invoice creation
+      await enqueueXeroJob('create_invoice', 'order', orderId).catch((error) => {
+        console.error('Failed to enqueue Xero invoice creation:', error);
+      });
+
+      return updatedOrder;
+    }),
+
+  // Return order to warehouse
+  returnToWarehouse: isDriver
+    .input(
+      z.object({
+        orderId: z.string(),
+        reason: z.enum([
+          'customer_unavailable',
+          'address_not_found',
+          'refused_delivery',
+          'damaged_goods',
+          'other',
+        ]),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, reason, notes } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate status
+      if (order.status !== 'out_for_delivery') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot return order with status '${order.status}'. Order must be 'out_for_delivery'.`,
+        });
+      }
+
+      // Validate driver assignment
+      if (order.delivery?.driverId !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This order is assigned to a different driver',
+        });
+      }
+
+      // Map reason to user-friendly text
+      const reasonTexts: Record<string, string> = {
+        customer_unavailable: 'Customer unavailable',
+        address_not_found: 'Address not found',
+        refused_delivery: 'Delivery refused by customer',
+        damaged_goods: 'Goods damaged during transit',
+        other: notes || 'Other reason',
+      };
+
+      // Update order status back to ready_for_delivery
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'ready_for_delivery',
+          delivery: {
+            ...order.delivery,
+            returnReason: reason,
+            returnNotes: notes,
+            returnedAt: new Date(),
+            // Clear the startedAt to indicate it needs to be re-attempted
+            startedAt: null,
+          },
+          statusHistory: {
+            push: {
+              status: 'ready_for_delivery',
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: `Returned to warehouse: ${reasonTexts[reason]}${notes ? ` - ${notes}` : ''}`,
+            },
+          },
+        },
+        include: { customer: true },
+      });
+
+      // TODO: Send notification to admin/warehouse about returned order
+
+      return {
+        success: true,
+        message: 'Order returned to warehouse',
+        order: updatedOrder,
+      };
+    }),
+
+  // Assign driver to order (Admin/Sales only)
+  assignDriver: isAdminOrSales
+    .input(
+      z.object({
+        orderId: z.string(),
+        driverId: z.string(),
+        driverName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, driverId, driverName } = input;
+
+      // Get the order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Validate status
+      if (!['ready_for_delivery', 'out_for_delivery'].includes(order.status)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot assign driver to order with status '${order.status}'.`,
+        });
+      }
+
+      // Update order with driver assignment
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          delivery: {
+            ...order.delivery,
+            driverId,
+            driverName: driverName || order.delivery?.driverName,
+            assignedAt: new Date(),
+          },
+          statusHistory: {
+            push: {
+              status: order.status,
+              changedAt: new Date(),
+              changedBy: ctx.userId,
+              notes: `Driver assigned: ${driverName || driverId}`,
+            },
+          },
+        },
+      });
+
+      return updatedOrder;
     }),
 });

@@ -78,8 +78,17 @@ enum OrderStatus {
   confirmed
   packing
   ready_for_delivery
+  out_for_delivery    // Driver has started delivery
   delivered
   cancelled
+}
+
+enum DeliveryReturnReason {
+  customer_unavailable
+  address_not_found
+  refused_delivery
+  damaged_goods
+  other
 }
 
 enum BackorderStatus {
@@ -508,6 +517,7 @@ type Delivery {
   driverId            String?
   driverName          String?
   assignedAt          DateTime?
+  startedAt           DateTime?           // When driver marked "out for delivery"
   deliveredAt         DateTime?
   proofOfDelivery     ProofOfDelivery?
   notes               String?
@@ -515,6 +525,10 @@ type Delivery {
   routeId             String?             // Reference to RouteOptimization
   estimatedArrival    DateTime?           // Estimated arrival time based on route
   actualArrival       DateTime?           // Actual arrival time (for analytics)
+  // Return fields (when driver returns order to warehouse)
+  returnReason        DeliveryReturnReason?
+  returnNotes         String?
+  returnedAt          DateTime?
 }
 
 type ProofOfDelivery {

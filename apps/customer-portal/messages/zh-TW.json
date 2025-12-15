@@ -258,6 +258,20 @@
       "message": "您訂單中的某些商品超出當前庫存水平。您的訂單將提交審批，我們會通知您審批結果。",
       "insufficientStock": "某些商品庫存不足",
       "stockShortfall": "庫存短缺"
+    },
+    "deliveryDate": {
+      "label": "配送日期",
+      "selectDate": "選擇配送日期",
+      "cutoffWarning": "今天的訂單截止時間 ({time}) 已過。",
+      "nextAvailable": "最早可配送日期：{date}",
+      "minDateTomorrow": "最早配送為明天"
+    },
+    "credit": {
+      "creditLimit": "信用額度",
+      "outstandingBalance": "未結餘額",
+      "availableCredit": "可用信用額度",
+      "exceedsCredit": "超出信用額度",
+      "exceedsCreditMessage": "您的訂單總額 ({total}) 超出了可用信用額度 ({available})。請聯繫銷售人員。"
     }
   },
   "orderDetails": {

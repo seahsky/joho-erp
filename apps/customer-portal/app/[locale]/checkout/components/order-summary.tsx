@@ -12,8 +12,10 @@ import {
   Skeleton,
   H3,
   Muted,
+  Input,
+  Label,
 } from '@joho-erp/ui';
-import { ShoppingCart, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
+import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, Clock } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -22,11 +24,43 @@ export function OrderSummary() {
   const t = useTranslations('checkout');
   const tCommon = useTranslations('common');
   const tBackorder = useTranslations('checkout.backorderWarning');
+  const tDelivery = useTranslations('checkout.deliveryDate');
+  const tCredit = useTranslations('checkout.credit');
   const router = useRouter();
   const { toast } = useToast();
 
+  // State for delivery date
+  const [deliveryDate, setDeliveryDate] = React.useState<string>('');
+
   // Fetch customer profile for delivery address
   const { data: customer, isLoading: isLoadingCustomer } = api.customer.getProfile.useQuery();
+
+  // Fetch cutoff info
+  const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // Fetch available credit info
+  const { data: creditInfo, isLoading: isLoadingCredit } = api.order.getAvailableCreditInfo.useQuery();
+
+  // Set default delivery date based on cutoff info
+  React.useEffect(() => {
+    if (cutoffInfo?.nextAvailableDeliveryDate && !deliveryDate) {
+      const nextDate = new Date(cutoffInfo.nextAvailableDeliveryDate);
+      setDeliveryDate(nextDate.toISOString().split('T')[0]);
+    }
+  }, [cutoffInfo, deliveryDate]);
+
+  // Calculate min date for date picker (tomorrow or day after based on cutoff)
+  const minDeliveryDate = React.useMemo(() => {
+    if (cutoffInfo?.nextAvailableDeliveryDate) {
+      return new Date(cutoffInfo.nextAvailableDeliveryDate).toISOString().split('T')[0];
+    }
+    // Default to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }, [cutoffInfo]);
 
   // Create order mutation
   const createOrder = api.order.create.useMutation({
@@ -77,8 +111,15 @@ export function OrderSummary() {
 
     createOrder.mutate({
       items: orderItems,
+      requestedDeliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
     });
   };
+
+  // Check if order exceeds available credit
+  const exceedsCredit = React.useMemo(() => {
+    if (!creditInfo || !cart) return false;
+    return cart.total > creditInfo.availableCredit;
+  }, [creditInfo, cart]);
 
   // Cart totals (already calculated by backend)
   const subtotal = cart?.subtotal ?? 0;
@@ -86,7 +127,7 @@ export function OrderSummary() {
   const total = cart?.total ?? 0;
 
   // Loading state
-  if (isLoadingCustomer || isLoadingCart) {
+  if (isLoadingCustomer || isLoadingCart || isLoadingCredit) {
     return (
       <div className="space-y-4">
         <Card>
@@ -152,6 +193,70 @@ export function OrderSummary() {
                 <H3 className="text-base mb-1">{tBackorder('title')}</H3>
                 <p className="text-sm text-muted-foreground">
                   {tBackorder('message')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delivery Date Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            {tDelivery('label')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label htmlFor="deliveryDate">{tDelivery('selectDate')}</Label>
+            <Input
+              id="deliveryDate"
+              type="date"
+              value={deliveryDate}
+              min={minDeliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Cutoff Warning */}
+          {cutoffInfo?.isAfterCutoff && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+              <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  {tDelivery('cutoffWarning', { time: cutoffInfo.cutoffTime })}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  {tDelivery('nextAvailable', {
+                    date: new Date(cutoffInfo.nextAvailableDeliveryDate).toLocaleDateString('en-AU', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    }),
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Credit Limit Warning */}
+      {exceedsCredit && creditInfo && (
+        <Card className="border-destructive bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+              <div>
+                <H3 className="text-base mb-1 text-destructive">{tCredit('exceedsCredit')}</H3>
+                <p className="text-sm text-muted-foreground">
+                  {tCredit('exceedsCreditMessage', {
+                    total: formatAUD(total),
+                    available: formatAUD(creditInfo.availableCredit),
+                  })}
                 </p>
               </div>
             </div>
@@ -225,12 +330,25 @@ export function OrderSummary() {
             <p className="text-lg font-bold">{formatAUD(total)}</p>
           </div>
 
-          {/* Credit limit warning if applicable */}
-          {customer.creditApplication.status === 'approved' && (
-            <div className="pt-3 border-t">
-              <Muted className="text-sm">
-                {t('availableCredit')}: {formatAUD(customer.creditApplication.creditLimit)}
-              </Muted>
+          {/* Credit info if applicable */}
+          {customer.creditApplication.status === 'approved' && creditInfo && (
+            <div className="pt-3 border-t space-y-1">
+              <div className="flex justify-between text-sm">
+                <Muted>{tCredit('creditLimit')}</Muted>
+                <span>{formatAUD(creditInfo.creditLimit)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <Muted>{tCredit('outstandingBalance')}</Muted>
+                <span>{formatAUD(creditInfo.outstandingBalance)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium">
+                <span className={exceedsCredit ? 'text-destructive' : 'text-green-600'}>
+                  {tCredit('availableCredit')}
+                </span>
+                <span className={exceedsCredit ? 'text-destructive' : 'text-green-600'}>
+                  {formatAUD(creditInfo.availableCredit)}
+                </span>
+              </div>
             </div>
           )}
         </CardContent>
@@ -241,13 +359,15 @@ export function OrderSummary() {
         className="w-full"
         size="lg"
         onClick={handlePlaceOrder}
-        disabled={createOrder.isPending || cart.items.length === 0}
+        disabled={createOrder.isPending || cart.items.length === 0 || exceedsCredit || !deliveryDate}
       >
         {createOrder.isPending ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             {t('placingOrder')}
           </>
+        ) : exceedsCredit ? (
+          tCredit('exceedsCredit')
         ) : (
           tCommon('placeOrder')
         )}
