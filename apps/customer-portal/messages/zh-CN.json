@@ -154,6 +154,19 @@
       "approved": "已批准缺货订单",
       "rejected": "缺货订单已拒绝",
       "partial_approved": "部分批准"
+    },
+    "cancel": {
+      "title": "取消订单",
+      "description": "您确定要取消此订单吗？此操作无法撤销。",
+      "reason": "取消原因（可选）",
+      "reasonPlaceholder": "请告诉我们您取消的原因...",
+      "confirmCancel": "是，取消订单",
+      "keepOrder": "保留订单",
+      "cancelling": "取消中...",
+      "success": "订单已取消",
+      "successMessage": "您的订单已成功取消。",
+      "error": "取消失败",
+      "cannotCancel": "只有待处理订单可以取消"
     }
   },
   "profile": {

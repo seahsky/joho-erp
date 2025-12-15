@@ -154,6 +154,19 @@
       "approved": "Approved Backorder",
       "rejected": "Backorder Rejected",
       "partial_approved": "Partially Approved"
+    },
+    "cancel": {
+      "title": "Cancel Order",
+      "description": "Are you sure you want to cancel this order? This action cannot be undone.",
+      "reason": "Cancellation Reason (optional)",
+      "reasonPlaceholder": "Tell us why you're cancelling...",
+      "confirmCancel": "Yes, Cancel Order",
+      "keepOrder": "Keep Order",
+      "cancelling": "Cancelling...",
+      "success": "Order Cancelled",
+      "successMessage": "Your order has been cancelled successfully.",
+      "error": "Cancel Failed",
+      "cannotCancel": "Only pending orders can be cancelled"
     }
   },
   "profile": {

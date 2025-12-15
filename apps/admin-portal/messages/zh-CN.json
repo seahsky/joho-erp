@@ -8,6 +8,7 @@
     "orders": "订单",
     "packing": "打包",
     "deliveries": "配送",
+    "driver": "我的配送",
     "inventory": "管理产品和库存",
     "reports": "报表",
     "settings": "设置",
@@ -222,6 +223,27 @@
       "approveError": "批准缺货订单失败",
       "rejectError": "拒绝订单失败",
       "loadingOrder": "加载订单详情中..."
+    },
+    "confirmOrder": "确认订单",
+    "confirmDialog": {
+      "title": "确认订单",
+      "description": "审核并确认此订单以进行处理。",
+      "orderDetails": "订单详情",
+      "orderNumber": "订单编号",
+      "customer": "客户",
+      "requestedDate": "要求配送日期",
+      "totalAmount": "总金额",
+      "itemsSummary": "订单项目",
+      "confirmMessage": "准备确认",
+      "confirmMessageDescription": "此订单将变为已确认状态，并将出现在打包队列中。",
+      "adminNotes": "管理员备注（可选）",
+      "adminNotesPlaceholder": "为此订单添加内部备注...",
+      "confirmButton": "确认订单",
+      "cancel": "取消",
+      "confirming": "确认中...",
+      "success": "订单已确认",
+      "successMessage": "订单已确认并移至处理队列。",
+      "error": "确认失败"
     }
   },
   "orderOnBehalf": {
@@ -1274,5 +1296,84 @@
     "createInvoice": "创建发票",
     "syncContact": "同步联系人",
     "xeroContact": "Xero 联系人"
+  },
+  "driver": {
+    "title": "我的配送",
+    "subtitle": "今天的配送任务",
+    "loading": "加载配送中...",
+    "errorLoading": "加载配送失败",
+    "noDeliveries": "暂无配送任务",
+    "noDeliveriesDescription": "今天没有分配给您的配送任务",
+    "refresh": "刷新",
+    "podUploaded": "已上传送货证明",
+    "stats": {
+      "total": "总数",
+      "ready": "待配送",
+      "inProgress": "配送中",
+      "completed": "已完成"
+    },
+    "card": {
+      "sequence": "第{number}站",
+      "items": "{count}件商品",
+      "call": "拨打电话"
+    },
+    "actions": {
+      "startDelivery": "开始配送",
+      "uploadPod": "上传证明",
+      "completeDelivery": "完成",
+      "returnToWarehouse": "退回"
+    },
+    "startDialog": {
+      "title": "开始配送",
+      "description": "确认将此订单标记为配送中？",
+      "confirm": "开始配送",
+      "cancel": "取消"
+    },
+    "podDialog": {
+      "title": "上传送货证明",
+      "description": "拍照或上传图片作为送货证明",
+      "takePhoto": "拍照",
+      "uploadFile": "从相册上传",
+      "preview": "预览",
+      "upload": "上传",
+      "uploading": "上传中...",
+      "cancel": "取消"
+    },
+    "completeDialog": {
+      "title": "完成配送",
+      "description": "确认此配送已完成",
+      "notes": "配送备注（可选）",
+      "notesPlaceholder": "关于此次配送的备注...",
+      "podRequired": "请先上传送货证明",
+      "podUploaded": "送货证明已上传",
+      "confirm": "完成配送",
+      "completing": "完成中...",
+      "cancel": "取消"
+    },
+    "returnDialog": {
+      "title": "退回仓库",
+      "description": "为什么退回此订单？",
+      "reason": "退回原因",
+      "selectReason": "选择原因...",
+      "reasons": {
+        "customer_unavailable": "客户不在",
+        "address_not_found": "找不到地址",
+        "refused_delivery": "拒绝收货",
+        "damaged_goods": "货物损坏",
+        "other": "其他"
+      },
+      "notes": "补充说明",
+      "notesPlaceholder": "其他详细信息...",
+      "confirm": "退回订单",
+      "returning": "退回中...",
+      "cancel": "取消"
+    },
+    "messages": {
+      "startSuccess": "配送已开始",
+      "podSuccess": "送货证明上传成功",
+      "completeSuccess": "配送已完成",
+      "returnSuccess": "订单已退回仓库",
+      "error": "操作失败"
+    }
   }
 }

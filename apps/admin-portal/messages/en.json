@@ -8,6 +8,7 @@
     "orders": "Orders",
     "packing": "Packing",
     "deliveries": "Deliveries",
+    "driver": "My Deliveries",
     "inventory": "Manage products and inventory",
     "reports": "Reports",
     "settings": "Settings",
@@ -221,6 +222,27 @@
       "approveError": "Failed to approve backorder",
       "rejectError": "Failed to reject order",
       "loadingOrder": "Loading order details..."
+    },
+    "confirmOrder": "Confirm Order",
+    "confirmDialog": {
+      "title": "Confirm Order",
+      "description": "Review and confirm this order to proceed with processing.",
+      "orderDetails": "Order Details",
+      "orderNumber": "Order Number",
+      "customer": "Customer",
+      "requestedDate": "Requested Delivery",
+      "totalAmount": "Total Amount",
+      "itemsSummary": "Order Items",
+      "confirmMessage": "Ready to Confirm",
+      "confirmMessageDescription": "This order will be moved to confirmed status and will appear in the packing queue.",
+      "adminNotes": "Admin Notes (optional)",
+      "adminNotesPlaceholder": "Add any internal notes for this order...",
+      "confirmButton": "Confirm Order",
+      "cancel": "Cancel",
+      "confirming": "Confirming...",
+      "success": "Order Confirmed",
+      "successMessage": "Order has been confirmed and moved to processing.",
+      "error": "Confirmation Failed"
     }
   },
   "orderOnBehalf": {
@@ -1273,5 +1295,84 @@
     "createInvoice": "Create Invoice",
     "syncContact": "Sync Contact",
     "xeroContact": "Xero Contact"
+  },
+  "driver": {
+    "title": "My Deliveries",
+    "subtitle": "Today's delivery schedule",
+    "loading": "Loading deliveries...",
+    "errorLoading": "Error loading deliveries",
+    "noDeliveries": "No Deliveries Assigned",
+    "noDeliveriesDescription": "You have no deliveries assigned for today",
+    "refresh": "Refresh",
+    "podUploaded": "POD Uploaded",
+    "stats": {
+      "total": "Total",
+      "ready": "Ready",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "card": {
+      "sequence": "Stop #{number}",
+      "items": "{count} items",
+      "call": "Call"
+    },
+    "actions": {
+      "startDelivery": "Start Delivery",
+      "uploadPod": "Upload POD",
+      "completeDelivery": "Complete",
+      "returnToWarehouse": "Return"
+    },
+    "startDialog": {
+      "title": "Start Delivery",
+      "description": "Mark this order as out for delivery?",
+      "confirm": "Start Delivery",
+      "cancel": "Cancel"
+    },
+    "podDialog": {
+      "title": "Upload Proof of Delivery",
+      "description": "Take a photo or upload an image as proof of delivery",
+      "takePhoto": "Take Photo",
+      "uploadFile": "Upload from Gallery",
+      "preview": "Preview",
+      "upload": "Upload",
+      "uploading": "Uploading...",
+      "cancel": "Cancel"
+    },
+    "completeDialog": {
+      "title": "Complete Delivery",
+      "description": "Confirm this delivery has been completed",
+      "notes": "Delivery Notes (optional)",
+      "notesPlaceholder": "Any notes about the delivery...",
+      "podRequired": "Proof of delivery must be uploaded first",
+      "podUploaded": "Proof of delivery uploaded",
+      "confirm": "Complete Delivery",
+      "completing": "Completing...",
+      "cancel": "Cancel"
+    },
+    "returnDialog": {
+      "title": "Return to Warehouse",
+      "description": "Why is this order being returned?",
+      "reason": "Return Reason",
+      "selectReason": "Select a reason...",
+      "reasons": {
+        "customer_unavailable": "Customer Unavailable",
+        "address_not_found": "Address Not Found",
+        "refused_delivery": "Delivery Refused",
+        "damaged_goods": "Damaged Goods",
+        "other": "Other"
+      },
+      "notes": "Additional Notes",
+      "notesPlaceholder": "Any additional details...",
+      "confirm": "Return Order",
+      "returning": "Returning...",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "startSuccess": "Delivery started",
+      "podSuccess": "POD uploaded successfully",
+      "completeSuccess": "Delivery completed",
+      "returnSuccess": "Order returned to warehouse",
+      "error": "Operation failed"
+    }
   }
 }

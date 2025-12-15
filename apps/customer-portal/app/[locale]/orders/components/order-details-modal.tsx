@@ -7,17 +7,29 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Card,
   CardContent,
   Skeleton,
   H3,
   Muted,
   StatusBadge,
+  Button,
+  Label,
   type StatusType,
 } from '@joho-erp/ui';
-import { MapPin, Package, Info } from 'lucide-react';
+import { MapPin, Package, Info, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
+import { useToast } from '@joho-erp/ui';
 import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 
 interface OrderItem {
@@ -52,7 +64,45 @@ interface OrderDetailsModalProps {
 
 export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsModalProps) {
   const t = useTranslations('orderDetails');
+  const tOrders = useTranslations('orders');
   const tCommon = useTranslations('common');
+  const { toast } = useToast();
+  const utils = api.useUtils();
+
+  // Cancel order state
+  const [showCancelDialog, setShowCancelDialog] = React.useState(false);
+  const [cancelReason, setCancelReason] = React.useState('');
+
+  // Cancel order mutation
+  const cancelMutation = api.order.cancelMyOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: tOrders('cancel.success'),
+        description: tOrders('cancel.successMessage'),
+        variant: 'default',
+      });
+      utils.order.getMyOrders.invalidate();
+      utils.order.getById.invalidate({ orderId: orderId! });
+      setShowCancelDialog(false);
+      setCancelReason('');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast({
+        title: tOrders('cancel.error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleCancelOrder = () => {
+    if (!orderId) return;
+    cancelMutation.mutate({
+      orderId,
+      reason: cancelReason || undefined,
+    });
+  };
 
   // Helper function to get backorder info message based on status
   const getBackorderInfoMessage = (status: BackorderStatusType) => {
@@ -239,9 +289,65 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                 </CardContent>
               </Card>
             )}
+
+            {/* Cancel Order Button - Only for pending orders */}
+            {order.status === 'pending' && (
+              <DialogFooter className="mt-4">
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowCancelDialog(true)}
+                  className="w-full"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  {tOrders('cancel.title')}
+                </Button>
+              </DialogFooter>
+            )}
           </div>
         )}
       </DialogContent>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tOrders('cancel.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tOrders('cancel.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="cancelReason">{tOrders('cancel.reason')}</Label>
+            <textarea
+              id="cancelReason"
+              value={cancelReason}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelReason(e.target.value)}
+              placeholder={tOrders('cancel.reasonPlaceholder')}
+              className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>
+              {tOrders('cancel.keepOrder')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelOrder}
+              disabled={cancelMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {tOrders('cancel.cancelling')}
+                </>
+              ) : (
+                tOrders('cancel.confirmCancel')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

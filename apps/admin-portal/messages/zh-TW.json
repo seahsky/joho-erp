@@ -8,6 +8,7 @@
     "orders": "訂單",
     "packing": "打包",
     "deliveries": "配送",
+    "driver": "我的配送",
     "inventory": "管理產品和庫存",
     "reports": "報表",
     "settings": "設定",
@@ -222,6 +223,27 @@
       "approveError": "批准缺貨訂單失敗",
       "rejectError": "拒絕訂單失敗",
       "loadingOrder": "載入訂單詳情中..."
+    },
+    "confirmOrder": "確認訂單",
+    "confirmDialog": {
+      "title": "確認訂單",
+      "description": "審核並確認此訂單以進行處理。",
+      "orderDetails": "訂單詳情",
+      "orderNumber": "訂單編號",
+      "customer": "客戶",
+      "requestedDate": "要求配送日期",
+      "totalAmount": "總金額",
+      "itemsSummary": "訂單項目",
+      "confirmMessage": "準備確認",
+      "confirmMessageDescription": "此訂單將變為已確認狀態，並將出現在打包隊列中。",
+      "adminNotes": "管理員備註（選填）",
+      "adminNotesPlaceholder": "為此訂單新增內部備註...",
+      "confirmButton": "確認訂單",
+      "cancel": "取消",
+      "confirming": "確認中...",
+      "success": "訂單已確認",
+      "successMessage": "訂單已確認並移至處理隊列。",
+      "error": "確認失敗"
     }
   },
   "orderOnBehalf": {
@@ -1274,5 +1296,84 @@
     "createInvoice": "建立發票",
     "syncContact": "同步聯絡人",
     "xeroContact": "Xero 聯絡人"
+  },
+  "driver": {
+    "title": "我的配送",
+    "subtitle": "今天的配送任務",
+    "loading": "載入配送中...",
+    "errorLoading": "載入配送失敗",
+    "noDeliveries": "暫無配送任務",
+    "noDeliveriesDescription": "今天沒有分配給您的配送任務",
+    "refresh": "重新整理",
+    "podUploaded": "已上傳送貨證明",
+    "stats": {
+      "total": "總數",
+      "ready": "待配送",
+      "inProgress": "配送中",
+      "completed": "已完成"
+    },
+    "card": {
+      "sequence": "第{number}站",
+      "items": "{count}件商品",
+      "call": "撥打電話"
+    },
+    "actions": {
+      "startDelivery": "開始配送",
+      "uploadPod": "上傳證明",
+      "completeDelivery": "完成",
+      "returnToWarehouse": "退回"
+    },
+    "startDialog": {
+      "title": "開始配送",
+      "description": "確認將此訂單標記為配送中？",
+      "confirm": "開始配送",
+      "cancel": "取消"
+    },
+    "podDialog": {
+      "title": "上傳送貨證明",
+      "description": "拍照或上傳圖片作為送貨證明",
+      "takePhoto": "拍照",
+      "uploadFile": "從相簿上傳",
+      "preview": "預覽",
+      "upload": "上傳",
+      "uploading": "上傳中...",
+      "cancel": "取消"
+    },
+    "completeDialog": {
+      "title": "完成配送",
+      "description": "確認此配送已完成",
+      "notes": "配送備註（選填）",
+      "notesPlaceholder": "關於此次配送的備註...",
+      "podRequired": "請先上傳送貨證明",
+      "podUploaded": "送貨證明已上傳",
+      "confirm": "完成配送",
+      "completing": "完成中...",
+      "cancel": "取消"
+    },
+    "returnDialog": {
+      "title": "退回倉庫",
+      "description": "為什麼退回此訂單？",
+      "reason": "退回原因",
+      "selectReason": "選擇原因...",
+      "reasons": {
+        "customer_unavailable": "客戶不在",
+        "address_not_found": "找不到地址",
+        "refused_delivery": "拒絕收貨",
+        "damaged_goods": "貨物損壞",
+        "other": "其他"
+      },
+      "notes": "補充說明",
+      "notesPlaceholder": "其他詳細資訊...",
+      "confirm": "退回訂單",
+      "returning": "退回中...",
+      "cancel": "取消"
+    },
+    "messages": {
+      "startSuccess": "配送已開始",
+      "podSuccess": "送貨證明上傳成功",
+      "completeSuccess": "配送已完成",
+      "returnSuccess": "訂單已退回倉庫",
+      "error": "操作失敗"
+    }
   }
 }

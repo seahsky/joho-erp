@@ -26,7 +26,9 @@ import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
+import { ConfirmOrderDialog, type ConfirmOrder } from './components/ConfirmOrderDialog';
 import { XeroOrderSyncBadge } from '@/components/xero-sync-badge';
+import { CheckCircle } from 'lucide-react';
 
 type Order = {
   id: string;
@@ -70,6 +72,8 @@ export default function OrdersPage() {
   const [backorderFilter, setBackorderFilter] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<BackorderOrder | null>(null);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [selectedConfirmOrder, setSelectedConfirmOrder] = useState<ConfirmOrder | null>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const utils = api.useUtils();
 
@@ -111,6 +115,27 @@ export default function OrdersPage() {
     onError: (error) => {
       toast({
         title: tMessages('rejectError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const tConfirm = useTranslations('orders.confirmDialog');
+  const confirmMutation = api.order.confirmOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: tConfirm('success'),
+        description: tConfirm('successMessage'),
+        variant: 'default',
+      });
+      setIsConfirmDialogOpen(false);
+      setSelectedConfirmOrder(null);
+      utils.order.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: tConfirm('error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -204,6 +229,23 @@ export default function OrdersPage() {
     setBackorderFilter('pending_approval');
   };
 
+  // Handler for confirming an order
+  const handleConfirmOrder = (order: Order) => {
+    setSelectedConfirmOrder({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      requestedDeliveryDate: order.requestedDeliveryDate,
+      items: order.items,
+    });
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirm = async (data: { orderId: string; notes?: string }) => {
+    await confirmMutation.mutateAsync(data);
+  };
+
   const columns: TableColumn<Order>[] = [
     {
       key: 'orderNumber',
@@ -260,6 +302,16 @@ export default function OrdersPage() {
               {t('backorder.reviewBackorder')}
             </Button>
           )}
+          {order.status === 'pending' && order.backorderStatus !== 'pending_approval' && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => handleConfirmOrder(order)}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {t('confirmOrder')}
+            </Button>
+          )}
           <Button variant="ghost" size="sm" aria-label={tCommon('view')}>
             <Eye className="h-4 w-4" />
           </Button>
@@ -311,6 +363,21 @@ export default function OrdersPage() {
               onClick={() => handleReviewBackorder(order)}
             >
               {t('backorder.reviewBackorder')}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </>
+        ) : order.status === 'pending' ? (
+          <>
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1"
+              onClick={() => handleConfirmOrder(order)}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {t('confirmOrder')}
             </Button>
             <Button variant="outline" size="sm">
               <Eye className="h-4 w-4" />
@@ -510,6 +577,15 @@ export default function OrdersPage() {
         onApprove={handleApprove}
         onReject={handleReject}
         isSubmitting={approveMutation.isPending || rejectMutation.isPending}
+      />
+
+      {/* Confirm Order Dialog */}
+      <ConfirmOrderDialog
+        order={selectedConfirmOrder}
+        open={isConfirmDialogOpen}
+        onOpenChange={setIsConfirmDialogOpen}
+        onConfirm={handleConfirm}
+        isSubmitting={confirmMutation.isPending}
       />
     </div>
   );
