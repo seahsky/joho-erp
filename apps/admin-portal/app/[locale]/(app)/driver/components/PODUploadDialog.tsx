@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
-  Label,
 } from '@joho-erp/ui';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Loader2, Camera, Upload, X } from 'lucide-react';
 
@@ -107,10 +107,13 @@ export function PODUploadDialog({
           {/* Preview or Upload */}
           {preview ? (
             <div className="relative">
-              <img
+              <Image
                 src={preview}
                 alt="POD Preview"
                 className="w-full rounded-lg border object-cover max-h-64"
+                width={400}
+                height={256}
+                unoptimized
               />
               <Button
                 variant="destructive"
