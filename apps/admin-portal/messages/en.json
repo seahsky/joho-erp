@@ -1072,35 +1072,54 @@
     "users": {
       "title": "User Management",
       "subtitle": "Manage admin users and permissions",
-      "addUser": "Add User",
+      "addUser": "Invite User",
       "userList": "Admin Users",
       "userListDescription": "Manage access and roles for admin users",
+      "searchPlaceholder": "Search by name or email...",
       "name": "Name",
       "email": "Email",
       "role": "Role",
       "status": "Status",
       "lastActive": "Last Active",
       "actions": "Actions",
+      "editRole": "Edit Role",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "revoke": "Revoke",
+      "neverSignedIn": "Never signed in",
+      "stats": {
+        "totalUsers": "Total Users",
+        "activeUsers": "Active Users",
+        "pendingInvites": "Pending Invites",
+        "administrators": "Administrators"
+      },
       "roles": {
         "admin": "Administrator",
+        "sales": "Sales",
         "manager": "Manager",
-        "staff": "Staff",
-        "readonly": "Read Only"
+        "packer": "Packer",
+        "driver": "Driver",
+        "customer": "Customer"
       },
       "roleDescriptions": {
         "admin": "Full access to all features and settings",
-        "manager": "Manage orders, customers, and products",
-        "staff": "Basic order and inventory management",
-        "readonly": "View-only access to reports and data"
+        "sales": "Manage customers, orders, pricing, and deliveries",
+        "manager": "Similar to sales with additional analytics access",
+        "packer": "Access to packing interface and stock management",
+        "driver": "Delivery management and updates"
       },
       "statuses": {
         "active": "Active",
         "inactive": "Inactive",
         "pending": "Pending"
       },
+      "pendingInvitations": "Pending Invitations",
+      "pendingInvitationsDescription": "Users who have been invited but haven't accepted yet",
+      "invitedAs": "Invited as",
+      "pendingStatus": "Pending",
       "addUserDialog": {
-        "title": "Add New User",
-        "description": "Create a new admin user account",
+        "title": "Invite New User",
+        "description": "Send an invitation email to a new admin user",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter first name",
         "lastName": "Last Name",
@@ -1109,15 +1128,15 @@
         "emailPlaceholder": "user@example.com",
         "role": "Role",
         "rolePlaceholder": "Select a role",
-        "sendInvite": "Send invitation email",
+        "sendInvite": "Send Invitation",
         "cancel": "Cancel",
         "createUser": "Create User",
-        "creating": "Creating..."
+        "creating": "Sending..."
       },
       "editUserDialog": {
-        "title": "Edit User",
-        "description": "Update user information and role",
-        "updateUser": "Update User",
+        "title": "Edit User Role",
+        "description": "Update user role and permissions",
+        "updateUser": "Update Role",
         "updating": "Updating..."
       },
       "deactivateDialog": {
@@ -1125,18 +1144,25 @@
         "description": "Are you sure you want to deactivate this user? They will lose access to the admin portal.",
         "cancel": "Cancel",
         "deactivate": "Deactivate",
-        "deactivating": "Deactivating..."
+        "processing": "Processing..."
       },
-      "userCreated": "User created successfully",
-      "userUpdated": "User updated successfully",
-      "userDeactivated": "User deactivated successfully",
-      "createError": "Failed to create user",
+      "reactivateDialog": {
+        "title": "Reactivate User",
+        "description": "Are you sure you want to reactivate this user? They will regain access to the admin portal.",
+        "reactivate": "Reactivate"
+      },
+      "inviteSuccess": "Invitation sent successfully",
+      "inviteError": "Failed to send invitation",
+      "userUpdated": "User role updated successfully",
+      "userDeactivated": "User status updated successfully",
       "updateError": "Failed to update user",
-      "deactivateError": "Failed to deactivate user",
+      "deactivateError": "Failed to update user status",
+      "invitationRevoked": "Invitation revoked",
+      "revokeError": "Failed to revoke invitation",
       "validationError": "Please fill in all required fields",
       "loading": "Loading users...",
       "noUsers": "No users found",
-      "noUsersDescription": "Add your first admin user to get started"
+      "noUsersDescription": "Invite your first admin user to get started"
     },
     "notifications": {
       "title": "Notification Settings",

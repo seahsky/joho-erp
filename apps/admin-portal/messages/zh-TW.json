@@ -1073,35 +1073,54 @@
     "users": {
       "title": "使用者管理",
       "subtitle": "管理管理員使用者和權限",
-      "addUser": "新增使用者",
+      "addUser": "邀請使用者",
       "userList": "管理員使用者",
       "userListDescription": "管理管理員使用者的存取權限和角色",
+      "searchPlaceholder": "按姓名或郵箱搜尋...",
       "name": "姓名",
       "email": "電子郵件",
       "role": "角色",
       "status": "狀態",
       "lastActive": "最後活躍",
       "actions": "操作",
+      "editRole": "編輯角色",
+      "deactivate": "停用",
+      "reactivate": "重新啟用",
+      "revoke": "撤銷",
+      "neverSignedIn": "從未登入",
+      "stats": {
+        "totalUsers": "使用者總數",
+        "activeUsers": "活躍使用者",
+        "pendingInvites": "待處理邀請",
+        "administrators": "管理員"
+      },
       "roles": {
         "admin": "管理員",
+        "sales": "銷售",
         "manager": "經理",
-        "staff": "員工",
-        "readonly": "唯讀"
+        "packer": "打包員",
+        "driver": "司機",
+        "customer": "客戶"
       },
       "roleDescriptions": {
         "admin": "完全存取所有功能和設定",
-        "manager": "管理訂單、客戶和產品",
-        "staff": "基本訂單和庫存管理",
-        "readonly": "僅檢視報表和資料"
+        "sales": "管理客戶、訂單、定價和配送",
+        "manager": "與銷售類似，另有分析存取權限",
+        "packer": "存取打包介面和庫存管理",
+        "driver": "配送管理和更新"
       },
       "statuses": {
         "active": "活躍",
         "inactive": "非活躍",
         "pending": "待審核"
       },
+      "pendingInvitations": "待處理邀請",
+      "pendingInvitationsDescription": "已邀請但尚未接受的使用者",
+      "invitedAs": "邀請為",
+      "pendingStatus": "待處理",
       "addUserDialog": {
-        "title": "新增使用者",
-        "description": "創建新的管理員使用者帳戶",
+        "title": "邀請新使用者",
+        "description": "向新管理員使用者發送邀請郵件",
         "firstName": "名字",
         "firstNamePlaceholder": "輸入名字",
         "lastName": "姓氏",
@@ -1110,15 +1129,15 @@
         "emailPlaceholder": "user@example.com",
         "role": "角色",
         "rolePlaceholder": "選擇角色",
-        "sendInvite": "發送邀請郵件",
+        "sendInvite": "發送邀請",
         "cancel": "取消",
         "createUser": "創建使用者",
-        "creating": "創建中..."
+        "creating": "發送中..."
       },
       "editUserDialog": {
-        "title": "編輯使用者",
-        "description": "更新使用者資訊和角色",
-        "updateUser": "更新使用者",
+        "title": "編輯使用者角色",
+        "description": "更新使用者角色和權限",
+        "updateUser": "更新角色",
         "updating": "更新中..."
       },
       "deactivateDialog": {
@@ -1126,18 +1145,25 @@
         "description": "您確定要停用此使用者嗎？他們將失去對管理後台的存取權限。",
         "cancel": "取消",
         "deactivate": "停用",
-        "deactivating": "停用中..."
+        "processing": "處理中..."
       },
-      "userCreated": "使用者創建成功",
-      "userUpdated": "使用者更新成功",
-      "userDeactivated": "使用者停用成功",
-      "createError": "創建使用者失敗",
+      "reactivateDialog": {
+        "title": "重新啟用使用者",
+        "description": "您確定要重新啟用此使用者嗎？他們將恢復對管理後台的存取權限。",
+        "reactivate": "重新啟用"
+      },
+      "inviteSuccess": "邀請發送成功",
+      "inviteError": "發送邀請失敗",
+      "userUpdated": "使用者角色更新成功",
+      "userDeactivated": "使用者狀態更新成功",
       "updateError": "更新使用者失敗",
-      "deactivateError": "停用使用者失敗",
+      "deactivateError": "更新使用者狀態失敗",
+      "invitationRevoked": "邀請已撤銷",
+      "revokeError": "撤銷邀請失敗",
       "validationError": "請填寫所有必填欄位",
       "loading": "載入使用者中...",
       "noUsers": "未找到使用者",
-      "noUsersDescription": "新增您的第一個管理員使用者以開始"
+      "noUsersDescription": "邀請您的第一個管理員使用者以開始"
     },
     "notifications": {
       "title": "通知設定",

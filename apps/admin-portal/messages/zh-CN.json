@@ -1073,35 +1073,54 @@
     "users": {
       "title": "用户管理",
       "subtitle": "管理管理员用户和权限",
-      "addUser": "添加用户",
+      "addUser": "邀请用户",
       "userList": "管理员用户",
       "userListDescription": "管理管理员用户的访问权限和角色",
+      "searchPlaceholder": "按姓名或邮箱搜索...",
       "name": "姓名",
       "email": "电子邮件",
       "role": "角色",
       "status": "状态",
       "lastActive": "最后活跃",
       "actions": "操作",
+      "editRole": "编辑角色",
+      "deactivate": "停用",
+      "reactivate": "重新激活",
+      "revoke": "撤销",
+      "neverSignedIn": "从未登录",
+      "stats": {
+        "totalUsers": "用户总数",
+        "activeUsers": "活跃用户",
+        "pendingInvites": "待处理邀请",
+        "administrators": "管理员"
+      },
       "roles": {
         "admin": "管理员",
+        "sales": "销售",
         "manager": "经理",
-        "staff": "员工",
-        "readonly": "只读"
+        "packer": "打包员",
+        "driver": "司机",
+        "customer": "客户"
       },
       "roleDescriptions": {
         "admin": "完全访问所有功能和设置",
-        "manager": "管理订单、客户和产品",
-        "staff": "基本订单和库存管理",
-        "readonly": "仅查看报表和数据"
+        "sales": "管理客户、订单、定价和配送",
+        "manager": "与销售类似，另有分析访问权限",
+        "packer": "访问打包界面和库存管理",
+        "driver": "配送管理和更新"
       },
       "statuses": {
         "active": "活跃",
         "inactive": "非活跃",
         "pending": "待审核"
       },
+      "pendingInvitations": "待处理邀请",
+      "pendingInvitationsDescription": "已邀请但尚未接受的用户",
+      "invitedAs": "邀请为",
+      "pendingStatus": "待处理",
       "addUserDialog": {
-        "title": "添加新用户",
-        "description": "创建新的管理员用户账户",
+        "title": "邀请新用户",
+        "description": "向新管理员用户发送邀请邮件",
         "firstName": "名字",
         "firstNamePlaceholder": "输入名字",
         "lastName": "姓氏",
@@ -1110,15 +1129,15 @@
         "emailPlaceholder": "user@example.com",
         "role": "角色",
         "rolePlaceholder": "选择角色",
-        "sendInvite": "发送邀请邮件",
+        "sendInvite": "发送邀请",
         "cancel": "取消",
         "createUser": "创建用户",
-        "creating": "创建中..."
+        "creating": "发送中..."
       },
       "editUserDialog": {
-        "title": "编辑用户",
-        "description": "更新用户信息和角色",
-        "updateUser": "更新用户",
+        "title": "编辑用户角色",
+        "description": "更新用户角色和权限",
+        "updateUser": "更新角色",
         "updating": "更新中..."
       },
       "deactivateDialog": {
@@ -1126,18 +1145,25 @@
         "description": "您确定要停用此用户吗？他们将失去对管理后台的访问权限。",
         "cancel": "取消",
         "deactivate": "停用",
-        "deactivating": "停用中..."
+        "processing": "处理中..."
       },
-      "userCreated": "用户创建成功",
-      "userUpdated": "用户更新成功",
-      "userDeactivated": "用户停用成功",
-      "createError": "创建用户失败",
+      "reactivateDialog": {
+        "title": "重新激活用户",
+        "description": "您确定要重新激活此用户吗？他们将恢复对管理后台的访问权限。",
+        "reactivate": "重新激活"
+      },
+      "inviteSuccess": "邀请发送成功",
+      "inviteError": "发送邀请失败",
+      "userUpdated": "用户角色更新成功",
+      "userDeactivated": "用户状态更新成功",
       "updateError": "更新用户失败",
-      "deactivateError": "停用用户失败",
+      "deactivateError": "更新用户状态失败",
+      "invitationRevoked": "邀请已撤销",
+      "revokeError": "撤销邀请失败",
       "validationError": "请填写所有必填字段",
       "loading": "加载用户中...",
       "noUsers": "未找到用户",
-      "noUsersDescription": "添加您的第一个管理员用户以开始"
+      "noUsersDescription": "邀请您的第一个管理员用户以开始"
     },
     "notifications": {
       "title": "通知设置",
