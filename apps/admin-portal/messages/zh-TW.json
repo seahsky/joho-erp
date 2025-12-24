@@ -9,7 +9,7 @@
     "packing": "打包",
     "deliveries": "配送",
     "driver": "我的配送",
-    "inventory": "管理產品和庫存",
+    "inventory": "庫存",
     "reports": "報表",
     "settings": "設定",
     "admin": "管理後台"
@@ -1400,6 +1400,45 @@
       "completeSuccess": "配送已完成",
       "returnSuccess": "訂單已退回倉庫",
       "error": "操作失敗"
+    }
+  },
+  "inventory": {
+    "title": "庫存管理",
+    "subtitle": "追蹤庫存水平和交易",
+    "totalValue": "庫存總價值",
+    "totalProducts": "產品總數",
+    "lowStockItems": "低庫存商品",
+    "outOfStock": "缺貨",
+    "basedOnCost": "基於成本價",
+    "activeProducts": "在售產品",
+    "belowThreshold": "低於閾值",
+    "zeroStock": "零庫存",
+    "byCategory": "按類別庫存",
+    "categoryBreakdownDesc": "按產品類別劃分的庫存價值和數量",
+    "products": "產品",
+    "units": "單位",
+    "lowStock": "低庫存",
+    "transactionHistory": "交易記錄",
+    "recentTransactions": "最近的庫存變動",
+    "noCategories": "未找到類別",
+    "noTransactions": "未找到交易記錄",
+    "showingOf": "顯示 {shown} / {total} 條交易",
+    "filters": {
+      "type": "類型",
+      "allTypes": "所有類型",
+      "adjustmentType": "調整類型",
+      "allAdjustments": "所有調整"
+    },
+    "types": {
+      "sale": "銷售",
+      "adjustment": "調整",
+      "return": "退貨"
+    },
+    "adjustmentTypes": {
+      "stock_received": "入庫",
+      "stock_count_correction": "盤點調整",
+      "damaged_goods": "損壞商品",
+      "expired_stock": "過期商品"
     }
   }
 }

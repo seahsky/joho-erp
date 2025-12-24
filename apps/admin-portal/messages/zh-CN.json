@@ -9,7 +9,7 @@
     "packing": "打包",
     "deliveries": "配送",
     "driver": "我的配送",
-    "inventory": "管理产品和库存",
+    "inventory": "库存",
     "reports": "报表",
     "settings": "设置",
     "admin": "管理后台"
@@ -1400,6 +1400,45 @@
       "completeSuccess": "配送已完成",
       "returnSuccess": "订单已退回仓库",
       "error": "操作失败"
+    }
+  },
+  "inventory": {
+    "title": "库存管理",
+    "subtitle": "跟踪库存水平和交易",
+    "totalValue": "库存总价值",
+    "totalProducts": "产品总数",
+    "lowStockItems": "低库存商品",
+    "outOfStock": "缺货",
+    "basedOnCost": "基于成本价",
+    "activeProducts": "在售产品",
+    "belowThreshold": "低于阈值",
+    "zeroStock": "零库存",
+    "byCategory": "按类别库存",
+    "categoryBreakdownDesc": "按产品类别划分的库存价值和数量",
+    "products": "产品",
+    "units": "单位",
+    "lowStock": "低库存",
+    "transactionHistory": "交易记录",
+    "recentTransactions": "最近的库存变动",
+    "noCategories": "未找到类别",
+    "noTransactions": "未找到交易记录",
+    "showingOf": "显示 {shown} / {total} 条交易",
+    "filters": {
+      "type": "类型",
+      "allTypes": "所有类型",
+      "adjustmentType": "调整类型",
+      "allAdjustments": "所有调整"
+    },
+    "types": {
+      "sale": "销售",
+      "adjustment": "调整",
+      "return": "退货"
+    },
+    "adjustmentTypes": {
+      "stock_received": "入库",
+      "stock_count_correction": "盘点调整",
+      "damaged_goods": "损坏商品",
+      "expired_stock": "过期商品"
     }
   }
 }

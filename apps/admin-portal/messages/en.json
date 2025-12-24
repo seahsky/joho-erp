@@ -9,7 +9,7 @@
     "packing": "Packing",
     "deliveries": "Deliveries",
     "driver": "My Deliveries",
-    "inventory": "Manage products and inventory",
+    "inventory": "Inventory",
     "reports": "Reports",
     "settings": "Settings",
     "admin": "Admin Portal"
@@ -1399,6 +1399,45 @@
       "completeSuccess": "Delivery completed",
       "returnSuccess": "Order returned to warehouse",
       "error": "Operation failed"
+    }
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "subtitle": "Track stock levels and transactions",
+    "totalValue": "Total Inventory Value",
+    "totalProducts": "Total Products",
+    "lowStockItems": "Low Stock Items",
+    "outOfStock": "Out of Stock",
+    "basedOnCost": "Based on cost price",
+    "activeProducts": "Active products",
+    "belowThreshold": "Below threshold",
+    "zeroStock": "Zero stock",
+    "byCategory": "Inventory by Category",
+    "categoryBreakdownDesc": "Stock value and quantities by product category",
+    "products": "products",
+    "units": "units",
+    "lowStock": "low",
+    "transactionHistory": "Transaction History",
+    "recentTransactions": "Recent stock movements",
+    "noCategories": "No categories found",
+    "noTransactions": "No transactions found",
+    "showingOf": "Showing {shown} of {total} transactions",
+    "filters": {
+      "type": "Type",
+      "allTypes": "All Types",
+      "adjustmentType": "Adjustment Type",
+      "allAdjustments": "All Adjustments"
+    },
+    "types": {
+      "sale": "Sale",
+      "adjustment": "Adjustment",
+      "return": "Return"
+    },
+    "adjustmentTypes": {
+      "stock_received": "Stock Received",
+      "stock_count_correction": "Stock Count Correction",
+      "damaged_goods": "Damaged Goods",
+      "expired_stock": "Expired Stock"
     }
   }
 }
