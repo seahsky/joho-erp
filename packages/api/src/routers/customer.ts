@@ -3,7 +3,11 @@ import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } 
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { paginatePrismaQuery } from '@joho-erp/shared';
-import { sendCreditApprovedEmail, sendCreditRejectedEmail } from '../services/email';
+import {
+  sendCreditApprovedEmail,
+  sendCreditRejectedEmail,
+  sendCustomerRegistrationEmail,
+} from '../services/email';
 
 // Validation schemas for credit application
 const residentialAddressSchema = z.object({
@@ -139,7 +143,13 @@ export const customerRouter = router({
         },
       });
 
-      // TODO: Send confirmation email to customer
+      // Send confirmation email to customer
+      await sendCustomerRegistrationEmail({
+        customerEmail: customer.contactPerson.email,
+        contactPerson: `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
+        businessName: customer.businessName,
+      });
+
       // TODO: Send notification email to admin for approval
 
       return {

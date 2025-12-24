@@ -9,6 +9,7 @@ import {
   optimizeRoutesByArea,
   calculateArrivalTimes,
 } from "./mapbox";
+import { sendRouteOptimizedEmail } from "./email";
 
 interface RouteOptimizationResult {
   routeOptimizationId: string;
@@ -336,6 +337,19 @@ export async function optimizeDeliveryRoute(
       })
     )
   );
+
+  // 13. Send route optimized email notification
+  const adminEmail = process.env.RESEND_ADMIN_EMAIL || 'admin@johofoods.com';
+  await sendRouteOptimizedEmail({
+    warehouseManagerEmail: adminEmail,
+    warehouseManagerName: 'Warehouse Manager',
+    deliveryDate,
+    orderCount: orders.length,
+    totalDistance: totalDistance / 1000, // Convert meters to km
+    estimatedDuration: totalDuration / 60, // Convert seconds to minutes
+  }).catch((error) => {
+    console.error('Failed to send route optimized email:', error);
+  });
 
   return {
     routeOptimizationId: routeOptimization.id,

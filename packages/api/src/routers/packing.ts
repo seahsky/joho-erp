@@ -8,11 +8,17 @@ import {
   getRouteOptimization,
   checkIfRouteNeedsReoptimization,
 } from "../services/route-optimizer";
+import {
+  startPackingSession,
+  updateSessionActivityByPacker,
+} from "../services/packing-session";
+import { sendOrderReadyForDeliveryEmail } from "../services/email";
 
 export const packingRouter = router({
   /**
    * Get packing session for a specific delivery date
    * Returns all orders that need packing and aggregated product summary
+   * Also starts/resumes a packing session for timeout tracking
    */
   getSession: isPacker
     .input(
@@ -20,7 +26,7 @@ export const packingRouter = router({
         deliveryDate: z.string().datetime(),
       })
     )
-    .query(async ({ input }): Promise<PackingSessionSummary> => {
+    .query(async ({ input, ctx }): Promise<PackingSessionSummary> => {
       const deliveryDate = new Date(input.deliveryDate);
 
       // Get all orders for the delivery date with status 'confirmed' or 'packing'
@@ -98,6 +104,12 @@ export const packingRouter = router({
       const productSummary = Array.from(productMap.values()).sort((a, b) =>
         a.sku.localeCompare(b.sku)
       );
+
+      // Start or resume packing session for timeout tracking
+      if (ctx.userId && orders.length > 0) {
+        const orderIds = orders.map((order) => order.id);
+        await startPackingSession(ctx.userId, deliveryDate, orderIds);
+      }
 
       return {
         deliveryDate,
@@ -222,6 +234,11 @@ export const packingRouter = router({
         },
       });
 
+      // Update packing session activity to prevent timeout
+      if (ctx.userId) {
+        await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
+      }
+
       return {
         success: true,
         packedItems: updatedPackedItems,
@@ -242,6 +259,9 @@ export const packingRouter = router({
       const order = await prisma.order.findUnique({
         where: {
           id: input.orderId,
+        },
+        include: {
+          customer: true,
         },
       });
 
@@ -283,8 +303,15 @@ export const packingRouter = router({
         },
       });
 
-      // TODO: Send notification to delivery team
-      // This would be implemented via email service or notification system
+      // Send order ready for delivery email to customer
+      await sendOrderReadyForDeliveryEmail({
+        customerEmail: order.customer.contactPerson.email,
+        customerName: order.customer.businessName,
+        orderNumber: order.orderNumber,
+        deliveryDate: order.requestedDeliveryDate,
+      }).catch((error) => {
+        console.error('Failed to send order ready for delivery email:', error);
+      });
 
       return { success: true };
     }),
@@ -384,6 +411,7 @@ export const packingRouter = router({
   /**
    * Get packing session with optimized sequences
    * Enhanced version of getSession that includes sequence numbers
+   * Also starts/resumes a packing session and auto-triggers route optimization if needed
    */
   getOptimizedSession: isPacker
     .input(
@@ -391,7 +419,7 @@ export const packingRouter = router({
         deliveryDate: z.string().datetime(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const deliveryDate = new Date(input.deliveryDate);
 
       // Get all orders for the delivery date
@@ -463,9 +491,77 @@ export const packingRouter = router({
         a.sku.localeCompare(b.sku)
       );
 
-      // Check if route is optimized
-      const routeOptimization = await getRouteOptimization(deliveryDate);
-      const needsReoptimization = await checkIfRouteNeedsReoptimization(deliveryDate);
+      // Start or resume packing session for timeout tracking
+      if (ctx.userId && orders.length > 0) {
+        const orderIds = orders.map((order) => order.id);
+        await startPackingSession(ctx.userId, deliveryDate, orderIds);
+      }
+
+      // Auto-trigger route optimization if needed (Task 1.2 requirement)
+      let routeOptimization = await getRouteOptimization(deliveryDate);
+      let needsReoptimization = await checkIfRouteNeedsReoptimization(deliveryDate);
+      let routeAutoOptimized = false;
+
+      // If route needs optimization and there are orders to pack, auto-trigger
+      if (needsReoptimization && orders.length > 0) {
+        try {
+          await optimizeDeliveryRoute(
+            deliveryDate,
+            ctx.userId || "system"
+          );
+          routeOptimization = await getRouteOptimization(deliveryDate);
+          needsReoptimization = false;
+          routeAutoOptimized = true;
+
+          // Re-fetch orders to get updated packing sequences
+          const updatedOrders = await prisma.order.findMany({
+            where: {
+              id: { in: orders.map(o => o.id) },
+            },
+            include: {
+              customer: {
+                select: {
+                  businessName: true,
+                },
+              },
+            },
+            orderBy: [
+              { packing: { packingSequence: "asc" } },
+              { orderNumber: "asc" },
+            ],
+          });
+
+          // Use updated orders with packing sequences
+          return {
+            deliveryDate,
+            orders: updatedOrders.map((order) => ({
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customer?.businessName ?? "Unknown Customer",
+              areaTag: order.deliveryAddress.areaTag,
+              packingSequence: order.packing?.packingSequence ?? null,
+              deliverySequence: order.delivery?.deliverySequence ?? null,
+              status: order.status,
+              packedItemsCount: order.packing?.packedItems?.length ?? 0,
+              totalItemsCount: order.items.length,
+            })),
+            productSummary,
+            routeOptimization: routeOptimization
+              ? {
+                  id: routeOptimization.id,
+                  optimizedAt: routeOptimization.optimizedAt,
+                  totalDistance: routeOptimization.totalDistance,
+                  totalDuration: routeOptimization.totalDuration,
+                  needsReoptimization: false,
+                  autoOptimized: true,
+                }
+              : null,
+          };
+        } catch (error) {
+          // If auto-optimization fails, continue with existing data
+          console.error("Auto route optimization failed:", error);
+        }
+      }
 
       return {
         deliveryDate,
@@ -488,6 +584,7 @@ export const packingRouter = router({
               totalDistance: routeOptimization.totalDistance,
               totalDuration: routeOptimization.totalDuration,
               needsReoptimization,
+              autoOptimized: routeAutoOptimized,
             }
           : null,
       };

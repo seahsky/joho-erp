@@ -11,6 +11,7 @@ import {
   sendBackorderAdminNotification,
   sendDriverUrgentCancellationEmail,
   sendOrderConfirmationEmail,
+  sendOrderConfirmedByAdminEmail,
   sendOrderOutForDeliveryEmail,
   sendOrderDeliveredEmail,
   sendOrderCancelledEmail,
@@ -1867,48 +1868,14 @@ export const orderRouter = router({
         include: { customer: true },
       });
 
-      // Send confirmation email to customer
-      const deliveryAddr = order.deliveryAddress as {
-        street: string;
-        suburb: string;
-        state: string;
-        postcode: string;
-      };
-
-      const orderItems = order.items as Array<{
-        productName: string;
-        sku: string;
-        quantity: number;
-        unit: string;
-        unitPrice: number;
-        subtotal: number;
-      }>;
-
-      await sendOrderConfirmationEmail({
+      // Send order confirmed by admin email to customer
+      await sendOrderConfirmedByAdminEmail({
         customerEmail: updatedOrder.customer.contactPerson.email,
         customerName: updatedOrder.customer.businessName,
         orderNumber: updatedOrder.orderNumber,
-        orderDate: updatedOrder.orderedAt,
-        requestedDeliveryDate: updatedOrder.requestedDeliveryDate,
-        items: orderItems.map((item) => ({
-          productName: item.productName,
-          sku: item.sku,
-          quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-        })),
-        subtotal: updatedOrder.subtotal,
-        taxAmount: updatedOrder.taxAmount,
-        totalAmount: updatedOrder.totalAmount,
-        deliveryAddress: {
-          street: deliveryAddr.street,
-          suburb: deliveryAddr.suburb,
-          state: deliveryAddr.state,
-          postcode: deliveryAddr.postcode,
-        },
+        estimatedDeliveryDate: updatedOrder.requestedDeliveryDate,
       }).catch((error) => {
-        console.error('Failed to send order confirmation email:', error);
+        console.error('Failed to send order confirmed by admin email:', error);
       });
 
       return updatedOrder;

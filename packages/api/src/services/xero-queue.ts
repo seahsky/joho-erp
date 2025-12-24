@@ -14,6 +14,7 @@ import {
   createCreditNoteInXero,
   isConnected,
 } from './xero';
+import { sendCreditNoteIssuedEmail } from './email';
 
 // ============================================================================
 // Job Enqueueing
@@ -436,6 +437,19 @@ async function processCreateCreditNote(
           lastSyncJobId: jobId,
         },
       },
+    });
+
+    // Send credit note issued email to customer
+    const cancellationReason = (order as { cancellationReason?: string }).cancellationReason;
+    await sendCreditNoteIssuedEmail({
+      customerEmail: customerForSync.contactPerson.email,
+      customerName: customerForSync.businessName,
+      orderNumber: order.orderNumber,
+      creditNoteNumber: result.creditNoteNumber || '',
+      refundAmount: order.totalAmount,
+      reason: cancellationReason || 'Order cancelled',
+    }).catch((error) => {
+      console.error('Failed to send credit note issued email:', error);
     });
   } else {
     // Record error in order

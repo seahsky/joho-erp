@@ -443,6 +443,42 @@ model RouteOptimization {
   @@map("routeoptimizations")
 }
 
+// Packing Session Model - Tracks active packing sessions for timeout management
+model PackingSession {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  packerId            String              // Clerk user ID of the packer
+  deliveryDate        DateTime            // The delivery date being packed
+  orderIds            String[]            @db.ObjectId // Orders being packed in this session
+  status              PackingSessionStatus @default(active)
+  startedAt           DateTime            @default(now())
+  lastActivityAt      DateTime            @default(now())
+  endedAt             DateTime?
+  endReason           PackingSessionEndReason?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Indexes
+  @@index([packerId, status])
+  @@index([deliveryDate, status])
+  @@index([lastActivityAt, status])
+  @@index([status])
+  @@map("packingsessions")
+}
+
+enum PackingSessionStatus {
+  active              // Session is active
+  completed           // Packer finished normally
+  timed_out           // Session exceeded 30 min inactivity
+  cancelled           // Manually cancelled
+}
+
+enum PackingSessionEndReason {
+  all_orders_packed   // All orders marked ready for delivery
+  manual_end          // Packer ended session manually
+  timeout             // 30 minute inactivity timeout
+  new_session_started // Another session was started for same date
+}
+
 // ============================================================================
 // COMPOSITE TYPES (Embedded Documents)
 // ============================================================================
