@@ -127,9 +127,14 @@ enum AuditAction {
 
 enum SystemLogLevel {
   info
-  warn
+  warning
   error
-  debug
+  critical
+}
+
+enum InventoryReferenceType {
+  order
+  manual
 }
 
 enum XeroSyncJobType {
@@ -197,6 +202,9 @@ model Customer {
   financialDetails    FinancialDetails?
   tradeReferences     TradeReference[]
   status              CustomerStatus      @default(active)
+  suspensionReason    String?             // Reason for suspension (if suspended)
+  suspendedAt         DateTime?           // When account was suspended
+  suspendedBy         String?             // User ID of admin who suspended
   xeroContactId       String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -283,6 +291,8 @@ model CustomerPricing {
   customPrice         Int                 // Stored in cents
   effectiveFrom       DateTime            @default(now())
   effectiveTo         DateTime?
+  notes               String?             // Notes about the pricing (e.g., "Contract pricing until Dec 2025")
+  createdBy           String?             // User ID of admin who created/updated the pricing
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -306,7 +316,7 @@ model InventoryTransaction {
   quantity            Float
   previousStock       Float
   newStock            Float
-  referenceType       String?
+  referenceType       InventoryReferenceType?     // 'order' for sales/returns, 'manual' for adjustments
   referenceId         String?                     @db.ObjectId
   notes               String?
   createdBy           String
@@ -328,6 +338,8 @@ model InventoryTransaction {
 model AuditLog {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   userId              String
+  userEmail           String?             // Email of the user who performed the action
+  userRole            String?             // Role of the user (admin, sales, packer, driver, manager)
   action              AuditAction
   entity              String
   entityId            String?             @db.ObjectId
@@ -342,6 +354,7 @@ model AuditLog {
   @@index([entity, entityId, timestamp(sort: Desc)])
   @@index([action, timestamp(sort: Desc)])
   @@index([timestamp(sort: Desc)])
+  @@index([userRole, timestamp(sort: Desc)])
   @@map("auditlogs")
 }
 
@@ -367,6 +380,8 @@ model Company {
   id                      String                  @id @default(auto()) @map("_id") @db.ObjectId
   businessName            String
   abn                     String
+  email                   String?                 // Company contact email
+  phone                   String?                 // Company contact phone
   address                 CompanyAddress
   contactPerson           ContactPerson
   bankDetails             BankDetails?
@@ -387,6 +402,9 @@ model SuburbAreaMapping {
   state               String
   postcode            String
   areaTag             AreaTag
+  latitude            Float?              // Suburb center latitude for route optimization
+  longitude           Float?              // Suburb center longitude for route optimization
+  isActive            Boolean             @default(true) // Whether this suburb is actively serviced
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -394,6 +412,7 @@ model SuburbAreaMapping {
   @@unique([suburb, state])
   @@index([postcode])
   @@index([areaTag])
+  @@index([isActive])
   @@map("suburbareamappings")
 }
 
@@ -434,12 +453,15 @@ model RouteOptimization {
   optimizedAt         DateTime            @default(now())
   optimizedBy         String
   mapboxRouteData     Json?               // Full Mapbox API response for reference
+  needsReoptimization Boolean             @default(false) // Flag when orders changed since optimization
+  lastOrderCount      Int?                // Order count at last optimization (to detect changes)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
   // Indexes
   @@index([deliveryDate, areaTag])
   @@index([optimizedAt(sort: Desc)])
+  @@index([needsReoptimization, deliveryDate])
   @@map("routeoptimizations")
 }
 
@@ -666,6 +688,7 @@ type RouteWaypoint {
   orderNumber         String
   sequence            Int                 // 1-based position in route
   address             String              // Full formatted address
+  suburb              String?             // Suburb name for display
   latitude            Float
   longitude           Float
   estimatedArrival    DateTime?           // Calculated arrival time

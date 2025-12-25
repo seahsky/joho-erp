@@ -40,7 +40,8 @@
     "welcome": "歡迎",
     "addToCart": "加入購物車",
     "checkout": "結帳",
-    "placeOrder": "下訂單"
+    "placeOrder": "下訂單",
+    "close": "關閉"
   },
   "home": {
     "title": "Joho Foods - 優質肉品經銷商",
@@ -149,6 +150,10 @@
     "itemCount_plural": "{count} 項",
     "requested": "要求：",
     "deliveredDate": "已送達：",
+    "searchPlaceholder": "按訂單編號搜尋...",
+    "dateFrom": "開始日期",
+    "dateTo": "結束日期",
+    "clearFilters": "清除",
     "backorder": {
       "pending_approval": "等待審批",
       "approved": "已批准缺貨訂單",
@@ -301,6 +306,15 @@
       "approved": "此缺貨訂單已獲批准，一旦有庫存即將發貨。",
       "rejected": "此缺貨訂單已被拒絕。請聯絡我們了解更多資訊。",
       "partialApproval": "此訂單已部分批准。部分商品將使用可用庫存發貨。"
+    },
+    "proofOfDelivery": {
+      "title": "送貨證明",
+      "imageAlt": "送貨證明圖片",
+      "signature": "簽名",
+      "photo": "照片",
+      "uploadedAt": "拍攝時間",
+      "deliveredAt": "送達時間",
+      "viewFull": "檢視完整圖片"
     }
   },
   "onboarding": {

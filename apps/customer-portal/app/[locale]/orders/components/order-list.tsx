@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, type StatusType } from '@joho-erp/ui';
-import { ShoppingCart, Loader2 } from 'lucide-react';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, type StatusType } from '@joho-erp/ui';
+import { ShoppingCart, Loader2, Search, Calendar, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -13,16 +13,40 @@ import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatu
 
 export function OrderList() {
   const t = useTranslations('orders');
+  const _tCommon = useTranslations('common');
   const router = useRouter();
   const { toast } = useToast();
   const [filter, setFilter] = React.useState<'all' | StatusType>('all');
+  const [search, setSearch] = React.useState('');
+  const [dateFrom, setDateFrom] = React.useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = React.useState<Date | undefined>(undefined);
   const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
+  // Debounced search value
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data, isLoading, error } = api.order.getMyOrders.useQuery({
     status: filter === 'all' ? undefined : filter,
+    search: debouncedSearch || undefined,
+    dateFrom: dateFrom,
+    dateTo: dateTo,
     limit: 50,
   });
+
+  const hasActiveFilters = debouncedSearch || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setSearch('');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   // Reorder mutation
   const reorderMutation = api.order.reorder.useMutation({
@@ -118,6 +142,64 @@ export function OrderList() {
 
   return (
     <div className="space-y-4">
+      {/* Search and Date Filters */}
+      <div className="space-y-3">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder={t('searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Date Range Filters */}
+        <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <input
+              type="date"
+              value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
+              onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder={t('dateFrom')}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+            <span className="text-muted-foreground text-sm">—</span>
+            <input
+              type="date"
+              value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
+              onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder={t('dateTo')}
+            />
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-1" />
+              {t('clearFilters')}
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Filter Pills with Scroll Indicators */}
       <div className="relative">
         {/* Left Fade Indicator */}

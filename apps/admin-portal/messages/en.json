@@ -677,8 +677,14 @@
       "accountNumber": "Account Number",
       "approvedCreditLimit": "Approved Credit Limit",
       "paymentTerms": "Payment Terms",
-      "notes": "Notes",
+      "selectPaymentTerms": "Select payment terms...",
+      "customPaymentTerms": "Custom Payment Terms",
+      "customPaymentTermsPlaceholder": "e.g., Net 45, 2% 10 Net 30",
+      "notes": "Notes (Optional)",
+      "notesPlaceholder": "Add any internal notes about this approval...",
       "rejectionReason": "Rejection Reason",
+      "rejectionReasonPlaceholder": "Please provide a detailed reason for rejecting this application...",
+      "rejectionReasonHint": "Minimum 10 characters required",
       "verified": "Verified",
       "notVerified": "Not Verified",
       "status": "Status",
@@ -696,16 +702,37 @@
       "approving": "Approving...",
       "reject": "Reject Credit Application",
       "rejecting": "Rejecting...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "confirmApprove": "Confirm Approval",
+      "confirmReject": "Confirm Rejection"
     },
     "messages": {
-      "approveSuccess": "Credit application approved successfully!",
-      "rejectSuccess": "Credit application rejected",
-      "approveError": "Failed to approve credit application",
-      "rejectError": "Failed to reject credit application",
-      "notesRequired": "Please provide a reason for rejection",
-      "creditLimitRequired": "Please provide an approved credit limit greater than 0"
-    }
+      "approveSuccess": "Credit Approved",
+      "approveSuccessDescription": "Credit application has been approved successfully. The customer will be notified by email.",
+      "rejectSuccess": "Credit Rejected",
+      "rejectSuccessDescription": "Credit application has been rejected. The customer will be notified by email.",
+      "approveError": "Approval Failed",
+      "approveErrorDescription": "Failed to approve credit application. Please try again.",
+      "rejectError": "Rejection Failed",
+      "rejectErrorDescription": "Failed to reject credit application. Please try again."
+    },
+    "validation": {
+      "creditLimitRequired": "Credit Limit Required",
+      "creditLimitRequiredDescription": "Please enter a credit limit greater than $0.",
+      "paymentTermsRequired": "Payment Terms Required",
+      "paymentTermsRequiredDescription": "Please select payment terms for this customer.",
+      "notesRequired": "Rejection Reason Required",
+      "notesRequiredDescription": "Please provide a reason for rejecting this application.",
+      "notesMinLength": "Reason Too Short",
+      "notesMinLengthDescription": "Rejection reason must be at least 10 characters."
+    },
+    "confirmDialog": {
+      "approveTitle": "Confirm Credit Approval",
+      "approveDescription": "You are about to approve credit for {businessName} with a limit of {creditLimit}. This action will send a notification email to the customer.",
+      "rejectTitle": "Confirm Credit Rejection",
+      "rejectDescription": "You are about to reject the credit application for {businessName}. This action will send a notification email to the customer."
+    },
+    "enterDollars": "Enter amount in dollars (e.g., 10000 for $10,000)"
   },
   "customerForm": {
     "title": "Add New Customer",
@@ -1340,7 +1367,8 @@
     "card": {
       "sequence": "Stop #{number}",
       "items": "{count} items",
-      "call": "Call"
+      "call": "Call",
+      "navigate": "Navigate"
     },
     "actions": {
       "startDelivery": "Start Delivery",
@@ -1439,5 +1467,266 @@
       "damaged_goods": "Damaged Goods",
       "expired_stock": "Expired Stock"
     }
+  },
+  "customerDetail": {
+    "backToCustomers": "Back to Customers",
+    "errorLoading": "Error loading customer",
+    "businessInfo": {
+      "title": "Business Information",
+      "businessName": "Business Name",
+      "tradingName": "Trading Name",
+      "abn": "ABN",
+      "acn": "ACN",
+      "accountType": "Account Type",
+      "accountTypes": {
+        "sole_trader": "Sole Trader",
+        "partnership": "Partnership",
+        "company": "Company",
+        "other": "Other"
+      }
+    },
+    "contactInfo": {
+      "title": "Contact Information",
+      "name": "Contact Name",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "mobile": "Mobile"
+    },
+    "address": {
+      "title": "Delivery Address",
+      "street": "Street Address",
+      "suburb": "Suburb",
+      "state": "State",
+      "postcode": "Postcode",
+      "deliveryInstructions": "Delivery Instructions"
+    },
+    "billingAddress": {
+      "title": "Billing Address",
+      "street": "Street Address",
+      "suburb": "Suburb",
+      "state": "State",
+      "postcode": "Postcode",
+      "notProvided": "No billing address provided"
+    },
+    "postalAddress": {
+      "title": "Postal Address",
+      "street": "Street Address",
+      "suburb": "Suburb",
+      "state": "State",
+      "postcode": "Postcode",
+      "sameAsBilling": "Same as billing address",
+      "notProvided": "No postal address provided"
+    },
+    "directors": {
+      "title": "Directors",
+      "addDirector": "Add Director",
+      "removeDirector": "Remove",
+      "noDirectors": "No directors listed",
+      "familyName": "Family Name",
+      "givenNames": "Given Names",
+      "dateOfBirth": "Date of Birth",
+      "position": "Position",
+      "driverLicense": "Driver License Number",
+      "licenseState": "License State",
+      "licenseExpiry": "License Expiry",
+      "residentialAddress": "Residential Address",
+      "director": "Director"
+    },
+    "financialDetails": {
+      "title": "Financial Details",
+      "bankName": "Bank Name",
+      "accountName": "Account Name",
+      "bsb": "BSB",
+      "accountNumber": "Account Number",
+      "notProvided": "No financial details provided"
+    },
+    "tradeReferences": {
+      "title": "Trade References",
+      "addReference": "Add Reference",
+      "removeReference": "Remove",
+      "noReferences": "No trade references listed",
+      "companyName": "Company Name",
+      "contactPerson": "Contact Person",
+      "phone": "Phone",
+      "email": "Email",
+      "verified": "Verified",
+      "notVerified": "Not Verified",
+      "reference": "Reference"
+    },
+    "orders": {
+      "title": "Order History",
+      "recentOrders": "Recent orders for this customer",
+      "noOrders": "No orders found for this customer",
+      "orderNumber": "Order #",
+      "date": "Date",
+      "items": "Items"
+    },
+    "credit": {
+      "title": "Credit Information",
+      "status": "Status",
+      "limit": "Credit Limit",
+      "balance": "Outstanding Balance",
+      "available": "Available Credit",
+      "paymentTerms": "Payment Terms"
+    },
+    "stats": {
+      "title": "Account Statistics",
+      "totalOrders": "Total Orders",
+      "memberSince": "Member Since"
+    },
+    "suspension": {
+      "suspend": "Suspend Account",
+      "activate": "Activate Account",
+      "suspendTitle": "Suspend Customer Account",
+      "suspendDescription": "This will prevent the customer from placing orders. Please provide a reason for the suspension.",
+      "activateTitle": "Activate Customer Account",
+      "activateDescription": "This will allow the customer to place orders again.",
+      "reason": "Suspension Reason",
+      "reasonPlaceholder": "Enter the reason for suspending this account...",
+      "reasonRequired": "Reason Required",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "notes": "Notes (Optional)",
+      "notesPlaceholder": "Enter any notes about the reactivation...",
+      "confirmSuspend": "Suspend Account",
+      "confirmActivate": "Activate Account",
+      "suspending": "Suspending...",
+      "activating": "Activating...",
+      "suspendSuccess": "Account Suspended",
+      "suspendSuccessMessage": "The customer account has been suspended successfully.",
+      "suspendError": "Suspension Failed",
+      "activateSuccess": "Account Activated",
+      "activateSuccessMessage": "The customer account has been reactivated successfully.",
+      "activateError": "Activation Failed",
+      "suspendedAccount": "Suspended Account",
+      "suspendedAt": "Suspended On"
+    },
+    "edit": {
+      "editButton": "Edit",
+      "editMode": "Editing",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "cancel": "Cancel",
+      "updateSuccess": "Customer Updated",
+      "updateSuccessMessage": "Customer details have been saved successfully.",
+      "updateError": "Update Failed"
+    },
+    "validation": {
+      "abnLength": "ABN must be 11 digits",
+      "acnLength": "ACN must be 9 digits",
+      "bsbFormat": "BSB must be 6 digits",
+      "accountNumberLength": "Account number must be 6-10 digits",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "fieldRequired": "This field is required"
+    },
+    "states": {
+      "NSW": "New South Wales",
+      "VIC": "Victoria",
+      "QLD": "Queensland",
+      "SA": "South Australia",
+      "WA": "Western Australia",
+      "TAS": "Tasmania",
+      "NT": "Northern Territory",
+      "ACT": "Australian Capital Territory"
+    }
+  },
+  "orderDetail": {
+    "title": "Order Details",
+    "backToOrders": "Back to Orders",
+    "errorLoading": "Error loading order",
+    "header": {
+      "orderNumber": "Order #{number}",
+      "placedOn": "Placed on",
+      "customer": "Customer"
+    },
+    "items": {
+      "title": "Order Items",
+      "sku": "SKU",
+      "product": "Product",
+      "quantity": "Qty",
+      "unit": "Unit",
+      "unitPrice": "Unit Price",
+      "subtotal": "Subtotal"
+    },
+    "totals": {
+      "subtotal": "Subtotal",
+      "tax": "GST (10%)",
+      "total": "Total"
+    },
+    "timeline": {
+      "title": "Status History",
+      "noHistory": "No status history available",
+      "changedBy": "by"
+    },
+    "delivery": {
+      "title": "Delivery Information",
+      "address": "Delivery Address",
+      "instructions": "Delivery Instructions",
+      "requestedDate": "Requested Delivery",
+      "actualDate": "Delivered On",
+      "driver": "Driver",
+      "pod": "Proof of Delivery",
+      "podType": "Type",
+      "viewPod": "View POD",
+      "noPod": "No proof of delivery uploaded",
+      "returned": "Order Returned",
+      "returnReason": "Return Reason",
+      "returnNotes": "Return Notes"
+    },
+    "xero": {
+      "title": "Xero Integration",
+      "status": "Sync Status",
+      "invoiceNumber": "Invoice Number",
+      "creditNote": "Credit Note",
+      "lastSynced": "Last Synced",
+      "synced": "Synced",
+      "pending": "Pending",
+      "failed": "Failed",
+      "notSynced": "Not synced to Xero",
+      "retry": "Retry Sync",
+      "retrying": "Retrying...",
+      "retrySuccess": "Sync Queued",
+      "retrySuccessMessage": "The sync job has been queued for retry",
+      "retryError": "Retry Failed"
+    },
+    "internalNotes": {
+      "title": "Internal Notes"
+    },
+    "adminNotes": {
+      "title": "Admin Notes"
+    },
+    "actions": {
+      "title": "Order Actions",
+      "updateStatus": "Update Status",
+      "selectStatus": "Select status...",
+      "statusUpdated": "Status Updated",
+      "statusUpdatedMessage": "Order status has been updated successfully",
+      "statusError": "Update Failed",
+      "cancel": "Cancel Order",
+      "cancelTitle": "Cancel Order",
+      "cancelConfirm": "Are you sure you want to cancel this order? This action cannot be undone and the customer will be notified.",
+      "keepOrder": "Keep Order",
+      "confirmCancel": "Cancel Order",
+      "cancelling": "Cancelling...",
+      "resendConfirmation": "Resend Confirmation Email",
+      "resending": "Sending...",
+      "resendSuccess": "Email Sent",
+      "resendSuccessMessage": "Order confirmation email has been resent to the customer",
+      "resendError": "Failed to Send Email"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "packing": "Packing",
+    "ready_for_delivery": "Ready for Delivery",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "active": "Active",
+    "suspended": "Suspended",
+    "approved": "Approved",
+    "rejected": "Rejected"
   }
 }

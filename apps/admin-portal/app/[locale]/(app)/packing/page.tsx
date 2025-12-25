@@ -59,11 +59,9 @@ export default function PackingPage() {
 
   // Calculate packed orders count (orders that are ready_for_delivery)
   const packedOrdersCount = useMemo(() => {
-    if (!session) return 0;
-    // This would ideally come from the API, but for now we'll default to 0
-    // TODO: Track completed orders in API
-    return 0;
-  }, [session]);
+    if (!session?.orders) return 0;
+    return session.orders.filter((order) => order.status === 'ready_for_delivery').length;
+  }, [session?.orders]);
 
   if (isLoading) {
     return (

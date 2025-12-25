@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { MobileDrawer, DrawerItem, DrawerSection } from '@joho-erp/ui';
 import { Settings, User, Moon, Globe, LogOut } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, useClerk } from '@clerk/nextjs';
 import { formatUserName } from '@joho-erp/shared';
 import type { SerializableUser } from '@/types/user';
 import { ADMIN_NAV_ITEMS } from '@/config/navigation';
@@ -21,6 +21,7 @@ interface AdminMobileDrawerProps {
 export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDrawerProps) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
+  const { signOut } = useClerk();
 
   const navigationItems = ADMIN_NAV_ITEMS.map((item) => ({
     ...item,
@@ -29,6 +30,11 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
   }));
 
   const handleNavigate = () => {
+    onClose();
+  };
+
+  const handleSignOut = async () => {
+    await signOut({ redirectUrl: `/${locale}` });
     onClose();
   };
 
@@ -85,10 +91,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
         <DrawerItem
           icon={LogOut}
           label="Sign Out"
-          onClick={() => {
-            // TODO: Implement sign out
-            onClose();
-          }}
+          onClick={handleSignOut}
         />
       </div>
     </MobileDrawer>

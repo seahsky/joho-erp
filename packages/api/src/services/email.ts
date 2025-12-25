@@ -2575,3 +2575,227 @@ export async function sendRouteOptimizedEmail(params: {
     return { success: false, message: String(error) };
   }
 }
+
+/**
+ * Send notification when a driver returns an order to the warehouse
+ */
+export async function sendOrderReturnedToWarehouseEmail(params: {
+  orderNumber: string;
+  customerName: string;
+  driverName: string;
+  returnReason: string;
+  returnNotes?: string;
+  deliveryAddress: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { orderNumber, customerName, driverName, returnReason, returnNotes, deliveryAddress } = params;
+
+    // Format return reason for display
+    const returnReasonLabels: Record<string, string> = {
+      customer_unavailable: 'Customer Unavailable',
+      address_not_found: 'Address Not Found',
+      refused_delivery: 'Delivery Refused',
+      damaged_goods: 'Damaged Goods',
+      other: 'Other',
+    };
+    const formattedReason = returnReasonLabels[returnReason] || returnReason;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `⚠️ Order Returned to Warehouse - Order #${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order Returned to Warehouse</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">⚠️ Order Returned to Warehouse</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">An order has been returned to the warehouse by the driver.</p>
+
+                  <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Order Details</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Order Number:</td>
+                      <td style="padding: 8px 0; text-align: right;"><strong>#${orderNumber}</strong></td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Customer:</td>
+                      <td style="padding: 8px 0; text-align: right;"><strong>${customerName}</strong></td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Driver:</td>
+                      <td style="padding: 8px 0; text-align: right;">${driverName}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Delivery Address:</td>
+                      <td style="padding: 8px 0; text-align: right;">${deliveryAddress}</td>
+                    </tr>
+                  </table>
+
+                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Return Reason:</strong> ${formattedReason}
+                    </p>
+                    ${returnNotes ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;"><strong>Driver Notes:</strong> ${returnNotes}</p>` : ''}
+                  </div>
+
+                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Next Steps:</strong><br/>
+                      1. Contact the customer to reschedule delivery<br/>
+                      2. Review the order in the admin portal<br/>
+                      3. Update the order status as needed
+                    </p>
+                  </div>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send order returned email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('Order returned to warehouse email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending order returned email:', error);
+    return { success: false, message: String(error) };
+  }
+}
+
+/**
+ * Send notification to admin when a new customer registers
+ */
+export async function sendNewCustomerRegistrationAdminEmail(params: {
+  businessName: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  abn: string;
+  requestedCreditLimit?: number;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping email send');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { businessName, contactPerson, email, phone, abn, requestedCreditLimit } = params;
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `New Customer Registration - ${businessName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>New Customer Registration</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <tr>
+                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px;">New Customer Registration</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 20px 0; font-size: 16px;">A new customer has registered and is pending credit approval.</p>
+
+                  <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Customer Details</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Business Name:</td>
+                      <td style="padding: 8px 0; text-align: right;"><strong>${businessName}</strong></td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Contact Person:</td>
+                      <td style="padding: 8px 0; text-align: right;">${contactPerson}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Email:</td>
+                      <td style="padding: 8px 0; text-align: right;">${email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Phone:</td>
+                      <td style="padding: 8px 0; text-align: right;">${phone}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">ABN:</td>
+                      <td style="padding: 8px 0; text-align: right;">${abn}</td>
+                    </tr>
+                    ${requestedCreditLimit ? `
+                    <tr>
+                      <td style="padding: 8px 0; color: #6b7280;">Requested Credit Limit:</td>
+                      <td style="padding: 8px 0; text-align: right;"><strong>$${(requestedCreditLimit / 100).toFixed(2)}</strong></td>
+                    </tr>
+                    ` : ''}
+                  </table>
+
+                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 16px;">
+                      <strong>Action Required:</strong> Please review this customer's credit application in the admin portal.
+                    </p>
+                  </div>
+
+                  <p style="margin: 20px 0 0 0; font-size: 16px;">
+                    <strong>Joho Foods Team</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
+                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send new customer registration admin email:', error);
+      return { success: false, message: error.message };
+    }
+
+    console.log('New customer registration admin email sent:', data?.id);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending new customer registration admin email:', error);
+    return { success: false, message: String(error) };
+  }
+}

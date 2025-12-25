@@ -1,0 +1,1581 @@
+'use client';
+
+import { use, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { api } from '@/trpc/client';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Badge,
+  StatusBadge,
+  Skeleton,
+  ResponsiveTable,
+  type TableColumn,
+  type StatusType,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Label,
+  Input,
+  useToast,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Checkbox,
+} from '@joho-erp/ui';
+import {
+  ArrowLeft,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  Package,
+  Ban,
+  CheckCircle,
+  Loader2,
+  FileText,
+  Pencil,
+  X,
+  Save,
+  Banknote,
+  Users,
+  Briefcase,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { formatCurrency, formatDate } from '@joho-erp/shared';
+
+interface PageProps {
+  params: Promise<{ id: string; locale: string }>;
+}
+
+type Order = {
+  id: string;
+  orderNumber: string;
+  status: StatusType;
+  totalAmount: number;
+  orderedAt: Date | string;
+  items: { productName: string }[];
+};
+
+type DirectorFormData = {
+  familyName: string;
+  givenNames: string;
+  residentialAddress: {
+    street: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  };
+  dateOfBirth: string;
+  driverLicenseNumber: string;
+  licenseState: string;
+  licenseExpiry: string;
+  position: string;
+};
+
+type TradeReferenceFormData = {
+  companyName: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+};
+
+const AUSTRALIAN_STATES = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'] as const;
+const ACCOUNT_TYPES = ['sole_trader', 'partnership', 'company', 'other'] as const;
+
+export default function CustomerDetailPage({ params }: PageProps) {
+  const resolvedParams = use(params);
+  const t = useTranslations('customerDetail');
+  const tCustomers = useTranslations('customers');
+  const tCommon = useTranslations('common');
+  const router = useRouter();
+  const { toast } = useToast();
+  const utils = api.useUtils();
+
+  // Suspension dialog state
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [activateNotes, setActivateNotes] = useState('');
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    // Contact person
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    mobile: '',
+    // Delivery address
+    street: '',
+    suburb: '',
+    state: '',
+    postcode: '',
+    deliveryInstructions: '',
+    // Business info
+    businessName: '',
+    tradingName: '',
+    abn: '',
+    acn: '',
+    accountType: 'company' as (typeof ACCOUNT_TYPES)[number],
+    // Billing address
+    billingStreet: '',
+    billingSuburb: '',
+    billingState: '',
+    billingPostcode: '',
+    // Postal address
+    postalStreet: '',
+    postalSuburb: '',
+    postalState: '',
+    postalPostcode: '',
+    postalSameAsBilling: false,
+    // Financial details
+    bankName: '',
+    accountName: '',
+    bsb: '',
+    accountNumber: '',
+    // Directors
+    directors: [] as DirectorFormData[],
+    // Trade references
+    tradeReferences: [] as TradeReferenceFormData[],
+  });
+
+  // Fetch customer data
+  const {
+    data: customer,
+    isLoading,
+    error,
+  } = api.customer.getById.useQuery({ customerId: resolvedParams.id });
+
+  // Fetch customer orders
+  const { data: ordersData } = api.order.getAll.useQuery(
+    { customerId: resolvedParams.id, limit: 10 },
+    { enabled: !!customer }
+  );
+
+  // Suspend mutation
+  const suspendMutation = api.customer.suspend.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('suspension.suspendSuccess'),
+        description: t('suspension.suspendSuccessMessage'),
+      });
+      void utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+      setShowSuspendDialog(false);
+      setSuspendReason('');
+    },
+    onError: (error) => {
+      toast({
+        title: t('suspension.suspendError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Activate mutation
+  const activateMutation = api.customer.activate.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('suspension.activateSuccess'),
+        description: t('suspension.activateSuccessMessage'),
+      });
+      void utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+      setShowActivateDialog(false);
+      setActivateNotes('');
+    },
+    onError: (error) => {
+      toast({
+        title: t('suspension.activateError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update mutation
+  const updateMutation = api.customer.update.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('edit.updateSuccess'),
+        description: t('edit.updateSuccessMessage'),
+      });
+      void utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+      setIsEditing(false);
+    },
+    onError: (error) => {
+      toast({
+        title: t('edit.updateError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSuspend = () => {
+    if (!suspendReason.trim() || suspendReason.length < 10) {
+      toast({
+        title: t('suspension.reasonRequired'),
+        description: t('suspension.reasonMinLength'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    suspendMutation.mutate({
+      customerId: resolvedParams.id,
+      reason: suspendReason,
+    });
+  };
+
+  const handleActivate = () => {
+    activateMutation.mutate({
+      customerId: resolvedParams.id,
+      notes: activateNotes || undefined,
+    });
+  };
+
+  const handleStartEdit = () => {
+    if (!customer) return;
+
+    // Map directors to form data
+    const directorsData: DirectorFormData[] = (customer.directors || []).map((d) => ({
+      familyName: d.familyName,
+      givenNames: d.givenNames,
+      residentialAddress: {
+        street: d.residentialAddress?.street || '',
+        suburb: d.residentialAddress?.suburb || '',
+        state: d.residentialAddress?.state || '',
+        postcode: d.residentialAddress?.postcode || '',
+      },
+      dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth).toISOString().split('T')[0] : '',
+      driverLicenseNumber: d.driverLicenseNumber || '',
+      licenseState: d.licenseState || '',
+      licenseExpiry: d.licenseExpiry ? new Date(d.licenseExpiry).toISOString().split('T')[0] : '',
+      position: d.position || '',
+    }));
+
+    // Map trade references to form data
+    const tradeRefsData: TradeReferenceFormData[] = (customer.tradeReferences || []).map((r) => ({
+      companyName: r.companyName,
+      contactPerson: r.contactPerson,
+      phone: r.phone,
+      email: r.email,
+    }));
+
+    setEditForm({
+      // Contact person
+      firstName: customer.contactPerson.firstName,
+      lastName: customer.contactPerson.lastName,
+      email: customer.contactPerson.email,
+      phone: customer.contactPerson.phone,
+      mobile: customer.contactPerson.mobile || '',
+      // Delivery address
+      street: customer.deliveryAddress.street,
+      suburb: customer.deliveryAddress.suburb,
+      state: customer.deliveryAddress.state,
+      postcode: customer.deliveryAddress.postcode,
+      deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
+      // Business info
+      businessName: customer.businessName,
+      tradingName: customer.tradingName || '',
+      abn: customer.abn,
+      acn: customer.acn || '',
+      accountType: (customer.accountType as (typeof ACCOUNT_TYPES)[number]) || 'company',
+      // Billing address
+      billingStreet: customer.billingAddress?.street || '',
+      billingSuburb: customer.billingAddress?.suburb || '',
+      billingState: customer.billingAddress?.state || '',
+      billingPostcode: customer.billingAddress?.postcode || '',
+      // Postal address
+      postalStreet: customer.postalAddress?.street || '',
+      postalSuburb: customer.postalAddress?.suburb || '',
+      postalState: customer.postalAddress?.state || '',
+      postalPostcode: customer.postalAddress?.postcode || '',
+      postalSameAsBilling: false,
+      // Financial details
+      bankName: customer.financialDetails?.bankName || '',
+      accountName: customer.financialDetails?.accountName || '',
+      bsb: customer.financialDetails?.bsb || '',
+      accountNumber: customer.financialDetails?.accountNumber || '',
+      // Directors and trade references
+      directors: directorsData,
+      tradeReferences: tradeRefsData,
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    // Build the mutation payload
+    const payload: Parameters<typeof updateMutation.mutate>[0] = {
+      customerId: resolvedParams.id,
+      contactPerson: {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        email: editForm.email,
+        phone: editForm.phone,
+        mobile: editForm.mobile || undefined,
+      },
+      deliveryAddress: {
+        street: editForm.street,
+        suburb: editForm.suburb,
+        state: editForm.state,
+        postcode: editForm.postcode,
+        deliveryInstructions: editForm.deliveryInstructions || undefined,
+      },
+      businessInfo: {
+        businessName: editForm.businessName,
+        tradingName: editForm.tradingName || null,
+        abn: editForm.abn,
+        acn: editForm.acn || null,
+        accountType: editForm.accountType,
+      },
+    };
+
+    // Add billing address if provided
+    if (editForm.billingStreet && editForm.billingSuburb && editForm.billingState && editForm.billingPostcode) {
+      payload.billingAddress = {
+        street: editForm.billingStreet,
+        suburb: editForm.billingSuburb,
+        state: editForm.billingState,
+        postcode: editForm.billingPostcode,
+      };
+    } else {
+      payload.billingAddress = null;
+    }
+
+    // Handle postal address
+    if (editForm.postalSameAsBilling) {
+      payload.postalSameAsBilling = true;
+    } else if (editForm.postalStreet && editForm.postalSuburb && editForm.postalState && editForm.postalPostcode) {
+      payload.postalAddress = {
+        street: editForm.postalStreet,
+        suburb: editForm.postalSuburb,
+        state: editForm.postalState,
+        postcode: editForm.postalPostcode,
+      };
+    } else {
+      payload.postalAddress = null;
+    }
+
+    // Add directors
+    if (editForm.directors.length > 0) {
+      payload.directors = editForm.directors.map((d) => ({
+        familyName: d.familyName,
+        givenNames: d.givenNames,
+        residentialAddress: {
+          street: d.residentialAddress.street,
+          suburb: d.residentialAddress.suburb,
+          state: d.residentialAddress.state,
+          postcode: d.residentialAddress.postcode,
+        },
+        dateOfBirth: new Date(d.dateOfBirth),
+        driverLicenseNumber: d.driverLicenseNumber,
+        licenseState: d.licenseState as 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT',
+        licenseExpiry: new Date(d.licenseExpiry),
+        position: d.position || undefined,
+      }));
+    }
+
+    // Add financial details if provided
+    if (editForm.bankName && editForm.accountName && editForm.bsb && editForm.accountNumber) {
+      payload.financialDetails = {
+        bankName: editForm.bankName,
+        accountName: editForm.accountName,
+        bsb: editForm.bsb,
+        accountNumber: editForm.accountNumber,
+      };
+    } else {
+      payload.financialDetails = null;
+    }
+
+    // Add trade references
+    if (editForm.tradeReferences.length > 0) {
+      payload.tradeReferences = editForm.tradeReferences.map((r) => ({
+        companyName: r.companyName,
+        contactPerson: r.contactPerson,
+        phone: r.phone,
+        email: r.email,
+      }));
+    }
+
+    updateMutation.mutate(payload);
+  };
+
+  // Helper functions for array fields
+  const addDirector = () => {
+    setEditForm({
+      ...editForm,
+      directors: [
+        ...editForm.directors,
+        {
+          familyName: '',
+          givenNames: '',
+          residentialAddress: { street: '', suburb: '', state: '', postcode: '' },
+          dateOfBirth: '',
+          driverLicenseNumber: '',
+          licenseState: '',
+          licenseExpiry: '',
+          position: '',
+        },
+      ],
+    });
+  };
+
+  const removeDirector = (index: number) => {
+    setEditForm({
+      ...editForm,
+      directors: editForm.directors.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateDirector = (index: number, field: keyof DirectorFormData, value: string | object) => {
+    const updatedDirectors = [...editForm.directors];
+    if (field === 'residentialAddress' && typeof value === 'object') {
+      updatedDirectors[index] = { ...updatedDirectors[index], residentialAddress: value as DirectorFormData['residentialAddress'] };
+    } else {
+      updatedDirectors[index] = { ...updatedDirectors[index], [field]: value };
+    }
+    setEditForm({ ...editForm, directors: updatedDirectors });
+  };
+
+  const addTradeReference = () => {
+    setEditForm({
+      ...editForm,
+      tradeReferences: [
+        ...editForm.tradeReferences,
+        { companyName: '', contactPerson: '', phone: '', email: '' },
+      ],
+    });
+  };
+
+  const removeTradeReference = (index: number) => {
+    setEditForm({
+      ...editForm,
+      tradeReferences: editForm.tradeReferences.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateTradeReference = (index: number, field: keyof TradeReferenceFormData, value: string) => {
+    const updatedRefs = [...editForm.tradeReferences];
+    updatedRefs[index] = { ...updatedRefs[index], [field]: value };
+    setEditForm({ ...editForm, tradeReferences: updatedRefs });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <Skeleton className="h-10 w-40 mb-6" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !customer) {
+    return (
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
+          <p className="text-sm text-muted-foreground">{error?.message}</p>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/${resolvedParams.locale}/customers`)}
+            className="mt-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('backToCustomers')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const orders = (ordersData?.orders ?? []) as Order[];
+  const creditApp = customer.creditApplication;
+  const isSuspended = customer.status === 'suspended';
+
+  const orderColumns: TableColumn<Order>[] = [
+    {
+      key: 'orderNumber',
+      label: t('orders.orderNumber'),
+      className: 'font-medium',
+      render: (order) => `#${order.orderNumber}`,
+    },
+    {
+      key: 'date',
+      label: t('orders.date'),
+      render: (order) => formatDate(order.orderedAt),
+    },
+    {
+      key: 'status',
+      label: tCommon('status'),
+      render: (order) => <StatusBadge status={order.status} />,
+    },
+    {
+      key: 'items',
+      label: t('orders.items'),
+      render: (order) => order.items.length,
+    },
+    {
+      key: 'total',
+      label: tCommon('total'),
+      render: (order) => formatCurrency(order.totalAmount),
+    },
+  ];
+
+  return (
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      {/* Header */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <Button
+            variant="ghost"
+            onClick={() => router.push(`/${resolvedParams.locale}/customers`)}
+            className="mb-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('backToCustomers')}
+          </Button>
+          <h1 className="text-3xl font-bold">{customer.businessName}</h1>
+          <div className="flex items-center gap-2 mt-2">
+            <StatusBadge status={customer.status as StatusType} />
+            {isSuspended && customer.suspensionReason && (
+              <span className="text-sm text-muted-foreground">
+                - {customer.suspensionReason}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {!isEditing && (
+            <Button onClick={handleStartEdit} variant="outline">
+              <Pencil className="mr-2 h-4 w-4" />
+              {t('edit.editButton')}
+            </Button>
+          )}
+          {isSuspended ? (
+            <Button onClick={() => setShowActivateDialog(true)} variant="default" disabled={isEditing}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {t('suspension.activate')}
+            </Button>
+          ) : (
+            <Button onClick={() => setShowSuspendDialog(true)} variant="destructive" disabled={isEditing}>
+              <Ban className="mr-2 h-4 w-4" />
+              {t('suspension.suspend')}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            disabled={isEditing}
+            onClick={() =>
+              router.push(`/${resolvedParams.locale}/customers/${resolvedParams.id}/credit-review`)
+            }
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {tCustomers('reviewCredit')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Customer Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Business Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                {t('businessInfo.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {isEditing ? (
+                <>
+                  <div>
+                    <Label htmlFor="businessName" className="text-sm text-muted-foreground">{t('businessInfo.businessName')}</Label>
+                    <Input
+                      id="businessName"
+                      value={editForm.businessName}
+                      onChange={(e) => setEditForm({ ...editForm, businessName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tradingName" className="text-sm text-muted-foreground">{t('businessInfo.tradingName')}</Label>
+                    <Input
+                      id="tradingName"
+                      value={editForm.tradingName}
+                      onChange={(e) => setEditForm({ ...editForm, tradingName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="abn" className="text-sm text-muted-foreground">{t('businessInfo.abn')}</Label>
+                    <Input
+                      id="abn"
+                      value={editForm.abn}
+                      onChange={(e) => setEditForm({ ...editForm, abn: e.target.value })}
+                      className="mt-1"
+                      maxLength={11}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="acn" className="text-sm text-muted-foreground">{t('businessInfo.acn')}</Label>
+                    <Input
+                      id="acn"
+                      value={editForm.acn}
+                      onChange={(e) => setEditForm({ ...editForm, acn: e.target.value })}
+                      className="mt-1"
+                      maxLength={9}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountType" className="text-sm text-muted-foreground">{t('businessInfo.accountType')}</Label>
+                    <Select
+                      value={editForm.accountType}
+                      onValueChange={(value) => setEditForm({ ...editForm, accountType: value as (typeof ACCOUNT_TYPES)[number] })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ACCOUNT_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {t(`businessInfo.accountTypes.${type}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('businessInfo.businessName')}</p>
+                    <p className="font-medium">{customer.businessName}</p>
+                  </div>
+                  {customer.tradingName && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('businessInfo.tradingName')}</p>
+                      <p className="font-medium">{customer.tradingName}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('businessInfo.abn')}</p>
+                    <p className="font-medium">{customer.abn}</p>
+                  </div>
+                  {customer.acn && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('businessInfo.acn')}</p>
+                      <p className="font-medium">{customer.acn}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('businessInfo.accountType')}</p>
+                    <p className="font-medium">{t(`businessInfo.accountTypes.${customer.accountType}`)}</p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contact Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                {t('contactInfo.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {isEditing ? (
+                <>
+                  <div>
+                    <Label htmlFor="firstName" className="text-sm text-muted-foreground">{t('contactInfo.firstName')}</Label>
+                    <Input
+                      id="firstName"
+                      value={editForm.firstName}
+                      onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName" className="text-sm text-muted-foreground">{t('contactInfo.lastName')}</Label>
+                    <Input
+                      id="lastName"
+                      value={editForm.lastName}
+                      onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-sm text-muted-foreground">{t('contactInfo.email')}</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-sm text-muted-foreground">{t('contactInfo.phone')}</Label>
+                    <Input
+                      id="phone"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mobile" className="text-sm text-muted-foreground">{t('contactInfo.mobile')}</Label>
+                    <Input
+                      id="mobile"
+                      value={editForm.mobile}
+                      onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('contactInfo.name')}</p>
+                    <p className="font-medium">
+                      {customer.contactPerson.firstName} {customer.contactPerson.lastName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <p>{customer.contactPerson.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <p>{customer.contactPerson.phone}</p>
+                  </div>
+                  {customer.contactPerson.mobile && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <p>{customer.contactPerson.mobile}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Delivery Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                {t('address.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="street" className="text-sm text-muted-foreground">{t('address.street')}</Label>
+                    <Input
+                      id="street"
+                      value={editForm.street}
+                      onChange={(e) => setEditForm({ ...editForm, street: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="suburb" className="text-sm text-muted-foreground">{t('address.suburb')}</Label>
+                    <Input
+                      id="suburb"
+                      value={editForm.suburb}
+                      onChange={(e) => setEditForm({ ...editForm, suburb: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state" className="text-sm text-muted-foreground">{t('address.state')}</Label>
+                    <Input
+                      id="state"
+                      value={editForm.state}
+                      onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="postcode" className="text-sm text-muted-foreground">{t('address.postcode')}</Label>
+                    <Input
+                      id="postcode"
+                      value={editForm.postcode}
+                      onChange={(e) => setEditForm({ ...editForm, postcode: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="deliveryInstructions" className="text-sm text-muted-foreground">{t('address.deliveryInstructions')}</Label>
+                    <textarea
+                      id="deliveryInstructions"
+                      value={editForm.deliveryInstructions}
+                      onChange={(e) => setEditForm({ ...editForm, deliveryInstructions: e.target.value })}
+                      className="mt-1 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    {customer.deliveryAddress.street}
+                    <br />
+                    {customer.deliveryAddress.suburb}, {customer.deliveryAddress.state}{' '}
+                    {customer.deliveryAddress.postcode}
+                  </p>
+                  <Badge variant="outline" className="mt-2">
+                    {tCommon('area')}: {customer.deliveryAddress.areaTag}
+                  </Badge>
+                  {customer.deliveryAddress.deliveryInstructions && (
+                    <div className="mt-4">
+                      <p className="text-sm text-muted-foreground">{t('address.deliveryInstructions')}</p>
+                      <p className="text-sm">{customer.deliveryAddress.deliveryInstructions}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Billing Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                {t('billingAddress.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="billingStreet" className="text-sm text-muted-foreground">{t('billingAddress.street')}</Label>
+                    <Input
+                      id="billingStreet"
+                      value={editForm.billingStreet}
+                      onChange={(e) => setEditForm({ ...editForm, billingStreet: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingSuburb" className="text-sm text-muted-foreground">{t('billingAddress.suburb')}</Label>
+                    <Input
+                      id="billingSuburb"
+                      value={editForm.billingSuburb}
+                      onChange={(e) => setEditForm({ ...editForm, billingSuburb: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingState" className="text-sm text-muted-foreground">{t('billingAddress.state')}</Label>
+                    <Select
+                      value={editForm.billingState}
+                      onValueChange={(value) => setEditForm({ ...editForm, billingState: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder={t('billingAddress.state')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AUSTRALIAN_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {t(`states.${state}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="billingPostcode" className="text-sm text-muted-foreground">{t('billingAddress.postcode')}</Label>
+                    <Input
+                      id="billingPostcode"
+                      value={editForm.billingPostcode}
+                      onChange={(e) => setEditForm({ ...editForm, billingPostcode: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              ) : customer.billingAddress ? (
+                <p>
+                  {customer.billingAddress.street}<br />
+                  {customer.billingAddress.suburb}, {customer.billingAddress.state} {customer.billingAddress.postcode}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('billingAddress.notProvided')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Postal Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                {t('postalAddress.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="postalSameAsBilling"
+                      checked={editForm.postalSameAsBilling}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, postalSameAsBilling: checked as boolean })}
+                    />
+                    <Label htmlFor="postalSameAsBilling" className="text-sm">{t('postalAddress.sameAsBilling')}</Label>
+                  </div>
+                  {!editForm.postalSameAsBilling && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="postalStreet" className="text-sm text-muted-foreground">{t('postalAddress.street')}</Label>
+                        <Input
+                          id="postalStreet"
+                          value={editForm.postalStreet}
+                          onChange={(e) => setEditForm({ ...editForm, postalStreet: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="postalSuburb" className="text-sm text-muted-foreground">{t('postalAddress.suburb')}</Label>
+                        <Input
+                          id="postalSuburb"
+                          value={editForm.postalSuburb}
+                          onChange={(e) => setEditForm({ ...editForm, postalSuburb: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="postalState" className="text-sm text-muted-foreground">{t('postalAddress.state')}</Label>
+                        <Select
+                          value={editForm.postalState}
+                          onValueChange={(value) => setEditForm({ ...editForm, postalState: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder={t('postalAddress.state')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AUSTRALIAN_STATES.map((state) => (
+                              <SelectItem key={state} value={state}>
+                                {t(`states.${state}`)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="postalPostcode" className="text-sm text-muted-foreground">{t('postalAddress.postcode')}</Label>
+                        <Input
+                          id="postalPostcode"
+                          value={editForm.postalPostcode}
+                          onChange={(e) => setEditForm({ ...editForm, postalPostcode: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : customer.postalAddress ? (
+                <p>
+                  {customer.postalAddress.street}<br />
+                  {customer.postalAddress.suburb}, {customer.postalAddress.state} {customer.postalAddress.postcode}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('postalAddress.notProvided')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Financial Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Banknote className="h-5 w-5" />
+                {t('financialDetails.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="bankName" className="text-sm text-muted-foreground">{t('financialDetails.bankName')}</Label>
+                    <Input
+                      id="bankName"
+                      value={editForm.bankName}
+                      onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountName" className="text-sm text-muted-foreground">{t('financialDetails.accountName')}</Label>
+                    <Input
+                      id="accountName"
+                      value={editForm.accountName}
+                      onChange={(e) => setEditForm({ ...editForm, accountName: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bsb" className="text-sm text-muted-foreground">{t('financialDetails.bsb')}</Label>
+                    <Input
+                      id="bsb"
+                      value={editForm.bsb}
+                      onChange={(e) => setEditForm({ ...editForm, bsb: e.target.value })}
+                      className="mt-1"
+                      maxLength={6}
+                      placeholder="000000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountNumber" className="text-sm text-muted-foreground">{t('financialDetails.accountNumber')}</Label>
+                    <Input
+                      id="accountNumber"
+                      value={editForm.accountNumber}
+                      onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })}
+                      className="mt-1"
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+              ) : customer.financialDetails ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('financialDetails.bankName')}</p>
+                    <p className="font-medium">{customer.financialDetails.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('financialDetails.accountName')}</p>
+                    <p className="font-medium">{customer.financialDetails.accountName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('financialDetails.bsb')}</p>
+                    <p className="font-medium">{customer.financialDetails.bsb}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('financialDetails.accountNumber')}</p>
+                    <p className="font-medium">{customer.financialDetails.accountNumber}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('financialDetails.notProvided')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Directors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {t('directors.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="space-y-6">
+                  {editForm.directors.map((director, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">{t('directors.director')} {index + 1}</h4>
+                        <Button variant="ghost" size="sm" onClick={() => removeDirector(index)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.familyName')}</Label>
+                          <Input
+                            value={director.familyName}
+                            onChange={(e) => updateDirector(index, 'familyName', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.givenNames')}</Label>
+                          <Input
+                            value={director.givenNames}
+                            onChange={(e) => updateDirector(index, 'givenNames', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.dateOfBirth')}</Label>
+                          <Input
+                            type="date"
+                            value={director.dateOfBirth}
+                            onChange={(e) => updateDirector(index, 'dateOfBirth', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.position')}</Label>
+                          <Input
+                            value={director.position}
+                            onChange={(e) => updateDirector(index, 'position', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.driverLicense')}</Label>
+                          <Input
+                            value={director.driverLicenseNumber}
+                            onChange={(e) => updateDirector(index, 'driverLicenseNumber', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.licenseState')}</Label>
+                          <Select
+                            value={director.licenseState}
+                            onValueChange={(value) => updateDirector(index, 'licenseState', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder={t('directors.licenseState')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {AUSTRALIAN_STATES.map((state) => (
+                                <SelectItem key={state} value={state}>{state}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('directors.licenseExpiry')}</Label>
+                          <Input
+                            type="date"
+                            value={director.licenseExpiry}
+                            onChange={(e) => updateDirector(index, 'licenseExpiry', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground mb-2 block">{t('directors.residentialAddress')}</Label>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <Input
+                              placeholder={t('address.street')}
+                              value={director.residentialAddress.street}
+                              onChange={(e) => updateDirector(index, 'residentialAddress', { ...director.residentialAddress, street: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              placeholder={t('address.suburb')}
+                              value={director.residentialAddress.suburb}
+                              onChange={(e) => updateDirector(index, 'residentialAddress', { ...director.residentialAddress, suburb: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              placeholder={t('address.state')}
+                              value={director.residentialAddress.state}
+                              onChange={(e) => updateDirector(index, 'residentialAddress', { ...director.residentialAddress, state: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              placeholder={t('address.postcode')}
+                              value={director.residentialAddress.postcode}
+                              onChange={(e) => updateDirector(index, 'residentialAddress', { ...director.residentialAddress, postcode: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" onClick={addDirector} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('directors.addDirector')}
+                  </Button>
+                </div>
+              ) : customer.directors && customer.directors.length > 0 ? (
+                <div className="space-y-4">
+                  {customer.directors.map((director, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('contactInfo.name')}</p>
+                          <p className="font-medium">{director.givenNames} {director.familyName}</p>
+                        </div>
+                        {director.position && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">{t('directors.position')}</p>
+                            <p className="font-medium">{director.position}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('directors.noDirectors')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Trade References */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                {t('tradeReferences.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <div className="space-y-4">
+                  {editForm.tradeReferences.map((ref, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">{t('tradeReferences.reference')} {index + 1}</h4>
+                        <Button variant="ghost" size="sm" onClick={() => removeTradeReference(index)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('tradeReferences.companyName')}</Label>
+                          <Input
+                            value={ref.companyName}
+                            onChange={(e) => updateTradeReference(index, 'companyName', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('tradeReferences.contactPerson')}</Label>
+                          <Input
+                            value={ref.contactPerson}
+                            onChange={(e) => updateTradeReference(index, 'contactPerson', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('tradeReferences.phone')}</Label>
+                          <Input
+                            value={ref.phone}
+                            onChange={(e) => updateTradeReference(index, 'phone', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">{t('tradeReferences.email')}</Label>
+                          <Input
+                            type="email"
+                            value={ref.email}
+                            onChange={(e) => updateTradeReference(index, 'email', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" onClick={addTradeReference} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('tradeReferences.addReference')}
+                  </Button>
+                </div>
+              ) : customer.tradeReferences && customer.tradeReferences.length > 0 ? (
+                <div className="space-y-4">
+                  {customer.tradeReferences.map((ref, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('tradeReferences.companyName')}</p>
+                          <p className="font-medium">{ref.companyName}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('tradeReferences.contactPerson')}</p>
+                          <p className="font-medium">{ref.contactPerson}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('tradeReferences.phone')}</p>
+                          <p className="font-medium">{ref.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('tradeReferences.email')}</p>
+                          <p className="font-medium">{ref.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t('tradeReferences.verified')}</p>
+                          <Badge variant={ref.verified ? 'default' : 'secondary'}>
+                            {ref.verified ? t('tradeReferences.verified') : t('tradeReferences.notVerified')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('tradeReferences.noReferences')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Order History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                {t('orders.title')}
+              </CardTitle>
+              <CardDescription>{t('orders.recentOrders')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {orders.length > 0 ? (
+                <ResponsiveTable data={orders} columns={orderColumns} />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  {t('orders.noOrders')}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Credit & Stats */}
+        <div className="space-y-6">
+          {/* Credit Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                {t('credit.title')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('credit.status')}</span>
+                <StatusBadge status={creditApp.status as StatusType} />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('credit.limit')}</span>
+                <span className="font-bold text-lg">{formatCurrency(creditApp.creditLimit)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('credit.balance')}</span>
+                <span className="font-medium">
+                  {formatCurrency((customer as { outstandingBalance?: number }).outstandingBalance || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('credit.available')}</span>
+                <span className="font-medium text-success">
+                  {formatCurrency(creditApp.creditLimit - ((customer as { outstandingBalance?: number }).outstandingBalance || 0))}
+                </span>
+              </div>
+              {creditApp.paymentTerms && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{t('credit.paymentTerms')}</span>
+                  <span className="font-medium">{creditApp.paymentTerms}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Account Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('stats.title')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('stats.totalOrders')}</span>
+                <span className="font-medium">{ordersData?.total || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('stats.memberSince')}</span>
+                <span className="font-medium">{formatDate(customer.createdAt)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Suspension Info (if suspended) */}
+          {isSuspended && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive flex items-center gap-2">
+                  <Ban className="h-5 w-5" />
+                  {t('suspension.suspendedAccount')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('suspension.reason')}</p>
+                  <p className="text-sm">{customer.suspensionReason}</p>
+                </div>
+                {customer.suspendedAt && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('suspension.suspendedAt')}</p>
+                    <p className="text-sm">{formatDate(customer.suspendedAt)}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Suspend Dialog */}
+      <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('suspension.suspendTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('suspension.suspendDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="suspendReason">{t('suspension.reason')}</Label>
+            <textarea
+              id="suspendReason"
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              placeholder={t('suspension.reasonPlaceholder')}
+              className="mt-2 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('suspension.reasonMinLength')}</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={suspendMutation.isPending}>
+              {tCommon('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSuspend}
+              disabled={suspendMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {suspendMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('suspension.suspending')}
+                </>
+              ) : (
+                t('suspension.confirmSuspend')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Activate Dialog */}
+      <AlertDialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('suspension.activateTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('suspension.activateDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="activateNotes">{t('suspension.notes')}</Label>
+            <textarea
+              id="activateNotes"
+              value={activateNotes}
+              onChange={(e) => setActivateNotes(e.target.value)}
+              placeholder={t('suspension.notesPlaceholder')}
+              className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={activateMutation.isPending}>
+              {tCommon('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleActivate}
+              disabled={activateMutation.isPending}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              {activateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('suspension.activating')}
+                </>
+              ) : (
+                t('suspension.confirmActivate')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Floating Save/Cancel Action Bar */}
+      {isEditing && (
+        <div className="fixed bottom-6 right-6 flex gap-2 bg-background p-4 rounded-lg shadow-lg border z-50">
+          <Button variant="outline" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
+            <X className="h-4 w-4 mr-2" />
+            {tCommon('cancel')}
+          </Button>
+          <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('edit.saving')}
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                {tCommon('save')}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

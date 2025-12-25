@@ -26,7 +26,7 @@ import {
   Label,
   type StatusType,
 } from '@joho-erp/ui';
-import { MapPin, Package, Info, XCircle, Loader2 } from 'lucide-react';
+import { MapPin, Package, Info, XCircle, Loader2, Camera, CheckCircle, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -56,6 +56,19 @@ interface StatusHistoryItem {
   notes: string | null;
 }
 
+interface ProofOfDelivery {
+  type: 'photo' | 'signature';
+  fileUrl: string;
+  uploadedAt: Date | string;
+}
+
+interface Delivery {
+  driverId?: string;
+  driverName?: string;
+  deliveredAt?: Date | string;
+  proofOfDelivery?: ProofOfDelivery;
+}
+
 interface OrderDetailsModalProps {
   orderId: string | null;
   open: boolean;
@@ -72,6 +85,9 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
   // Cancel order state
   const [showCancelDialog, setShowCancelDialog] = React.useState(false);
   const [cancelReason, setCancelReason] = React.useState('');
+
+  // POD image preview state
+  const [showPodPreview, setShowPodPreview] = React.useState(false);
 
   // Cancel order mutation
   const cancelMutation = api.order.cancelMyOrder.useMutation({
@@ -270,6 +286,60 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
               </CardContent>
             </Card>
 
+            {/* Proof of Delivery - Only for delivered orders */}
+            {order.status === 'delivered' && (order.delivery as Delivery)?.proofOfDelivery && (
+              <Card className="border-success bg-success/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <H3 className="text-base mb-2">{t('proofOfDelivery.title')}</H3>
+                      <div className="flex items-center gap-3">
+                        {/* POD Thumbnail */}
+                        <button
+                          onClick={() => setShowPodPreview(true)}
+                          className="relative w-20 h-20 rounded-md overflow-hidden border-2 border-border hover:border-primary transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <img
+                            src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
+                            alt={t('proofOfDelivery.imageAlt')}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                            <Camera className="h-6 w-6 text-white" />
+                          </div>
+                        </button>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {(order.delivery as Delivery).proofOfDelivery!.type === 'signature'
+                              ? t('proofOfDelivery.signature')
+                              : t('proofOfDelivery.photo')}
+                          </p>
+                          <Muted className="text-xs">
+                            {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery).proofOfDelivery!.uploadedAt)}
+                          </Muted>
+                          {(order.delivery as Delivery).deliveredAt && (
+                            <Muted className="text-xs">
+                              {t('proofOfDelivery.deliveredAt')}: {formatDate((order.delivery as Delivery).deliveredAt!)}
+                            </Muted>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => setShowPodPreview(true)}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        {t('proofOfDelivery.viewFull')}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Status History */}
             {order.statusHistory && (order.statusHistory as StatusHistoryItem[]).length > 0 && (
               <Card>
@@ -348,6 +418,42 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* POD Full Preview Modal */}
+      {order && (order.delivery as Delivery)?.proofOfDelivery && showPodPreview && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"
+          onClick={() => setShowPodPreview(false)}
+        >
+          <button
+            onClick={() => setShowPodPreview(false)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            aria-label={tCommon('close')}
+          >
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <div
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
+              alt={t('proofOfDelivery.imageAlt')}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent rounded-b-lg">
+              <p className="text-white text-sm font-medium">
+                {(order.delivery as Delivery).proofOfDelivery!.type === 'signature'
+                  ? t('proofOfDelivery.signature')
+                  : t('proofOfDelivery.photo')}
+              </p>
+              <p className="text-white/80 text-xs">
+                {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery).proofOfDelivery!.uploadedAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 }

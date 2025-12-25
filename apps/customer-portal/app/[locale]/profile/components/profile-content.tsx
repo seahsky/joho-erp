@@ -127,8 +127,8 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
     );
   }
 
-  // TODO: Calculate usedCredit from actual orders
-  const usedCredit = 0; // Placeholder until usedCredit is calculated from orders
+  // usedCredit is now calculated from actual orders in the API
+  const usedCredit = customer.usedCredit ?? 0;
   const availableCredit = customer.creditApplication.creditLimit - usedCredit;
 
   return (

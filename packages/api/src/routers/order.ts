@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, isAdminOrSales } from '../trpc';
-import { prisma } from '@joho-erp/database';
+import { prisma, type InventoryReferenceType } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
 import {
@@ -15,9 +15,22 @@ import {
   sendOrderOutForDeliveryEmail,
   sendOrderDeliveredEmail,
   sendOrderCancelledEmail,
+  sendNewOrderNotificationEmail,
 } from '../services/email';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getCutoffInfo as getCutoffInfoService } from '../services/order-validation';
+import {
+  getCutoffInfo as getCutoffInfoService,
+  validateOrderCutoffTime,
+  isValidDeliveryDate,
+  getMinDeliveryDate,
+} from '../services/order-validation';
+import {
+  logOrderCreated,
+  logOrderStatusChange,
+  logOrderCancellation,
+  logBackorderApproval,
+  logBackorderRejection,
+} from '../services/audit';
 
 // Helper: Validate stock and calculate shortfall for backorder support
 interface StockValidationResult {
@@ -146,6 +159,14 @@ export const orderRouter = router({
         });
       }
 
+      // Check if customer is suspended
+      if (customer.status === 'suspended') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Your account is suspended. Please contact support for assistance.',
+        });
+      }
+
       // Check credit approval
       if (customer.creditApplication.status !== 'approved') {
         throw new TRPCError({
@@ -238,8 +259,34 @@ export const orderRouter = router({
       // Generate order number
       const orderNumber = generateOrderNumber();
 
-      // Set delivery date (tomorrow by default)
-      const deliveryDate = input.requestedDeliveryDate || new Date(Date.now() + 24 * 60 * 60 * 1000);
+      // Get delivery address and area tag for validation
+      const deliveryAddress = input.deliveryAddress || customer.deliveryAddress;
+      const areaTag = deliveryAddress.areaTag;
+
+      // Set delivery date (defaults to next available date)
+      const minDeliveryDate = await getMinDeliveryDate(areaTag);
+      const deliveryDate = input.requestedDeliveryDate || minDeliveryDate;
+
+      // Validate delivery date is not in the past and is at or after minimum date
+      const isValidDate = await isValidDeliveryDate(deliveryDate, areaTag);
+      if (!isValidDate) {
+        const minDateStr = minDeliveryDate.toLocaleDateString('en-AU');
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `The requested delivery date is not available. The earliest available delivery date is ${minDateStr}. Please select a valid date.`,
+        });
+      }
+
+      // Validate cutoff time for next-day delivery
+      const cutoffValidation = await validateOrderCutoffTime(deliveryDate, areaTag);
+      if (cutoffValidation.isAfterCutoff) {
+        // Cutoff has passed for the requested delivery date
+        const nextDateStr = cutoffValidation.nextAvailableDeliveryDate.toLocaleDateString('en-AU');
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Order cutoff time (${cutoffValidation.cutoffTime}) has passed for the requested delivery date. The next available delivery date is ${nextDateStr}. Please select a later delivery date or contact us for assistance.`,
+        });
+      }
 
       // Determine backorder status
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
@@ -258,7 +305,7 @@ export const orderRouter = router({
             subtotal: totals.subtotal,
             taxAmount: totals.taxAmount,
             totalAmount: totals.totalAmount,
-            deliveryAddress: input.deliveryAddress || customer.deliveryAddress,
+            deliveryAddress,
             requestedDeliveryDate: deliveryDate,
             status: 'pending',
             statusHistory: [
@@ -359,13 +406,6 @@ export const orderRouter = router({
 
       // Send order confirmation email (for non-backorder orders)
       if (!stockValidation.requiresBackorder) {
-        const deliveryAddr = (input.deliveryAddress || customer.deliveryAddress) as {
-          street: string;
-          suburb: string;
-          state: string;
-          postcode: string;
-        };
-
         await sendOrderConfirmationEmail({
           customerEmail: customer.contactPerson.email,
           customerName: customer.businessName,
@@ -384,15 +424,26 @@ export const orderRouter = router({
           taxAmount: totals.taxAmount,
           totalAmount: totals.totalAmount,
           deliveryAddress: {
-            street: deliveryAddr.street,
-            suburb: deliveryAddr.suburb,
-            state: deliveryAddr.state,
-            postcode: deliveryAddr.postcode,
+            street: deliveryAddress.street,
+            suburb: deliveryAddress.suburb,
+            state: deliveryAddress.state,
+            postcode: deliveryAddress.postcode,
           },
         }).catch((error) => {
           console.error('Failed to send order confirmation email:', error);
         });
       }
+
+      // Log order creation to audit trail
+      await logOrderCreated(
+        ctx.userId,
+        order.id,
+        order.orderNumber,
+        customer.id,
+        order.totalAmount
+      ).catch((error) => {
+        console.error('Failed to log order creation:', error);
+      });
 
       return order;
     }),
@@ -696,7 +747,16 @@ export const orderRouter = router({
         });
       }
 
-      // TODO: Log to audit trail
+      // Log order creation to audit trail
+      await logOrderCreated(
+        ctx.userId,
+        order.id,
+        order.orderNumber,
+        customer.id,
+        order.totalAmount
+      ).catch((error) => {
+        console.error('Failed to log order creation:', error);
+      });
 
       return order;
     }),
@@ -706,6 +766,7 @@ export const orderRouter = router({
     .input(
       z.object({
         status: z.string().optional(),
+        search: z.string().optional(), // Search by order number
         dateFrom: z.date().optional(),
         dateTo: z.date().optional(),
         page: z.number().default(1),
@@ -729,6 +790,14 @@ export const orderRouter = router({
 
       if (input.status) {
         where.status = input.status;
+      }
+
+      // Search by order number (case-insensitive contains)
+      if (input.search) {
+        where.orderNumber = {
+          contains: input.search,
+          mode: 'insensitive',
+        };
       }
 
       if (input.dateFrom || input.dateTo) {
@@ -998,7 +1067,16 @@ export const orderRouter = router({
           });
         }
 
-        // TODO: Log to audit trail
+        // Log cancellation to audit trail
+        await logOrderCancellation(
+          ctx.userId,
+          input.orderId,
+          currentOrder.orderNumber,
+          input.notes || 'No reason provided',
+          currentOrder.status
+        ).catch((error) => {
+          console.error('Failed to log order cancellation:', error);
+        });
 
         return order;
       }
@@ -1084,7 +1162,17 @@ export const orderRouter = router({
         }
       }
 
-      // TODO: Log to audit trail
+      // Log status change to audit trail
+      await logOrderStatusChange(
+        ctx.userId,
+        input.orderId,
+        currentOrder.orderNumber,
+        currentOrder.status,
+        input.newStatus,
+        input.notes
+      ).catch((error) => {
+        console.error('Failed to log order status change:', error);
+      });
 
       return order;
     }),
@@ -1316,7 +1404,17 @@ export const orderRouter = router({
         console.error('Failed to send order confirmation email:', error);
       });
 
-      // TODO: Send notification to admin
+      // Send notification to admin
+      sendNewOrderNotificationEmail({
+        orderNumber: newOrder.orderNumber,
+        customerName: customer.businessName,
+        totalAmount: totals.totalAmount,
+        itemCount: newOrderItems.length,
+        deliveryDate,
+        isBackorder: false,
+      }).catch((error) => {
+        console.error('Failed to send admin notification email:', error);
+      });
 
       return newOrder;
     }),
@@ -1521,7 +1619,7 @@ export const orderRouter = router({
             quantity: -item.quantity,
             previousStock,
             newStock,
-            referenceType: 'order',
+            referenceType: 'order' as InventoryReferenceType,
             referenceId: orderId,
             notes: `Backorder partially approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
             createdBy: ctx.userId,
@@ -1542,6 +1640,17 @@ export const orderRouter = router({
             })
           ),
         ]);
+
+        // Log partial backorder approval to audit trail
+        await logBackorderApproval(
+          ctx.userId,
+          orderId,
+          updatedOrder.orderNumber,
+          'partial',
+          approvedQuantities
+        ).catch((error) => {
+          console.error('Failed to log backorder partial approval:', error);
+        });
 
         return updatedOrder;
       } else {
@@ -1623,7 +1732,7 @@ export const orderRouter = router({
             quantity: -item.quantity,
             previousStock,
             newStock,
-            referenceType: 'order',
+            referenceType: 'order' as InventoryReferenceType,
             referenceId: orderId,
             notes: `Backorder fully approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
             createdBy: ctx.userId,
@@ -1644,6 +1753,17 @@ export const orderRouter = router({
             })
           ),
         ]);
+
+        // Log full backorder approval to audit trail
+        await logBackorderApproval(
+          ctx.userId,
+          orderId,
+          updatedOrder.orderNumber,
+          'full',
+          undefined
+        ).catch((error) => {
+          console.error('Failed to log backorder full approval:', error);
+        });
 
         return updatedOrder;
       }
@@ -1723,6 +1843,16 @@ export const orderRouter = router({
         rejectedItems: rejectedItemsForEmail,
       }).catch((error) => {
         console.error('Failed to send backorder rejected email:', error);
+      });
+
+      // Log backorder rejection to audit trail
+      await logBackorderRejection(
+        ctx.userId,
+        orderId,
+        updatedOrder.orderNumber,
+        reason
+      ).catch((error) => {
+        console.error('Failed to log backorder rejection:', error);
       });
 
       return updatedOrder;
@@ -1997,5 +2127,84 @@ export const orderRouter = router({
       });
 
       return cancelledOrder;
+    }),
+
+  // ============================================================================
+  // RESEND CONFIRMATION EMAIL
+  // ============================================================================
+
+  // Resend order confirmation email (Admin/Sales only)
+  resendConfirmation: isAdminOrSales
+    .input(z.object({ orderId: z.string() }))
+    .mutation(async ({ input }) => {
+      const { orderId } = input;
+
+      // Get the order with customer
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Only allow resending for confirmed orders
+      if (order.status !== 'confirmed') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot resend confirmation for order with status '${order.status}'. Only confirmed orders can have confirmation emails resent.`,
+        });
+      }
+
+      // Get the order items from the JSON field
+      const orderItems = order.items as Array<{
+        productId: string;
+        productName: string;
+        sku: string;
+        quantity: number;
+        unit: string;
+        unitPrice: number;
+        subtotal: number;
+      }>;
+
+      // Get the delivery address from the JSON field
+      const deliveryAddress = order.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+
+      // Send the order confirmation email
+      await sendOrderConfirmationEmail({
+        customerEmail: order.customer.contactPerson.email,
+        customerName: order.customer.businessName,
+        orderNumber: order.orderNumber,
+        orderDate: order.orderedAt,
+        requestedDeliveryDate: order.requestedDeliveryDate,
+        items: orderItems.map((item) => ({
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+        subtotal: order.subtotal,
+        taxAmount: order.taxAmount,
+        totalAmount: order.totalAmount,
+        deliveryAddress: {
+          street: deliveryAddress.street,
+          suburb: deliveryAddress.suburb,
+          state: deliveryAddress.state,
+          postcode: deliveryAddress.postcode,
+        },
+      });
+
+      return { success: true, message: 'Confirmation email resent successfully' };
     }),
 });

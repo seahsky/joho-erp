@@ -10,16 +10,16 @@ interface ProgressIndicatorProps {
     orderNumber: string;
     customerName: string;
     areaTag: string;
+    status?: string;
   }>;
+  completedCount: number;
 }
 
-export function ProgressIndicator({ orders }: ProgressIndicatorProps) {
+export function ProgressIndicator({ orders, completedCount }: ProgressIndicatorProps) {
   const t = useTranslations('packing');
 
-  // In a real implementation, you would track which orders are complete
-  // For now, we'll show overall progress
   const totalOrders = orders.length;
-  const completedOrders = 0; // TODO: Track completed orders
+  const completedOrders = completedCount;
   const progressPercentage = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
   return (

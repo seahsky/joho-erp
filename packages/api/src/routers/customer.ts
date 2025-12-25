@@ -7,7 +7,15 @@ import {
   sendCreditApprovedEmail,
   sendCreditRejectedEmail,
   sendCustomerRegistrationEmail,
+  sendNewCustomerRegistrationAdminEmail,
 } from '../services/email';
+import {
+  logCreditApproval,
+  logCreditRejection,
+  logCustomerRegistration,
+  logCustomerProfileUpdate,
+  logCustomerCreatedByAdmin,
+} from '../services/audit';
 
 // Validation schemas for credit application
 const residentialAddressSchema = z.object({
@@ -148,9 +156,31 @@ export const customerRouter = router({
         customerEmail: customer.contactPerson.email,
         contactPerson: `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
         businessName: customer.businessName,
+      }).catch((error) => {
+        console.error('Failed to send customer registration email:', error);
       });
 
-      // TODO: Send notification email to admin for approval
+      // Send notification email to admin for credit approval
+      await sendNewCustomerRegistrationAdminEmail({
+        businessName: customer.businessName,
+        contactPerson: `${customer.contactPerson.firstName} ${customer.contactPerson.lastName}`,
+        email: customer.contactPerson.email,
+        phone: customer.contactPerson.phone,
+        abn: customer.abn,
+        requestedCreditLimit: input.requestedCreditLimit,
+      }).catch((error) => {
+        console.error('Failed to send admin notification for new customer:', error);
+      });
+
+      // Log customer registration to audit trail
+      await logCustomerRegistration(
+        input.clerkUserId,
+        customer.id,
+        customer.businessName,
+        customer.abn
+      ).catch((error) => {
+        console.error('Failed to log customer registration:', error);
+      });
 
       return {
         customerId: customer.id,
@@ -171,7 +201,30 @@ export const customerRouter = router({
       });
     }
 
-    return customer;
+    // Calculate used credit from unpaid orders
+    // Sum totalAmount for orders that are not cancelled and not delivered
+    const unpaidOrders = await prisma.order.aggregate({
+      _sum: {
+        totalAmount: true,
+      },
+      where: {
+        customerId: customer.id,
+        status: {
+          in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+        },
+        // Exclude pending backorders (they don't count against credit limit)
+        backorderStatus: {
+          not: 'pending_approval',
+        },
+      },
+    });
+
+    const usedCredit = unpaidOrders._sum.totalAmount ?? 0;
+
+    return {
+      ...customer,
+      usedCredit,
+    };
   }),
 
   // Update profile
@@ -228,7 +281,32 @@ export const customerRouter = router({
         data: updateData,
       });
 
-      // TODO: Log to audit trail
+      // Build changes array for audit log
+      const changes = [];
+      if (input.contactPerson) {
+        changes.push({
+          field: 'contactPerson',
+          oldValue: currentCustomer.contactPerson,
+          newValue: customer.contactPerson,
+        });
+      }
+      if (input.deliveryAddress) {
+        changes.push({
+          field: 'deliveryAddress',
+          oldValue: currentCustomer.deliveryAddress,
+          newValue: customer.deliveryAddress,
+        });
+      }
+
+      // Log to audit trail
+      await logCustomerProfileUpdate(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        customer.id,
+        customer.businessName,
+        changes
+      );
 
       return customer;
     }),
@@ -437,8 +515,27 @@ export const customerRouter = router({
         },
       });
 
-      // TODO: Send welcome email to customer
-      // TODO: Log to audit trail
+      // Send welcome email to customer
+      try {
+        await sendCustomerRegistrationEmail({
+          customerEmail: input.contactPerson.email,
+          businessName: input.businessName,
+          contactPerson: `${input.contactPerson.firstName} ${input.contactPerson.lastName}`,
+        });
+      } catch (error) {
+        // Log error but don't fail the registration
+        console.error('Failed to send welcome email:', error);
+      }
+
+      // Log to audit trail
+      await logCustomerCreatedByAdmin(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        customer.id,
+        customer.businessName,
+        customer.abn
+      );
 
       return customer;
     }),
@@ -500,7 +597,16 @@ export const customerRouter = router({
         console.error('Failed to enqueue Xero contact sync:', error);
       });
 
-      // TODO: Log to audit trail
+      // Log credit approval to audit trail
+      await logCreditApproval(
+        ctx.userId,
+        customer.id,
+        customer.businessName,
+        input.creditLimit,
+        input.paymentTerms
+      ).catch((error) => {
+        console.error('Failed to log credit approval:', error);
+      });
 
       return customer;
     }),
@@ -550,7 +656,437 @@ export const customerRouter = router({
         console.error('Failed to send credit rejected email:', error);
       });
 
-      // TODO: Log to audit trail
+      // Log credit rejection to audit trail
+      await logCreditRejection(
+        ctx.userId,
+        customer.id,
+        customer.businessName,
+        input.notes
+      ).catch((error) => {
+        console.error('Failed to log credit rejection:', error);
+      });
+
+      return customer;
+    }),
+
+  // Admin: Suspend customer account
+  suspend: isAdmin
+    .input(
+      z.object({
+        customerId: z.string(),
+        reason: z.string().min(10, 'Suspension reason must be at least 10 characters'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      if (customer.status === 'suspended') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Customer is already suspended',
+        });
+      }
+
+      const updatedCustomer = await prisma.customer.update({
+        where: { id: input.customerId },
+        data: {
+          status: 'suspended',
+          suspensionReason: input.reason,
+          suspendedAt: new Date(),
+          suspendedBy: ctx.userId,
+        },
+      });
+
+      // Log suspension to audit trail
+      await prisma.auditLog.create({
+        data: {
+          userId: ctx.userId,
+          action: 'update',
+          entity: 'customer',
+          entityId: customer.id,
+          changes: [
+            { field: 'status', oldValue: customer.status, newValue: 'suspended' },
+            { field: 'suspensionReason', oldValue: null, newValue: input.reason },
+          ],
+          metadata: {
+            actionType: 'suspend',
+            businessName: customer.businessName,
+          },
+          timestamp: new Date(),
+        },
+      }).catch((error) => {
+        console.error('Failed to log customer suspension:', error);
+      });
+
+      return updatedCustomer;
+    }),
+
+  // Admin: Activate (unsuspend) customer account
+  activate: isAdmin
+    .input(
+      z.object({
+        customerId: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      if (customer.status !== 'suspended') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Customer is not suspended',
+        });
+      }
+
+      const updatedCustomer = await prisma.customer.update({
+        where: { id: input.customerId },
+        data: {
+          status: 'active',
+          suspensionReason: null,
+          suspendedAt: null,
+          suspendedBy: null,
+        },
+      });
+
+      // Log activation to audit trail
+      await prisma.auditLog.create({
+        data: {
+          userId: ctx.userId,
+          action: 'update',
+          entity: 'customer',
+          entityId: customer.id,
+          changes: [
+            { field: 'status', oldValue: 'suspended', newValue: 'active' },
+            { field: 'suspensionReason', oldValue: customer.suspensionReason, newValue: null },
+          ],
+          metadata: {
+            actionType: 'activate',
+            businessName: customer.businessName,
+            notes: input.notes,
+          },
+          timestamp: new Date(),
+        },
+      }).catch((error) => {
+        console.error('Failed to log customer activation:', error);
+      });
+
+      return updatedCustomer;
+    }),
+
+  // Admin: Update customer details
+  update: isAdmin
+    .input(
+      z.object({
+        customerId: z.string(),
+        // Contact person
+        contactPerson: z
+          .object({
+            firstName: z.string().min(1).optional(),
+            lastName: z.string().min(1).optional(),
+            email: z.string().email().optional(),
+            phone: z.string().optional(),
+            mobile: z.string().optional(),
+          })
+          .optional(),
+        // Delivery address
+        deliveryAddress: z
+          .object({
+            street: z.string().min(1).optional(),
+            suburb: z.string().min(1).optional(),
+            state: z.string().optional(),
+            postcode: z.string().optional(),
+            deliveryInstructions: z.string().optional(),
+          })
+          .optional(),
+        // Business information
+        businessInfo: z
+          .object({
+            businessName: z.string().min(1).optional(),
+            tradingName: z.string().nullable().optional(),
+            abn: z.string().length(11).optional(),
+            acn: z.string().length(9).nullable().optional(),
+            accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']).optional(),
+          })
+          .optional(),
+        // Billing address
+        billingAddress: z
+          .object({
+            street: z.string().min(1),
+            suburb: z.string().min(1),
+            state: z.string().min(1),
+            postcode: z.string().min(1),
+            country: z.string().optional(),
+          })
+          .nullable()
+          .optional(),
+        // Postal address
+        postalAddress: z
+          .object({
+            street: z.string().min(1),
+            suburb: z.string().min(1),
+            state: z.string().min(1),
+            postcode: z.string().min(1),
+            country: z.string().optional(),
+          })
+          .nullable()
+          .optional(),
+        // Flag to copy billing address to postal address
+        postalSameAsBilling: z.boolean().optional(),
+        // Directors array
+        directors: z
+          .array(
+            z.object({
+              familyName: z.string().min(1),
+              givenNames: z.string().min(1),
+              residentialAddress: z.object({
+                street: z.string().min(1),
+                suburb: z.string().min(1),
+                state: z.string().min(1),
+                postcode: z.string().min(1),
+                country: z.string().optional(),
+              }),
+              dateOfBirth: z.coerce.date(),
+              driverLicenseNumber: z.string().min(1),
+              licenseState: z.enum(['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']),
+              licenseExpiry: z.coerce.date(),
+              position: z.string().optional(),
+            })
+          )
+          .optional(),
+        // Financial details
+        financialDetails: z
+          .object({
+            bankName: z.string().min(1),
+            accountName: z.string().min(1),
+            bsb: z.string().regex(/^\d{6}$/, 'BSB must be 6 digits'),
+            accountNumber: z.string().min(6).max(10),
+          })
+          .nullable()
+          .optional(),
+        // Trade references array
+        tradeReferences: z
+          .array(
+            z.object({
+              companyName: z.string().min(1),
+              contactPerson: z.string().min(1),
+              phone: z.string().min(1),
+              email: z.string().email(),
+              verified: z.boolean().optional(),
+              verifiedAt: z.date().nullable().optional(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const currentCustomer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+      });
+
+      if (!currentCustomer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      // Build update data with merged composite types
+      const updateData: Record<string, unknown> = {};
+      const changes: Array<{ field: string; oldValue: unknown; newValue: unknown }> = [];
+
+      // Handle contact person
+      if (input.contactPerson) {
+        const currentContact = currentCustomer.contactPerson as Record<string, unknown>;
+        const newContact = {
+          ...currentContact,
+          ...input.contactPerson,
+        };
+        updateData.contactPerson = newContact;
+        changes.push({
+          field: 'contactPerson',
+          oldValue: currentContact,
+          newValue: newContact,
+        });
+      }
+
+      // Handle delivery address
+      if (input.deliveryAddress) {
+        const currentAddress = currentCustomer.deliveryAddress as Record<string, unknown>;
+        const newAddress = {
+          ...currentAddress,
+          ...input.deliveryAddress,
+        };
+        updateData.deliveryAddress = newAddress;
+        changes.push({
+          field: 'deliveryAddress',
+          oldValue: currentAddress,
+          newValue: newAddress,
+        });
+      }
+
+      // Handle business information
+      if (input.businessInfo) {
+        if (input.businessInfo.businessName !== undefined) {
+          updateData.businessName = input.businessInfo.businessName;
+          changes.push({
+            field: 'businessName',
+            oldValue: currentCustomer.businessName,
+            newValue: input.businessInfo.businessName,
+          });
+        }
+        if (input.businessInfo.tradingName !== undefined) {
+          updateData.tradingName = input.businessInfo.tradingName;
+          changes.push({
+            field: 'tradingName',
+            oldValue: currentCustomer.tradingName,
+            newValue: input.businessInfo.tradingName,
+          });
+        }
+        if (input.businessInfo.abn !== undefined) {
+          updateData.abn = input.businessInfo.abn;
+          changes.push({
+            field: 'abn',
+            oldValue: currentCustomer.abn,
+            newValue: input.businessInfo.abn,
+          });
+        }
+        if (input.businessInfo.acn !== undefined) {
+          updateData.acn = input.businessInfo.acn;
+          changes.push({
+            field: 'acn',
+            oldValue: currentCustomer.acn,
+            newValue: input.businessInfo.acn,
+          });
+        }
+        if (input.businessInfo.accountType !== undefined) {
+          updateData.accountType = input.businessInfo.accountType;
+          changes.push({
+            field: 'accountType',
+            oldValue: currentCustomer.accountType,
+            newValue: input.businessInfo.accountType,
+          });
+        }
+      }
+
+      // Handle billing address
+      if (input.billingAddress !== undefined) {
+        const newBillingAddress = input.billingAddress
+          ? { ...input.billingAddress, country: input.billingAddress.country ?? 'Australia' }
+          : null;
+        updateData.billingAddress = newBillingAddress;
+        changes.push({
+          field: 'billingAddress',
+          oldValue: currentCustomer.billingAddress,
+          newValue: newBillingAddress,
+        });
+      }
+
+      // Handle postal address
+      if (input.postalSameAsBilling && input.billingAddress) {
+        // Copy billing address to postal address
+        const newPostalAddress = { ...input.billingAddress, country: input.billingAddress.country ?? 'Australia' };
+        updateData.postalAddress = newPostalAddress;
+        changes.push({
+          field: 'postalAddress',
+          oldValue: currentCustomer.postalAddress,
+          newValue: newPostalAddress,
+        });
+      } else if (input.postalAddress !== undefined) {
+        const newPostalAddress = input.postalAddress
+          ? { ...input.postalAddress, country: input.postalAddress.country ?? 'Australia' }
+          : null;
+        updateData.postalAddress = newPostalAddress;
+        changes.push({
+          field: 'postalAddress',
+          oldValue: currentCustomer.postalAddress,
+          newValue: newPostalAddress,
+        });
+      }
+
+      // Handle directors array
+      if (input.directors !== undefined) {
+        const newDirectors = input.directors.map((director) => ({
+          ...director,
+          residentialAddress: {
+            ...director.residentialAddress,
+            country: director.residentialAddress.country ?? 'Australia',
+          },
+        }));
+        updateData.directors = newDirectors;
+        changes.push({
+          field: 'directors',
+          oldValue: currentCustomer.directors,
+          newValue: newDirectors,
+        });
+      }
+
+      // Handle financial details
+      if (input.financialDetails !== undefined) {
+        updateData.financialDetails = input.financialDetails;
+        changes.push({
+          field: 'financialDetails',
+          oldValue: currentCustomer.financialDetails,
+          newValue: input.financialDetails,
+        });
+      }
+
+      // Handle trade references array
+      if (input.tradeReferences !== undefined) {
+        // Preserve verified status if not explicitly changed
+        const newTradeReferences = input.tradeReferences.map((ref) => ({
+          ...ref,
+          verified: ref.verified ?? false,
+          verifiedAt: ref.verifiedAt ?? null,
+        }));
+        updateData.tradeReferences = newTradeReferences;
+        changes.push({
+          field: 'tradeReferences',
+          oldValue: currentCustomer.tradeReferences,
+          newValue: newTradeReferences,
+        });
+      }
+
+      const customer = await prisma.customer.update({
+        where: { id: input.customerId },
+        data: updateData,
+      });
+
+      // Log update to audit trail
+      await prisma.auditLog.create({
+        data: {
+          userId: ctx.userId,
+          action: 'update',
+          entity: 'customer',
+          entityId: customer.id,
+          changes: changes as unknown as Array<{ field: string; oldValue: string | null; newValue: string | null }>,
+          metadata: {
+            actionType: 'update_details',
+            businessName: customer.businessName,
+          },
+          timestamp: new Date(),
+        },
+      }).catch((error) => {
+        console.error('Failed to log customer update:', error);
+      });
 
       return customer;
     }),

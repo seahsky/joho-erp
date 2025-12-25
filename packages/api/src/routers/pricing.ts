@@ -3,6 +3,7 @@ import { router, protectedProcedure, isAdminOrSales } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@joho-erp/shared';
+import { logPricingChangeWithUser, logBulkPricingImport } from '../services/audit';
 
 export const pricingRouter = router({
   /**
@@ -312,8 +313,18 @@ export const pricingRouter = router({
           },
         });
 
-        // TODO: Log to audit trail
-        console.log(`Updated pricing for ${customer.businessName} - ${product.name} by ${ctx.userId}`);
+        // Log to audit trail
+        await logPricingChangeWithUser(
+          ctx.userId,
+          undefined, // userEmail not available in context
+          ctx.userRole,
+          pricing.id,
+          input.customerId,
+          input.productId,
+          existingPricing.customPrice,
+          input.customPrice,
+          'update'
+        );
       } else {
         // Create new pricing
         pricing = await prisma.customerPricing.create({
@@ -339,8 +350,18 @@ export const pricingRouter = router({
           },
         });
 
-        // TODO: Log to audit trail
-        console.log(`Created pricing for ${customer.businessName} - ${product.name} by ${ctx.userId}`);
+        // Log to audit trail
+        await logPricingChangeWithUser(
+          ctx.userId,
+          undefined, // userEmail not available in context
+          ctx.userRole,
+          pricing.id,
+          input.customerId,
+          input.productId,
+          null,
+          input.customPrice,
+          'create'
+        );
       }
 
       return pricing;
@@ -383,8 +404,18 @@ export const pricingRouter = router({
         where: { id: input.pricingId },
       });
 
-      // TODO: Log to audit trail
-      console.log(`Deleted pricing for ${pricing.customer?.businessName ?? 'Unknown'} - ${pricing.product?.name ?? 'Unknown'} by ${ctx.userId}`);
+      // Log to audit trail
+      await logPricingChangeWithUser(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        input.pricingId,
+        pricing.customerId,
+        pricing.productId,
+        pricing.customPrice,
+        0,
+        'delete'
+      );
 
       return { success: true, message: 'Pricing deleted successfully' };
     }),
@@ -498,8 +529,15 @@ export const pricingRouter = router({
         }
       }
 
-      // TODO: Log to audit trail
-      console.log(`Bulk import: ${results.success} success, ${results.failed} failed by ${ctx.userId}`);
+      // Log to audit trail
+      await logBulkPricingImport(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        input.pricings.length,
+        results.success,
+        results.failed
+      );
 
       return results;
     }),

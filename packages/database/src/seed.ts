@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState } from './generated/prisma';
+import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState, InventoryReferenceType } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@joho-erp/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
@@ -1262,7 +1262,7 @@ async function seed() {
         quantity: product.currentStock,
         previousStock: 0,
         newStock: product.currentStock,
-        referenceType: 'manual',
+        referenceType: 'manual' as InventoryReferenceType,
         notes: `Initial stock received for ${product.name} - Supplier delivery`,
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
@@ -1279,7 +1279,7 @@ async function seed() {
         quantity: -10,
         previousStock: product.currentStock + 10,
         newStock: product.currentStock,
-        referenceType: 'manual',
+        referenceType: 'manual' as InventoryReferenceType,
         notes: `Stock adjustment for ${product.name} - product discontinued, damaged goods written off`,
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
@@ -1311,7 +1311,7 @@ async function seed() {
         quantity: -15,
         previousStock: porkBelly.currentStock + 15,
         newStock: porkBelly.currentStock,
-        referenceType: 'manual',
+        referenceType: 'manual' as InventoryReferenceType,
         notes: 'Stock count correction - 15 units missing from quarterly stocktake',
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
@@ -1768,7 +1768,7 @@ async function seed() {
               quantity: -item.quantity,
               previousStock: product.currentStock + item.quantity,
               newStock: product.currentStock,
-              referenceType: 'order',
+              referenceType: 'order' as InventoryReferenceType,
               referenceId: order.id,
               notes: `Sale from order ${order.orderNumber} to ${order.customerName}`,
               createdBy: order.delivery?.driverId || 'admin_user',

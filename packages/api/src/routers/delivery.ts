@@ -6,6 +6,7 @@ import { getRouteOptimization } from '../services/route-optimizer';
 import {
   sendOrderOutForDeliveryEmail,
   sendOrderDeliveredEmail,
+  sendOrderReturnedToWarehouseEmail,
 } from '../services/email';
 import { enqueueXeroJob } from '../services/xero-queue';
 
@@ -707,7 +708,25 @@ export const deliveryRouter = router({
         include: { customer: true },
       });
 
-      // TODO: Send notification to admin/warehouse about returned order
+      // Send notification to admin/warehouse about returned order
+      const deliveryAddr = updatedOrder.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+      const delivery = updatedOrder.delivery as { driverName?: string } | null;
+
+      await sendOrderReturnedToWarehouseEmail({
+        orderNumber: updatedOrder.orderNumber,
+        customerName: updatedOrder.customerName,
+        driverName: delivery?.driverName || 'Unknown Driver',
+        returnReason: reason,
+        returnNotes: notes,
+        deliveryAddress: `${deliveryAddr.street}, ${deliveryAddr.suburb} ${deliveryAddr.state} ${deliveryAddr.postcode}`,
+      }).catch((error) => {
+        console.error('Failed to send order returned to warehouse email:', error);
+      });
 
       return {
         success: true,

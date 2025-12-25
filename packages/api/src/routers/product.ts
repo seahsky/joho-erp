@@ -3,6 +3,7 @@ import { router, protectedProcedure, isAdmin } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getEffectivePrice } from '@joho-erp/shared';
+import { logProductCreated, logProductUpdated } from '../services/audit';
 
 const productCategoryEnum = z.enum(['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed']);
 
@@ -161,7 +162,7 @@ export const productRouter = router({
           .optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { customerPricing, ...productData } = input;
 
       // Check if SKU already exists
@@ -202,7 +203,16 @@ export const productRouter = router({
         };
       });
 
-      // TODO: Log to audit trail
+      // Log to audit trail
+      await logProductCreated(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        result.product.id,
+        result.product.sku,
+        result.product.name,
+        result.product.basePrice
+      );
 
       return result;
     }),
@@ -225,24 +235,54 @@ export const productRouter = router({
         imageUrl: z.string().url().nullish(), // R2 public URL (null to remove)
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { productId, ...updates } = input;
 
-      try {
-        const product = await prisma.product.update({
-          where: { id: productId },
-          data: updates,
-        });
+      // Fetch current product for change tracking
+      const currentProduct = await prisma.product.findUnique({
+        where: { id: productId },
+      });
 
-        // TODO: Log to audit trail
-
-        return product;
-      } catch (error) {
+      if (!currentProduct) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Product not found',
         });
       }
+
+      const product = await prisma.product.update({
+        where: { id: productId },
+        data: updates,
+      });
+
+      // Build changes array for audit log
+      const changes = Object.keys(updates)
+        .filter((key) => {
+          const typedKey = key as keyof typeof updates;
+          return updates[typedKey] !== undefined && updates[typedKey] !== currentProduct[typedKey];
+        })
+        .map((key) => {
+          const typedKey = key as keyof typeof updates;
+          return {
+            field: key,
+            oldValue: currentProduct[typedKey],
+            newValue: updates[typedKey],
+          };
+        });
+
+      // Log to audit trail
+      if (changes.length > 0) {
+        await logProductUpdated(
+          ctx.userId,
+          undefined, // userEmail not available in context
+          ctx.userRole,
+          product.id,
+          product.sku,
+          changes
+        );
+      }
+
+      return product;
     }),
 
   // Admin: Adjust stock level (manual stock management)

@@ -26,6 +26,7 @@ import {
   CheckCircle,
   Undo2,
   RefreshCw,
+  Navigation,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -171,6 +172,11 @@ export default function DriverPage() {
     window.location.href = `tel:${phone}`;
   };
 
+  const handleNavigate = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+  };
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
@@ -275,6 +281,17 @@ export default function DriverPage() {
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-2">
+                    {/* Navigate Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNavigate(delivery.address)}
+                      className="min-h-[44px]"
+                    >
+                      <Navigation className="h-4 w-4 mr-1" />
+                      {t('card.navigate')}
+                    </Button>
+
                     {/* Call Customer Button */}
                     {delivery.contactPhone && (
                       <Button

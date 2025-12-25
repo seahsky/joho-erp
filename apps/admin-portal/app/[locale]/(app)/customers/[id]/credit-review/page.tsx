@@ -1,29 +1,56 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { Button, Card, Badge, Input, Label } from '@joho-erp/ui';
-import { ArrowLeft } from 'lucide-react';
+import {
+  Button,
+  Card,
+  Badge,
+  Input,
+  Label,
+  useToast,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@joho-erp/ui';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
-import { useState } from 'react';
-import { formatCurrency, formatDate, parseToCents } from '@joho-erp/shared';
+import { formatCurrency, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
 }
 
+const PAYMENT_TERMS_OPTIONS = [
+  { value: 'COD', label: 'COD (Cash on Delivery)' },
+  { value: 'Net 7', label: 'Net 7 Days' },
+  { value: 'Net 14', label: 'Net 14 Days' },
+  { value: 'Net 30', label: 'Net 30 Days' },
+  { value: 'custom', label: 'Custom Terms' },
+];
+
 export default function CreditReviewPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const t = useTranslations('creditReview');
   const router = useRouter();
+  const { toast } = useToast();
+
   const [approveData, setApproveData] = useState({
     creditLimit: 0,
     paymentTerms: '',
+    customPaymentTerms: '',
     notes: '',
   });
   const [rejectNotes, setRejectNotes] = useState('');
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
   // Fetch customer data
   const {
@@ -35,55 +62,115 @@ export default function CreditReviewPage({ params }: PageProps) {
   // Approve mutation
   const approveMutation = api.customer.approveCredit.useMutation({
     onSuccess: () => {
-      alert(t('messages.approveSuccess'));
+      toast({
+        title: t('messages.approveSuccess'),
+        description: t('messages.approveSuccessDescription'),
+      });
       router.push(`/${resolvedParams.locale}/customers`);
     },
     onError: (error: { message?: string }) => {
-      alert(error.message || t('messages.approveError'));
+      toast({
+        title: t('messages.approveError'),
+        description: error.message || t('messages.approveErrorDescription'),
+        variant: 'destructive',
+      });
     },
   });
 
   // Reject mutation
   const rejectMutation = api.customer.rejectCredit.useMutation({
     onSuccess: () => {
-      alert(t('messages.rejectSuccess'));
+      toast({
+        title: t('messages.rejectSuccess'),
+        description: t('messages.rejectSuccessDescription'),
+      });
       router.push(`/${resolvedParams.locale}/customers`);
     },
     onError: (error: { message?: string }) => {
-      alert(error.message || t('messages.rejectError'));
+      toast({
+        title: t('messages.rejectError'),
+        description: error.message || t('messages.rejectErrorDescription'),
+        variant: 'destructive',
+      });
     },
   });
 
-  const handleApprove = () => {
+  const handleApproveClick = () => {
     if (!approveData.creditLimit || approveData.creditLimit <= 0) {
-      alert(t('messages.creditLimitRequired'));
+      toast({
+        title: t('validation.creditLimitRequired'),
+        description: t('validation.creditLimitRequiredDescription'),
+        variant: 'destructive',
+      });
       return;
     }
+
+    const effectivePaymentTerms =
+      approveData.paymentTerms === 'custom'
+        ? approveData.customPaymentTerms
+        : approveData.paymentTerms;
+
+    if (!effectivePaymentTerms) {
+      toast({
+        title: t('validation.paymentTermsRequired'),
+        description: t('validation.paymentTermsRequiredDescription'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setShowApproveConfirm(true);
+  };
+
+  const handleApproveConfirm = () => {
+    const effectivePaymentTerms =
+      approveData.paymentTerms === 'custom'
+        ? approveData.customPaymentTerms
+        : approveData.paymentTerms;
 
     approveMutation.mutate({
       customerId: resolvedParams.id,
       creditLimit: approveData.creditLimit,
-      paymentTerms: approveData.paymentTerms,
+      paymentTerms: effectivePaymentTerms,
       notes: approveData.notes,
     });
+    setShowApproveConfirm(false);
   };
 
-  const handleReject = () => {
+  const handleRejectClick = () => {
     if (!rejectNotes.trim()) {
-      alert(t('messages.notesRequired'));
+      toast({
+        title: t('validation.notesRequired'),
+        description: t('validation.notesRequiredDescription'),
+        variant: 'destructive',
+      });
       return;
     }
 
+    if (rejectNotes.trim().length < 10) {
+      toast({
+        title: t('validation.notesMinLength'),
+        description: t('validation.notesMinLengthDescription'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setShowRejectConfirm(true);
+  };
+
+  const handleRejectConfirm = () => {
     rejectMutation.mutate({
       customerId: resolvedParams.id,
       notes: rejectNotes,
     });
+    setShowRejectConfirm(false);
   };
 
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-500">{t('loading')}</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -91,7 +178,7 @@ export default function CreditReviewPage({ params }: PageProps) {
   if (error || !customer) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <p className="text-red-600">{t('error')}</p>
+        <p className="text-destructive">{t('error')}</p>
       </div>
     );
   }
@@ -118,9 +205,7 @@ export default function CreditReviewPage({ params }: PageProps) {
             {t('backToCustomers')}
           </Button>
           <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-gray-600">
-            {customer.businessName}
-          </p>
+          <p className="text-muted-foreground">{customer.businessName}</p>
         </div>
         <div className="flex flex-col gap-2 items-end">
           <Badge
@@ -128,8 +213,8 @@ export default function CreditReviewPage({ params }: PageProps) {
               creditApp.status === 'approved'
                 ? 'success'
                 : creditApp.status === 'rejected'
-                ? 'destructive'
-                : 'default'
+                  ? 'destructive'
+                  : 'default'
             }
           >
             {creditApp.status.toUpperCase()}
@@ -141,7 +226,7 @@ export default function CreditReviewPage({ params }: PageProps) {
       {/* Stats Cards */}
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         <Card className="p-4">
-          <p className="text-sm text-gray-600">{t('stats.requestedLimit')}</p>
+          <p className="text-sm text-muted-foreground">{t('stats.requestedLimit')}</p>
           <p className="text-2xl font-bold">
             {creditApp.requestedCreditLimit
               ? formatCurrency(creditApp.requestedCreditLimit)
@@ -149,13 +234,13 @@ export default function CreditReviewPage({ params }: PageProps) {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600">{t('stats.forecastPurchase')}</p>
+          <p className="text-sm text-muted-foreground">{t('stats.forecastPurchase')}</p>
           <p className="text-2xl font-bold">
             {creditApp.forecastPurchase ? formatCurrency(creditApp.forecastPurchase) : 'N/A'}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600">{t('stats.appliedDate')}</p>
+          <p className="text-sm text-muted-foreground">{t('stats.appliedDate')}</p>
           <p className="text-2xl font-bold">{formatDate(creditApp.appliedAt)}</p>
         </Card>
       </div>
@@ -169,27 +254,27 @@ export default function CreditReviewPage({ params }: PageProps) {
             <dl className="space-y-2 text-sm">
               {customer.accountType && (
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.accountType')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.accountType')}:</dt>
                   <dd>{accountTypeLabels[customer.accountType] || customer.accountType}</dd>
                 </div>
               )}
               <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">{t('fields.businessName')}:</dt>
+                <dt className="font-medium text-muted-foreground">{t('fields.businessName')}:</dt>
                 <dd>{customer.businessName}</dd>
               </div>
               {customer.tradingName && (
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.tradingName')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.tradingName')}:</dt>
                   <dd>{customer.tradingName}</dd>
                 </div>
               )}
               <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">{t('fields.abn')}:</dt>
+                <dt className="font-medium text-muted-foreground">{t('fields.abn')}:</dt>
                 <dd>{customer.abn}</dd>
               </div>
               {customer.acn && (
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.acn')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.acn')}:</dt>
                   <dd>{customer.acn}</dd>
                 </div>
               )}
@@ -201,22 +286,22 @@ export default function CreditReviewPage({ params }: PageProps) {
             <h2 className="mb-4 text-xl font-semibold">{t('contactInformation')}</h2>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">{t('fields.name')}:</dt>
+                <dt className="font-medium text-muted-foreground">{t('fields.name')}:</dt>
                 <dd>
                   {customer.contactPerson.firstName} {customer.contactPerson.lastName}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">{t('fields.email')}:</dt>
+                <dt className="font-medium text-muted-foreground">{t('fields.email')}:</dt>
                 <dd>{customer.contactPerson.email}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">{t('fields.phone')}:</dt>
+                <dt className="font-medium text-muted-foreground">{t('fields.phone')}:</dt>
                 <dd>{customer.contactPerson.phone}</dd>
               </div>
               {customer.contactPerson.mobile && (
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.mobile')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.mobile')}:</dt>
                   <dd>{customer.contactPerson.mobile}</dd>
                 </div>
               )}
@@ -229,18 +314,18 @@ export default function CreditReviewPage({ params }: PageProps) {
             <div className="space-y-4">
               <div>
                 <h3 className="mb-2 font-medium">{t('fields.deliveryAddress')}:</h3>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm">
                   {customer.deliveryAddress.street}, {customer.deliveryAddress.suburb},{' '}
                   {customer.deliveryAddress.state} {customer.deliveryAddress.postcode}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Area: {customer.deliveryAddress.areaTag}
                 </p>
               </div>
               {customer.billingAddress && (
                 <div>
                   <h3 className="mb-2 font-medium">{t('fields.billingAddress')}:</h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm">
                     {customer.billingAddress.street}, {customer.billingAddress.suburb},{' '}
                     {customer.billingAddress.state} {customer.billingAddress.postcode}
                   </p>
@@ -249,7 +334,7 @@ export default function CreditReviewPage({ params }: PageProps) {
               {customer.postalAddress && (
                 <div>
                   <h3 className="mb-2 font-medium">{t('fields.postalAddress')}:</h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm">
                     {customer.postalAddress.street}, {customer.postalAddress.suburb},{' '}
                     {customer.postalAddress.state} {customer.postalAddress.postcode}
                   </p>
@@ -271,27 +356,27 @@ export default function CreditReviewPage({ params }: PageProps) {
                     <dl className="space-y-1 text-sm">
                       {director.position && (
                         <div className="flex justify-between">
-                          <dt className="text-gray-600">{t('fields.position')}:</dt>
+                          <dt className="text-muted-foreground">{t('fields.position')}:</dt>
                           <dd>{director.position}</dd>
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <dt className="text-gray-600">{t('fields.dateOfBirth')}:</dt>
+                        <dt className="text-muted-foreground">{t('fields.dateOfBirth')}:</dt>
                         <dd>{formatDate(director.dateOfBirth)}</dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-gray-600">{t('fields.driverLicense')}:</dt>
+                        <dt className="text-muted-foreground">{t('fields.driverLicense')}:</dt>
                         <dd>
                           {director.driverLicenseNumber} ({director.licenseState})
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-gray-600">{t('fields.licenseExpiry')}:</dt>
+                        <dt className="text-muted-foreground">{t('fields.licenseExpiry')}:</dt>
                         <dd>{formatDate(director.licenseExpiry)}</dd>
                       </div>
                       <div className="mt-2">
-                        <dt className="text-gray-600">{t('fields.residentialAddress')}:</dt>
-                        <dd className="text-xs text-gray-700">
+                        <dt className="text-muted-foreground">{t('fields.residentialAddress')}:</dt>
+                        <dd className="text-xs">
                           {director.residentialAddress.street},{' '}
                           {director.residentialAddress.suburb},{' '}
                           {director.residentialAddress.state}{' '}
@@ -311,19 +396,19 @@ export default function CreditReviewPage({ params }: PageProps) {
               <h2 className="mb-4 text-xl font-semibold">{t('financialDetails')}</h2>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.bankName')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.bankName')}:</dt>
                   <dd>{customer.financialDetails.bankName}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.accountName')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.accountName')}:</dt>
                   <dd>{customer.financialDetails.accountName}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.bsb')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.bsb')}:</dt>
                   <dd>{customer.financialDetails.bsb}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.accountNumber')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.accountNumber')}:</dt>
                   <dd>****{customer.financialDetails.accountNumber.slice(-4)}</dd>
                 </div>
               </dl>
@@ -338,10 +423,10 @@ export default function CreditReviewPage({ params }: PageProps) {
                 {customer.tradeReferences.map((ref, index) => (
                   <div key={index} className="rounded border p-3">
                     <h3 className="font-medium">{ref.companyName}</h3>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm">
                       {ref.contactPerson} - {ref.email}
                     </p>
-                    <p className="text-sm text-gray-600">{ref.phone}</p>
+                    <p className="text-sm text-muted-foreground">{ref.phone}</p>
                     <Badge variant={ref.verified ? 'success' : 'secondary'} className="mt-2">
                       {ref.verified ? t('fields.verified') : t('fields.notVerified')}
                     </Badge>
@@ -357,8 +442,8 @@ export default function CreditReviewPage({ params }: PageProps) {
           {creditApp.status === 'pending' && (
             <>
               {/* Approve Section */}
-              <Card className="p-6">
-                <h2 className="mb-4 text-xl font-semibold text-green-700">
+              <Card className="p-6 border-success/50">
+                <h2 className="mb-4 text-xl font-semibold text-success">
                   {t('approveApplication')}
                 </h2>
                 <div className="space-y-4">
@@ -369,49 +454,79 @@ export default function CreditReviewPage({ params }: PageProps) {
                       type="number"
                       min="0"
                       step="100"
-                      value={approveData.creditLimit ? (approveData.creditLimit / 100).toFixed(0) : '0'}
+                      value={formatCentsForInput(approveData.creditLimit) || '0'}
                       onChange={(e) =>
-                        setApproveData({ ...approveData, creditLimit: parseToCents(e.target.value) || 0 })
+                        setApproveData({
+                          ...approveData,
+                          creditLimit: parseToCents(e.target.value) || 0,
+                        })
                       }
                       placeholder="10000"
                     />
-                    <p className="text-xs text-muted-foreground">{t('enterDollars')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('enterDollars')}</p>
                   </div>
                   <div>
                     <Label htmlFor="paymentTerms">{t('fields.paymentTerms')}</Label>
-                    <Input
+                    <select
                       id="paymentTerms"
                       value={approveData.paymentTerms}
                       onChange={(e) =>
                         setApproveData({ ...approveData, paymentTerms: e.target.value })
                       }
-                      placeholder="Net 30"
-                    />
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">{t('fields.selectPaymentTerms')}</option>
+                      {PAYMENT_TERMS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                  {approveData.paymentTerms === 'custom' && (
+                    <div>
+                      <Label htmlFor="customPaymentTerms">{t('fields.customPaymentTerms')}</Label>
+                      <Input
+                        id="customPaymentTerms"
+                        value={approveData.customPaymentTerms}
+                        onChange={(e) =>
+                          setApproveData({ ...approveData, customPaymentTerms: e.target.value })
+                        }
+                        placeholder={t('fields.customPaymentTermsPlaceholder')}
+                      />
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="approveNotes">{t('fields.notes')}</Label>
                     <textarea
                       id="approveNotes"
                       rows={3}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2"
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={approveData.notes}
                       onChange={(e) => setApproveData({ ...approveData, notes: e.target.value })}
-                      placeholder="Optional notes..."
+                      placeholder={t('fields.notesPlaceholder')}
                     />
                   </div>
                   <Button
-                    onClick={handleApprove}
+                    onClick={handleApproveClick}
                     disabled={approveMutation.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-success text-success-foreground hover:bg-success/90"
                   >
-                    {approveMutation.isPending ? t('buttons.approving') : t('buttons.approve')}
+                    {approveMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('buttons.approving')}
+                      </>
+                    ) : (
+                      t('buttons.approve')
+                    )}
                   </Button>
                 </div>
               </Card>
 
               {/* Reject Section */}
-              <Card className="p-6">
-                <h2 className="mb-4 text-xl font-semibold text-red-700">
+              <Card className="p-6 border-destructive/50">
+                <h2 className="mb-4 text-xl font-semibold text-destructive">
                   {t('rejectApplication')}
                 </h2>
                 <div className="space-y-4">
@@ -420,19 +535,29 @@ export default function CreditReviewPage({ params }: PageProps) {
                     <textarea
                       id="rejectNotes"
                       rows={4}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2"
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={rejectNotes}
                       onChange={(e) => setRejectNotes(e.target.value)}
-                      placeholder="Required: Please provide reason for rejection..."
+                      placeholder={t('fields.rejectionReasonPlaceholder')}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('fields.rejectionReasonHint')}
+                    </p>
                   </div>
                   <Button
-                    onClick={handleReject}
+                    onClick={handleRejectClick}
                     disabled={rejectMutation.isPending}
                     variant="destructive"
                     className="w-full"
                   >
-                    {rejectMutation.isPending ? t('buttons.rejecting') : t('buttons.reject')}
+                    {rejectMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('buttons.rejecting')}
+                      </>
+                    ) : (
+                      t('buttons.reject')
+                    )}
                   </Button>
                 </div>
               </Card>
@@ -444,11 +569,9 @@ export default function CreditReviewPage({ params }: PageProps) {
               <h2 className="mb-4 text-xl font-semibold">{t('applicationStatus')}</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="font-medium text-gray-600">{t('fields.status')}:</dt>
+                  <dt className="font-medium text-muted-foreground">{t('fields.status')}:</dt>
                   <dd>
-                    <Badge
-                      variant={creditApp.status === 'approved' ? 'success' : 'destructive'}
-                    >
+                    <Badge variant={creditApp.status === 'approved' ? 'success' : 'destructive'}>
                       {creditApp.status.toUpperCase()}
                     </Badge>
                   </dd>
@@ -456,25 +579,25 @@ export default function CreditReviewPage({ params }: PageProps) {
                 {creditApp.status === 'approved' && (
                   <>
                     <div className="flex justify-between">
-                      <dt className="font-medium text-gray-600">{t('fields.creditLimit')}:</dt>
+                      <dt className="font-medium text-muted-foreground">{t('fields.creditLimit')}:</dt>
                       <dd>{formatCurrency(creditApp.creditLimit)}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="font-medium text-gray-600">{t('fields.paymentTerms')}:</dt>
+                      <dt className="font-medium text-muted-foreground">{t('fields.paymentTerms')}:</dt>
                       <dd>{creditApp.paymentTerms || 'N/A'}</dd>
                     </div>
                   </>
                 )}
                 {creditApp.reviewedAt && (
                   <div className="flex justify-between">
-                    <dt className="font-medium text-gray-600">{t('fields.reviewedAt')}:</dt>
+                    <dt className="font-medium text-muted-foreground">{t('fields.reviewedAt')}:</dt>
                     <dd>{formatDate(creditApp.reviewedAt)}</dd>
                   </div>
                 )}
                 {creditApp.notes && (
                   <div className="mt-3">
-                    <dt className="mb-1 font-medium text-gray-600">{t('fields.notes')}:</dt>
-                    <dd className="rounded bg-gray-50 p-2 text-gray-700">{creditApp.notes}</dd>
+                    <dt className="mb-1 font-medium text-muted-foreground">{t('fields.notes')}:</dt>
+                    <dd className="rounded bg-muted p-2">{creditApp.notes}</dd>
                   </div>
                 )}
               </div>
@@ -482,6 +605,71 @@ export default function CreditReviewPage({ params }: PageProps) {
           )}
         </div>
       </div>
+
+      {/* Approve Confirmation Dialog */}
+      <AlertDialog open={showApproveConfirm} onOpenChange={setShowApproveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDialog.approveTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDialog.approveDescription', {
+                businessName: customer.businessName,
+                creditLimit: formatCurrency(approveData.creditLimit),
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveMutation.isPending}>
+              {t('buttons.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleApproveConfirm}
+              disabled={approveMutation.isPending}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              {approveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('buttons.approving')}
+                </>
+              ) : (
+                t('buttons.confirmApprove')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={showRejectConfirm} onOpenChange={setShowRejectConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDialog.rejectTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDialog.rejectDescription', { businessName: customer.businessName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rejectMutation.isPending}>
+              {t('buttons.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRejectConfirm}
+              disabled={rejectMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {rejectMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('buttons.rejecting')}
+                </>
+              ) : (
+                t('buttons.confirmReject')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

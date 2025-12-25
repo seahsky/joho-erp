@@ -40,7 +40,8 @@
     "welcome": "Welcome",
     "addToCart": "Add to Cart",
     "checkout": "Checkout",
-    "placeOrder": "Place Order"
+    "placeOrder": "Place Order",
+    "close": "Close"
   },
   "home": {
     "title": "Joho Foods - Quality Meat Distributor",
@@ -149,6 +150,10 @@
     "itemCount_plural": "{count} items",
     "requested": "Requested:",
     "deliveredDate": "Delivered:",
+    "searchPlaceholder": "Search by order number...",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "clearFilters": "Clear",
     "backorder": {
       "pending_approval": "Awaiting Approval",
       "approved": "Approved Backorder",
@@ -475,6 +480,15 @@
       "approved": "This backorder has been approved and will be fulfilled as soon as stock is available.",
       "rejected": "This backorder was rejected. Please contact us for more information.",
       "partialApproval": "This order was partially approved. Some items will be fulfilled with available stock."
+    },
+    "proofOfDelivery": {
+      "title": "Proof of Delivery",
+      "imageAlt": "Proof of delivery image",
+      "signature": "Signature",
+      "photo": "Photo",
+      "uploadedAt": "Captured",
+      "deliveredAt": "Delivered",
+      "viewFull": "View Full Image"
     }
   }
 }
