@@ -60,6 +60,36 @@
     "discontinued": "Discontinued",
     "out_of_stock": "Out of Stock"
   },
+  "orderStatusDescriptions": {
+    "pending": "Your order is being processed",
+    "confirmed": "Order confirmed, preparing for packing",
+    "packing": "Your order is being packed",
+    "ready_for_delivery": "Order packed and ready for dispatch",
+    "delivered": "Order delivered",
+    "cancelled": "Order cancelled"
+  },
+  "productUnits": {
+    "kg": "Kilogram",
+    "piece": "Piece",
+    "box": "Box",
+    "carton": "Carton"
+  },
+  "australianStates": {
+    "NSW": "New South Wales",
+    "VIC": "Victoria",
+    "QLD": "Queensland",
+    "SA": "South Australia",
+    "WA": "Western Australia",
+    "TAS": "Tasmania",
+    "NT": "Northern Territory",
+    "ACT": "Australian Capital Territory"
+  },
+  "areaTags": {
+    "north": "North",
+    "south": "South",
+    "east": "East",
+    "west": "West"
+  },
   "home": {
     "title": "Joho Foods - Quality Meat Distributor",
     "subtitle": "Your trusted partner for premium meat products",
@@ -527,5 +557,87 @@
       "deliveredAt": "Delivered",
       "viewFull": "View Full Image"
     }
+  },
+  "upload": {
+    "clickToUpload": "Click to upload",
+    "uploadSubtitle": "PNG, JPG up to 2MB",
+    "fileTypes": "PNG, JPG, GIF up to 10MB",
+    "addImage": "Add Image",
+    "change": "Change",
+    "remove": "Remove",
+    "uploading": "Uploading...",
+    "errorInvalidType": "Invalid file type. Please upload a JPG, PNG, or WebP image.",
+    "errorFileTooLarge": "File too large. Maximum size is 2MB.",
+    "errorUploadFailed": "Upload failed. Please try again.",
+    "errorRemoveFailed": "Failed to remove image. Please try again."
+  },
+  "pricing": {
+    "status": {
+      "starts": "Starts {date}",
+      "until": "Until {date}",
+      "noExpiration": "No expiration",
+      "expired": "Expired",
+      "active": "Active"
+    },
+    "comparison": {
+      "save": "Save {amount} ({percentage}% off)",
+      "premium": "Premium price: {price}",
+      "same": "Same as standard price"
+    },
+    "validation": {
+      "pricePositive": "Custom price must be greater than 0",
+      "dateOrder": "Effective From date must be before Effective To date"
+    }
+  },
+  "apiErrors": {
+    "customerNotFound": "Customer not found",
+    "customerAlreadyRegistered": "Customer already registered",
+    "customerEmailExists": "A customer with this email already exists",
+    "customerAbnExists": "A customer with this ABN already exists",
+    "customerAlreadySuspended": "Customer is already suspended",
+    "customerNotSuspended": "Customer is not suspended",
+    "customerProfileNotFound": "Customer profile not found",
+    "invalidCustomerId": "Invalid customer ID format",
+    "orderNotFound": "Order not found",
+    "orderAlreadyCancelled": "Order has already been cancelled",
+    "orderCannotBeCancelled": "Order cannot be cancelled in its current status",
+    "orderInvalidStatusTransition": "Invalid order status transition",
+    "orderAlreadyConfirmed": "Order has already been confirmed",
+    "orderEmptyCart": "Cannot create order with empty cart",
+    "productNotFound": "Product not found",
+    "productSkuExists": "A product with this SKU already exists",
+    "productInsufficientStock": "Insufficient stock for this product",
+    "productDiscontinued": "This product has been discontinued",
+    "categoryNotFound": "Category not found",
+    "categoryNameExists": "A category with this name already exists",
+    "categoryHasProducts": "Cannot delete category that contains products",
+    "cartItemNotFound": "Cart item not found",
+    "cartEmpty": "Cart is empty",
+    "cartInvalidQuantity": "Invalid quantity",
+    "pricingNotFound": "Pricing record not found",
+    "pricingAlreadyExists": "Custom pricing already exists for this customer and product",
+    "pricingInvalidDates": "Invalid pricing date range",
+    "creditNotApproved": "Your credit application must be approved before placing orders",
+    "creditApplicationNotFound": "Credit application not found",
+    "creditLimitExceeded": "Order total exceeds credit limit",
+    "deliveryRouteNotFound": "Delivery route not found",
+    "deliveryAlreadyOptimized": "Route has already been optimized",
+    "deliveryAlreadyCompleted": "Delivery has already been completed",
+    "packingOrderNotFound": "Packing order not found",
+    "packingAlreadyStarted": "Packing has already started",
+    "packingAlreadyCompleted": "Packing has already been completed",
+    "companySettingsNotFound": "Company settings not found",
+    "userNotFound": "User not found",
+    "userUnauthorized": "User is not authorized to perform this action",
+    "uploadFailed": "Upload failed. Please try again",
+    "uploadInvalidFileType": "Invalid file type",
+    "uploadFileTooLarge": "File is too large",
+    "xeroNotConnected": "Xero is not connected",
+    "xeroSyncFailed": "Failed to sync with Xero",
+    "invalidInput": "Invalid input",
+    "internalError": "An internal error occurred. Please try again later",
+    "unauthorized": "You are not authorized to perform this action",
+    "forbidden": "Access denied",
+    "unknownError": "An unexpected error occurred"
   }
 }

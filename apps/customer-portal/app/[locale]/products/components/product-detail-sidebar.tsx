@@ -96,7 +96,14 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
   };
 
   return (
-    <MobileDrawer open={open} onClose={onClose} side="right" className="w-full sm:w-[460px] max-w-full">
+    <MobileDrawer
+      open={open}
+      onClose={onClose}
+      side="right"
+      className="w-full sm:w-[460px] max-w-full"
+      title={t('products.productDetails')}
+      closeAriaLabel={t('products.closeDetails')}
+    >
       {/* Custom Header with Close Button */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between -mt-4 -mx-4">
         <H3 className="text-lg font-bold">{t('products.productDetails')}</H3>

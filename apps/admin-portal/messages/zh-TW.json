@@ -13,7 +13,8 @@
     "reports": "報表",
     "settings": "設定",
     "settingsSection": "設定",
-    "admin": "管理後台"
+    "admin": "管理後台",
+    "notifications": "通知"
   },
   "common": {
     "loading": "載入中...",
@@ -23,6 +24,7 @@
     "edit": "編輯",
     "view": "檢視",
     "search": "搜尋",
+    "searchPlaceholder": "搜尋客戶、訂單、產品...",
     "filter": "篩選",
     "actions": "操作",
     "status": "狀態",
@@ -35,7 +37,9 @@
     "welcome": "歡迎",
     "items": "件",
     "area": "區域",
-    "sequence": "順序"
+    "sequence": "順序",
+    "brand": "Joho Foods",
+    "noEmail": "無電子郵件"
   },
   "statusBadges": {
     "confirmed": "已確認",
@@ -52,6 +56,36 @@
     "closed": "已關閉",
     "discontinued": "已停產",
     "out_of_stock": "缺貨"
+  },
+  "orderStatusDescriptions": {
+    "pending": "您的訂單正在處理中",
+    "confirmed": "訂單已確認，正在準備打包",
+    "packing": "您的訂單正在打包中",
+    "ready_for_delivery": "訂單已打包，準備發貨",
+    "delivered": "訂單已送達",
+    "cancelled": "訂單已取消"
+  },
+  "productUnits": {
+    "kg": "公斤",
+    "piece": "個",
+    "box": "盒",
+    "carton": "箱"
+  },
+  "australianStates": {
+    "NSW": "新南威爾斯州",
+    "VIC": "維多利亞州",
+    "QLD": "昆士蘭州",
+    "SA": "南澳大利亞州",
+    "WA": "西澳大利亞州",
+    "TAS": "塔斯馬尼亞州",
+    "NT": "北領地",
+    "ACT": "澳洲首都領地"
+  },
+  "areaTags": {
+    "north": "北區",
+    "south": "南區",
+    "east": "東區",
+    "west": "西區"
   },
   "dashboard": {
     "title": "儀表板",
@@ -624,7 +658,19 @@
       "expired": "已過期",
       "active": "活躍",
       "activeNoExpiry": "活躍（無到期日）",
-      "expiresInDays": "{days}天後到期"
+      "expiresInDays": "{days}天後到期",
+      "starts": "{date}開始生效",
+      "until": "有效期至{date}",
+      "noExpiration": "無到期日"
+    },
+    "comparison": {
+      "save": "節省 {amount}（{percentage}% 折扣）",
+      "premium": "加價：{price}",
+      "same": "與標準價格相同"
+    },
+    "validation": {
+      "pricePositive": "自訂價格必須大於0",
+      "dateOrder": "生效日期必須早於到期日期"
     },
     "buttons": {
       "addCustomPrice": "添加自訂價格",
@@ -1302,10 +1348,14 @@
     },
     "dropdown": {
       "header": "設定",
+      "title": "設定",
+      "profile": "個人資料",
       "appearance": "外觀",
+      "darkMode": "深色模式",
       "light": "淺色",
       "dark": "深色",
       "system": "跟隨系統",
+      "language": "語言",
       "notifications": "通知",
       "privacySecurity": "隱私與安全",
       "allSettings": "所有設定"
@@ -1804,5 +1854,101 @@
     "suspended": "已暫停",
     "approved": "已批准",
     "rejected": "已拒絕"
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllAsRead": "全部標為已讀",
+    "noNotifications": "暫無通知",
+    "types": {
+      "order": "收到新訂單",
+      "customer": "新客戶註冊",
+      "inventory": "低庫存警報",
+      "system": "系統更新可用"
+    }
+  },
+  "quickSearch": {
+    "placeholder": "搜尋客戶、訂單、產品...",
+    "recent": "最近",
+    "quickActions": "快捷操作",
+    "noResults": "未找到相關結果",
+    "actions": {
+      "newCustomer": "新建客戶",
+      "newOrder": "新建訂單",
+      "viewAnalytics": "檢視分析",
+      "inventoryReport": "庫存報表"
+    },
+    "hints": {
+      "navigate": "導航",
+      "select": "選擇",
+      "close": "關閉"
+    }
+  },
+  "upload": {
+    "clickToUpload": "點擊上傳",
+    "uploadSubtitle": "PNG、JPG 最大2MB",
+    "fileTypes": "PNG、JPG、GIF 最大10MB",
+    "addImage": "新增圖片",
+    "change": "更換",
+    "remove": "移除",
+    "uploading": "上傳中...",
+    "errorInvalidType": "檔案類型無效。請上傳 JPG、PNG 或 WebP 圖片。",
+    "errorFileTooLarge": "檔案過大。最大允許 2MB。",
+    "errorUploadFailed": "上傳失敗，請重試。",
+    "errorRemoveFailed": "刪除圖片失敗，請重試。"
+  },
+  "mobileDrawer": {
+    "title": "選單",
+    "closeAriaLabel": "關閉選單"
+  },
+  "apiErrors": {
+    "customerNotFound": "未找到客戶",
+    "customerAlreadyRegistered": "客戶已註冊",
+    "customerEmailExists": "此電子郵件已被其他客戶使用",
+    "customerAbnExists": "此ABN已被其他客戶使用",
+    "customerAlreadySuspended": "客戶已被暫停",
+    "customerNotSuspended": "客戶未被暫停",
+    "customerProfileNotFound": "未找到客戶資料",
+    "invalidCustomerId": "客戶ID格式無效",
+    "orderNotFound": "未找到訂單",
+    "orderAlreadyCancelled": "訂單已取消",
+    "orderCannotBeCancelled": "當前狀態下無法取消訂單",
+    "orderInvalidStatusTransition": "無效的訂單狀態變更",
+    "orderAlreadyConfirmed": "訂單已確認",
+    "orderEmptyCart": "購物車為空，無法創建訂單",
+    "productNotFound": "未找到產品",
+    "productSkuExists": "此貨號已存在",
+    "productInsufficientStock": "庫存不足",
+    "productDiscontinued": "此產品已停產",
+    "categoryNotFound": "未找到類別",
+    "categoryNameExists": "此類別名稱已存在",
+    "categoryHasProducts": "無法刪除包含產品的類別",
+    "cartItemNotFound": "未找到購物車商品",
+    "cartEmpty": "購物車為空",
+    "cartInvalidQuantity": "數量無效",
+    "pricingNotFound": "未找到價格記錄",
+    "pricingAlreadyExists": "此客戶和產品已存在自訂價格",
+    "pricingInvalidDates": "價格日期範圍無效",
+    "creditNotApproved": "下單前需先獲得信用審批",
+    "creditApplicationNotFound": "未找到信用申請",
+    "creditLimitExceeded": "訂單金額超出信用額度",
+    "deliveryRouteNotFound": "未找到配送路線",
+    "deliveryAlreadyOptimized": "路線已優化",
+    "deliveryAlreadyCompleted": "配送已完成",
+    "packingOrderNotFound": "未找到打包訂單",
+    "packingAlreadyStarted": "打包已開始",
+    "packingAlreadyCompleted": "打包已完成",
+    "companySettingsNotFound": "未找到公司設定",
+    "userNotFound": "未找到使用者",
+    "userUnauthorized": "使用者無權執行此操作",
+    "uploadFailed": "上傳失敗，請重試",
+    "uploadInvalidFileType": "檔案類型無效",
+    "uploadFileTooLarge": "檔案過大",
+    "xeroNotConnected": "Xero未連接",
+    "xeroSyncFailed": "Xero同步失敗",
+    "invalidInput": "輸入無效",
+    "internalError": "發生內部錯誤，請稍後重試",
+    "unauthorized": "您無權執行此操作",
+    "forbidden": "存取被拒絕",
+    "unknownError": "發生未知錯誤"
   }
 }

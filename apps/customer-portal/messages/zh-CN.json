@@ -60,6 +60,36 @@
     "discontinued": "已停产",
     "out_of_stock": "缺货"
   },
+  "orderStatusDescriptions": {
+    "pending": "您的订单正在处理中",
+    "confirmed": "订单已确认，正在准备打包",
+    "packing": "您的订单正在打包中",
+    "ready_for_delivery": "订单已打包，准备发货",
+    "delivered": "订单已送达",
+    "cancelled": "订单已取消"
+  },
+  "productUnits": {
+    "kg": "千克",
+    "piece": "个",
+    "box": "盒",
+    "carton": "箱"
+  },
+  "australianStates": {
+    "NSW": "新南威尔士州",
+    "VIC": "维多利亚州",
+    "QLD": "昆士兰州",
+    "SA": "南澳大利亚州",
+    "WA": "西澳大利亚州",
+    "TAS": "塔斯马尼亚州",
+    "NT": "北领地",
+    "ACT": "澳大利亚首都领地"
+  },
+  "areaTags": {
+    "north": "北区",
+    "south": "南区",
+    "east": "东区",
+    "west": "西区"
+  },
   "home": {
     "title": "Joho Foods - 优质肉品经销商",
     "subtitle": "您值得信赖的优质肉品合作伙伴",
@@ -527,5 +557,87 @@
         "submitting": "提交中..."
       }
     }
+  },
+  "upload": {
+    "clickToUpload": "点击上传",
+    "uploadSubtitle": "PNG、JPG 最大2MB",
+    "fileTypes": "PNG、JPG、GIF 最大10MB",
+    "addImage": "添加图片",
+    "change": "更换",
+    "remove": "移除",
+    "uploading": "上传中...",
+    "errorInvalidType": "文件类型无效。请上传 JPG、PNG 或 WebP 图片。",
+    "errorFileTooLarge": "文件过大。最大允许 2MB。",
+    "errorUploadFailed": "上传失败，请重试。",
+    "errorRemoveFailed": "删除图片失败，请重试。"
+  },
+  "pricing": {
+    "status": {
+      "starts": "{date}开始生效",
+      "until": "有效期至{date}",
+      "noExpiration": "无到期日",
+      "expired": "已过期",
+      "active": "活跃"
+    },
+    "comparison": {
+      "save": "节省 {amount}（{percentage}% 折扣）",
+      "premium": "加价：{price}",
+      "same": "与标准价格相同"
+    },
+    "validation": {
+      "pricePositive": "自定义价格必须大于0",
+      "dateOrder": "生效日期必须早于到期日期"
+    }
+  },
+  "apiErrors": {
+    "customerNotFound": "未找到客户",
+    "customerAlreadyRegistered": "客户已注册",
+    "customerEmailExists": "此邮箱已被其他客户使用",
+    "customerAbnExists": "此ABN已被其他客户使用",
+    "customerAlreadySuspended": "客户已被暂停",
+    "customerNotSuspended": "客户未被暂停",
+    "customerProfileNotFound": "未找到客户资料",
+    "invalidCustomerId": "客户ID格式无效",
+    "orderNotFound": "未找到订单",
+    "orderAlreadyCancelled": "订单已取消",
+    "orderCannotBeCancelled": "当前状态下无法取消订单",
+    "orderInvalidStatusTransition": "无效的订单状态变更",
+    "orderAlreadyConfirmed": "订单已确认",
+    "orderEmptyCart": "购物车为空，无法创建订单",
+    "productNotFound": "未找到产品",
+    "productSkuExists": "此货号已存在",
+    "productInsufficientStock": "库存不足",
+    "productDiscontinued": "此产品已停产",
+    "categoryNotFound": "未找到类别",
+    "categoryNameExists": "此类别名称已存在",
+    "categoryHasProducts": "无法删除包含产品的类别",
+    "cartItemNotFound": "未找到购物车商品",
+    "cartEmpty": "购物车为空",
+    "cartInvalidQuantity": "数量无效",
+    "pricingNotFound": "未找到价格记录",
+    "pricingAlreadyExists": "此客户和产品已存在自定义价格",
+    "pricingInvalidDates": "价格日期范围无效",
+    "creditNotApproved": "下单前需先获得信用审批",
+    "creditApplicationNotFound": "未找到信用申请",
+    "creditLimitExceeded": "订单金额超出信用额度",
+    "deliveryRouteNotFound": "未找到配送路线",
+    "deliveryAlreadyOptimized": "路线已优化",
+    "deliveryAlreadyCompleted": "配送已完成",
+    "packingOrderNotFound": "未找到打包订单",
+    "packingAlreadyStarted": "打包已开始",
+    "packingAlreadyCompleted": "打包已完成",
+    "companySettingsNotFound": "未找到公司设置",
+    "userNotFound": "未找到用户",
+    "userUnauthorized": "用户无权执行此操作",
+    "uploadFailed": "上传失败，请重试",
+    "uploadInvalidFileType": "文件类型无效",
+    "uploadFileTooLarge": "文件过大",
+    "xeroNotConnected": "Xero未连接",
+    "xeroSyncFailed": "Xero同步失败",
+    "invalidInput": "输入无效",
+    "internalError": "发生内部错误，请稍后重试",
+    "unauthorized": "您无权执行此操作",
+    "forbidden": "访问被拒绝",
+    "unknownError": "发生未知错误"
   }
 }

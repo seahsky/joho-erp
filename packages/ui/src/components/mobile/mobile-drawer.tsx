@@ -12,6 +12,10 @@ export interface MobileDrawerProps {
   children: React.ReactNode;
   side?: 'left' | 'right';
   className?: string;
+  /** Title displayed at the top of the drawer - required for i18n */
+  title: string;
+  /** Aria label for close button - required for accessibility and i18n */
+  closeAriaLabel: string;
 }
 
 export function MobileDrawer({
@@ -20,6 +24,8 @@ export function MobileDrawer({
   children,
   side = 'left',
   className,
+  title,
+  closeAriaLabel,
 }: MobileDrawerProps) {
   useLockBodyScroll(open);
 
@@ -62,12 +68,12 @@ export function MobileDrawer({
       >
         {/* Close button */}
         <div className="sticky top-0 z-10 bg-background border-b border-border p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Menu</h2>
+          <h2 className="text-lg font-semibold">{title}</h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={closeAriaLabel}
           >
             <X className="h-5 w-5" />
           </Button>

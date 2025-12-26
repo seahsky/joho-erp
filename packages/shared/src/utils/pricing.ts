@@ -118,6 +118,60 @@ export function calculatePriceDifference(
 }
 
 /**
+ * Price comparison result with translation key and params
+ */
+export interface PriceComparisonResult {
+  /** Translation key to use with t() */
+  key: string;
+  /** Parameters for interpolation */
+  params?: Record<string, string | number>;
+  /** Raw values for custom formatting */
+  values: {
+    discount: number;
+    discountPercentage: number;
+    formattedDiscount: string;
+    formattedCustomPrice: string;
+  };
+}
+
+/**
+ * Get price comparison data for display (returns translation key + params)
+ * Use with: t(result.key, result.params)
+ */
+export function getPriceComparison(
+  basePrice: number,
+  customPrice: number,
+  currency: string = 'AUD'
+): PriceComparisonResult {
+  const { discount, discountPercentage } = calculatePriceDifference(basePrice, customPrice);
+  const formattedDiscount = formatCurrency(discount, currency);
+  const formattedCustomPrice = formatCurrency(customPrice, currency);
+
+  if (discount > 0) {
+    return {
+      key: 'pricing.comparison.save',
+      params: {
+        amount: formattedDiscount,
+        percentage: discountPercentage.toFixed(1),
+      },
+      values: { discount, discountPercentage, formattedDiscount, formattedCustomPrice },
+    };
+  } else if (discount < 0) {
+    return {
+      key: 'pricing.comparison.premium',
+      params: { price: formattedCustomPrice },
+      values: { discount, discountPercentage, formattedDiscount, formattedCustomPrice },
+    };
+  }
+
+  return {
+    key: 'pricing.comparison.same',
+    values: { discount: 0, discountPercentage: 0, formattedDiscount, formattedCustomPrice },
+  };
+}
+
+/**
+ * @deprecated Use getPriceComparison() with translation keys instead
  * Format a price comparison string for display
  */
 export function formatPriceComparison(
@@ -151,18 +205,34 @@ function formatCurrency(amount: number, currency: string = 'AUD'): string {
 }
 
 /**
+ * Validation result with translation key
+ */
+export interface ValidationResult {
+  valid: boolean;
+  /** Translation key for error message - use with t(errorKey) */
+  errorKey?: string;
+  /** @deprecated Use errorKey with translations instead */
+  error?: string;
+}
+
+/**
  * Validate customer pricing input
  * @param input - Pricing input (prices in cents)
+ * @returns ValidationResult with translation key for error messages
  */
 export function validateCustomerPricing(input: {
   customPrice: number;
   basePrice: number;
   effectiveFrom?: Date;
   effectiveTo?: Date;
-}): { valid: boolean; error?: string } {
+}): ValidationResult {
   // Price must be positive (cents must be > 0)
   if (input.customPrice <= 0) {
-    return { valid: false, error: 'Custom price must be greater than 0' };
+    return {
+      valid: false,
+      errorKey: 'pricing.validation.pricePositive',
+      error: 'Custom price must be greater than 0',
+    };
   }
 
   // Validate date range if both dates provided
@@ -171,7 +241,11 @@ export function validateCustomerPricing(input: {
     const toDate = new Date(input.effectiveTo);
 
     if (fromDate >= toDate) {
-      return { valid: false, error: 'Effective From date must be before Effective To date' };
+      return {
+        valid: false,
+        errorKey: 'pricing.validation.dateOrder',
+        error: 'Effective From date must be before Effective To date',
+      };
     }
   }
 
@@ -179,20 +253,34 @@ export function validateCustomerPricing(input: {
 }
 
 /**
- * Get pricing status text for UI display
+ * Pricing status result with translation key
  */
-export function getPricingStatus(pricing: CustomerPricing): {
+export interface PricingStatusResult {
   status: 'active' | 'pending' | 'expired';
+  /** Translation key - use with t(textKey, params) */
+  textKey: string;
+  /** Parameters for interpolation */
+  params?: Record<string, string>;
+  /** @deprecated Use textKey with translations instead */
   text: string;
-} {
+}
+
+/**
+ * Get pricing status for UI display (returns translation key + params)
+ * Use with: t(result.textKey, result.params)
+ */
+export function getPricingStatus(pricing: CustomerPricing): PricingStatusResult {
   const now = new Date();
   const effectiveFromDate = new Date(pricing.effectiveFrom);
 
   // Check if pending (future)
   if (effectiveFromDate > now) {
+    const dateStr = effectiveFromDate.toLocaleDateString();
     return {
       status: 'pending',
-      text: `Starts ${effectiveFromDate.toLocaleDateString()}`,
+      textKey: 'pricing.status.starts',
+      params: { date: dateStr },
+      text: `Starts ${dateStr}`,
     };
   }
 
@@ -200,19 +288,32 @@ export function getPricingStatus(pricing: CustomerPricing): {
   if (pricing.effectiveTo) {
     const effectiveToDate = new Date(pricing.effectiveTo);
     if (effectiveToDate < now) {
+      const dateStr = effectiveToDate.toLocaleDateString();
       return {
         status: 'expired',
-        text: `Expired ${effectiveToDate.toLocaleDateString()}`,
+        textKey: 'pricing.status.expired',
+        params: { date: dateStr },
+        text: `Expired ${dateStr}`,
       };
     }
   }
 
-  // Active
+  // Active with expiration
+  if (pricing.effectiveTo) {
+    const dateStr = new Date(pricing.effectiveTo).toLocaleDateString();
+    return {
+      status: 'active',
+      textKey: 'pricing.status.until',
+      params: { date: dateStr },
+      text: `Until ${dateStr}`,
+    };
+  }
+
+  // Active without expiration
   return {
     status: 'active',
-    text: pricing.effectiveTo
-      ? `Until ${new Date(pricing.effectiveTo).toLocaleDateString()}`
-      : 'No expiration',
+    textKey: 'pricing.status.noExpiration',
+    text: 'No expiration',
   };
 }
 

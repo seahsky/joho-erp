@@ -5,6 +5,18 @@ import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './button';
 
+export interface ProductImageUploadLabels {
+  uploadTitle: string;
+  uploadSubtitle: string;
+  change: string;
+  remove: string;
+  uploading: string;
+  errorInvalidType: string;
+  errorFileTooLarge: string;
+  errorUploadFailed: string;
+  errorRemoveFailed: string;
+}
+
 export interface ProductImageUploadProps {
   /** Current image URL (from R2 or existing) */
   value?: string | null;
@@ -20,23 +32,9 @@ export interface ProductImageUploadProps {
   isUploading?: boolean;
   /** CSS class name */
   className?: string;
-  /** Localized labels */
-  labels?: {
-    uploadTitle?: string;
-    uploadSubtitle?: string;
-    change?: string;
-    remove?: string;
-    uploading?: string;
-  };
+  /** Localized labels - required for i18n compliance */
+  labels: ProductImageUploadLabels;
 }
-
-const DEFAULT_LABELS = {
-  uploadTitle: 'Click to upload',
-  uploadSubtitle: 'PNG, JPG up to 2MB',
-  change: 'Change',
-  remove: 'Remove',
-  uploading: 'Uploading...',
-};
 
 export function ProductImageUpload({
   value,
@@ -46,14 +44,13 @@ export function ProductImageUpload({
   disabled,
   isUploading: externalIsUploading,
   className,
-  labels = {},
+  labels,
 }: ProductImageUploadProps) {
   const [internalIsUploading, setInternalIsUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isUploading = externalIsUploading || internalIsUploading;
-  const mergedLabels = { ...DEFAULT_LABELS, ...labels };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,14 +62,14 @@ export function ProductImageUpload({
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Please upload a JPG, PNG, or WebP image.');
+      setError(labels.errorInvalidType);
       return;
     }
 
     // Validate file size (2MB max)
     const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
-      setError('File too large. Maximum size is 2MB.');
+      setError(labels.errorFileTooLarge);
       return;
     }
 
@@ -83,7 +80,7 @@ export function ProductImageUpload({
       onChange?.(publicUrl);
     } catch (err) {
       console.error('Upload failed:', err);
-      setError('Upload failed. Please try again.');
+      setError(labels.errorUploadFailed);
     } finally {
       setInternalIsUploading(false);
       // Reset file input
@@ -103,7 +100,7 @@ export function ProductImageUpload({
       onChange?.(null);
     } catch (err) {
       console.error('Delete failed:', err);
-      setError('Failed to remove image. Please try again.');
+      setError(labels.errorRemoveFailed);
     }
   };
 
@@ -139,15 +136,15 @@ export function ProductImageUpload({
           {isUploading ? (
             <>
               <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">{mergedLabels.uploading}</p>
+              <p className="text-sm text-muted-foreground">{labels.uploading}</p>
             </>
           ) : (
             <>
               <Upload className="h-10 w-10 text-muted-foreground" />
               <div className="text-center">
-                <p className="text-sm font-medium">{mergedLabels.uploadTitle}</p>
+                <p className="text-sm font-medium">{labels.uploadTitle}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {mergedLabels.uploadSubtitle}
+                  {labels.uploadSubtitle}
                 </p>
               </div>
             </>
@@ -179,7 +176,7 @@ export function ProductImageUpload({
                 onClick={handleUploadClick}
               >
                 <ImageIcon className="h-4 w-4 mr-1" />
-                {mergedLabels.change}
+                {labels.change}
               </Button>
               <Button
                 type="button"
@@ -188,7 +185,7 @@ export function ProductImageUpload({
                 onClick={handleRemove}
               >
                 <X className="h-4 w-4 mr-1" />
-                {mergedLabels.remove}
+                {labels.remove}
               </Button>
             </div>
           )}

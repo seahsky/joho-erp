@@ -322,6 +322,10 @@ export function EditProductDialog({
                 change: t('productForm.image.change'),
                 remove: t('productForm.image.remove'),
                 uploading: t('productForm.image.uploading'),
+                errorInvalidType: t('upload.errorInvalidType'),
+                errorFileTooLarge: t('upload.errorFileTooLarge'),
+                errorUploadFailed: t('upload.errorUploadFailed'),
+                errorRemoveFailed: t('upload.errorRemoveFailed'),
               }}
             />
           </div>

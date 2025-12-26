@@ -2,52 +2,55 @@
 
 import { X, Package, Users, ShoppingBag, AlertCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface NotificationsDropdownProps {
   onClose: () => void;
 }
 
-const notifications = [
-  {
-    id: 1,
-    type: 'order',
-    icon: ShoppingBag,
-    title: 'New order received',
-    description: 'Order #1234 from John Doe',
-    time: '2 min ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'customer',
-    icon: Users,
-    title: 'New customer registration',
-    description: 'Jane Smith registered an account',
-    time: '15 min ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'inventory',
-    icon: Package,
-    title: 'Low stock alert',
-    description: 'Ribeye Steak running low (5 units left)',
-    time: '1 hour ago',
-    unread: false,
-  },
-  {
-    id: 4,
-    type: 'system',
-    icon: AlertCircle,
-    title: 'System update available',
-    description: 'Version 2.1.0 is ready to install',
-    time: '3 hours ago',
-    unread: false,
-  },
-];
-
 export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('notifications');
+
+  // Sample notifications - in production, these would come from an API
+  const notifications = [
+    {
+      id: 1,
+      type: 'order',
+      icon: ShoppingBag,
+      title: t('types.order'),
+      description: 'Order #1234 from John Doe',
+      time: '2 min ago',
+      unread: true,
+    },
+    {
+      id: 2,
+      type: 'customer',
+      icon: Users,
+      title: t('types.customer'),
+      description: 'Jane Smith registered an account',
+      time: '15 min ago',
+      unread: true,
+    },
+    {
+      id: 3,
+      type: 'inventory',
+      icon: Package,
+      title: t('types.inventory'),
+      description: 'Ribeye Steak running low (5 units left)',
+      time: '1 hour ago',
+      unread: false,
+    },
+    {
+      id: 4,
+      type: 'system',
+      icon: AlertCircle,
+      title: t('types.system'),
+      description: 'Version 2.1.0 is ready to install',
+      time: '3 hours ago',
+      unread: false,
+    },
+  ];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,7 +74,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       <div className="px-4 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-sm">Notifications</h3>
+            <h3 className="font-semibold text-sm">{t('title')}</h3>
             {unreadCount > 0 && (
               <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
                 {unreadCount}
@@ -135,7 +138,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-border bg-muted/30">
         <button className="w-full text-sm font-medium text-primary hover:text-primary/80 transition-colors py-1">
-          Mark all as read
+          {t('markAllAsRead')}
         </button>
       </div>
     </div>

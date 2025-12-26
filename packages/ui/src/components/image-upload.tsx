@@ -5,6 +5,12 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './button';
 
+export interface ImageUploadLabels {
+  clickToUpload: string;
+  fileTypes: string;
+  addImage: string;
+}
+
 export interface ImageUploadProps {
   value?: string | string[];
   onChange?: (value: string | string[]) => void;
@@ -13,6 +19,8 @@ export interface ImageUploadProps {
   multiple?: boolean;
   maxFiles?: number;
   className?: string;
+  /** Localized labels - required for i18n compliance */
+  labels: ImageUploadLabels;
 }
 
 export function ImageUpload({
@@ -23,6 +31,7 @@ export function ImageUpload({
   multiple = false,
   maxFiles = 5,
   className,
+  labels,
 }: ImageUploadProps) {
   const [previews, setPreviews] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -109,10 +118,10 @@ export function ImageUpload({
           <Upload className="h-10 w-10 text-muted-foreground" />
           <div className="text-center">
             <p className="text-sm font-medium">
-              Click to upload {multiple && `(${previews.length}/${maxFiles})`}
+              {labels.clickToUpload} {multiple && `(${previews.length}/${maxFiles})`}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              PNG, JPG, GIF up to 10MB
+              {labels.fileTypes}
             </p>
           </div>
         </div>
@@ -160,7 +169,7 @@ export function ImageUpload({
             >
               <div className="text-center">
                 <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Add Image</p>
+                <p className="text-xs text-muted-foreground">{labels.addImage}</p>
               </div>
             </div>
           )}

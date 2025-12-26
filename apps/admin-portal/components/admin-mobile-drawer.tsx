@@ -20,6 +20,9 @@ interface AdminMobileDrawerProps {
 
 export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDrawerProps) {
   const t = useTranslations('navigation');
+  const tSettings = useTranslations('settings.dropdown');
+  const tCommon = useTranslations('common');
+  const tMobileDrawer = useTranslations('mobileDrawer');
   const pathname = usePathname();
   const { signOut } = useClerk();
 
@@ -39,14 +42,19 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
   };
 
   return (
-    <MobileDrawer open={open} onClose={onClose}>
+    <MobileDrawer
+      open={open}
+      onClose={onClose}
+      title={tMobileDrawer('title')}
+      closeAriaLabel={tMobileDrawer('closeAriaLabel')}
+    >
       {/* User Info */}
       <div className="flex items-center gap-3 p-4 border-b mb-4">
         <UserButton />
         <div className="flex-1">
           <p className="font-semibold">{formatUserName(user ?? null)}</p>
           <p className="text-sm text-muted-foreground">
-            {user?.emailAddress || 'No email'}
+            {user?.emailAddress || tCommon('noEmail')}
           </p>
         </div>
       </div>
@@ -65,12 +73,12 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
       </DrawerSection>
 
       {/* Settings */}
-      <DrawerSection title="Settings">
-        <DrawerItem icon={Settings} label="Settings" onClick={onClose} />
-        <DrawerItem icon={User} label="Profile" onClick={onClose} />
+      <DrawerSection title={tSettings('title')}>
+        <DrawerItem icon={Settings} label={t('settings')} onClick={onClose} />
+        <DrawerItem icon={User} label={tSettings('profile')} onClick={onClose} />
         <DrawerItem
           icon={Moon}
-          label="Dark Mode"
+          label={tSettings('darkMode')}
           onClick={() => {
             // TODO: Implement dark mode toggle
             onClose();
@@ -78,7 +86,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
         />
         <DrawerItem
           icon={Globe}
-          label="Language"
+          label={tSettings('language')}
           onClick={() => {
             // Language switcher
             onClose();
@@ -90,7 +98,7 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
       <div className="mt-auto pt-4 border-t">
         <DrawerItem
           icon={LogOut}
-          label="Sign Out"
+          label={tCommon('signOut')}
           onClick={handleSignOut}
         />
       </div>

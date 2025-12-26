@@ -3,6 +3,7 @@
 import { Search, X, Clock, TrendingUp, FileText, Users, Package, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface QuickSearchProps {
   onClose: () => void;
@@ -14,17 +15,19 @@ const recentSearches = [
   { id: 3, text: 'Ribeye Steak Inventory', icon: Package },
 ];
 
-const quickActions = [
-  { id: 1, label: 'New Customer', icon: Users, path: '/customers/new' },
-  { id: 2, label: 'New Order', icon: ShoppingBag, path: '/orders/new' },
-  { id: 3, label: 'View Analytics', icon: TrendingUp, path: '/analytics' },
-  { id: 4, label: 'Inventory Report', icon: FileText, path: '/reports/inventory' },
-];
 
 export function QuickSearch({ onClose }: QuickSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const t = useTranslations();
+
+  const quickActions = [
+    { id: 1, label: t('quickSearch.actions.newCustomer'), icon: Users, path: '/customers/new' },
+    { id: 2, label: t('quickSearch.actions.newOrder'), icon: ShoppingBag, path: '/orders/new' },
+    { id: 3, label: t('quickSearch.actions.viewAnalytics'), icon: TrendingUp, path: '/analytics' },
+    { id: 4, label: t('quickSearch.actions.inventoryReport'), icon: FileText, path: '/reports/inventory' },
+  ];
 
   useEffect(() => {
     // Focus input on mount
@@ -60,7 +63,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Search customers, orders, products..."
+              placeholder={t('quickSearch.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
@@ -82,7 +85,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Recent
+                      {t('quickSearch.recent')}
                     </h3>
                   </div>
                   <div className="space-y-1">
@@ -106,7 +109,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Quick Actions
+                      {t('quickSearch.quickActions')}
                     </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -134,7 +137,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
             {searchQuery && (
               <div className="px-4 py-3">
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No results found for &ldquo;{searchQuery}&rdquo;
+                  {t('quickSearch.noResults')} &ldquo;{searchQuery}&rdquo;
                 </p>
               </div>
             )}
@@ -146,16 +149,16 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↑</kbd>
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↓</kbd>
-                <span>to navigate</span>
+                <span>{t('quickSearch.hints.navigate')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↵</kbd>
-                <span>to select</span>
+                <span>{t('quickSearch.hints.select')}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">esc</kbd>
-              <span>to close</span>
+              <span>{t('quickSearch.hints.close')}</span>
             </div>
           </div>
         </div>
