@@ -82,13 +82,15 @@ export function PackingLayout({
 
       {/* Desktop: Side-by-Side Layout */}
       <div className={`hidden lg:grid gap-6 transition-all duration-300 ${
-        isCollapsed ? 'lg:grid-cols-[60px_1fr]' : 'lg:grid-cols-[380px_1fr]'
+        isCollapsed ? 'lg:grid-cols-[52px_1fr]' : 'lg:grid-cols-[380px_1fr]'
       }`}>
         {/* Summary Panel - Fixed Width Sidebar */}
         <div className="space-y-4">
           <div className="sticky top-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className={`flex flex-row items-center space-y-0 ${
+                isCollapsed ? 'justify-center p-3' : 'justify-between'
+              }`}>
                 <div className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
