@@ -1009,14 +1009,19 @@ function createOrdersForCustomer(
           status: 'pending',
           changedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
           changedBy: customer.clerkUserId,
-          notes: 'Order created',
+          notes: 'Order placed',
         },
-        {
-          status: 'confirmed',
-          changedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-          changedBy: 'admin_user',
-          notes: 'Order confirmed',
-        },
+        // Only add 'confirmed' entry if status is not 'pending'
+        ...(statusInfo.status !== 'pending'
+          ? [
+              {
+                status: 'confirmed',
+                changedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+                changedBy: 'admin_user',
+                notes: 'Order confirmed',
+              },
+            ]
+          : []),
       ],
       orderedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       createdBy: customer.clerkUserId,
@@ -1548,13 +1553,13 @@ async function seed() {
       const numOrders = Math.floor(Math.random() * 3) + 2; // 2-4 orders
 
       for (let j = 0; j < numOrders; j++) {
-        // Status distribution optimized for packing page (84% visible: confirmed + packing)
+        // Status distribution - pending first to ensure at least 1 pending order per customer for testing
         const statusOptions = [
-          { status: 'confirmed' },         // 33% - Ready for packing
-          { status: 'confirmed' },         // 33% - More confirmed orders
-          { status: 'packing' },           // 17% - Currently being packed
-          { status: 'ready_for_delivery' }, // 8% - Already packed
-          { status: 'pending' },           // 8% - Not yet ready
+          { status: 'pending' },           // First order is pending - for testing confirm order
+          { status: 'confirmed' },         // Ready for packing
+          { status: 'confirmed' },         // More confirmed orders
+          { status: 'packing' },           // Currently being packed
+          { status: 'ready_for_delivery' }, // Already packed
           { status: 'delivered', ...drivers[i % drivers.length], hasProofOfDelivery: true, hasXero: true }, // Historical
         ];
         orderStatuses.push(statusOptions[j % statusOptions.length]);
