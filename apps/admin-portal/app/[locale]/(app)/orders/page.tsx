@@ -312,7 +312,12 @@ export default function OrdersPage() {
               {t('confirmOrder')}
             </Button>
           )}
-          <Button variant="ghost" size="sm" aria-label={tCommon('view')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={tCommon('view')}
+            onClick={() => router.push(`/orders/${order.id}`)}
+          >
             <Eye className="h-4 w-4" />
           </Button>
         </div>
@@ -364,7 +369,11 @@ export default function OrdersPage() {
             >
               {t('backorder.reviewBackorder')}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
               <Eye className="h-4 w-4" />
             </Button>
           </>
@@ -379,12 +388,21 @@ export default function OrdersPage() {
               <CheckCircle className="h-4 w-4 mr-1" />
               {t('confirmOrder')}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
               <Eye className="h-4 w-4" />
             </Button>
           </>
         ) : (
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => router.push(`/orders/${order.id}`)}
+          >
             <Eye className="h-4 w-4 mr-1" />
             {t('viewDetails')}
           </Button>
