@@ -47,6 +47,10 @@
     --warning-foreground: 0 0% 9%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 98%;
+    --violet: 265 75% 58%;
+    --violet-foreground: 0 0% 98%;
+    --teal: 172 70% 38%;
+    --teal-foreground: 0 0% 98%;
 
     /* Borders & Inputs */
     --border: 0 0% 89.8%;
@@ -149,6 +153,12 @@
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     --ring: 6 78% 60%;
+
+    /* Status colors - boosted lightness for dark mode */
+    --violet: 265 75% 65%;
+    --violet-foreground: 0 0% 98%;
+    --teal: 172 70% 48%;
+    --teal-foreground: 0 0% 98%;
 
     /* Dark mode specific shadows */
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);

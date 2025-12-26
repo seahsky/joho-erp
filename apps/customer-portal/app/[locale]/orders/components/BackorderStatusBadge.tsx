@@ -33,7 +33,7 @@ const statusConfig: Record<
     icon: Clock,
   },
   approved: {
-    variant: 'info',
+    variant: 'success',
     icon: CheckCircle2,
   },
   rejected: {

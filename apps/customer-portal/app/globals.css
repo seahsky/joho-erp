@@ -26,6 +26,10 @@
     --warning-foreground: 0 0% 9%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 98%;
+    --violet: 265 75% 58%;
+    --violet-foreground: 0 0% 98%;
+    --teal: 172 70% 38%;
+    --teal-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 6 78% 57%;

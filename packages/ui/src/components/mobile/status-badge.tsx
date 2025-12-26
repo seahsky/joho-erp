@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '../../lib/utils';
 import { Badge, type BadgeProps } from '../badge';
-import { CheckCircle2, Clock, Package, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Clock, Package, XCircle, AlertTriangle, Truck } from 'lucide-react';
 
 export type StatusType =
   | 'confirmed'
@@ -39,7 +39,7 @@ const statusConfig: Record<
     icon: CheckCircle2,
   },
   packing: {
-    variant: 'info',
+    variant: 'violet',
     icon: Package,
   },
   delivered: {
@@ -47,7 +47,7 @@ const statusConfig: Record<
     icon: CheckCircle2,
   },
   cancelled: {
-    variant: 'secondary',
+    variant: 'destructive',
     icon: XCircle,
   },
   pending: {
@@ -71,8 +71,8 @@ const statusConfig: Record<
     icon: XCircle,
   },
   ready_for_delivery: {
-    variant: 'info',
-    icon: Package,
+    variant: 'teal',
+    icon: Truck,
   },
   suspended: {
     variant: 'warning',

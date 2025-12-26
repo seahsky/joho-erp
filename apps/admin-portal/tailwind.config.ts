@@ -67,6 +67,14 @@ const config: Config = {
           DEFAULT: 'hsl(var(--info))',
           foreground: 'hsl(var(--info-foreground))',
         },
+        violet: {
+          DEFAULT: 'hsl(var(--violet))',
+          foreground: 'hsl(var(--violet-foreground))',
+        },
+        teal: {
+          DEFAULT: 'hsl(var(--teal))',
+          foreground: 'hsl(var(--teal-foreground))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
