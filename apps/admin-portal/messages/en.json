@@ -940,6 +940,8 @@
     "totalQuantity": "Total Quantity",
     "ordersRequiring": "Orders Requiring",
     "gathered": "Gathered",
+    "collapse": "Collapse",
+    "expand": "Expand",
     "markAsGathered": "Mark as gathered",
     "markAsNotGathered": "Mark as not gathered",
     "productSummaryDescription": "Consolidated product list for efficient gathering",

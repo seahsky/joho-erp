@@ -941,6 +941,8 @@
     "totalQuantity": "總數量",
     "ordersRequiring": "需要此產品的訂單",
     "gathered": "已收集",
+    "collapse": "收起",
+    "expand": "展開",
     "markAsGathered": "標記為已收集",
     "markAsNotGathered": "標記為未收集",
     "productSummaryDescription": "整合產品列表以便高效收集",

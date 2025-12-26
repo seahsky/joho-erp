@@ -2,8 +2,8 @@
 
 import { ReactNode, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Package, ClipboardList } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription } from '@joho-erp/ui';
+import { Package, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, Button } from '@joho-erp/ui';
 
 interface PackingLayoutProps {
   summaryPanel: ReactNode;
@@ -26,6 +26,7 @@ export function PackingLayout({
 }: PackingLayoutProps) {
   const t = useTranslations('packing');
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <>
@@ -80,22 +81,41 @@ export function PackingLayout({
       </div>
 
       {/* Desktop: Side-by-Side Layout */}
-      <div className="hidden lg:grid lg:grid-cols-[380px_1fr] gap-6">
+      <div className={`hidden lg:grid gap-6 transition-all duration-300 ${
+        isCollapsed ? 'lg:grid-cols-[60px_1fr]' : 'lg:grid-cols-[380px_1fr]'
+      }`}>
         {/* Summary Panel - Fixed Width Sidebar */}
         <div className="space-y-4">
           <div className="sticky top-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  {t('summaryPanel')}
-                </CardTitle>
-                <CardDescription className="tabular-nums">
-                  {gatheredCount}/{totalProducts} {t('gathered')}
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {t('summaryPanel')}
+                  </CardTitle>
+                  <CardDescription className="tabular-nums mt-1.5">
+                    {gatheredCount}/{totalProducts} {t('gathered')}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="shrink-0"
+                  title={isCollapsed ? t('expand') : t('collapse')}
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-5 w-5" />
+                  ) : (
+                    <ChevronLeft className="h-5 w-5" />
+                  )}
+                </Button>
               </CardHeader>
             </Card>
-            <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className={`transition-all duration-300 overflow-hidden ${
+              isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-200px)] opacity-100 overflow-y-auto'
+            }`}>
               {summaryPanel}
             </div>
           </div>

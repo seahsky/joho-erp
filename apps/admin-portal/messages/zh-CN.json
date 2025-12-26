@@ -941,6 +941,8 @@
     "totalQuantity": "总数量",
     "ordersRequiring": "需要此产品的订单",
     "gathered": "已收集",
+    "collapse": "收起",
+    "expand": "展开",
     "markAsGathered": "标记为已收集",
     "markAsNotGathered": "标记为未收集",
     "productSummaryDescription": "整合产品列表以便高效收集",
