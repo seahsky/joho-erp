@@ -430,10 +430,10 @@ export async function assignPreliminaryPackingSequence(
   orderId: string
 ): Promise<number> {
   const startOfDay = new Date(deliveryDate);
-  startOfDay.setHours(0, 0, 0, 0);
+  startOfDay.setUTCHours(0, 0, 0, 0);
 
   const endOfDay = new Date(deliveryDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
   // Get max existing packing sequence for this delivery date
   const ordersWithSequence = await prisma.order.findMany({
