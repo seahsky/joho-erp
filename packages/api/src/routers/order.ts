@@ -145,13 +145,34 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Determine customer ID
-      const targetCustomerId = input.customerId || ctx.userId;
+      // Get customer based on how the ID was provided
+      let customer;
 
-      // Get customer
-      const customer = await prisma.customer.findUnique({
-        where: { clerkUserId: targetCustomerId },
-      });
+      if (input.customerId) {
+        // Admin provided a customerId - could be MongoDB ObjectID or Clerk user ID
+        // First try as MongoDB ObjectID, then as Clerk user ID
+        if (input.customerId.startsWith('user_')) {
+          // It's a Clerk user ID
+          customer = await prisma.customer.findUnique({
+            where: { clerkUserId: input.customerId },
+          });
+        } else if (/^[a-fA-F0-9]{24}$/.test(input.customerId)) {
+          // It's a valid MongoDB ObjectID format
+          customer = await prisma.customer.findUnique({
+            where: { id: input.customerId },
+          });
+        } else {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid customer ID format',
+          });
+        }
+      } else {
+        // Customer placing their own order - ctx.userId is their Clerk user ID
+        customer = await prisma.customer.findUnique({
+          where: { clerkUserId: ctx.userId },
+        });
+      }
 
       if (!customer) {
         throw new TRPCError({

@@ -53,6 +53,41 @@ const tradeReferenceSchema = z.object({
   verifiedAt: z.date().optional(),
 });
 
+/**
+ * Resolves a customer ID that can be either a MongoDB ObjectID or a Clerk user ID.
+ * If a Clerk user ID is provided (starts with 'user_'), looks up the customer by clerkUserId
+ * and returns their MongoDB ID.
+ * @param customerId - Either a MongoDB ObjectID or Clerk user ID
+ * @returns The MongoDB ObjectID of the customer
+ * @throws TRPCError if customer not found or invalid ID format
+ */
+async function resolveCustomerId(customerId: string): Promise<string> {
+  // Check if it looks like a Clerk user ID
+  if (customerId.startsWith('user_')) {
+    const customer = await prisma.customer.findUnique({
+      where: { clerkUserId: customerId },
+      select: { id: true },
+    });
+    if (!customer) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Customer not found',
+      });
+    }
+    return customer.id;
+  }
+
+  // Validate MongoDB ObjectID format (24-char hex)
+  if (!/^[a-fA-F0-9]{24}$/.test(customerId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid customer ID format',
+    });
+  }
+
+  return customerId;
+}
+
 export const customerRouter = router({
   // Public registration
   register: publicProcedure
@@ -368,8 +403,10 @@ export const customerRouter = router({
   getById: isAdminOrSales
     .input(z.object({ customerId: z.string() }))
     .query(async ({ input }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       const customer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!customer) {
@@ -551,9 +588,11 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       // Fetch current customer to update creditApplication
       const currentCustomer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!currentCustomer) {
@@ -564,7 +603,7 @@ export const customerRouter = router({
       }
 
       const customer = await prisma.customer.update({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
         data: {
           creditApplication: {
             ...currentCustomer.creditApplication,
@@ -620,9 +659,11 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       // Fetch current customer to update creditApplication
       const currentCustomer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!currentCustomer) {
@@ -633,7 +674,7 @@ export const customerRouter = router({
       }
 
       const customer = await prisma.customer.update({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
         data: {
           creditApplication: {
             ...currentCustomer.creditApplication,
@@ -678,8 +719,10 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       const customer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!customer) {
@@ -697,7 +740,7 @@ export const customerRouter = router({
       }
 
       const updatedCustomer = await prisma.customer.update({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
         data: {
           status: 'suspended',
           suspensionReason: input.reason,
@@ -739,8 +782,10 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       const customer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!customer) {
@@ -758,7 +803,7 @@ export const customerRouter = router({
       }
 
       const updatedCustomer = await prisma.customer.update({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
         data: {
           status: 'active',
           suspensionReason: null,
@@ -898,8 +943,10 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
       const currentCustomer = await prisma.customer.findUnique({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
       });
 
       if (!currentCustomer) {
@@ -1066,7 +1113,7 @@ export const customerRouter = router({
       }
 
       const customer = await prisma.customer.update({
-        where: { id: input.customerId },
+        where: { id: resolvedCustomerId },
         data: updateData,
       });
 
