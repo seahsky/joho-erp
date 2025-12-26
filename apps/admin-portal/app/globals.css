@@ -14,10 +14,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* Brand - Deep Burgundy/Beef theme */
-    --primary: 0 67% 35%;
+    /* Brand - Coral Red theme */
+    --primary: 6 78% 57%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 0 67% 30%;
+    --primary-hover: 6 78% 52%;
 
     /* Secondary - Charcoal tones */
     --secondary: 0 0% 96.1%;
@@ -36,7 +36,7 @@
     --nav-border: 0 0% 90%;
     --sidebar-bg: 0 0% 99%;
     --sidebar-hover: 0 0% 96%;
-    --sidebar-active: 0 67% 35%;
+    --sidebar-active: 6 78% 57%;
 
     /* Semantic colors */
     --destructive: 0 84.2% 60.2%;
@@ -51,7 +51,7 @@
     /* Borders & Inputs */
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 67% 35%;
+    --ring: 6 78% 57%;
 
     /* Radius */
     --radius: 0.5rem;
@@ -121,10 +121,10 @@
     --popover: 0 0% 10%;
     --popover-foreground: 0 0% 98%;
 
-    /* Brand - Lighter in dark mode */
-    --primary: 0 67% 50%;
+    /* Brand - Coral Red in dark mode */
+    --primary: 6 78% 60%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 0 67% 55%;
+    --primary-hover: 6 78% 65%;
 
     /* Secondary */
     --secondary: 0 0% 15%;
@@ -143,12 +143,12 @@
     --nav-border: 0 0% 18%;
     --sidebar-bg: 0 0% 8%;
     --sidebar-hover: 0 0% 12%;
-    --sidebar-active: 0 67% 50%;
+    --sidebar-active: 6 78% 60%;
 
     /* Borders & Inputs - Softer */
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 0 67% 50%;
+    --ring: 6 78% 60%;
 
     /* Dark mode specific shadows */
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
