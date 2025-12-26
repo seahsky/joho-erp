@@ -408,7 +408,13 @@
       "currentStockPlaceholder": "0",
       "lowStockThreshold": "Low Stock Threshold",
       "lowStockThresholdPlaceholder": "10",
-      "status": "Status"
+      "status": "Status",
+      "selectCategory": "Select a category",
+      "createCategory": "Create new category",
+      "searchCategories": "Search categories...",
+      "noCategories": "No categories found",
+      "newCategoryName": "Category name",
+      "creatingCategory": "Creating..."
     },
     "units": {
       "kg": "Kilogram (kg)",
@@ -468,7 +474,9 @@
       "percentDiscountApplied": "{percent}% discount applied to {count} customers",
       "amountDiscountApplied": "${amount} discount applied to {count} customers",
       "pricingCleared": "Pricing cleared",
-      "pricingClearedDescription": "All customer-specific pricing has been cleared"
+      "pricingClearedDescription": "All customer-specific pricing has been cleared",
+      "categoryCreated": "Category created successfully",
+      "categoryCreateError": "Failed to create category"
     }
   },
   "stockAdjustment": {

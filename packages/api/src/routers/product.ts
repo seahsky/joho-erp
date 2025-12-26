@@ -41,6 +41,9 @@ export const productRouter = router({
       const products = await prisma.product.findMany({
         where,
         orderBy: { name: 'asc' },
+        include: {
+          categoryRelation: true,
+        },
       });
 
       // Fetch customer-specific pricing if user is authenticated
@@ -91,6 +94,9 @@ export const productRouter = router({
     .query(async ({ input, ctx }) => {
       const product = await prisma.product.findUnique({
         where: { id: input.productId },
+        include: {
+          categoryRelation: true,
+        },
       });
 
       if (!product) {
@@ -141,7 +147,8 @@ export const productRouter = router({
         sku: z.string().min(1),
         name: z.string().min(1),
         description: z.string().optional(),
-        category: productCategoryEnum.optional(),
+        category: productCategoryEnum.optional(), // Deprecated: Use categoryId instead
+        categoryId: z.string().optional(),
         unit: z.enum(['kg', 'piece', 'box', 'carton']),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive(), // In cents (e.g., 2550 = $25.50)
@@ -225,7 +232,8 @@ export const productRouter = router({
         productId: z.string(),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
-        category: productCategoryEnum.optional(),
+        category: productCategoryEnum.optional(), // Deprecated: Use categoryId instead
+        categoryId: z.string().nullish(), // null to remove category
         unit: z.enum(['kg', 'piece', 'box', 'carton']).optional(),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive().optional(), // In cents

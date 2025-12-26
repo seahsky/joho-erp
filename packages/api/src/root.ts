@@ -1,4 +1,5 @@
 import { router } from './trpc';
+import { categoryRouter } from './routers/category';
 import { customerRouter } from './routers/customer';
 import { productRouter } from './routers/product';
 import { orderRouter } from './routers/order';
@@ -14,6 +15,7 @@ import { uploadRouter } from './routers/upload';
 import { xeroRouter } from './routers/xero';
 
 export const appRouter = router({
+  category: categoryRouter,
   customer: customerRouter,
   product: productRouter,
   order: orderRouter,

@@ -29,10 +29,10 @@ import {
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency, parseToCents } from '@joho-erp/shared';
-import type { ProductCategory } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import imageCompression from 'browser-image-compression';
+import { CategorySelect } from './CategorySelect';
 
 type Customer = {
   id: string;
@@ -65,7 +65,7 @@ export function AddProductDialog({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<ProductCategory | ''>('');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
@@ -88,6 +88,31 @@ export function AddProductDialog({
   const { data: customersData } = api.customer.getAll.useQuery({
     limit: 1000,
   });
+
+  // Fetch categories
+  const { data: categoriesData, refetch: refetchCategories } = api.category.getAll.useQuery();
+  const categories = categoriesData || [];
+
+  // Create category mutation
+  const createCategoryMutation = api.category.create.useMutation({
+    onSuccess: () => {
+      refetchCategories();
+      toast({
+        title: t('productForm.messages.categoryCreated'),
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('productForm.messages.categoryCreateError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleCreateCategory = async (name: string) => {
+    return await createCategoryMutation.mutateAsync({ name });
+  };
 
   // Image upload mutations
   const uploadUrlMutation = api.upload.getProductImageUploadUrl.useMutation();
@@ -340,7 +365,7 @@ export function AddProductDialog({
       sku,
       name,
       description: description || undefined,
-      category: category || undefined,
+      categoryId: categoryId || undefined,
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
       basePrice: basePriceInCents, // Send cents to API
@@ -356,7 +381,7 @@ export function AddProductDialog({
     setSku('');
     setName('');
     setDescription('');
-    setCategory('');
+    setCategoryId(null);
     setUnit('kg');
     setPackageSize('');
     setBasePrice('');
@@ -432,11 +457,21 @@ export function AddProductDialog({
 
             <div>
               <Label htmlFor="category">{t('productForm.fields.category')}</Label>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as ProductCategory | '')}
-                placeholder={t('productForm.fields.categoryPlaceholder')}
+              <CategorySelect
+                value={categoryId}
+                onChange={setCategoryId}
+                categories={categories}
+                onCreateCategory={handleCreateCategory}
+                isCreating={createCategoryMutation.isPending}
+                disabled={createProductMutation.isPending}
+                labels={{
+                  selectCategory: t('productForm.fields.selectCategory'),
+                  createCategory: t('productForm.fields.createCategory'),
+                  searchPlaceholder: t('productForm.fields.searchCategories'),
+                  noCategories: t('productForm.fields.noCategories'),
+                  newCategoryName: t('productForm.fields.newCategoryName'),
+                  creating: t('productForm.fields.creatingCategory'),
+                }}
               />
             </div>
           </div>

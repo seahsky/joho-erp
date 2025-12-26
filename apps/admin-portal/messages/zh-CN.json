@@ -409,7 +409,13 @@
       "currentStockPlaceholder": "0",
       "lowStockThreshold": "低库存阈值",
       "lowStockThresholdPlaceholder": "10",
-      "status": "状态"
+      "status": "状态",
+      "selectCategory": "选择分类",
+      "createCategory": "创建新分类",
+      "searchCategories": "搜索分类...",
+      "noCategories": "未找到分类",
+      "newCategoryName": "分类名称",
+      "creatingCategory": "创建中..."
     },
     "units": {
       "kg": "千克 (kg)",
@@ -469,7 +475,9 @@
       "percentDiscountApplied": "{percent}% 折扣已应用于 {count} 位客户",
       "amountDiscountApplied": "${amount} 折扣已应用于 {count} 位客户",
       "pricingCleared": "价格已清除",
-      "pricingClearedDescription": "所有客户特定价格已被清除"
+      "pricingClearedDescription": "所有客户特定价格已被清除",
+      "categoryCreated": "分类创建成功",
+      "categoryCreateError": "创建分类失败"
     }
   },
   "stockAdjustment": {

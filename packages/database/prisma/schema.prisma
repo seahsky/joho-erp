@@ -154,13 +154,31 @@ enum XeroSyncJobStatus {
 // MODELS
 // ============================================================================
 
+// Category Model
+model Category {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  products    Product[]
+
+  @@index([isActive])
+  @@map("categories")
+}
+
 // Product Model
 model Product {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   sku                 String              @unique
   name                String
   description         String?
-  category            ProductCategory?
+  category            ProductCategory?    // Deprecated: Use categoryId instead
+  categoryId          String?             @db.ObjectId
+  categoryRelation    Category?           @relation(fields: [categoryId], references: [id])
   unit                ProductUnit
   packageSize         Float?
   basePrice           Int                 // Stored in cents (e.g., 2550 = $25.50)
@@ -179,6 +197,7 @@ model Product {
   // Indexes
   @@index([status])
   @@index([category])
+  @@index([categoryId])
   @@index([name])
   @@index([currentStock, lowStockThreshold])
   @@map("products")
