@@ -217,7 +217,7 @@ export default function CreditReviewPage({ params }: PageProps) {
                   : 'default'
             }
           >
-            {creditApp.status.toUpperCase()}
+            {t(`creditStatus.${creditApp.status}`)}
           </Badge>
           <XeroCustomerSyncBadge customerId={resolvedParams.id} creditStatus={creditApp.status} />
         </div>
@@ -572,7 +572,7 @@ export default function CreditReviewPage({ params }: PageProps) {
                   <dt className="font-medium text-muted-foreground">{t('fields.status')}:</dt>
                   <dd>
                     <Badge variant={creditApp.status === 'approved' ? 'success' : 'destructive'}>
-                      {creditApp.status.toUpperCase()}
+                      {t(`creditStatus.${creditApp.status}`)}
                     </Badge>
                   </dd>
                 </div>

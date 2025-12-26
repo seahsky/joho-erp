@@ -44,6 +44,22 @@
     "close": "Close",
     "signUp": "Sign Up"
   },
+  "statusBadges": {
+    "confirmed": "Confirmed",
+    "packing": "Packing",
+    "ready_for_delivery": "Ready for Delivery",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "closed": "Closed",
+    "discontinued": "Discontinued",
+    "out_of_stock": "Out of Stock"
+  },
   "home": {
     "title": "Joho Foods - Quality Meat Distributor",
     "subtitle": "Your trusted partner for premium meat products",

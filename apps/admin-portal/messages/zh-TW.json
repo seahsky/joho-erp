@@ -37,6 +37,22 @@
     "area": "區域",
     "sequence": "順序"
   },
+  "statusBadges": {
+    "confirmed": "已確認",
+    "packing": "打包中",
+    "ready_for_delivery": "待配送",
+    "delivered": "已送達",
+    "cancelled": "已取消",
+    "pending": "待處理",
+    "approved": "已批准",
+    "rejected": "已拒絕",
+    "active": "活躍",
+    "inactive": "停用",
+    "suspended": "已暫停",
+    "closed": "已關閉",
+    "discontinued": "已停產",
+    "out_of_stock": "缺貨"
+  },
   "dashboard": {
     "title": "儀表板",
     "subtitle": "業務營運概覽",
@@ -655,6 +671,11 @@
       "partnership": "合夥企業",
       "company": "公司",
       "other": "其他"
+    },
+    "creditStatus": {
+      "pending": "待審核",
+      "approved": "已批准",
+      "rejected": "已拒絕"
     },
     "fields": {
       "accountType": "帳戶類型",

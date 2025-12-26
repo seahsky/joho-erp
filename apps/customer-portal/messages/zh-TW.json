@@ -44,6 +44,22 @@
     "close": "關閉",
     "signUp": "註冊"
   },
+  "statusBadges": {
+    "confirmed": "已確認",
+    "packing": "打包中",
+    "ready_for_delivery": "待配送",
+    "delivered": "已送達",
+    "cancelled": "已取消",
+    "pending": "待處理",
+    "approved": "已批准",
+    "rejected": "已拒絕",
+    "active": "活躍",
+    "inactive": "停用",
+    "suspended": "已暫停",
+    "closed": "已關閉",
+    "discontinued": "已停產",
+    "out_of_stock": "缺貨"
+  },
   "home": {
     "title": "Joho Foods - 優質肉品經銷商",
     "subtitle": "您值得信賴的優質肉品合作夥伴",

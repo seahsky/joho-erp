@@ -37,6 +37,22 @@
     "area": "Area",
     "sequence": "Sequence"
   },
+  "statusBadges": {
+    "confirmed": "Confirmed",
+    "packing": "Packing",
+    "ready_for_delivery": "Ready for Delivery",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "closed": "Closed",
+    "discontinued": "Discontinued",
+    "out_of_stock": "Out of Stock"
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Overview of your business operations",
@@ -654,6 +670,11 @@
       "partnership": "Partnership",
       "company": "Company",
       "other": "Other"
+    },
+    "creditStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
     },
     "fields": {
       "accountType": "Account Type",
