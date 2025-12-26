@@ -97,8 +97,14 @@ export function ProductList() {
     e.stopPropagation();
     const currentQty = getCartQuantity(productId);
     const newQty = Math.min(currentQty + 5, currentStock);
-    if (newQty !== currentQty) {
-      updateQuantity.mutate({ productId, quantity: newQty });
+    if (newQty !== currentQty && newQty > 0) {
+      if (currentQty === 0) {
+        // Add to cart if not already in cart
+        addToCart.mutate({ productId, quantity: newQty });
+      } else {
+        // Update existing cart item
+        updateQuantity.mutate({ productId, quantity: newQty });
+      }
       if (newQty === currentStock && currentStock < currentQty + 5) {
         toast({
           title: t('products.maxStockReached'),
@@ -307,11 +313,10 @@ export function ProductList() {
                   {getStockBadge(product.currentStock)}
                 </div>
 
-                {/* Quick Add or Inline Quantity Controls */}
+                {/* Inline Quantity Controls */}
                 <div className="flex-shrink-0">
-                  {getCartQuantity(product.id) > 0 ? (
-                    // Inline quantity controls when item is in cart
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1">
+                    {getCartQuantity(product.id) > 0 && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -322,38 +327,28 @@ export function ProductList() {
                       >
                         -5
                       </Button>
-                      <button
-                        type="button"
-                        onClick={() => handleProductClick(productWithPricing)}
-                        className="h-10 w-14 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-lg"
-                        title={t('products.tapToEdit')}
-                      >
-                        {getCartQuantity(product.id)}
-                      </button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
-                        onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                        disabled={updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
-                        aria-label={t('products.incrementBy5')}
-                      >
-                        +5
-                      </Button>
-                    </div>
-                  ) : (
-                    // Quick add button when item not in cart
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-11 w-11 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
-                      disabled={product.currentStock === 0 || addToCart.isPending}
-                      onClick={(e) => handleQuickAdd(e, product.id)}
-                      aria-label={t('products.quickAdd')}
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleProductClick(productWithPricing)}
+                      className={`h-10 w-14 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-lg ${
+                        getCartQuantity(product.id) === 0 ? 'border-l-2 rounded-l-xl' : ''
+                      }`}
+                      title={t('products.tapToEdit')}
                     >
-                      <Plus className="h-5 w-5" />
+                      {getCartQuantity(product.id)}
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
+                      onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
+                      disabled={addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                      aria-label={t('products.incrementBy5')}
+                    >
+                      +5
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -410,9 +405,8 @@ export function ProductList() {
 
                   <div className="flex items-center gap-2">
                     {getStockBadge(product.currentStock)}
-                    {getCartQuantity(product.id) > 0 ? (
-                      // Inline quantity controls when item is in cart
-                      <div className="flex items-center">
+                    <div className="flex items-center">
+                      {getCartQuantity(product.id) > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -423,37 +417,28 @@ export function ProductList() {
                         >
                           -5
                         </Button>
-                        <button
-                          type="button"
-                          onClick={() => handleProductClick(productWithPricing)}
-                          className="h-10 w-12 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-base"
-                          title={t('products.tapToEdit')}
-                        >
-                          {getCartQuantity(product.id)}
-                        </button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
-                          onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                          disabled={updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
-                          aria-label={t('products.incrementBy5')}
-                        >
-                          +5
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-10 w-10 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-                        disabled={product.currentStock === 0 || addToCart.isPending}
-                        onClick={(e) => handleQuickAdd(e, product.id)}
-                        aria-label={t('products.quickAdd')}
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleProductClick(productWithPricing)}
+                        className={`h-10 w-12 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-base ${
+                          getCartQuantity(product.id) === 0 ? 'border-l-2 rounded-l-xl' : ''
+                        }`}
+                        title={t('products.tapToEdit')}
                       >
-                        <Plus className="h-5 w-5" />
+                        {getCartQuantity(product.id)}
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
+                        onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
+                        disabled={addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                        aria-label={t('products.incrementBy5')}
+                      >
+                        +5
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
