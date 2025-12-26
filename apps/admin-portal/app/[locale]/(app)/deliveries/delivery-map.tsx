@@ -31,11 +31,20 @@ interface DeliveryMapProps {
   deliveries: Delivery[];
   selectedDelivery: string | null;
   routeData?: RouteData | null;
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
 }
 
-export default function DeliveryMap({ deliveries, selectedDelivery, routeData }: DeliveryMapProps) {
+export default function DeliveryMap({
+  deliveries,
+  selectedDelivery,
+  routeData,
+  emptyStateTitle = 'No deliveries available',
+  emptyStateDescription = 'Deliveries will appear here when ready',
+}: DeliveryMapProps) {
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
   const mapRef = useRef<MapRef | null>(null);
+  const hasDeliveries = deliveries.length > 0;
 
   // Sydney CBD coordinates as default center
   const [viewState, setViewState] = useState({
@@ -45,7 +54,7 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
   });
 
   useEffect(() => {
-    if (selectedDelivery && mapRef.current) {
+    if (selectedDelivery && mapRef.current && hasDeliveries) {
       const delivery = deliveries.find((d) => d.id === selectedDelivery);
       if (delivery && delivery.latitude && delivery.longitude) {
         mapRef.current.flyTo({
@@ -56,7 +65,22 @@ export default function DeliveryMap({ deliveries, selectedDelivery, routeData }:
         setPopupInfo(delivery);
       }
     }
-  }, [selectedDelivery, deliveries]);
+  }, [selectedDelivery, deliveries, hasDeliveries]);
+
+  // Empty state when no deliveries available
+  if (!hasDeliveries) {
+    return (
+      <div className="w-full h-[600px] rounded-lg overflow-hidden bg-muted/50 flex flex-col items-center justify-center border border-dashed border-muted-foreground/20">
+        <MapPin className="h-16 w-16 text-muted-foreground/30 mb-4" />
+        <p className="text-muted-foreground text-lg font-medium">
+          {emptyStateTitle}
+        </p>
+        <p className="text-muted-foreground/60 text-sm mt-1">
+          {emptyStateDescription}
+        </p>
+      </div>
+    );
+  }
 
   const getMarkerColor = (status: string) => {
     switch (status) {

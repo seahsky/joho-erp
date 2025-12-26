@@ -118,7 +118,9 @@
     "deliveryRoutes": "Delivery Routes",
     "realTimeTracking": "Real-time delivery tracking on map",
     "noDeliveriesFound": "No deliveries found",
-    "area": "Area"
+    "area": "Area",
+    "noDeliveriesAvailable": "No deliveries available",
+    "deliveriesWillAppear": "Deliveries will appear here when ready"
   },
   "orders": {
     "title": "Order Management",

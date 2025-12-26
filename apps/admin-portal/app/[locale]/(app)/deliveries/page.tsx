@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button } from '@joho-erp/ui';
 import { MapPin, Navigation, CheckCircle, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -27,7 +27,14 @@ export default function DeliveriesPage() {
     areaTag: areaFilter,
   });
 
-  const deliveries = data?.deliveries || [];
+  const deliveries = useMemo(() => data?.deliveries || [], [data?.deliveries]);
+
+  // Auto-select the first delivery when data loads (already sorted by deliverySequence from API)
+  useEffect(() => {
+    if (deliveries.length > 0 && selectedDelivery === null) {
+      setSelectedDelivery(deliveries[0].id);
+    }
+  }, [deliveries, selectedDelivery]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -155,7 +162,12 @@ export default function DeliveriesPage() {
               <CardDescription>{t('realTimeTracking')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <DeliveryMap deliveries={deliveries} selectedDelivery={selectedDelivery} />
+              <DeliveryMap
+                deliveries={deliveries}
+                selectedDelivery={selectedDelivery}
+                emptyStateTitle={t('noDeliveriesAvailable')}
+                emptyStateDescription={t('deliveriesWillAppear')}
+              />
             </CardContent>
           </Card>
         </div>

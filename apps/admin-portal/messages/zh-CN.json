@@ -119,7 +119,9 @@
     "deliveryRoutes": "配送路线",
     "realTimeTracking": "地图上的实时配送追踪",
     "noDeliveriesFound": "未找到配送",
-    "area": "区域"
+    "area": "区域",
+    "noDeliveriesAvailable": "暂无配送",
+    "deliveriesWillAppear": "配送准备好后将在此显示"
   },
   "orders": {
     "title": "订单管理",

@@ -53,7 +53,11 @@ export const deliveryRouter = router({
           where,
           skip,
           take: input.limit,
-          orderBy: [{ requestedDeliveryDate: 'asc' }, { createdAt: 'desc' }],
+          orderBy: [
+            { delivery: { deliverySequence: 'asc' } },
+            { requestedDeliveryDate: 'asc' },
+            { createdAt: 'desc' },
+          ],
           include: {
             customer: {
               select: {
