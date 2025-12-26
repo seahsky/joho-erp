@@ -12,6 +12,7 @@
     "inventory": "Inventory",
     "reports": "Reports",
     "settings": "Settings",
+    "settingsSection": "Settings",
     "admin": "Admin Portal"
   },
   "common": {
