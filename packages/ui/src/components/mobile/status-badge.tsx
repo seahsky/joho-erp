@@ -41,7 +41,7 @@ const statusConfig: Record<
   },
   packing: {
     label: 'Packing',
-    variant: 'warning',
+    variant: 'info',
     icon: Package,
   },
   delivered: {
