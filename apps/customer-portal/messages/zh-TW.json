@@ -129,7 +129,11 @@
     "save": "節省 {percentage}%",
     "addedToCart": "已加入購物車",
     "adding": "添加中...",
-    "noDescription": "暫無描述"
+    "noDescription": "暫無描述",
+    "incrementBy5": "增加5件",
+    "decrementBy5": "減少5件",
+    "tapToEdit": "點擊編輯數量",
+    "maxStockReached": "已達到最大庫存"
   },
   "categories": {
     "beef": "牛肉",
@@ -269,7 +273,10 @@
       "errorUpdatingQuantity": "更新數量失敗"
     },
     "itemCount": "{count} 項",
-    "itemCount_plural": "{count} 項"
+    "itemCount_plural": "{count} 項",
+    "incrementBy5": "增加5件",
+    "decrementBy5": "減少5件",
+    "tapToEditQuantity": "點擊編輯數量"
   },
   "checkout": {
     "title": "結帳",

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Card, CardContent, H4, Muted, useToast } from '@joho-erp/ui';
+import { Button, Card, CardContent, H4, Muted, useToast, Input } from '@joho-erp/ui';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
@@ -25,6 +25,16 @@ export function CartItem({ item }: CartItemProps) {
   const t = useTranslations();
   const { toast } = useToast();
   const utils = api.useUtils();
+  const [isEditingQuantity, setIsEditingQuantity] = React.useState(false);
+  const [editQuantity, setEditQuantity] = React.useState(item.quantity.toString());
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Sync editQuantity when item.quantity changes from external updates
+  React.useEffect(() => {
+    if (!isEditingQuantity) {
+      setEditQuantity(item.quantity.toString());
+    }
+  }, [item.quantity, isEditingQuantity]);
 
   const updateQuantity = api.cart.updateQuantity.useMutation({
     onSuccess: () => {
@@ -69,8 +79,58 @@ export function CartItem({ item }: CartItemProps) {
     }
   };
 
+  const handleIncreaseBy5 = () => {
+    updateQuantity.mutate({
+      productId: item.productId,
+      quantity: item.quantity + 5,
+    });
+  };
+
+  const handleDecreaseBy5 = () => {
+    const newQty = item.quantity - 5;
+    if (newQty <= 0) {
+      removeItem.mutate({ productId: item.productId });
+    } else {
+      updateQuantity.mutate({
+        productId: item.productId,
+        quantity: newQty,
+      });
+    }
+  };
+
   const handleRemove = () => {
     removeItem.mutate({ productId: item.productId });
+  };
+
+  const handleQuantityClick = () => {
+    setIsEditingQuantity(true);
+    setEditQuantity(item.quantity.toString());
+    // Focus input after state update
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleQuantityBlur = () => {
+    setIsEditingQuantity(false);
+    const newQty = parseInt(editQuantity, 10);
+    if (!isNaN(newQty) && newQty > 0 && newQty !== item.quantity) {
+      updateQuantity.mutate({
+        productId: item.productId,
+        quantity: newQty,
+      });
+    } else if (newQty <= 0) {
+      removeItem.mutate({ productId: item.productId });
+    } else {
+      setEditQuantity(item.quantity.toString());
+    }
+  };
+
+  const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleQuantityBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditingQuantity(false);
+      setEditQuantity(item.quantity.toString());
+    }
   };
 
   // Item total is already calculated by backend
@@ -90,25 +150,68 @@ export function CartItem({ item }: CartItemProps) {
 
           {/* Quantity Controls */}
           <div className="flex flex-col items-end gap-3">
-            <div className="flex items-center gap-2">
+            {/* Enhanced quantity controls: -5, -1, qty, +1, +5 */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-10 text-xs font-semibold"
+                onClick={handleDecreaseBy5}
+                disabled={updateQuantity.isPending || removeItem.isPending}
+                aria-label={t('cart.decrementBy5')}
+              >
+                -5
+              </Button>
               <Button
                 variant="outline"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9"
                 onClick={handleDecrease}
                 disabled={item.quantity <= 1 || updateQuantity.isPending}
+                aria-label={t('products.decreaseQuantity')}
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="w-12 text-center font-medium">{item.quantity}</span>
+              {isEditingQuantity ? (
+                <Input
+                  ref={inputRef}
+                  type="number"
+                  value={editQuantity}
+                  onChange={(e) => setEditQuantity(e.target.value)}
+                  onBlur={handleQuantityBlur}
+                  onKeyDown={handleQuantityKeyDown}
+                  className="h-9 w-14 text-center font-medium p-1"
+                  min={1}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleQuantityClick}
+                  className="h-9 w-14 border border-input rounded-md bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-medium"
+                  title={t('cart.tapToEditQuantity')}
+                >
+                  {item.quantity}
+                </button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9"
                 onClick={handleIncrease}
                 disabled={updateQuantity.isPending}
+                aria-label={t('products.increaseQuantity')}
               >
                 <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-10 text-xs font-semibold"
+                onClick={handleIncreaseBy5}
+                disabled={updateQuantity.isPending}
+                aria-label={t('cart.incrementBy5')}
+              >
+                +5
               </Button>
             </div>
 

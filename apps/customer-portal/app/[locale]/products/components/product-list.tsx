@@ -37,6 +37,10 @@ export function ProductList() {
   });
 
   const utils = api.useUtils();
+
+  // Get cart data to check which products are in cart
+  const { data: cart } = api.cart.getCart.useQuery();
+
   const addToCart = api.cart.addItem.useMutation({
     onSuccess: (data, variables) => {
       const product = products?.find(p => p.id === variables.productId);
@@ -53,6 +57,69 @@ export function ProductList() {
       });
     },
   });
+
+  const updateQuantity = api.cart.updateQuantity.useMutation({
+    onSuccess: () => {
+      void utils.cart.getCart.invalidate();
+    },
+    onError: () => {
+      toast({
+        title: t('cart.messages.errorUpdatingQuantity'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const removeItem = api.cart.removeItem.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('cart.messages.removedFromCart'),
+      });
+      void utils.cart.getCart.invalidate();
+    },
+    onError: () => {
+      toast({
+        title: t('cart.messages.errorRemovingItem'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Helper to get cart quantity for a product
+  const getCartQuantity = React.useCallback((productId: string): number => {
+    if (!cart?.items) return 0;
+    const item = cart.items.find(i => i.productId === productId);
+    return item?.quantity || 0;
+  }, [cart?.items]);
+
+  // Handler for incrementing quantity by 5
+  const handleIncrementBy5 = (e: React.MouseEvent, productId: string, currentStock: number) => {
+    e.stopPropagation();
+    const currentQty = getCartQuantity(productId);
+    const newQty = Math.min(currentQty + 5, currentStock);
+    if (newQty !== currentQty) {
+      updateQuantity.mutate({ productId, quantity: newQty });
+      if (newQty === currentStock && currentStock < currentQty + 5) {
+        toast({
+          title: t('products.maxStockReached'),
+          description: t('products.unitsAvailable', { count: currentStock, unit: '' }),
+        });
+      }
+    }
+  };
+
+  // Handler for decrementing quantity by 5
+  const handleDecrementBy5 = (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    const currentQty = getCartQuantity(productId);
+    const newQty = currentQty - 5;
+    if (newQty <= 0) {
+      // Remove from cart
+      removeItem.mutate({ productId });
+    } else {
+      updateQuantity.mutate({ productId, quantity: newQty });
+    }
+  };
 
   // Extract unique categories
   const categories = React.useMemo(() => {
@@ -240,18 +307,53 @@ export function ProductList() {
                   {getStockBadge(product.currentStock)}
                 </div>
 
-                {/* Quick Add Button */}
+                {/* Quick Add or Inline Quantity Controls */}
                 <div className="flex-shrink-0">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-11 w-11 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
-                    disabled={product.currentStock === 0 || addToCart.isPending}
-                    onClick={(e) => handleQuickAdd(e, product.id)}
-                    aria-label={t('products.quickAdd')}
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
+                  {getCartQuantity(product.id) > 0 ? (
+                    // Inline quantity controls when item is in cart
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-10 w-12 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
+                        onClick={(e) => handleDecrementBy5(e, product.id)}
+                        disabled={updateQuantity.isPending || removeItem.isPending}
+                        aria-label={t('products.decrementBy5')}
+                      >
+                        -5
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => handleProductClick(productWithPricing)}
+                        className="h-10 w-14 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-lg"
+                        title={t('products.tapToEdit')}
+                      >
+                        {getCartQuantity(product.id)}
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
+                        onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
+                        disabled={updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                        aria-label={t('products.incrementBy5')}
+                      >
+                        +5
+                      </Button>
+                    </div>
+                  ) : (
+                    // Quick add button when item not in cart
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-11 w-11 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
+                      disabled={product.currentStock === 0 || addToCart.isPending}
+                      onClick={(e) => handleQuickAdd(e, product.id)}
+                      aria-label={t('products.quickAdd')}
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -308,16 +410,50 @@ export function ProductList() {
 
                   <div className="flex items-center gap-2">
                     {getStockBadge(product.currentStock)}
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-10 w-10 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-                      disabled={product.currentStock === 0 || addToCart.isPending}
-                      onClick={(e) => handleQuickAdd(e, product.id)}
-                      aria-label={t('products.quickAdd')}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </Button>
+                    {getCartQuantity(product.id) > 0 ? (
+                      // Inline quantity controls when item is in cart
+                      <div className="flex items-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10 w-11 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
+                          onClick={(e) => handleDecrementBy5(e, product.id)}
+                          disabled={updateQuantity.isPending || removeItem.isPending}
+                          aria-label={t('products.decrementBy5')}
+                        >
+                          -5
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => handleProductClick(productWithPricing)}
+                          className="h-10 w-12 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-base"
+                          title={t('products.tapToEdit')}
+                        >
+                          {getCartQuantity(product.id)}
+                        </button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
+                          onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
+                          disabled={updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                          aria-label={t('products.incrementBy5')}
+                        >
+                          +5
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-10 w-10 rounded-xl border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                        disabled={product.currentStock === 0 || addToCart.isPending}
+                        onClick={(e) => handleQuickAdd(e, product.id)}
+                        aria-label={t('products.quickAdd')}
+                      >
+                        <Plus className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -129,7 +129,11 @@
     "save": "Save {percentage}%",
     "addedToCart": "Added to cart",
     "adding": "Adding...",
-    "noDescription": "No description available"
+    "noDescription": "No description available",
+    "incrementBy5": "Add 5 more",
+    "decrementBy5": "Remove 5",
+    "tapToEdit": "Tap to edit quantity",
+    "maxStockReached": "Maximum stock reached"
   },
   "categories": {
     "beef": "Beef",
@@ -269,7 +273,10 @@
       "errorUpdatingQuantity": "Failed to update quantity"
     },
     "itemCount": "{count} item",
-    "itemCount_plural": "{count} items"
+    "itemCount_plural": "{count} items",
+    "incrementBy5": "Add 5 more",
+    "decrementBy5": "Remove 5",
+    "tapToEditQuantity": "Tap to edit quantity"
   },
   "onboarding": {
     "progress": {
