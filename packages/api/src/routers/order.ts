@@ -31,6 +31,7 @@ import {
   logBackorderApproval,
   logBackorderRejection,
 } from '../services/audit';
+import { assignPreliminaryPackingSequence } from '../services/route-optimizer';
 
 // Helper: Validate stock and calculate shortfall for backorder support
 interface StockValidationResult {
@@ -709,6 +710,11 @@ export const orderRouter = router({
 
         return newOrder;
       });
+
+      // Assign preliminary packing sequence for non-backorder orders (confirmed immediately)
+      if (!stockValidation.requiresBackorder) {
+        await assignPreliminaryPackingSequence(deliveryDate, order.id);
+      }
 
       // Send order confirmation email to customer (for non-backorder orders)
       if (!stockValidation.requiresBackorder) {
@@ -1652,6 +1658,12 @@ export const orderRouter = router({
           console.error('Failed to log backorder partial approval:', error);
         });
 
+        // Assign preliminary packing sequence for confirmed backorder
+        await assignPreliminaryPackingSequence(
+          updatedOrder.requestedDeliveryDate,
+          updatedOrder.id
+        );
+
         return updatedOrder;
       } else {
         // Full approval - no quantity changes needed
@@ -1764,6 +1776,12 @@ export const orderRouter = router({
         ).catch((error) => {
           console.error('Failed to log backorder full approval:', error);
         });
+
+        // Assign preliminary packing sequence for confirmed backorder
+        await assignPreliminaryPackingSequence(
+          updatedOrder.requestedDeliveryDate,
+          updatedOrder.id
+        );
 
         return updatedOrder;
       }
@@ -1997,6 +2015,12 @@ export const orderRouter = router({
         },
         include: { customer: true },
       });
+
+      // Assign preliminary packing sequence for immediate display
+      await assignPreliminaryPackingSequence(
+        updatedOrder.requestedDeliveryDate,
+        updatedOrder.id
+      );
 
       // Send order confirmed by admin email to customer
       await sendOrderConfirmedByAdminEmail({

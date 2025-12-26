@@ -417,3 +417,60 @@ export async function checkIfRouteNeedsReoptimization(
   // If order count changed, re-optimization needed
   return currentOrderCount !== route.orderCount;
 }
+
+
+/**
+ * Assigns a preliminary packing sequence to a newly confirmed order.
+ * This gives the order an immediate sequence number (max + 1) without running
+ * full route optimization. When the packer opens the packing session, full
+ * optimization will recalculate optimal sequences based on geography.
+ */
+export async function assignPreliminaryPackingSequence(
+  deliveryDate: Date,
+  orderId: string
+): Promise<number> {
+  const startOfDay = new Date(deliveryDate);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(deliveryDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  // Get max existing packing sequence for this delivery date
+  const ordersWithSequence = await prisma.order.findMany({
+    where: {
+      requestedDeliveryDate: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+      status: {
+        in: ["confirmed", "packing", "ready_for_delivery"],
+      },
+      NOT: {
+        id: orderId, // Exclude the current order
+      },
+    },
+    select: {
+      packing: true,
+    },
+  });
+
+  const maxSequence = ordersWithSequence.reduce((max, order) => {
+    const seq = order.packing?.packingSequence ?? 0;
+    return seq > max ? seq : max;
+  }, 0);
+
+  const newSequence = maxSequence + 1;
+
+  // Update the order with preliminary sequence
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      packing: {
+        packingSequence: newSequence,
+        packedItems: [],
+      },
+    },
+  });
+
+  return newSequence;
+}
