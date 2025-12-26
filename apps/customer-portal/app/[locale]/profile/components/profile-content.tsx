@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@joho-erp/ui';
 import {
@@ -26,6 +27,8 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const { toast } = useToast();
+  const params = useParams();
+  const locale = params.locale as string;
 
   const { data: customer, isLoading, error } = api.customer.getProfile.useQuery();
   const utils = api.useUtils();
@@ -444,7 +447,7 @@ export function ProfileContent({ user }: { user: ClerkUser | null }) {
       )}
 
       {/* Sign Out */}
-      <SignOutButton>
+      <SignOutButton signOutOptions={{ redirectUrl: `/${locale}/sign-in` }}>
         <Button variant="outline" className="w-full" size="lg">
           <LogOut className="h-4 w-4 mr-2" />
           {tCommon('signOut')}
