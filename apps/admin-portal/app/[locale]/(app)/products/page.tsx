@@ -100,12 +100,12 @@ export default function ProductsPage() {
 
   const getStockBadge = (product: Product) => {
     if (product.currentStock === 0) {
-      return <Badge className="bg-red-100 text-red-800">{t('outOfStock')}</Badge>;
+      return <Badge className="bg-red-100 text-red-800">{product.currentStock}</Badge>;
     }
     if (product.lowStockThreshold && product.currentStock <= product.lowStockThreshold) {
-      return <Badge className="bg-yellow-100 text-yellow-800">{t('lowStock')}</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800">{product.currentStock}</Badge>;
     }
-    return <Badge className="bg-green-100 text-green-800">{t('inStock')}</Badge>;
+    return <Badge className="bg-green-100 text-green-800">{product.currentStock}</Badge>;
   };
 
   const columns: TableColumn<Product>[] = [
@@ -137,12 +137,7 @@ export default function ProductsPage() {
     {
       key: 'currentStock',
       label: t('stock'),
-      render: (product) => (
-        <div className="flex items-center gap-2">
-          <span>{product.currentStock}</span>
-          {getStockBadge(product)}
-        </div>
-      ),
+      render: (product) => getStockBadge(product),
     },
     {
       key: 'status',
@@ -213,10 +208,7 @@ export default function ProductsPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('stock')}</p>
-          <div className="flex items-center gap-2">
-            <p className="font-medium">{product.currentStock}</p>
-            {getStockBadge(product)}
-          </div>
+          {getStockBadge(product)}
         </div>
       </div>
 
