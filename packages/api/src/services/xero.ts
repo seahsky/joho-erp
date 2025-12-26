@@ -112,7 +112,7 @@ export async function exchangeCodeForTokens(code: string): Promise<XeroTokenResp
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Xero token exchange failed:', errorText);
+    console.error('[Xero] Token Exchange FAILED:', errorText);
     throw new Error(`Failed to exchange code for tokens: ${response.status} ${errorText}`);
   }
 
@@ -145,7 +145,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<XeroToke
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Xero token refresh failed:', errorText);
+    console.error('[Xero] Token Refresh FAILED:', errorText);
     throw new Error(`Failed to refresh token: ${response.status} ${errorText}`);
   }
 
@@ -166,7 +166,7 @@ export async function getConnectedTenants(accessToken: string): Promise<XeroTena
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Failed to get Xero tenants:', errorText);
+    console.error('[Xero] Get Tenants FAILED:', errorText);
     throw new Error(`Failed to get connected tenants: ${response.status}`);
   }
 
@@ -601,7 +601,7 @@ export async function xeroApiRequest<T>(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Xero API error (${endpoint}):`, errorText);
+    console.error(`[Xero] API ERROR (${endpoint}):`, errorText);
     throw new Error(`Xero API request failed: ${response.status}`);
   }
 
@@ -953,6 +953,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
         `/Contacts/${customer.xeroContactId}`,
         { method: 'POST', body: { Contacts: [contactPayload] } }
       );
+      console.log(`[Xero] Contact UPDATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
@@ -965,6 +966,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
         `/Contacts/${existingContactId}`,
         { method: 'POST', body: { Contacts: [contactPayload] } }
       );
+      console.log(`[Xero] Contact UPDATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
@@ -974,9 +976,10 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
       body: { Contacts: [contactPayload] },
     });
 
+    console.log(`[Xero] Contact CREATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
     return { success: true, contactId: response.Contacts[0].ContactID };
   } catch (error) {
-    console.error('Failed to sync contact to Xero:', error);
+    console.error('[Xero] Contact Sync FAILED:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to sync contact',
@@ -1061,13 +1064,14 @@ export async function createInvoiceInXero(
     });
 
     const createdInvoice = response.Invoices[0];
+    console.log(`[Xero] Invoice CREATED: ${createdInvoice.InvoiceID} (${createdInvoice.InvoiceNumber}) for order ${order.orderNumber}`);
     return {
       success: true,
       invoiceId: createdInvoice.InvoiceID,
       invoiceNumber: createdInvoice.InvoiceNumber,
     };
   } catch (error) {
-    console.error('Failed to create invoice in Xero:', error);
+    console.error('[Xero] Invoice Creation FAILED:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create invoice',
@@ -1170,6 +1174,7 @@ export async function createCreditNoteInXero(
     });
 
     const createdCreditNote = response.CreditNotes[0];
+    console.log(`[Xero] Credit Note CREATED: ${createdCreditNote.CreditNoteID} (${createdCreditNote.CreditNoteNumber}) for order ${order.orderNumber}`);
 
     // Allocate credit note to original invoice
     if (createdCreditNote.CreditNoteID && order.xero.invoiceId) {
@@ -1179,8 +1184,9 @@ export async function createCreditNoteInXero(
           order.xero.invoiceId,
           order.totalAmount / 100 // Convert cents to dollars
         );
+        console.log(`[Xero] Credit Note ALLOCATED: ${createdCreditNote.CreditNoteNumber} to invoice ${order.xero.invoiceNumber || order.xero.invoiceId}`);
       } catch (allocError) {
-        console.error('Failed to allocate credit note to invoice:', allocError);
+        console.error('[Xero] Credit Note Allocation FAILED:', allocError);
         // Continue even if allocation fails - credit note is still created
       }
     }
@@ -1191,7 +1197,7 @@ export async function createCreditNoteInXero(
       creditNoteNumber: createdCreditNote.CreditNoteNumber,
     };
   } catch (error) {
-    console.error('Failed to create credit note in Xero:', error);
+    console.error('[Xero] Credit Note Creation FAILED:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create credit note',
