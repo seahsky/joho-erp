@@ -182,7 +182,7 @@ export default function IntegrationsSettingsPage() {
                 <CardTitle className="flex items-center gap-2">
                   {t('xero.title')}
                   {isConnected ? (
-                    <Badge variant="default" className="bg-success text-success-foreground">
+                    <Badge variant="success">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       {t('xero.connected')}
                     </Badge>
@@ -316,7 +316,7 @@ export default function IntegrationsSettingsPage() {
                     <TestTube2 className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold text-sm">{t('xero.testResults.title')}</span>
                     {testResults.success ? (
-                      <Badge variant="default" className="bg-success text-success-foreground">
+                      <Badge variant="success">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         {t('xero.testResults.allPassed')}
                       </Badge>

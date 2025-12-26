@@ -121,8 +121,7 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
     // Just has invoice
     return (
       <Badge
-        variant="default"
-        className="bg-success text-success-foreground"
+        variant="success"
         title={`${t('invoice')}: ${syncStatus.invoiceNumber}\n${t('status')}: ${syncStatus.invoiceStatus}`}
       >
         <FileText className="h-3 w-3 mr-1" />
@@ -219,8 +218,7 @@ export function XeroCustomerSyncBadge({
   if (syncStatus.synced && syncStatus.contactId) {
     return (
       <Badge
-        variant="default"
-        className="bg-success text-success-foreground"
+        variant="success"
         title={`${t('xeroContact')}: ${syncStatus.contactId.slice(-8)}`}
       >
         <User className="h-3 w-3 mr-1" />

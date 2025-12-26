@@ -45,7 +45,7 @@ function getStatusBadge(status: JobStatus, t: (key: string) => string) {
   switch (status) {
     case 'completed':
       return (
-        <Badge variant="default" className="bg-success text-success-foreground">
+        <Badge variant="success">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           {t('status.completed')}
         </Badge>

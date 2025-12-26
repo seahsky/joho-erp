@@ -166,7 +166,7 @@ export default function UserManagementSettingsPage() {
     switch (status) {
       case 'active':
         return (
-          <Badge variant="default" className="bg-green-500">
+          <Badge variant="success">
             <CheckCircle className="h-3 w-3 mr-1" />
             {t('statuses.active')}
           </Badge>
