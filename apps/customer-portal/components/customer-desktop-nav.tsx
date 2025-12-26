@@ -25,7 +25,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
     { href: `/${locale}`, labelKey: 'home', icon: Home },
     { href: `/${locale}/products`, labelKey: 'products', icon: Package },
     { href: `/${locale}/cart`, labelKey: 'cart', icon: ShoppingCart },
-    { href: `/${locale}/orders`, labelKey: 'orders', icon: ShoppingBag },
+    { href: `/${locale}/orders`, labelKey: 'myOrders', icon: ShoppingBag },
     { href: `/${locale}/profile`, labelKey: 'profile', icon: User },
   ];
 
