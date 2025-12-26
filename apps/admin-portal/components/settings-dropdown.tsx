@@ -1,10 +1,10 @@
 'use client';
 
-import { Moon, Sun, Monitor, User, Bell, Lock, HelpCircle } from 'lucide-react';
+import { Moon, Sun, Monitor, Bell, Lock, HelpCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface SettingsDropdownProps {
   onClose: () => void;
@@ -16,6 +16,7 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('settings.dropdown');
 
   useEffect(() => {
     setMounted(true);
@@ -33,15 +34,14 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
   }, [onClose]);
 
   const themeOptions = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
+    { value: 'light', label: t('light'), icon: Sun },
+    { value: 'dark', label: t('dark'), icon: Moon },
+    { value: 'system', label: t('system'), icon: Monitor },
   ];
 
   const settingsItems = [
-    { label: 'Profile Settings', icon: User, action: () => router.push(`/${locale}/settings/profile`) },
-    { label: 'Notifications', icon: Bell, action: () => router.push(`/${locale}/settings/notifications`) },
-    { label: 'Privacy & Security', icon: Lock, action: () => router.push(`/${locale}/settings/profile#security`) },
+    { label: t('notifications'), icon: Bell, action: () => router.push(`/${locale}/settings/notifications`) },
+    { label: t('privacySecurity'), icon: Lock, action: () => router.push(`/${locale}/settings/profile#security`) },
   ];
 
   return (
@@ -51,14 +51,14 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
     >
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-        <h3 className="font-semibold text-sm">Settings</h3>
+        <h3 className="font-semibold text-sm">{t('header')}</h3>
       </div>
 
       {/* Theme Selection */}
       {mounted && (
         <div className="px-4 py-3 border-b border-border">
           <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-            Appearance
+            {t('appearance')}
           </p>
           <div className="grid grid-cols-3 gap-2">
             {themeOptions.map((option) => {
@@ -113,7 +113,7 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
           className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
         >
           <HelpCircle className="w-4 h-4" />
-          <span className="text-sm font-medium">All Settings</span>
+          <span className="text-sm font-medium">{t('allSettings')}</span>
         </button>
       </div>
     </div>
