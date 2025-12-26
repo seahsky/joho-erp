@@ -972,21 +972,25 @@ function createOrdersForCustomer(
       // Historical orders: 2 days ago
       requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() - 2);
     } else if (statusInfo.status === 'confirmed' || statusInfo.status === 'packing') {
-      // Confirmed/packing orders: spread across today (33%), tomorrow (50%), day after (17%)
+      // Confirmed/packing orders: spread across today (50%), tomorrow (33%), day after (17%)
       const dateVariation = Math.random();
-      if (dateVariation < 0.33) {
-        // 33% today (urgent)
+      if (dateVariation < 0.5) {
+        // 50% today (most common - packing for same-day delivery)
         requestedDeliveryDate.setDate(requestedDeliveryDate.getDate());
       } else if (dateVariation < 0.83) {
-        // 50% tomorrow (most common)
+        // 33% tomorrow
         requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 1);
       } else {
         // 17% day after tomorrow
         requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 2);
       }
     } else {
-      // Other statuses (pending, ready_for_delivery): tomorrow
-      requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 1);
+      // Other statuses (pending, ready_for_delivery): 50% today, 50% tomorrow
+      if (Math.random() < 0.5) {
+        requestedDeliveryDate.setDate(requestedDeliveryDate.getDate());
+      } else {
+        requestedDeliveryDate.setDate(requestedDeliveryDate.getDate() + 1);
+      }
     }
 
     const order: any = {
@@ -1795,7 +1799,7 @@ async function seed() {
       if (order.status === 'ready_for_delivery' || order.status === 'delivered') {
         const dateKey = order.requestedDeliveryDate.toISOString().split('T')[0];
         const areaTag = order.deliveryAddress.areaTag;
-        const key = `${dateKey}-${areaTag}`;
+        const key = `${dateKey}|${areaTag}`;
 
         if (!ordersByDateAndArea.has(key)) {
           ordersByDateAndArea.set(key, []);
@@ -1806,7 +1810,7 @@ async function seed() {
 
     // Create route optimizations for each date/area combination
     for (const [key, ordersInRoute] of ordersByDateAndArea.entries()) {
-      const [dateStr, areaTag] = key.split('-');
+      const [dateStr, areaTag] = key.split('|');
       const deliveryDate = new Date(dateStr);
 
       // Skip if no orders
@@ -2136,7 +2140,7 @@ async function seed() {
         timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
       },
       {
-        level: 'warn' as SystemLogLevel,
+        level: 'warning' as SystemLogLevel,
         message: 'Low stock alert triggered',
         service: 'inventory-service',
         context: {
@@ -2159,7 +2163,7 @@ async function seed() {
         timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
       },
       {
-        level: 'debug' as SystemLogLevel,
+        level: 'info' as SystemLogLevel,
         message: 'Cache invalidation triggered',
         service: 'cache-service',
         context: {
@@ -2180,7 +2184,7 @@ async function seed() {
         timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       },
       {
-        level: 'warn' as SystemLogLevel,
+        level: 'warning' as SystemLogLevel,
         message: 'API rate limit approaching threshold',
         service: 'api-gateway',
         context: {
@@ -2203,7 +2207,7 @@ async function seed() {
         timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       },
       {
-        level: 'debug' as SystemLogLevel,
+        level: 'info' as SystemLogLevel,
         message: 'Query performance metrics',
         service: 'database',
         context: {

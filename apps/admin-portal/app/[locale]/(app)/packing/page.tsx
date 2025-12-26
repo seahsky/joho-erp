@@ -14,12 +14,11 @@ import { PackingLayout } from './components/PackingLayout';
 export default function PackingPage() {
   const t = useTranslations('packing');
 
-  // Default to tomorrow for delivery date (using UTC to avoid timezone issues)
-  const tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
+  // Default to today for delivery date (using UTC to avoid timezone issues)
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
-  const [deliveryDate, setDeliveryDate] = useState<Date>(tomorrow);
+  const [deliveryDate, setDeliveryDate] = useState<Date>(today);
   const [isOptimizing, setIsOptimizing] = useState(false);
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
