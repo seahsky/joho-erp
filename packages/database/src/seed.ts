@@ -1148,11 +1148,13 @@ async function seed() {
     await prisma.customerPricing.deleteMany({});
     console.log('      ✓ Customer pricing deleted');
 
-    console.log('   Step 2: Deleting parent entities (Customers, Products, Company, Suburbs)...');
+    console.log('   Step 2: Deleting parent entities (Customers, Products, Categories, Company, Suburbs)...');
     await prisma.customer.deleteMany({});
     console.log('      ✓ Customers deleted');
     await prisma.product.deleteMany({});
     console.log('      ✓ Products deleted');
+    await prisma.category.deleteMany({});
+    console.log('      ✓ Categories deleted');
     await prisma.company.deleteMany({});
     console.log('      ✓ Company deleted');
     await prisma.suburbAreaMapping.deleteMany({});
@@ -1236,10 +1238,32 @@ async function seed() {
     );
     console.log(`✅ Created ${suburbMappings.length} suburb mappings\n`);
 
+    // Seed Categories
+    console.log('📂 Creating product categories...');
+    const categoryNames = ['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed'];
+    const createdCategories = await Promise.all(
+      categoryNames.map((name) =>
+        prisma.category.create({
+          data: { name, isActive: true },
+        })
+      )
+    );
+    // Create a map for quick lookup
+    const categoryMap = new Map(createdCategories.map((c) => [c.name, c.id]));
+    console.log(`✅ Created ${createdCategories.length} categories: ${categoryNames.join(', ')}\n`);
+
     // Seed Products
     console.log('🥩 Creating beef and pork products...');
     const createdProducts = await Promise.all(
-      products.map((p) => prisma.product.create({ data: p }))
+      products.map((p) => {
+        const categoryId = p.category ? categoryMap.get(p.category) : undefined;
+        return prisma.product.create({
+          data: {
+            ...p,
+            categoryId,
+          },
+        });
+      })
     );
 
     // Validate all products have IDs
