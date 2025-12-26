@@ -28,6 +28,7 @@ type Customer = {
   id: string;
   businessName: string;
   abn: string;
+  createdAt?: string | Date;
   contactPerson: {
     firstName: string;
     lastName: string;
@@ -50,8 +51,20 @@ export default function CustomersPage() {
   const tCommon = useTranslations('common');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Filter state (server-side)
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [creditStatusFilter, setCreditStatusFilter] = useState<string>('');
+  const [areaFilter, setAreaFilter] = useState<string>('');
+
+  // Sorting state (client-side)
+  const [sortField, setSortField] = useState<string>('businessName');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
   const { data, isLoading, error } = api.customer.getAll.useQuery({
     search: searchQuery || undefined,
+    status: statusFilter as 'active' | 'suspended' | 'closed' || undefined,
+    approvalStatus: creditStatusFilter as 'pending' | 'approved' | 'rejected' || undefined,
+    areaTag: areaFilter as 'north' | 'south' | 'east' | 'west' || undefined,
     limit: 100,
   });
 
@@ -81,16 +94,64 @@ export default function CustomersPage() {
     );
   }
 
+  // Sort customers client-side
+  const sortCustomers = (customerList: Customer[], field: string, order: 'asc' | 'desc') => {
+    return [...customerList].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      switch (field) {
+        case 'businessName':
+          aValue = a.businessName.toLowerCase();
+          bValue = b.businessName.toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt || 0).getTime();
+          bValue = new Date(b.createdAt || 0).getTime();
+          break;
+        case 'creditLimit':
+          aValue = a.creditApplication.creditLimit;
+          bValue = b.creditApplication.creditLimit;
+          break;
+        case 'orders':
+          aValue = a.orders || 0;
+          bValue = b.orders || 0;
+          break;
+        default:
+          aValue = a.businessName.toLowerCase();
+          bValue = b.businessName.toLowerCase();
+      }
+
+      if (order === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  };
+
+  // Sort handler for column headers
+  const handleSort = (column: string) => {
+    if (sortField === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(column);
+      setSortOrder('asc');
+    }
+  };
+
   const customers = (data?.customers ?? []) as Customer[];
+  const sortedCustomers = sortCustomers(customers, sortField, sortOrder);
   const totalCustomers = data?.total || 0;
-  const activeCustomers = customers.filter((c) => c.status === 'active').length;
-  const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;
+  const activeCustomers = sortedCustomers.filter((c) => c.status === 'active').length;
+  const pendingCredit = sortedCustomers.filter((c) => c.creditApplication.status === 'pending').length;
 
   const columns: TableColumn<Customer>[] = [
     {
       key: 'businessName',
       label: t('businessName'),
       className: 'font-medium',
+      sortable: true,
     },
     {
       key: 'contactPerson',
@@ -121,6 +182,7 @@ export default function CustomersPage() {
     {
       key: 'creditLimit',
       label: t('creditLimit'),
+      sortable: true,
       render: (customer) =>
         customer.creditApplication.creditLimit > 0
           ? formatCurrency(customer.creditApplication.creditLimit)
@@ -129,6 +191,7 @@ export default function CustomersPage() {
     {
       key: 'orders',
       label: t('orders'),
+      sortable: true,
       render: (customer) => customer.orders || 0,
     },
     {
@@ -282,7 +345,8 @@ export default function CustomersPage() {
       {/* Search and Filter */}
       <Card className="mb-6">
         <CardHeader className="p-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4">
+            {/* Search row */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -291,6 +355,46 @@ export default function CustomersPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+            </div>
+
+            {/* Filter row */}
+            <div className="flex flex-wrap gap-2">
+              {/* Customer Status Filter */}
+              <select
+                className="flex h-10 w-full md:w-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">{t('filters.allStatuses')}</option>
+                <option value="active">{t('active')}</option>
+                <option value="suspended">{t('suspended')}</option>
+                <option value="closed">{t('closed')}</option>
+              </select>
+
+              {/* Credit Status Filter */}
+              <select
+                className="flex h-10 w-full md:w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={creditStatusFilter}
+                onChange={(e) => setCreditStatusFilter(e.target.value)}
+              >
+                <option value="">{t('filters.allCreditStatuses')}</option>
+                <option value="pending">{t('pending')}</option>
+                <option value="approved">{t('approved')}</option>
+                <option value="rejected">{t('rejected')}</option>
+              </select>
+
+              {/* Area Filter */}
+              <select
+                className="flex h-10 w-full md:w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+              >
+                <option value="">{t('filters.allAreas')}</option>
+                <option value="north">{t('filters.north')}</option>
+                <option value="south">{t('filters.south')}</option>
+                <option value="east">{t('filters.east')}</option>
+                <option value="west">{t('filters.west')}</option>
+              </select>
             </div>
           </div>
         </CardHeader>
@@ -303,19 +407,26 @@ export default function CustomersPage() {
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {customers.length > 0 ? (
+          {sortedCustomers.length > 0 ? (
             <ResponsiveTable
-              data={customers}
+              data={sortedCustomers}
               columns={columns}
               mobileCard={mobileCard}
               className="md:border-0"
+              sortColumn={sortField}
+              sortDirection={sortOrder}
+              onSort={handleSort}
             />
           ) : (
             <EmptyState
               icon={Users}
               title={t('noCustomersFound')}
-              description={searchQuery ? t('adjustSearch') : t('addFirstCustomer')}
-              action={!searchQuery ? {
+              description={
+                searchQuery || statusFilter || creditStatusFilter || areaFilter
+                  ? t('adjustFilters')
+                  : t('addFirstCustomer')
+              }
+              action={!searchQuery && !statusFilter && !creditStatusFilter && !areaFilter ? {
                 label: t('addCustomer'),
                 onClick: () => window.location.href = '/customers/new'
               } : undefined}

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
   Table,
@@ -23,6 +24,8 @@ export interface Column<T> {
   /** Optional render function to customize display, receives the full row */
   render?: (row: T) => React.ReactNode;
   className?: string;
+  /** Whether this column is sortable */
+  sortable?: boolean;
 }
 
 /**
@@ -35,6 +38,8 @@ export interface CustomColumn<T> {
   /** Required render function for custom columns */
   render: (row: T) => React.ReactNode;
   className?: string;
+  /** Whether this column is sortable */
+  sortable?: boolean;
 }
 
 /**
@@ -48,6 +53,12 @@ export interface ResponsiveTableProps<T> {
   readonly mobileCard?: (item: T, index: number) => React.ReactNode;
   readonly className?: string;
   readonly emptyMessage?: string;
+  /** Currently sorted column key */
+  readonly sortColumn?: string;
+  /** Current sort direction */
+  readonly sortDirection?: 'asc' | 'desc';
+  /** Callback when a sortable column is clicked */
+  readonly onSort?: (column: string) => void;
 }
 
 export function ResponsiveTable<T extends Record<string, any>>({
@@ -56,6 +67,9 @@ export function ResponsiveTable<T extends Record<string, any>>({
   mobileCard,
   className,
   emptyMessage = 'No data available',
+  sortColumn,
+  sortDirection,
+  onSort,
 }: ResponsiveTableProps<T>): React.JSX.Element {
   const isMobile = useIsMobile();
 
@@ -90,7 +104,26 @@ export function ResponsiveTable<T extends Record<string, any>>({
           <TableRow>
             {columns.map((column, index) => (
               <TableHead key={index} className={column.className}>
-                {column.label}
+                {column.sortable && onSort ? (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                    onClick={() => onSort(String(column.key))}
+                  >
+                    {column.label}
+                    {sortColumn === String(column.key) ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-4 w-4 opacity-50" />
+                    )}
+                  </button>
+                ) : (
+                  column.label
+                )}
               </TableHead>
             ))}
           </TableRow>

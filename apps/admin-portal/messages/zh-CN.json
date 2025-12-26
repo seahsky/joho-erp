@@ -114,7 +114,18 @@
     "ordersCount": "{count} 个订单",
     "approve": "核准",
     "reject": "拒绝",
-    "view": "查看"
+    "view": "查看",
+    "reviewCredit": "审核信用",
+    "filters": {
+      "allStatuses": "所有状态",
+      "allCreditStatuses": "所有信用状态",
+      "allAreas": "所有区域",
+      "north": "北区",
+      "south": "南区",
+      "east": "东区",
+      "west": "西区"
+    },
+    "adjustFilters": "请调整您的筛选条件"
   },
   "deliveries": {
     "title": "配送管理",

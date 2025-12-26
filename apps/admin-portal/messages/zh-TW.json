@@ -114,7 +114,18 @@
     "ordersCount": "{count} 個訂單",
     "approve": "核准",
     "reject": "拒絕",
-    "view": "檢視"
+    "view": "檢視",
+    "reviewCredit": "審核信用",
+    "filters": {
+      "allStatuses": "所有狀態",
+      "allCreditStatuses": "所有信用狀態",
+      "allAreas": "所有區域",
+      "north": "北區",
+      "south": "南區",
+      "east": "東區",
+      "west": "西區"
+    },
+    "adjustFilters": "請調整您的篩選條件"
   },
   "deliveries": {
     "title": "配送管理",

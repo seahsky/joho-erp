@@ -115,7 +115,17 @@
     "approve": "Approve",
     "reject": "Reject",
     "view": "View",
-    "reviewCredit": "Review Credit"
+    "reviewCredit": "Review Credit",
+    "filters": {
+      "allStatuses": "All Statuses",
+      "allCreditStatuses": "All Credit Statuses",
+      "allAreas": "All Areas",
+      "north": "North",
+      "south": "South",
+      "east": "East",
+      "west": "West"
+    },
+    "adjustFilters": "Try adjusting your filters"
   },
   "deliveries": {
     "title": "Delivery Management",
