@@ -278,6 +278,19 @@
     "decrementBy5": "減少5件",
     "tapToEditQuantity": "點擊編輯數量"
   },
+  "miniCart": {
+    "title": "您的購物車",
+    "empty": "購物車是空的",
+    "emptyDescription": "添加一些產品開始購物",
+    "viewCart": "檢視完整購物車",
+    "checkoutNow": "立即結帳",
+    "continueShopping": "繼續購物",
+    "items": "{count}件商品",
+    "subtotal": "小計",
+    "gst": "GST (10%)",
+    "removeItem": "移除",
+    "cartWithItems": "購物車, {count}件商品"
+  },
   "checkout": {
     "title": "結帳",
     "subtitle": "在下單前檢查您的訂單",

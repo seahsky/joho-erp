@@ -278,6 +278,19 @@
     "decrementBy5": "Remove 5",
     "tapToEditQuantity": "Tap to edit quantity"
   },
+  "miniCart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "emptyDescription": "Add some products to get started",
+    "viewCart": "View Full Cart",
+    "checkoutNow": "Checkout Now",
+    "continueShopping": "Continue Shopping",
+    "items": "{count, plural, one {# item} other {# items}}",
+    "subtotal": "Subtotal",
+    "gst": "GST (10%)",
+    "removeItem": "Remove",
+    "cartWithItems": "Shopping cart, {count, plural, one {# item} other {# items}}"
+  },
   "onboarding": {
     "progress": {
       "step": "Step {current} of {total}"

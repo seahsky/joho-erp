@@ -1,12 +1,13 @@
 'use client';
 
+import * as React from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Home, Package, ShoppingBag, User, ShoppingCart } from 'lucide-react';
-import { LanguageSwitcher, Badge } from '@joho-erp/ui';
-import { api } from '@/trpc/client';
+import { Home, Package, ShoppingBag, User } from 'lucide-react';
+import { LanguageSwitcher } from '@joho-erp/ui';
+import { CartButton, CartButtonStyles, MiniCartDrawer } from './mini-cart';
 
 interface NavItem {
   href: string;
@@ -17,14 +18,12 @@ interface NavItem {
 export function CustomerDesktopNav({ locale }: { locale: string }) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
-  const { data: cart } = api.cart.getCart.useQuery();
+  const [isCartOpen, setIsCartOpen] = React.useState(false);
 
-  const cartItemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
-
+  // Cart removed from navItems - now in right section
   const navItems: NavItem[] = [
     { href: `/${locale}`, labelKey: 'home', icon: Home },
     { href: `/${locale}/products`, labelKey: 'products', icon: Package },
-    { href: `/${locale}/cart`, labelKey: 'cart', icon: ShoppingCart },
     { href: `/${locale}/orders`, labelKey: 'myOrders', icon: ShoppingBag },
     { href: `/${locale}/profile`, labelKey: 'profile', icon: User },
   ];
@@ -38,6 +37,9 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
 
   return (
     <>
+      {/* Animation styles */}
+      <CartButtonStyles />
+
       {/* Grain texture overlay */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]">
         <div className="absolute inset-0 bg-noise" />
@@ -116,11 +118,6 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                     <div className="relative flex items-center gap-2">
                       <Icon className={`w-4 h-4 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                       <span className="tracking-wide">{t(item.labelKey)}</span>
-                      {item.labelKey === 'cart' && cartItemCount > 0 && (
-                        <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs">
-                          {cartItemCount}
-                        </Badge>
-                      )}
                     </div>
 
                     {/* Active indicator line */}
@@ -154,19 +151,20 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                   >
                     <div className="relative">
                       <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-                      {item.labelKey === 'cart' && cartItemCount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-4 min-w-4 flex items-center justify-center px-1 text-xs">
-                          {cartItemCount}
-                        </Badge>
-                      )}
                     </div>
                   </Link>
                 );
               })}
             </div>
 
-            {/* Right section - User controls */}
-            <div className="flex items-center gap-4">
+            {/* Right section - Cart + User controls */}
+            <div className="flex items-center gap-3">
+              {/* Cart Button - Prominent position */}
+              <CartButton
+                onClick={() => setIsCartOpen(true)}
+                className="hidden md:flex"
+              />
+
               <div className="hidden md:block">
                 <LanguageSwitcher />
               </div>
@@ -195,6 +193,13 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
 
       {/* Spacer to prevent content from going under fixed nav */}
       <div className="h-20" />
+
+      {/* Mini Cart Drawer */}
+      <MiniCartDrawer
+        open={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        locale={locale}
+      />
     </>
   );
 }
