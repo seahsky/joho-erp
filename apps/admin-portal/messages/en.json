@@ -995,7 +995,13 @@
       "users": "User Management",
       "usersDescription": "Manage admin users, roles, and permissions",
       "notifications": "Notifications",
-      "notificationsDescription": "Configure email alerts and notification preferences"
+      "notificationsDescription": "Configure email alerts and notification preferences",
+      "profile": "Profile Settings",
+      "profileDescription": "Manage your personal profile, security, and account settings"
+    },
+    "profile": {
+      "title": "Profile Settings",
+      "subtitle": "Manage your personal profile and account security"
     },
     "company": {
       "title": "Company Profile",

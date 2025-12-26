@@ -4,6 +4,7 @@ import { Moon, Sun, Monitor, User, Bell, Lock, HelpCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 interface SettingsDropdownProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
     setMounted(true);
@@ -37,9 +39,9 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
   ];
 
   const settingsItems = [
-    { label: 'Profile Settings', icon: User, action: () => router.push('/profile') },
-    { label: 'Notifications', icon: Bell, action: () => router.push('/settings/notifications') },
-    { label: 'Privacy & Security', icon: Lock, action: () => router.push('/settings/security') },
+    { label: 'Profile Settings', icon: User, action: () => router.push(`/${locale}/settings/profile`) },
+    { label: 'Notifications', icon: Bell, action: () => router.push(`/${locale}/settings/notifications`) },
+    { label: 'Privacy & Security', icon: Lock, action: () => router.push(`/${locale}/settings/profile#security`) },
   ];
 
   return (
@@ -105,13 +107,13 @@ export function SettingsDropdown({ onClose }: SettingsDropdownProps) {
       <div className="border-t border-border">
         <button
           onClick={() => {
-            router.push('/help');
+            router.push(`/${locale}/settings`);
             onClose();
           }}
           className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
         >
           <HelpCircle className="w-4 h-4" />
-          <span className="text-sm font-medium">Help & Support</span>
+          <span className="text-sm font-medium">All Settings</span>
         </button>
       </div>
     </div>

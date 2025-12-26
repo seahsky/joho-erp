@@ -996,7 +996,13 @@
       "users": "使用者管理",
       "usersDescription": "管理管理員使用者、角色和權限",
       "notifications": "通知",
-      "notificationsDescription": "配置電子郵件警報和通知偏好設定"
+      "notificationsDescription": "配置電子郵件警報和通知偏好設定",
+      "profile": "個人資料設定",
+      "profileDescription": "管理您的個人資料、安全和帳戶設定"
+    },
+    "profile": {
+      "title": "個人資料設定",
+      "subtitle": "管理您的個人資料和帳戶安全"
     },
     "company": {
       "title": "公司資料",
