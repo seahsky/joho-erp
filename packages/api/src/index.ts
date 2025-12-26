@@ -19,3 +19,10 @@ export {
   sendXeroSyncErrorEmail,
   sendNewOrderNotificationEmail,
 } from './services/email';
+
+export {
+  uploadToR2,
+  isR2Configured,
+  IMAGE_UPLOAD_CONFIG,
+  type AllowedMimeType,
+} from './services/r2';

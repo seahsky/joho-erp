@@ -13,11 +13,17 @@
       "types": "./src/services/xero.ts",
       "import": "./src/services/xero.ts",
       "require": "./src/services/xero.ts"
+    },
+    "./services/r2": {
+      "types": "./src/services/r2.ts",
+      "import": "./src/services/r2.ts",
+      "require": "./src/services/r2.ts"
     }
   },
   "typesVersions": {
     "*": {
-      "services/xero": ["./src/services/xero.ts"]
+      "services/xero": ["./src/services/xero.ts"],
+      "services/r2": ["./src/services/r2.ts"]
     }
   },
   "scripts": {

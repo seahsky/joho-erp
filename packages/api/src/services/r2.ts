@@ -136,3 +136,49 @@ export function extractKeyFromUrl(publicUrl: string): string | null {
     return null;
   }
 }
+
+/**
+ * Upload a file buffer directly to R2
+ * Used by the proxy upload API route to bypass CORS restrictions
+ */
+export async function uploadToR2(params: {
+  productId: string;
+  filename: string;
+  contentType: AllowedMimeType;
+  buffer: Buffer;
+}): Promise<{ publicUrl: string; key: string }> {
+  const { productId, filename, contentType, buffer } = params;
+
+  // Validate content type
+  if (!IMAGE_UPLOAD_CONFIG.allowedMimeTypes.includes(contentType)) {
+    throw new Error(`Invalid file type: ${contentType}. Allowed types: ${IMAGE_UPLOAD_CONFIG.allowedMimeTypes.join(', ')}`);
+  }
+
+  // Validate file size
+  if (buffer.length > IMAGE_UPLOAD_CONFIG.maxSizeBytes) {
+    throw new Error(`File too large: max ${IMAGE_UPLOAD_CONFIG.maxSizeBytes / 1024 / 1024}MB`);
+  }
+
+  // Generate unique key: products/{productId}/{timestamp}-{sanitizedFilename}
+  const timestamp = Date.now();
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const key = `products/${productId}/${timestamp}-${sanitizedFilename}`;
+
+  const client = getR2Client();
+
+  // Upload directly to R2
+  const command = new PutObjectCommand({
+    Bucket: R2_CONFIG.bucketName,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    ContentLength: buffer.length,
+  });
+
+  await client.send(command);
+
+  // Construct public URL
+  const publicUrl = `${R2_CONFIG.publicUrl}/${key}`;
+
+  return { publicUrl, key };
+}

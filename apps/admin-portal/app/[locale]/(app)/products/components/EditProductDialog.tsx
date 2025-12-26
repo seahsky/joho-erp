@@ -67,6 +67,7 @@ export function EditProductDialog({
   // Image state
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch categories
   const { data: categoriesData, refetch: refetchCategories } = api.category.getAll.useQuery();
@@ -112,11 +113,10 @@ export function EditProductDialog({
     }
   }, [product]);
 
-  // Image upload mutations
-  const uploadUrlMutation = api.upload.getProductImageUploadUrl.useMutation();
+  // Image delete mutation
   const deleteImageMutation = api.upload.deleteProductImage.useMutation();
 
-  // Handle image upload with compression
+  // Handle image upload with compression via proxy endpoint
   const handleImageUpload = useCallback(async (file: File): Promise<string> => {
     if (!product) throw new Error('No product selected');
 
@@ -128,36 +128,37 @@ export function EditProductDialog({
       fileType: 'image/jpeg' as const,
     };
 
-    let processedFile = file;
+    let processedFile: File = file;
     try {
       processedFile = await imageCompression(file, compressionOptions);
     } catch (error) {
       console.warn('Image compression failed, using original:', error);
     }
 
-    // Get presigned URL - use actual product ID
-    const { uploadUrl, publicUrl } = await uploadUrlMutation.mutateAsync({
-      productId: product.id,
-      filename: file.name,
-      contentType: 'image/jpeg',
-      contentLength: processedFile.size,
-    });
+    setIsUploading(true);
+    try {
+      // Create form data for upload
+      const formData = new FormData();
+      formData.append('file', processedFile, file.name);
+      formData.append('productId', product.id);
 
-    // Upload to R2
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: processedFile,
-      headers: {
-        'Content-Type': 'image/jpeg',
-      },
-    });
+      // Upload via proxy API route (no CORS issues)
+      const response = await fetch('/api/upload/product-image', {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!response.ok) {
-      throw new Error('Upload failed');
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      return result.publicUrl;
+    } finally {
+      setIsUploading(false);
     }
-
-    return publicUrl;
-  }, [product, uploadUrlMutation]);
+  }, [product]);
 
   // Handle image delete
   const handleImageDelete = useCallback(async (url: string): Promise<void> => {
@@ -314,7 +315,7 @@ export function EditProductDialog({
               onUpload={handleImageUpload}
               onDelete={handleImageDelete}
               disabled={updateProductMutation.isPending}
-              isUploading={uploadUrlMutation.isPending}
+              isUploading={isUploading}
               labels={{
                 uploadTitle: t('productForm.image.uploadTitle'),
                 uploadSubtitle: t('productForm.image.uploadSubtitle'),
