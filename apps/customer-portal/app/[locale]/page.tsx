@@ -2,6 +2,7 @@ import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@joho-erp/ui';
 
@@ -57,7 +58,14 @@ export default async function Home({
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Joho Foods"
+              width={40}
+              height={40}
+              className="rounded-lg"
+            />
             <h1 className="text-2xl font-bold">Joho Foods</h1>
           </div>
           <div className="flex gap-4 items-center">

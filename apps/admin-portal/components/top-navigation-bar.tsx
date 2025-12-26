@@ -3,6 +3,7 @@
 import { Bell, Settings, Search } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { useState } from 'react';
+import Image from 'next/image';
 import { NotificationsDropdown } from './notifications-dropdown';
 import { SettingsDropdown } from './settings-dropdown';
 import { LanguageSwitcher } from './language-switcher';
@@ -19,9 +20,13 @@ export function TopNavigationBar() {
         {/* Left Section - Logo & Brand */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-sm transition-all group-hover:shadow-md group-hover:scale-105">
-              <span className="text-primary-foreground font-bold text-lg">JB</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Joho Foods"
+              width={36}
+              height={36}
+              className="rounded-lg shadow-sm transition-all group-hover:shadow-md group-hover:scale-105"
+            />
             <div className="flex flex-col">
               <span className="font-bold text-base leading-tight tracking-tight text-foreground">
                 Joho Foods

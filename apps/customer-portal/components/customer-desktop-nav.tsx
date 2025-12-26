@@ -4,6 +4,7 @@ import * as React from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Home, Package, ShoppingBag, User } from 'lucide-react';
 import { LanguageSwitcher } from '@joho-erp/ui';
@@ -54,26 +55,13 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
               href={`/${locale}`}
               className="flex items-center gap-3 group transition-all duration-300"
             >
-              <div className="relative">
-                {/* Logo background with animation */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[hsl(0,67%,35%)] to-[hsl(0,67%,25%)] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm" />
-
-                <div className="relative w-12 h-12 bg-gradient-to-br from-[hsl(0,67%,35%)] to-[hsl(0,67%,28%)] rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="w-7 h-7 text-white"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
-                </div>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Joho Foods"
+                width={48}
+                height={48}
+                className="rounded-xl shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105"
+              />
 
               <div className="flex flex-col">
                 <span className="text-xl font-semibold tracking-tight text-neutral-900 group-hover:text-[hsl(0,67%,35%)] transition-colors duration-300">

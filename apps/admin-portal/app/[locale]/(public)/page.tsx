@@ -1,6 +1,7 @@
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { getTranslations } from 'next-intl/server';
 import { LanguageSwitcher } from '@joho-erp/ui';
+import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,16 @@ export default async function LandingPage({
     <main className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="flex items-center justify-between p-6 border-b">
-        <h1 className="text-2xl font-bold">Joho Foods ERP</h1>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="Joho Foods"
+            width={40}
+            height={40}
+            className="rounded-lg"
+          />
+          <h1 className="text-2xl font-bold">Joho Foods ERP</h1>
+        </div>
         <LanguageSwitcher />
       </header>
 
