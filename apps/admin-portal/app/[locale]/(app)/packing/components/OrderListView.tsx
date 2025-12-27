@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Filter, Package2, PauseCircle } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
@@ -23,11 +23,63 @@ interface OrderListViewProps {
   }>;
   deliveryDate: Date;
   onOrderUpdated: () => void;
+  focusedOrderNumber?: string | null;
+  onClearFocus?: () => void;
 }
 
-export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpdated }: OrderListViewProps) {
+export function OrderListView({
+  orders,
+  deliveryDate: _deliveryDate,
+  onOrderUpdated,
+  focusedOrderNumber,
+  onClearFocus
+}: OrderListViewProps) {
   const t = useTranslations('packing');
   const [areaFilter, setAreaFilter] = useState<string>('all');
+
+  // Memoize the clear focus callback to avoid unnecessary effect re-runs
+  const stableClearFocus = useCallback(() => {
+    onClearFocus?.();
+  }, [onClearFocus]);
+
+  // Handle scrolling to and highlighting focused order
+  useEffect(() => {
+    if (!focusedOrderNumber) return;
+
+    // Check if order is in current filter - if not, reset filter
+    const orderInOrders = orders.some(o => o.orderNumber === focusedOrderNumber);
+    const orderInFiltered = areaFilter === 'all'
+      ? orderInOrders
+      : orders.some(o => o.orderNumber === focusedOrderNumber && o.areaTag === areaFilter);
+
+    if (orderInOrders && !orderInFiltered) {
+      setAreaFilter('all');
+      // Let the next render cycle handle the scroll after filter resets
+      return;
+    }
+
+    // Use a small timeout to ensure DOM has updated after any filter changes
+    const scrollTimer = setTimeout(() => {
+      const element = document.getElementById(`order-card-${focusedOrderNumber}`);
+      if (element) {
+        // Scroll to the element with smooth behavior
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Add highlight animation class
+        element.classList.add('order-card-highlight');
+
+        // Remove highlight class and clear focus after animation
+        const highlightTimer = setTimeout(() => {
+          element.classList.remove('order-card-highlight');
+          stableClearFocus();
+        }, 1500);
+
+        return () => clearTimeout(highlightTimer);
+      }
+    }, 100);
+
+    return () => clearTimeout(scrollTimer);
+  }, [focusedOrderNumber, orders, areaFilter, stableClearFocus]);
 
   // Get unique area tags
   const areaTags = Array.from(new Set(orders.map((o) => o.areaTag))).sort();
@@ -132,6 +184,7 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
         {filteredOrders.map((order, index) => (
           <div
             key={order.orderId}
+            id={`order-card-${order.orderNumber}`}
             style={{
               animationDelay: `${index * 50}ms`,
               animation: 'orderFadeIn 0.4s ease-out',
@@ -159,7 +212,7 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
       )}
 
       {/* Custom Animations */}
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes orderFadeIn {
           from {
             opacity: 0;
@@ -169,6 +222,23 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        @keyframes orderHighlightPulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 transparent;
+          }
+          25%, 75% {
+            box-shadow: 0 0 0 4px hsl(var(--primary) / 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3);
+          }
+        }
+
+        .order-card-highlight {
+          animation: orderHighlightPulse 1.5s ease-in-out;
+          border-radius: 0.5rem;
         }
       `}</style>
     </div>

@@ -23,6 +23,16 @@ export default function PackingPage() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
+  const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
+
+  // Handlers for order badge focus functionality
+  const handleFocusOrder = (orderNumber: string) => {
+    setFocusedOrderNumber(orderNumber);
+  };
+
+  const handleClearFocus = () => {
+    setFocusedOrderNumber(null);
+  };
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
@@ -232,18 +242,27 @@ export default function PackingPage() {
         {/* Main Packing Interface */}
         {totalOrders > 0 ? (
           <PackingLayout
-            summaryPanel={<ProductSummaryView productSummary={productSummary} deliveryDate={deliveryDate} />}
+            summaryPanel={
+              <ProductSummaryView
+                productSummary={productSummary}
+                deliveryDate={deliveryDate}
+                onOrderBadgeClick={handleFocusOrder}
+              />
+            }
             ordersPanel={
               <OrderListView
                 orders={orders}
                 deliveryDate={deliveryDate}
                 onOrderUpdated={refetch}
+                focusedOrderNumber={focusedOrderNumber}
+                onClearFocus={handleClearFocus}
               />
             }
             gatheredCount={0} // TODO: Track gathered state
             totalProducts={totalProducts}
             packedCount={packedOrdersCount}
             totalOrders={totalOrders}
+            focusedOrderNumber={focusedOrderNumber}
           />
         ) : (
           <div className="py-12">

@@ -37,6 +37,7 @@ interface ValidatedProductSummaryItem extends ProductSummaryItem {
 interface ProductSummaryViewProps {
   readonly productSummary: readonly ProductSummaryItem[];
   readonly deliveryDate: Date;
+  readonly onOrderBadgeClick?: (orderNumber: string) => void;
 }
 
 /**
@@ -60,7 +61,7 @@ function formatDateForStorage(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-export function ProductSummaryView({ productSummary, deliveryDate }: ProductSummaryViewProps): React.JSX.Element {
+export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeClick }: ProductSummaryViewProps): React.JSX.Element {
   const t = useTranslations('packing');
 
   // Initialize gathered state from localStorage for this delivery date
@@ -184,7 +185,11 @@ export function ProductSummaryView({ productSummary, deliveryDate }: ProductSumm
                         <Badge
                           key={order.orderNumber}
                           variant={order.status === 'ready_for_delivery' ? 'success' : 'secondary'}
-                          className="text-xs font-mono"
+                          className="text-xs font-mono cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-offset-1 transition-all"
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            onOrderBadgeClick?.(order.orderNumber);
+                          }}
                         >
                           {order.orderNumber} ×{order.quantity}
                         </Badge>

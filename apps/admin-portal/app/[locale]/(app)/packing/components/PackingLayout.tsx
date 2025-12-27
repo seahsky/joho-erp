@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Package, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, Button } from '@joho-erp/ui';
@@ -12,6 +12,7 @@ interface PackingLayoutProps {
   totalProducts: number;
   packedCount: number;
   totalOrders: number;
+  focusedOrderNumber?: string | null;
 }
 
 type TabType = 'summary' | 'orders';
@@ -23,10 +24,18 @@ export function PackingLayout({
   totalProducts,
   packedCount,
   totalOrders,
+  focusedOrderNumber,
 }: PackingLayoutProps) {
   const t = useTranslations('packing');
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Switch to orders tab when an order is focused (mobile behavior)
+  useEffect(() => {
+    if (focusedOrderNumber && activeTab !== 'orders') {
+      setActiveTab('orders');
+    }
+  }, [focusedOrderNumber, activeTab]);
 
   return (
     <>
