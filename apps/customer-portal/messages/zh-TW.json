@@ -553,6 +553,53 @@
       "noPosition": "未指定職位",
       "termsAgreement": "我同意條款和條件，並確認所提供的所有資訊真實準確。",
       "termsLink": "條款和條件",
+      "nextStepInfo": "請審核以上所有資訊。在下一步中，您將簽署條款和條件以及擔保協議。",
+      "buttons": {
+        "back": "返回",
+        "next": "下一步",
+        "submit": "提交申請",
+        "submitting": "提交中..."
+      }
+    },
+    "signatures": {
+      "title": "數位簽名",
+      "description": "請閱讀並簽署以下協議",
+      "sections": {
+        "termsAndConditions": "條款和條件協議",
+        "guaranteeAndIndemnity": "擔保和賠償"
+      },
+      "termsAgreementIntro": "透過在下方簽名，本人/我們聲明並確認：",
+      "termsDeclarations": {
+        "readAndUnderstood": "本人/我們已閱讀並理解本申請的條款，並確認該條款將適用於供應商向本人/我們提供的任何信貸額度",
+        "informationAccurate": "申請人提供的所有資訊真實準確，並確認供應商及相關方將使用此資訊評估本人/我們的商業信貸申請",
+        "consentCreditReport": "本人/我們同意供應商從信用報告機構取得包含本人/我們個人信用資訊的信用報告，用於評估供應商提供的商業信貸"
+      },
+      "viewFullTerms": "檢視完整條款和條件",
+      "guaranteeIntro": "擔保人確認 {businessName} 應擔保人的要求，已向供應商提交信貸申請。",
+      "viewFullGuarantee": "檢視完整擔保條款",
+      "director": "董事 {number}：{name}",
+      "directorWithPosition": "董事 {number}：{name}（{position}）",
+      "guarantor": "擔保人 {number}：{name}",
+      "signatureComplete": "簽名已擷取",
+      "witness": {
+        "label": "見證人",
+        "namePlaceholder": "見證人全名",
+        "nameRequired": "請輸入見證人姓名"
+      },
+      "witnessSignatureDescription": "見證人簽名",
+      "signaturePad": {
+        "label": "簽名",
+        "clear": "清除",
+        "tapToSign": "點擊或觸摸簽名",
+        "required": "請提供簽名",
+        "accessibility": "{name} 的簽名板"
+      },
+      "validation": {
+        "allDirectorsMustSign": "所有董事必須簽署條款和條件",
+        "allGuarantorsMustSign": "所有擔保人必須簽署擔保和賠償協議",
+        "witnessRequired": "每個擔保人簽名都需要見證人",
+        "signatureRequired": "請提供簽名"
+      },
       "buttons": {
         "back": "返回",
         "submit": "提交申請",

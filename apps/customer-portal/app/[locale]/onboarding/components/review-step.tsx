@@ -9,11 +9,8 @@ interface ReviewStepProps {
   directors: DirectorInfo[];
   financialInfo: FinancialInfo;
   tradeReferences: TradeReferenceInfo[];
-  agreedToTerms: boolean;
-  onAgreementChange: (agreed: boolean) => void;
-  onSubmit: () => void;
+  onNext: () => void;
   onBack: () => void;
-  isSubmitting: boolean;
 }
 
 export function ReviewStep({
@@ -21,11 +18,8 @@ export function ReviewStep({
   directors,
   financialInfo,
   tradeReferences,
-  agreedToTerms,
-  onAgreementChange,
-  onSubmit,
+  onNext,
   onBack,
-  isSubmitting,
 }: ReviewStepProps) {
   const t = useTranslations('onboarding.review');
 
@@ -108,31 +102,21 @@ export function ReviewStep({
         </div>
       )}
 
-      {/* Terms and Conditions */}
+      {/* Info about next step */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <label className="flex items-start space-x-3">
-          <input
-            type="checkbox"
-            checked={agreedToTerms}
-            onChange={(e) => onAgreementChange(e.target.checked)}
-            className="mt-1"
-          />
-          <span className="text-sm">
-            {t('termsAgreement')}{' '}
-            <a href="/terms" target="_blank" className="text-blue-600 underline">
-              {t('termsLink')}
-            </a>
-          </span>
-        </label>
+        <p className="text-sm text-blue-800">
+          {t('nextStepInfo', {
+            defaultValue:
+              'Please review all information above. In the next step, you will sign the Terms & Conditions and Guarantee agreements.',
+          })}
+        </p>
       </div>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack} disabled={isSubmitting}>
+        <Button variant="outline" onClick={onBack}>
           {t('buttons.back')}
         </Button>
-        <Button onClick={onSubmit} disabled={!agreedToTerms || isSubmitting}>
-          {isSubmitting ? t('buttons.submitting') : t('buttons.submit')}
-        </Button>
+        <Button onClick={onNext}>{t('buttons.next')}</Button>
       </div>
     </div>
   );

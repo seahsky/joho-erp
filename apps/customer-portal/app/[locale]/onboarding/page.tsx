@@ -11,8 +11,9 @@ import { DirectorsStep } from './components/directors-step';
 import { FinancialStep } from './components/financial-step';
 import { TradeReferencesStep } from './components/trade-references-step';
 import { ReviewStep } from './components/review-step';
+import { SignatureStep, type SignatureData } from './components/signature-step';
 
-type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review';
+type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'signatures';
 
 export interface BusinessInfo {
   accountType: 'sole_trader' | 'partnership' | 'company' | 'other';
@@ -91,7 +92,6 @@ export default function OnboardingPage() {
   const [directors, setDirectors] = useState<DirectorInfo[]>([]);
   const [financialInfo, setFinancialInfo] = useState<Partial<FinancialInfo>>({});
   const [tradeReferences, setTradeReferences] = useState<TradeReferenceInfo[]>([]);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const registerMutation = api.customer.register.useMutation({
     onSuccess: () => {
@@ -103,14 +103,9 @@ export default function OnboardingPage() {
     },
   });
 
-  const handleSubmit = () => {
+  const handleSignaturesComplete = (signatureData: SignatureData[]) => {
     if (!user) {
       alert(t('messages.notAuthenticated'));
-      return;
-    }
-
-    if (!agreedToTerms) {
-      alert(t('messages.mustAgreeToTerms'));
       return;
     }
 
@@ -125,11 +120,11 @@ export default function OnboardingPage() {
       })),
       financialDetails: financialInfo as FinancialInfo,
       tradeReferences,
-      agreedToTerms,
+      signatures: signatureData,
     });
   };
 
-  const steps: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review'];
+  const steps: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'signatures'];
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
@@ -208,10 +203,17 @@ export default function OnboardingPage() {
             directors={directors}
             financialInfo={financialInfo as FinancialInfo}
             tradeReferences={tradeReferences}
-            agreedToTerms={agreedToTerms}
-            onAgreementChange={setAgreedToTerms}
-            onSubmit={handleSubmit}
+            onNext={() => setCurrentStep('signatures')}
             onBack={() => setCurrentStep('references')}
+          />
+        )}
+
+        {currentStep === 'signatures' && (
+          <SignatureStep
+            directors={directors}
+            businessName={(businessInfo as BusinessInfo).businessName}
+            onComplete={handleSignaturesComplete}
+            onBack={() => setCurrentStep('review')}
             isSubmitting={registerMutation.isPending}
           />
         )}

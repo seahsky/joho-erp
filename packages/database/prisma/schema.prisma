@@ -48,6 +48,11 @@ enum CreditApplicationStatus {
   rejected
 }
 
+enum SignatureType {
+  APPLICANT
+  GUARANTOR
+}
+
 enum AreaTag {
   north
   south
@@ -563,6 +568,19 @@ type CreditApplication {
   creditLimit         Int                 @default(0) // Stored in cents
   paymentTerms        String?
   notes               String?
+  signatures          CreditSignature[]   // All signatures for this application
+  agreedToTermsAt     DateTime?           // When T&C were agreed
+}
+
+type CreditSignature {
+  signerName          String              // Full name of the signer
+  signerPosition      String?             // Position/role (e.g., "Director")
+  signatureUrl        String              // R2 public URL to signature image
+  signedAt            DateTime            // When the signature was captured
+  signatureType       SignatureType       // APPLICANT or GUARANTOR
+  witnessName         String?             // For guarantor signatures only
+  witnessSignatureUrl String?             // Witness signature URL (for guarantor)
+  witnessSignedAt     DateTime?           // When witness signed
 }
 
 type OrderItem {

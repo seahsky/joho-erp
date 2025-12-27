@@ -553,6 +553,53 @@
       "noPosition": "未指定职位",
       "termsAgreement": "我同意条款和条件，并确认所提供的所有信息真实准确。",
       "termsLink": "条款和条件",
+      "nextStepInfo": "请审核以上所有信息。在下一步中，您将签署条款和条件以及担保协议。",
+      "buttons": {
+        "back": "返回",
+        "next": "下一步",
+        "submit": "提交申请",
+        "submitting": "提交中..."
+      }
+    },
+    "signatures": {
+      "title": "数字签名",
+      "description": "请阅读并签署以下协议",
+      "sections": {
+        "termsAndConditions": "条款和条件协议",
+        "guaranteeAndIndemnity": "担保和赔偿"
+      },
+      "termsAgreementIntro": "通过在下方签名，本人/我们声明并确认：",
+      "termsDeclarations": {
+        "readAndUnderstood": "本人/我们已阅读并理解本申请的条款，并确认该条款将适用于供应商向本人/我们提供的任何信贷额度",
+        "informationAccurate": "申请人提供的所有信息真实准确，并确认供应商及相关方将使用此信息评估本人/我们的商业信贷申请",
+        "consentCreditReport": "本人/我们同意供应商从信用报告机构获取包含本人/我们个人信用信息的信用报告，用于评估供应商提供的商业信贷"
+      },
+      "viewFullTerms": "查看完整条款和条件",
+      "guaranteeIntro": "担保人确认 {businessName} 应担保人的要求，已向供应商提交信贷申请。",
+      "viewFullGuarantee": "查看完整担保条款",
+      "director": "董事 {number}：{name}",
+      "directorWithPosition": "董事 {number}：{name}（{position}）",
+      "guarantor": "担保人 {number}：{name}",
+      "signatureComplete": "签名已捕获",
+      "witness": {
+        "label": "见证人",
+        "namePlaceholder": "见证人全名",
+        "nameRequired": "请输入见证人姓名"
+      },
+      "witnessSignatureDescription": "见证人签名",
+      "signaturePad": {
+        "label": "签名",
+        "clear": "清除",
+        "tapToSign": "点击或触摸签名",
+        "required": "请提供签名",
+        "accessibility": "{name} 的签名板"
+      },
+      "validation": {
+        "allDirectorsMustSign": "所有董事必须签署条款和条件",
+        "allGuarantorsMustSign": "所有担保人必须签署担保和赔偿协议",
+        "witnessRequired": "每个担保人签名都需要见证人",
+        "signatureRequired": "请提供签名"
+      },
       "buttons": {
         "back": "返回",
         "submit": "提交申请",

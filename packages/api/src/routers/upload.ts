@@ -4,9 +4,10 @@
  */
 
 import { z } from 'zod';
-import { router, isAdmin } from '../trpc';
+import { router, isAdmin, publicProcedure } from '../trpc';
 import {
   generateUploadUrl,
+  generateSignatureUploadUrl,
   deleteImage,
   isR2Configured,
   IMAGE_UPLOAD_CONFIG,
@@ -109,6 +110,56 @@ export const uploadRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to delete image. Please try again.',
+        });
+      }
+    }),
+
+  /**
+   * Get presigned URL for uploading a signature image
+   * Public endpoint - used during credit application (before user has an account)
+   */
+  getSignatureUploadUrl: publicProcedure
+    .input(
+      z.object({
+        signatureType: z.enum(['applicant', 'guarantor', 'witness']),
+        directorIndex: z.number().int().min(0).max(2),
+        contentLength: z
+          .number()
+          .int()
+          .positive()
+          .max(500 * 1024, {
+            message: 'Signature image too large. Maximum size is 500KB',
+          }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      if (!isR2Configured()) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Image upload is not configured. Please contact an administrator.',
+        });
+      }
+
+      const { signatureType, directorIndex, contentLength } = input;
+
+      try {
+        const result = await generateSignatureUploadUrl({
+          signatureType,
+          directorIndex,
+          contentLength,
+        });
+
+        return {
+          uploadUrl: result.uploadUrl,
+          publicUrl: result.publicUrl,
+          key: result.key,
+          expiresIn: IMAGE_UPLOAD_CONFIG.presignedUrlExpiresIn,
+        };
+      } catch (error) {
+        console.error('Failed to generate signature upload URL:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to generate upload URL. Please try again.',
         });
       }
     }),

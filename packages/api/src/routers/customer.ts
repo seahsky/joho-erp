@@ -135,7 +135,20 @@ export const customerRouter = router({
         directors: z.array(directorDetailsSchema).min(1, 'At least one director is required'),
         financialDetails: financialDetailsSchema.optional(),
         tradeReferences: z.array(tradeReferenceSchema).optional(),
-        agreedToTerms: z.boolean(),
+        signatures: z
+          .array(
+            z.object({
+              directorIndex: z.number().int().min(0),
+              applicantSignatureUrl: z.string().url(),
+              applicantSignedAt: z.date(),
+              guarantorSignatureUrl: z.string().url(),
+              guarantorSignedAt: z.date(),
+              witnessName: z.string().min(1),
+              witnessSignatureUrl: z.string().url(),
+              witnessSignedAt: z.date(),
+            })
+          )
+          .min(1, 'At least one director must sign'),
       })
     )
     .mutation(async ({ input, ctx: _ctx }) => {
@@ -178,6 +191,30 @@ export const customerRouter = router({
             appliedAt: new Date(),
             submittedAt: new Date(),
             creditLimit: 0,
+            agreedToTermsAt: new Date(),
+            signatures: input.signatures.flatMap((sig, _idx) => {
+              const director = input.directors[sig.directorIndex];
+              const signerName = `${director.givenNames} ${director.familyName}`;
+              return [
+                {
+                  signerName,
+                  signerPosition: director.position,
+                  signatureUrl: sig.applicantSignatureUrl,
+                  signedAt: sig.applicantSignedAt,
+                  signatureType: 'APPLICANT' as const,
+                },
+                {
+                  signerName,
+                  signerPosition: director.position,
+                  signatureUrl: sig.guarantorSignatureUrl,
+                  signedAt: sig.guarantorSignedAt,
+                  signatureType: 'GUARANTOR' as const,
+                  witnessName: sig.witnessName,
+                  witnessSignatureUrl: sig.witnessSignatureUrl,
+                  witnessSignedAt: sig.witnessSignedAt,
+                },
+              ];
+            }),
           },
           directors: input.directors,
           financialDetails: input.financialDetails,

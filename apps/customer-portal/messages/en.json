@@ -490,6 +490,53 @@
       "noPosition": "No position specified",
       "termsAgreement": "I agree to the terms and conditions and confirm that all information provided is accurate.",
       "termsLink": "Terms & Conditions",
+      "nextStepInfo": "Please review all information above. In the next step, you will sign the Terms & Conditions and Guarantee agreements.",
+      "buttons": {
+        "back": "Back",
+        "next": "Next",
+        "submit": "Submit Application",
+        "submitting": "Submitting..."
+      }
+    },
+    "signatures": {
+      "title": "Digital Signatures",
+      "description": "Please read and sign the following agreements",
+      "sections": {
+        "termsAndConditions": "Terms & Conditions Agreement",
+        "guaranteeAndIndemnity": "Guarantee and Indemnity"
+      },
+      "termsAgreementIntro": "By signing below, I/we declare and affirm that:",
+      "termsDeclarations": {
+        "readAndUnderstood": "I/We have read and understood the terms of this application and confirm that the terms will apply to any credit facility provided by the Supplier to me/us",
+        "informationAccurate": "The information supplied by us, the Applicant, in this application is true and correct and acknowledge the Supplier and related parties will use this information for the purpose of assessing my/our commercial credit application",
+        "consentCreditReport": "I/We consent to the Supplier obtaining from a credit reporting agency a credit report containing personal credit information about me/us in relation to commercial credit provided by the Supplier"
+      },
+      "viewFullTerms": "View Full Terms & Conditions",
+      "guaranteeIntro": "The Guarantors acknowledge that {businessName} has, at the request of the Guarantors, submitted an application to be supplied credit by the Supplier.",
+      "viewFullGuarantee": "View Full Guarantee Terms",
+      "director": "Director {number}: {name}",
+      "directorWithPosition": "Director {number}: {name} ({position})",
+      "guarantor": "Guarantor {number}: {name}",
+      "signatureComplete": "Signature captured",
+      "witness": {
+        "label": "Witnessed by",
+        "namePlaceholder": "Witness full name",
+        "nameRequired": "Witness name is required"
+      },
+      "witnessSignatureDescription": "Witness signature",
+      "signaturePad": {
+        "label": "Signature",
+        "clear": "Clear",
+        "tapToSign": "Tap or click to sign",
+        "required": "Signature is required",
+        "accessibility": "Signature pad for {name}"
+      },
+      "validation": {
+        "allDirectorsMustSign": "All directors must sign the Terms & Conditions",
+        "allGuarantorsMustSign": "All guarantors must sign the Guarantee and Indemnity",
+        "witnessRequired": "Each guarantor signature requires a witness",
+        "signatureRequired": "Signature is required"
+      },
       "buttons": {
         "back": "Back",
         "submit": "Submit Application",

@@ -138,6 +138,47 @@ export function extractKeyFromUrl(publicUrl: string): string | null {
 }
 
 /**
+ * Generate a presigned URL for uploading a signature to R2
+ * Used for credit application signatures (public endpoint)
+ */
+export async function generateSignatureUploadUrl(params: {
+  signatureType: 'applicant' | 'guarantor' | 'witness';
+  directorIndex: number;
+  contentLength: number;
+}): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
+  const { signatureType, directorIndex, contentLength } = params;
+
+  // Signatures are PNG only, max 500KB
+  const maxSignatureSize = 500 * 1024; // 500KB
+  if (contentLength > maxSignatureSize) {
+    throw new Error(`Signature too large: max ${maxSignatureSize / 1024}KB`);
+  }
+
+  // Generate unique key: signatures/{timestamp}-{type}-{index}.png
+  const timestamp = Date.now();
+  const key = `signatures/${timestamp}-${signatureType}-${directorIndex}.png`;
+
+  const client = getR2Client();
+
+  // Generate presigned PUT URL
+  const command = new PutObjectCommand({
+    Bucket: R2_CONFIG.bucketName,
+    Key: key,
+    ContentType: 'image/png',
+    ContentLength: contentLength,
+  });
+
+  const uploadUrl = await getSignedUrl(client, command, {
+    expiresIn: IMAGE_UPLOAD_CONFIG.presignedUrlExpiresIn,
+  });
+
+  // Construct public URL
+  const publicUrl = `${R2_CONFIG.publicUrl}/${key}`;
+
+  return { uploadUrl, publicUrl, key };
+}
+
+/**
  * Upload a file buffer directly to R2
  * Used by the proxy upload API route to bypass CORS restrictions
  */
