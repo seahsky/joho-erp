@@ -245,7 +245,7 @@ export const customerRouter = router({
       where: {
         customerId: customer.id,
         status: {
-          in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+          in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
         },
         // Exclude pending backorders (they don't count against credit limit)
         backorderStatus: {

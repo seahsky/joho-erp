@@ -45,6 +45,7 @@
     "signUp": "注册"
   },
   "statusBadges": {
+    "awaiting_approval": "待审批",
     "confirmed": "已确认",
     "packing": "打包中",
     "ready_for_delivery": "待配送",
@@ -61,6 +62,7 @@
     "out_of_stock": "缺货"
   },
   "orderStatusDescriptions": {
+    "awaiting_approval": "订单因库存原因需要审批",
     "pending": "您的订单正在处理中",
     "confirmed": "订单已确认，正在准备打包",
     "packing": "您的订单正在打包中",

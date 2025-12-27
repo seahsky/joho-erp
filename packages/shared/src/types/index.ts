@@ -6,10 +6,11 @@ export type AreaTag = 'north' | 'south' | 'east' | 'west';
 
 // Order Status
 export type OrderStatus =
-  | 'pending'
+  | 'awaiting_approval' // For backorders requiring admin approval
   | 'confirmed'
   | 'packing'
   | 'ready_for_delivery'
+  | 'out_for_delivery'
   | 'delivered'
   | 'cancelled';
 

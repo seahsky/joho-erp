@@ -22,7 +22,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
 type OrderStatus =
-  | 'pending'
+  | 'awaiting_approval'
   | 'confirmed'
   | 'packing'
   | 'ready_for_delivery'
@@ -36,7 +36,7 @@ interface OrderActionsProps {
 }
 
 const STATUS_OPTIONS: OrderStatus[] = [
-  'pending',
+  'awaiting_approval',
   'confirmed',
   'packing',
   'ready_for_delivery',

@@ -7,12 +7,13 @@ import { Badge, type BadgeProps } from '../badge';
 import { CheckCircle2, Clock, Package, XCircle, AlertTriangle, Truck } from 'lucide-react';
 
 export type StatusType =
+  | 'awaiting_approval' // For backorders requiring admin approval
   | 'confirmed'
   | 'packing'
   | 'ready_for_delivery'
   | 'delivered'
   | 'cancelled'
-  | 'pending'
+  | 'pending' // For other uses (credit applications, invitations, etc.)
   | 'approved'
   | 'rejected'
   | 'active'
@@ -34,6 +35,10 @@ const statusConfig: Record<
     icon: React.ComponentType<{ className?: string }>;
   }
 > = {
+  awaiting_approval: {
+    variant: 'warning',
+    icon: Clock,
+  },
   confirmed: {
     variant: 'info',
     icon: CheckCircle2,

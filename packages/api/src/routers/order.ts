@@ -75,7 +75,7 @@ export async function calculateAvailableCredit(customerId: string, creditLimit: 
     where: {
       customerId,
       status: {
-        in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+        in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
       // Exclude pending backorders (they don't count until approved)
       backorderStatus: {
@@ -105,7 +105,7 @@ export async function getOutstandingBalance(customerId: string): Promise<number>
     where: {
       customerId,
       status: {
-        in: ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+        in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
       backorderStatus: {
         not: 'pending_approval',
@@ -329,15 +329,15 @@ export const orderRouter = router({
             totalAmount: totals.totalAmount,
             deliveryAddress,
             requestedDeliveryDate: deliveryDate,
-            status: 'pending',
+            status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
             statusHistory: [
               {
-                status: 'pending',
+                status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
                 notes: stockValidation.requiresBackorder
-                  ? 'Order created - Requires backorder approval due to insufficient stock'
-                  : 'Order created',
+                  ? 'Order created - Awaiting approval due to insufficient stock'
+                  : 'Order created and confirmed',
               },
             ],
             orderedAt: new Date(),
@@ -656,14 +656,14 @@ export const orderRouter = router({
             totalAmount: totals.totalAmount,
             deliveryAddress,
             requestedDeliveryDate: deliveryDate,
-            status: stockValidation.requiresBackorder ? 'pending' : 'confirmed', // Backorders need approval
+            status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
             statusHistory: [
               {
-                status: stockValidation.requiresBackorder ? 'pending' : 'confirmed',
+                status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
                 notes: stockValidation.requiresBackorder
-                  ? 'Order placed by admin - Requires backorder approval due to insufficient stock'
+                  ? 'Order placed by admin - Awaiting approval due to insufficient stock'
                   : 'Order placed by admin on behalf of customer',
               },
             ],
@@ -940,7 +940,7 @@ export const orderRouter = router({
       z.object({
         orderId: z.string(),
         newStatus: z.enum([
-          'pending',
+          'awaiting_approval',
           'confirmed',
           'packing',
           'ready_for_delivery',
@@ -1971,11 +1971,11 @@ export const orderRouter = router({
         });
       }
 
-      // Validate current status
-      if (order.status !== 'pending') {
+      // Validate current status - only awaiting_approval orders can be confirmed (for backorders)
+      if (order.status !== 'awaiting_approval') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Cannot confirm order with status '${order.status}'. Only pending orders can be confirmed.`,
+          message: `Cannot confirm order with status '${order.status}'. Only orders awaiting approval can be confirmed.`,
         });
       }
 
@@ -2092,11 +2092,12 @@ export const orderRouter = router({
         });
       }
 
-      // Validate status - only pending orders can be cancelled by customer
-      if (order.status !== 'pending') {
+      // Validate status - orders can be cancelled before packing starts
+      const cancellableStatuses = ['confirmed', 'awaiting_approval'];
+      if (!cancellableStatuses.includes(order.status)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Only pending orders can be cancelled. Please contact customer service for assistance.',
+          message: 'Orders can only be cancelled before packing begins. Please contact customer service for assistance.',
         });
       }
 

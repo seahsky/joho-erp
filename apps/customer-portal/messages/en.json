@@ -45,6 +45,7 @@
     "signUp": "Sign Up"
   },
   "statusBadges": {
+    "awaiting_approval": "Awaiting Approval",
     "confirmed": "Confirmed",
     "packing": "Packing",
     "ready_for_delivery": "Ready for Delivery",
@@ -61,6 +62,7 @@
     "out_of_stock": "Out of Stock"
   },
   "orderStatusDescriptions": {
+    "awaiting_approval": "Order requires approval due to stock availability",
     "pending": "Your order is being processed",
     "confirmed": "Order confirmed, preparing for packing",
     "packing": "Your order is being packed",

@@ -74,7 +74,7 @@ enum AustralianState {
 }
 
 enum OrderStatus {
-  pending
+  awaiting_approval   // For backorders requiring admin approval
   confirmed
   packing
   ready_for_delivery
@@ -256,7 +256,7 @@ model Order {
   totalAmount             Int                 // Stored in cents
   deliveryAddress         DeliveryAddress
   requestedDeliveryDate   DateTime
-  status                  OrderStatus         @default(pending)
+  status                  OrderStatus         @default(confirmed)
   statusHistory           StatusHistory[]
   packing                 Packing?
   delivery                Delivery?

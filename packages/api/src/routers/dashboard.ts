@@ -9,10 +9,10 @@ export const dashboardRouter = router({
       // Total orders count
       prisma.order.count(),
 
-      // Pending orders count
+      // Active orders count (awaiting approval or confirmed)
       prisma.order.count({
         where: {
-          status: { in: ['pending', 'confirmed'] },
+          status: { in: ['awaiting_approval', 'confirmed'] },
         },
       }),
 

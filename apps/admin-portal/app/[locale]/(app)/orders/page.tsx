@@ -192,7 +192,7 @@ export default function OrdersPage() {
   });
 
   const totalOrders = filteredOrders.length;
-  const pendingOrders = filteredOrders.filter((o) => o.status === 'pending').length;
+  const awaitingApprovalOrders = filteredOrders.filter((o) => o.status === 'awaiting_approval').length;
   const confirmedOrders = filteredOrders.filter((o) => o.status === 'confirmed').length;
   const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
   const pendingBackorders = orders.filter((o) => o.backorderStatus === 'pending_approval').length;
@@ -302,7 +302,8 @@ export default function OrdersPage() {
               {t('backorder.reviewBackorder')}
             </Button>
           )}
-          {order.status === 'pending' && order.backorderStatus !== 'pending_approval' && (
+          {/* Confirm button only for awaiting_approval orders (backorders) */}
+          {order.status === 'awaiting_approval' && order.backorderStatus !== 'pending_approval' && (
             <Button
               variant="default"
               size="sm"
@@ -377,7 +378,7 @@ export default function OrdersPage() {
               <Eye className="h-4 w-4" />
             </Button>
           </>
-        ) : order.status === 'pending' ? (
+        ) : order.status === 'awaiting_approval' ? (
           <>
             <Button
               variant="default"
@@ -440,9 +441,9 @@ export default function OrdersPage() {
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>{t('pendingOrders')}</CardDescription>
+            <CardDescription>{t('awaitingApprovalOrders')}</CardDescription>
             <div className="stat-value tabular-nums text-warning">
-              <CountUp end={pendingOrders} />
+              <CountUp end={awaitingApprovalOrders} />
             </div>
           </CardHeader>
         </Card>
@@ -506,7 +507,7 @@ export default function OrdersPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">{t('allStatuses')}</option>
-                <option value="pending">{t('pending')}</option>
+                <option value="awaiting_approval">{t('awaitingApproval')}</option>
                 <option value="confirmed">{t('confirmed')}</option>
                 <option value="packing">{t('packing')}</option>
                 <option value="ready_for_delivery">{t('readyForDelivery')}</option>

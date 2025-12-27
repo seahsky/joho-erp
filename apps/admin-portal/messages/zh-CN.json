@@ -42,6 +42,7 @@
     "noEmail": "无邮箱"
   },
   "statusBadges": {
+    "awaiting_approval": "待审批",
     "confirmed": "已确认",
     "packing": "打包中",
     "ready_for_delivery": "待配送",
@@ -58,6 +59,7 @@
     "out_of_stock": "缺货"
   },
   "orderStatusDescriptions": {
+    "awaiting_approval": "订单因库存原因需要审批",
     "pending": "您的订单正在处理中",
     "confirmed": "订单已确认，正在准备打包",
     "packing": "您的订单正在打包中",
@@ -193,6 +195,7 @@
     "status": "状态",
     "total": "总计",
     "items": "项目",
+    "awaitingApproval": "待审批",
     "pending": "待处理",
     "confirmed": "已确认",
     "processing": "处理中",
@@ -204,7 +207,7 @@
     "loading": "加载订单中...",
     "errorLoading": "加载订单时出错",
     "totalOrders": "总订单数",
-    "pendingOrders": "待处理",
+    "awaitingApprovalOrders": "待审批",
     "confirmedOrders": "已确认",
     "deliveredOrders": "已送达",
     "totalRevenue": "总收入",

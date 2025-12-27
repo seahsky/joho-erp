@@ -360,8 +360,8 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
               </Card>
             )}
 
-            {/* Cancel Order Button - Only for pending orders */}
-            {order.status === 'pending' && (
+            {/* Cancel Order Button - Available before packing starts */}
+            {(order.status === 'confirmed' || order.status === 'awaiting_approval') && (
               <DialogFooter className="mt-4">
                 <Button
                   variant="destructive"

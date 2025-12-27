@@ -42,6 +42,7 @@
     "noEmail": "無電子郵件"
   },
   "statusBadges": {
+    "awaiting_approval": "待審批",
     "confirmed": "已確認",
     "packing": "打包中",
     "ready_for_delivery": "待配送",
@@ -58,6 +59,7 @@
     "out_of_stock": "缺貨"
   },
   "orderStatusDescriptions": {
+    "awaiting_approval": "訂單因庫存原因需要審批",
     "pending": "您的訂單正在處理中",
     "confirmed": "訂單已確認，正在準備打包",
     "packing": "您的訂單正在打包中",
@@ -193,6 +195,7 @@
     "status": "狀態",
     "total": "總計",
     "items": "項目",
+    "awaitingApproval": "待審批",
     "pending": "待處理",
     "confirmed": "已確認",
     "processing": "處理中",
@@ -204,7 +207,7 @@
     "loading": "載入訂單中...",
     "errorLoading": "載入訂單時出錯",
     "totalOrders": "總訂單數",
-    "pendingOrders": "待處理",
+    "awaitingApprovalOrders": "待審批",
     "confirmedOrders": "已確認",
     "deliveredOrders": "已送達",
     "totalRevenue": "總收入",

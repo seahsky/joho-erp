@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
-import { Package, Plus } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
@@ -159,11 +159,6 @@ export function ProductList() {
   const handleProductClick = (product: Product & ProductWithPricing) => {
     setSelectedProduct(product);
     setSidebarOpen(true);
-  };
-
-  const handleQuickAdd = (e: React.MouseEvent, productId: string) => {
-    e.stopPropagation(); // Prevent sidebar from opening
-    addToCart.mutate({ productId, quantity: 1 });
   };
 
   // Loading state
