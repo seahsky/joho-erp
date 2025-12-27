@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StatusBadge, type StatusType, useToast, Card, CardContent, Button } from '@joho-erp/ui';
+import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { CheckSquare, Square, Loader2, Send, StickyNote } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -15,6 +15,12 @@ interface PackingOrderCardProps {
     areaTag: string;
     packingSequence: number | null;
     deliverySequence: number | null;
+    // Partial progress fields
+    isPaused?: boolean;
+    lastPackedBy?: string | null;
+    lastPackedAt?: Date | null;
+    packedItemsCount?: number;
+    totalItemsCount?: number;
   };
   onOrderUpdated: () => void;
 }
@@ -179,6 +185,60 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     },
   });
 
+  // Pause order mutation
+  const pauseOrderMutation = api.packing.pauseOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('orderPaused'),
+        description: t('orderPausedDescription'),
+      });
+      onOrderUpdated();
+    },
+    onError: (error) => {
+      toast({
+        title: t('errorPausingOrder'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Resume order mutation
+  const resumeOrderMutation = api.packing.resumeOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('orderResumed'),
+        description: t('orderResumedDescription'),
+      });
+      onOrderUpdated();
+    },
+    onError: (error) => {
+      toast({
+        title: t('errorResumingOrder'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Reset order mutation
+  const resetOrderMutation = api.packing.resetOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('orderReset'),
+        description: t('orderResetDescription'),
+      });
+      onOrderUpdated();
+    },
+    onError: (error) => {
+      toast({
+        title: t('errorResettingOrder'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Debounced auto-save (500ms delay after typing stops)
   const debouncedSaveNotes = useDebouncedCallback((notes: string) => {
     addPackingNotesMutation.mutate({
@@ -220,6 +280,26 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     });
   };
 
+  const handlePauseOrder = () => {
+    pauseOrderMutation.mutate({
+      orderId: order.orderId,
+      notes: packingNotes || undefined,
+    });
+  };
+
+  const handleResumeOrder = () => {
+    resumeOrderMutation.mutate({
+      orderId: order.orderId,
+    });
+  };
+
+  const handleResetOrder = () => {
+    resetOrderMutation.mutate({
+      orderId: order.orderId,
+      reason: 'Manual reset by packer',
+    });
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -242,8 +322,46 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   const packedCount = items.filter((item) => item.packed).length;
   const progressPercent = items.length > 0 ? (packedCount / items.length) * 100 : 0;
 
+  const isPaused = order.isPaused ?? false;
+  const hasProgress = packedCount > 0;
+
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/40">
+    <div className={`bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${
+      isPaused ? 'border-warning/50' : 'border-border hover:border-primary/40'
+    }`}>
+      {/* Paused Banner */}
+      {isPaused && (
+        <div className="bg-warning/10 border-b border-warning/30 px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PauseCircle className="h-4 w-4 text-warning" />
+            <span className="text-sm font-semibold text-warning-foreground">
+              {t('orderPausedBanner')}
+            </span>
+            {order.lastPackedBy && (
+              <span className="text-xs text-muted-foreground">
+                • {t('pausedBy', { name: order.lastPackedBy })}
+              </span>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResumeOrder}
+            disabled={resumeOrderMutation.isPending}
+            className="border-warning/50 hover:bg-warning/20"
+          >
+            {resumeOrderMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <>
+                <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                {t('resume')}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Clean Header - With Sequence Badge */}
       <div className="relative">
         {/* Sequence Badge - Prominent Position */}
@@ -390,13 +508,14 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         />
       </div>
 
-      {/* Action Button */}
-      <div className="px-4 pb-4">
+      {/* Action Buttons */}
+      <div className="px-4 pb-4 space-y-2">
+        {/* Main Action: Mark as Ready */}
         <Button
           onClick={handleMarkReady}
-          disabled={!allItemsPacked || markOrderReadyMutation.isPending}
+          disabled={!allItemsPacked || markOrderReadyMutation.isPending || isPaused}
           className="w-full"
-          variant={allItemsPacked && !markOrderReadyMutation.isPending ? "default" : "secondary"}
+          variant={allItemsPacked && !markOrderReadyMutation.isPending && !isPaused ? "default" : "secondary"}
         >
           {markOrderReadyMutation.isPending ? (
             <>
@@ -411,10 +530,111 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           )}
         </Button>
 
-        {!allItemsPacked && (
-          <p className="text-xs text-center text-muted-foreground mt-2 font-medium">
+        {!allItemsPacked && !isPaused && (
+          <p className="text-xs text-center text-muted-foreground font-medium">
             {t('checkAllItemsFirst')}
           </p>
+        )}
+
+        {/* Secondary Actions: Pause and Reset */}
+        {hasProgress && !isPaused && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePauseOrder}
+              disabled={pauseOrderMutation.isPending}
+              className="flex-1"
+            >
+              {pauseOrderMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <PauseCircle className="h-3.5 w-3.5 mr-1" />
+                  {t('pauseOrder')}
+                </>
+              )}
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  {t('resetOrder')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('resetOrderTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('resetOrderDescription', {
+                      packedCount: packedCount,
+                      orderNumber: order.orderNumber
+                    })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleResetOrder}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {resetOrderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t('confirmReset')
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {/* Reset only for paused orders */}
+        {isPaused && (
+          <div className="flex justify-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  {t('resetOrder')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('resetOrderTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('resetOrderDescription', {
+                      packedCount: packedCount,
+                      orderNumber: order.orderNumber
+                    })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleResetOrder}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {resetOrderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t('confirmReset')
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         )}
       </div>
 

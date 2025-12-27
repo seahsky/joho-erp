@@ -588,6 +588,10 @@ type Packing {
   notes               String?
   packingSequence     Int?                // Position in packing queue (1 = pack first)
   packedItems         String[]            // Array of SKUs that have been packed
+  // Partial progress persistence fields
+  lastPackedAt        DateTime?           // When packing was last updated
+  lastPackedBy        String?             // Who last worked on this order (user ID)
+  pausedAt            DateTime?           // When packing was paused (null if active)
 }
 
 type Delivery {

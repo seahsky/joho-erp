@@ -3,8 +3,8 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription } from '@joho-erp/ui';
-import { Package, Calendar, Loader2 } from 'lucide-react';
+import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast } from '@joho-erp/ui';
+import { Package, Calendar, Loader2, PlayCircle, PauseCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
@@ -13,6 +13,7 @@ import { PackingLayout } from './components/PackingLayout';
 
 export default function PackingPage() {
   const t = useTranslations('packing');
+  const { toast } = useToast();
 
   // Default to today for delivery date (using UTC to avoid timezone issues)
   const today = new Date();
@@ -20,6 +21,8 @@ export default function PackingPage() {
 
   const [deliveryDate, setDeliveryDate] = useState<Date>(today);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
@@ -28,6 +31,48 @@ export default function PackingPage() {
   });
 
   const optimizeRouteMutation = api.packing.optimizeRoute.useMutation();
+
+  // Resume order mutation
+  const resumeOrderMutation = api.packing.resumeOrder.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('orderResumed'),
+        description: t('orderResumedDescription'),
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: t('errorResumingOrder'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Calculate paused orders for the resume dialog
+  const pausedOrders = useMemo(() => {
+    if (!session?.orders) return [];
+    return session.orders.filter((order) => order.isPaused);
+  }, [session?.orders]);
+
+  // Show resume dialog when there are paused orders (only once per page load)
+  useEffect(() => {
+    if (pausedOrders.length > 0 && !hasShownResumeDialog && !isLoading) {
+      setShowResumeDialog(true);
+      setHasShownResumeDialog(true);
+    }
+  }, [pausedOrders.length, hasShownResumeDialog, isLoading]);
+
+  // Reset the dialog flag when date changes
+  useEffect(() => {
+    setHasShownResumeDialog(false);
+  }, [deliveryDate]);
+
+  // Handle resuming an order from the dialog
+  const handleResumeOrder = async (orderId: string) => {
+    await resumeOrderMutation.mutateAsync({ orderId });
+  };
 
   // Trigger auto-optimization when session data changes
   useEffect(() => {
@@ -210,6 +255,58 @@ export default function PackingPage() {
           </div>
         )}
       </div>
+
+      {/* Resume Paused Orders Dialog */}
+      <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PauseCircle className="h-5 w-5 text-warning" />
+              {t('resumePausedOrders')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('resumePausedOrdersDescription', { count: pausedOrders.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto py-2">
+            {pausedOrders.map((order) => (
+              <div
+                key={order.orderId}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
+              >
+                <div>
+                  <span className="font-mono font-semibold text-sm">{order.orderNumber}</span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {order.customerName}
+                  </span>
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {order.packedItemsCount}/{order.totalItemsCount} {t('packed')}
+                  </Badge>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleResumeOrder(order.orderId)}
+                  disabled={resumeOrderMutation.isPending}
+                >
+                  {resumeOrderMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                      {t('resume')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResumeDialog(false)}>
+              {t('startFresh')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

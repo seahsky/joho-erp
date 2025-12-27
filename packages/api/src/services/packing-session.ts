@@ -168,6 +168,9 @@ export async function endPackingSession(
 /**
  * Find and process timed-out packing sessions.
  * Returns orders that were reverted to 'confirmed' status.
+ *
+ * NOTE: Orders with partial progress (packedItems.length > 0) are NOT reverted.
+ * Their progress is preserved and the order stays in 'packing' status with pausedAt set.
  */
 export async function processTimedOutSessions(): Promise<{
   processedSessions: number;
@@ -176,6 +179,8 @@ export async function processTimedOutSessions(): Promise<{
     orderNumber: string;
     packerId: string;
     deliveryDate: Date;
+    progressPreserved: boolean;
+    packedCount?: number;
   }>;
 }> {
   const timeoutThreshold = new Date(Date.now() - SESSION_TIMEOUT_MS);
@@ -199,11 +204,13 @@ export async function processTimedOutSessions(): Promise<{
     orderNumber: string;
     packerId: string;
     deliveryDate: Date;
+    progressPreserved: boolean;
+    packedCount?: number;
   }> = [];
 
   for (const session of timedOutSessions) {
-    // Revert orders in 'packing' status back to 'confirmed'
-    const ordersToRevert = await prisma.order.findMany({
+    // Get orders in 'packing' status with their packing info
+    const ordersInPacking = await prisma.order.findMany({
       where: {
         id: { in: session.orderIds },
         status: "packing",
@@ -211,41 +218,80 @@ export async function processTimedOutSessions(): Promise<{
       select: {
         id: true,
         orderNumber: true,
+        packing: true,
       },
     });
 
-    if (ordersToRevert.length > 0) {
-      // Update each order individually to maintain status history
-      for (const order of ordersToRevert) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            status: "confirmed",
-            statusHistory: {
-              push: {
-                status: "confirmed",
-                changedAt: new Date(),
-                changedBy: "system",
-                notes: `Order reverted due to packing session timeout (30 minutes of inactivity). Previous packer: ${session.packerId}`,
+    if (ordersInPacking.length > 0) {
+      // Update each order individually based on whether it has progress
+      for (const order of ordersInPacking) {
+        const hasProgress = (order.packing?.packedItems?.length ?? 0) > 0;
+
+        if (hasProgress) {
+          // PRESERVE PROGRESS: Keep order in 'packing' status, mark as paused
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              // DO NOT change status - keep as 'packing'
+              statusHistory: {
+                push: {
+                  status: "packing",
+                  changedAt: new Date(),
+                  changedBy: "system",
+                  notes: `Packing session timed out. Progress preserved: ${order.packing?.packedItems?.length ?? 0} items packed. Previous packer: ${session.packerId}`,
+                },
+              },
+              packing: {
+                ...order.packing,
+                pausedAt: new Date(),
+                lastPackedBy: session.packerId,
               },
             },
-            // Clear packed items since packing was incomplete
-            packing: {
-              packedAt: null,
-              packedBy: null,
-              notes: null,
-              packingSequence: null,
-              packedItems: [],
-            },
-          },
-        });
+          });
 
-        revertedOrders.push({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          packerId: session.packerId,
-          deliveryDate: session.deliveryDate,
-        });
+          revertedOrders.push({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            packerId: session.packerId,
+            deliveryDate: session.deliveryDate,
+            progressPreserved: true,
+            packedCount: order.packing?.packedItems?.length ?? 0,
+          });
+        } else {
+          // NO PROGRESS: Revert to 'confirmed' as before
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: "confirmed",
+              statusHistory: {
+                push: {
+                  status: "confirmed",
+                  changedAt: new Date(),
+                  changedBy: "system",
+                  notes: `Order reverted due to packing session timeout (30 minutes of inactivity). Previous packer: ${session.packerId}`,
+                },
+              },
+              packing: {
+                packedAt: null,
+                packedBy: null,
+                notes: null,
+                packingSequence: order.packing?.packingSequence ?? null,
+                packedItems: [],
+                lastPackedAt: null,
+                lastPackedBy: null,
+                pausedAt: null,
+              },
+            },
+          });
+
+          revertedOrders.push({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            packerId: session.packerId,
+            deliveryDate: session.deliveryDate,
+            progressPreserved: false,
+          });
+        }
       }
     }
 

@@ -16,6 +16,22 @@ export interface PackingOrder {
   areaTag: string;
 }
 
+/**
+ * Extended PackingOrder with progress and sequence information
+ * Returned by getOptimizedSession
+ */
+export interface PackingOrderWithProgress extends PackingOrder {
+  packingSequence: number | null;
+  deliverySequence: number | null;
+  status: string;
+  packedItemsCount: number;
+  totalItemsCount: number;
+  // Partial progress persistence fields
+  isPaused: boolean;
+  lastPackedBy: string | null;
+  lastPackedAt: Date | null;
+}
+
 export interface ProductSummaryItem {
   productId: string;
   sku: string;

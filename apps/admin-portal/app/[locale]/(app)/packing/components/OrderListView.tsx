@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Filter, Package2 } from 'lucide-react';
+import { Filter, Package2, PauseCircle } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
-import { Card, CardContent, Button } from '@joho-erp/ui';
+import { Card, CardContent, Button, Badge } from '@joho-erp/ui';
 
 interface OrderListViewProps {
   orders: Array<{
@@ -14,6 +14,12 @@ interface OrderListViewProps {
     areaTag: string;
     packingSequence: number | null;
     deliverySequence: number | null;
+    // Partial progress fields
+    isPaused?: boolean;
+    lastPackedBy?: string | null;
+    lastPackedAt?: Date | null;
+    packedItemsCount?: number;
+    totalItemsCount?: number;
   }>;
   deliveryDate: Date;
   onOrderUpdated: () => void;
@@ -98,12 +104,27 @@ export function OrderListView({ orders, deliveryDate: _deliveryDate, onOrderUpda
         </Card>
       )}
 
-      {/* Orders Count */}
+      {/* Orders Count with Paused Indicator */}
       <div className="flex items-center justify-between px-2">
-        <p className="text-xs font-semibold text-muted-foreground">
-          {filteredOrders.length} {filteredOrders.length === 1 ? t('order') : t('orders')}
-          {areaFilter !== 'all' && ` · ${areaFilter.toUpperCase()}`}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-semibold text-muted-foreground">
+            {filteredOrders.length} {filteredOrders.length === 1 ? t('order') : t('orders')}
+            {areaFilter !== 'all' && ` · ${areaFilter.toUpperCase()}`}
+          </p>
+          {/* Show paused orders count */}
+          {filteredOrders.filter(o => o.isPaused).length > 0 && (
+            <Badge variant="outline" className="border-warning/50 text-warning-foreground bg-warning/10">
+              <PauseCircle className="h-3 w-3 mr-1" />
+              {filteredOrders.filter(o => o.isPaused).length} {t('paused')}
+            </Badge>
+          )}
+          {/* Show orders with progress */}
+          {filteredOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length > 0 && (
+            <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10">
+              {filteredOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length} {t('inProgress')}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* 2-Column Grid Layout for Orders */}

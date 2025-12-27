@@ -181,6 +181,7 @@ export const packingRouter = router({
   /**
    * Mark an individual item as packed/unpacked
    * Persists packed state to database for optimistic UI updates
+   * Also updates lastPackedAt/lastPackedBy and clears pausedAt when actively packing
    */
   markItemPacked: isPacker
     .input(
@@ -213,6 +214,7 @@ export const packingRouter = router({
         : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
 
       // Update order with packed items and move to packing status if confirmed
+      // Also update lastPackedAt/lastPackedBy and clear pausedAt (active packing)
       await prisma.order.update({
         where: {
           id: input.orderId,
@@ -222,6 +224,11 @@ export const packingRouter = router({
           packing: {
             ...(order.packing ?? {}),
             packedItems: updatedPackedItems,
+            // Track when and who last packed
+            lastPackedAt: new Date(),
+            lastPackedBy: ctx.userId || 'system',
+            // Clear paused state when actively packing
+            pausedAt: null,
           },
           statusHistory: order.status === 'confirmed' ? {
             push: {
@@ -348,6 +355,193 @@ export const packingRouter = router({
           packing: {
             ...order.packing,
             notes: input.notes,
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Pause packing on an order - saves progress for later
+   * Sets pausedAt timestamp and keeps order in 'packing' status
+   */
+  pauseOrder: isPacker
+    .input(
+      z.object({
+        orderId: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: {
+          id: input.orderId,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Only allow pausing orders that are in 'packing' status
+      if (order.status !== 'packing') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only orders in packing status can be paused',
+        });
+      }
+
+      // Must have some progress to pause
+      const packedItemsCount = order.packing?.packedItems?.length ?? 0;
+      if (packedItemsCount === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot pause order with no packed items',
+        });
+      }
+
+      await prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          packing: {
+            ...order.packing,
+            pausedAt: new Date(),
+            notes: input.notes || order.packing?.notes,
+          },
+          statusHistory: {
+            push: {
+              status: 'packing',
+              changedAt: new Date(),
+              changedBy: ctx.userId || 'system',
+              notes: `Packing paused. Progress: ${packedItemsCount} items packed`,
+            },
+          },
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Resume packing on a paused order
+   * Clears pausedAt and updates lastPackedAt/lastPackedBy
+   */
+  resumeOrder: isPacker
+    .input(
+      z.object({
+        orderId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: {
+          id: input.orderId,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Only allow resuming orders that are in 'packing' status
+      if (order.status !== 'packing') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only orders in packing status can be resumed',
+        });
+      }
+
+      await prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          packing: {
+            ...order.packing,
+            pausedAt: null,
+            lastPackedAt: new Date(),
+            lastPackedBy: ctx.userId || 'system',
+          },
+          statusHistory: {
+            push: {
+              status: 'packing',
+              changedAt: new Date(),
+              changedBy: ctx.userId || 'system',
+              notes: 'Packing resumed',
+            },
+          },
+        },
+      });
+
+      // Update packing session activity
+      if (ctx.userId) {
+        await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * Reset order packing progress - clears all packed items
+   * Reverts order to 'confirmed' status
+   */
+  resetOrder: isPacker
+    .input(
+      z.object({
+        orderId: z.string(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: {
+          id: input.orderId,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Only allow resetting orders that are in 'packing' or 'confirmed' status
+      if (!['packing', 'confirmed'].includes(order.status)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only orders in packing or confirmed status can be reset',
+        });
+      }
+
+      const packedItemsCount = order.packing?.packedItems?.length ?? 0;
+
+      await prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          status: 'confirmed',
+          packing: {
+            packedAt: null,
+            packedBy: null,
+            notes: null,
+            packingSequence: order.packing?.packingSequence ?? null,
+            packedItems: [],
+            lastPackedAt: null,
+            lastPackedBy: null,
+            pausedAt: null,
+          },
+          statusHistory: {
+            push: {
+              status: 'confirmed',
+              changedAt: new Date(),
+              changedBy: ctx.userId || 'system',
+              notes: `Packing reset. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset'}`,
+            },
           },
         },
       });
@@ -544,6 +738,10 @@ export const packingRouter = router({
               status: order.status,
               packedItemsCount: order.packing?.packedItems?.length ?? 0,
               totalItemsCount: order.items.length,
+              // Partial progress fields
+              isPaused: !!order.packing?.pausedAt,
+              lastPackedBy: order.packing?.lastPackedBy ?? null,
+              lastPackedAt: order.packing?.lastPackedAt ?? null,
             })),
             productSummary,
             routeOptimization: routeOptimization
@@ -575,6 +773,10 @@ export const packingRouter = router({
           status: order.status,
           packedItemsCount: order.packing?.packedItems?.length ?? 0,
           totalItemsCount: order.items.length,
+          // Partial progress fields
+          isPaused: !!order.packing?.pausedAt,
+          lastPackedBy: order.packing?.lastPackedBy ?? null,
+          lastPackedAt: order.packing?.lastPackedAt ?? null,
         })),
         productSummary,
         routeOptimization: routeOptimization
