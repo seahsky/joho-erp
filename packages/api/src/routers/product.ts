@@ -224,8 +224,8 @@ export const productRouter = router({
       return result;
     }),
 
-  // Admin: Update product
-  // NOTE: basePrice must be in cents (Int)
+  // Admin: Update product (with optional customer-specific pricing)
+  // NOTE: basePrice and customPrice must be in cents (Int)
   update: isAdmin
     .input(
       z.object({
@@ -241,10 +241,22 @@ export const productRouter = router({
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
         imageUrl: z.string().url().nullish(), // R2 public URL (null to remove)
+        // Optional customer-specific pricing to update with the product
+        // If provided, all existing pricing will be replaced with the new array
+        customerPricing: z
+          .array(
+            z.object({
+              customerId: z.string(),
+              customPrice: z.number().int().positive(), // In cents
+              effectiveFrom: z.date().optional(),
+              effectiveTo: z.date().optional(),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, ...updates } = input;
+      const { productId, customerPricing, ...updates } = input;
 
       // Fetch current product for change tracking
       const currentProduct = await prisma.product.findUnique({
@@ -258,9 +270,38 @@ export const productRouter = router({
         });
       }
 
-      const product = await prisma.product.update({
-        where: { id: productId },
-        data: updates,
+      // Use transaction to update product and pricing atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Update the product
+        const product = await tx.product.update({
+          where: { id: productId },
+          data: updates,
+        });
+
+        // Handle customer pricing if provided
+        let pricingCount = 0;
+        if (customerPricing !== undefined) {
+          // Delete all existing pricing for this product
+          await tx.customerPricing.deleteMany({
+            where: { productId },
+          });
+
+          // Create new pricing records
+          if (customerPricing.length > 0) {
+            await tx.customerPricing.createMany({
+              data: customerPricing.map((cp) => ({
+                productId,
+                customerId: cp.customerId,
+                customPrice: cp.customPrice,
+                effectiveFrom: cp.effectiveFrom || new Date(),
+                effectiveTo: cp.effectiveTo || null,
+              })),
+            });
+            pricingCount = customerPricing.length;
+          }
+        }
+
+        return { product, pricingCount };
       });
 
       // Build changes array for audit log
@@ -278,19 +319,28 @@ export const productRouter = router({
           };
         });
 
+      // Add pricing change to audit log if pricing was updated
+      if (customerPricing !== undefined) {
+        changes.push({
+          field: 'customerPricing',
+          oldValue: 'previous pricing',
+          newValue: `${result.pricingCount} custom prices`,
+        });
+      }
+
       // Log to audit trail
       if (changes.length > 0) {
         await logProductUpdated(
           ctx.userId,
           undefined, // userEmail not available in context
           ctx.userRole,
-          product.id,
-          product.sku,
+          result.product.id,
+          result.product.sku,
           changes
         );
       }
 
-      return product;
+      return result.product;
     }),
 
   // Admin: Adjust stock level (manual stock management)

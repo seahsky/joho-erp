@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,15 @@ import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import imageCompression from 'browser-image-compression';
 import { CategorySelect } from './CategorySelect';
+import { CustomerPricingSection, type PricingEntry } from './CustomerPricingSection';
+
+type Customer = {
+  id: string;
+  businessName: string;
+  deliveryAddress?: {
+    area?: string;
+  };
+};
 
 type Product = {
   id: string;
@@ -69,6 +78,25 @@ export function EditProductDialog({
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Pricing state
+  const [pricingMap, setPricingMap] = useState<Map<string, PricingEntry>>(new Map());
+
+  // Fetch customers for pricing
+  const { data: customersData } = api.customer.getAll.useQuery({
+    limit: 1000,
+  });
+
+  const customers = useMemo(
+    () => (customersData?.customers || []) as Customer[],
+    [customersData?.customers]
+  );
+
+  // Fetch existing pricing for this product
+  const { data: existingPricing } = api.pricing.getProductPrices.useQuery(
+    { productId: product?.id ?? '' },
+    { enabled: open && !!product?.id }
+  );
+
   // Fetch categories
   const { data: categoriesData, refetch: refetchCategories } = api.category.getAll.useQuery();
   const categories = categoriesData || [];
@@ -112,6 +140,27 @@ export function EditProductDialog({
       setOriginalImageUrl(product.imageUrl || null);
     }
   }, [product]);
+
+  // Initialize pricing map from existing pricing data
+  useEffect(() => {
+    if (existingPricing && product) {
+      const newMap = new Map<string, PricingEntry>();
+
+      existingPricing.forEach((pricing: { customerId: string; customPrice: number }) => {
+        // Convert from cents to dollars for display
+        const priceInDollars = pricing.customPrice / 100;
+        newMap.set(pricing.customerId, {
+          enabled: true,
+          customPrice: priceInDollars,
+        });
+      });
+
+      setPricingMap(newMap);
+    } else if (!existingPricing && product) {
+      // Reset pricing map when no existing pricing
+      setPricingMap(new Map());
+    }
+  }, [existingPricing, product]);
 
   // Image delete mutation
   const deleteImageMutation = api.upload.deleteProductImage.useMutation();
@@ -218,6 +267,21 @@ export function EditProductDialog({
       return;
     }
 
+    // Build customer pricing array (convert to cents)
+    const customerPricing = Array.from(pricingMap.entries())
+      .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
+      .map(([customerId, entry]) => {
+        const customPriceInCents = parseToCents(entry.customPrice.toString());
+        if (!customPriceInCents || customPriceInCents <= 0) {
+          return null;
+        }
+        return {
+          customerId,
+          customPrice: customPriceInCents, // Send cents to API
+        };
+      })
+      .filter((p): p is { customerId: string; customPrice: number } => p !== null);
+
     await updateProductMutation.mutateAsync({
       productId: product.id,
       name,
@@ -230,6 +294,7 @@ export function EditProductDialog({
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
       imageUrl: imageUrl || null,
+      customerPricing, // Include customer pricing in update
     });
   };
 
@@ -237,7 +302,7 @@ export function EditProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -416,6 +481,16 @@ export function EditProductDialog({
               </div>
             </div>
           </div>
+
+          {/* Customer-Specific Pricing */}
+          <CustomerPricingSection
+            pricingMap={pricingMap}
+            onPricingMapChange={setPricingMap}
+            basePrice={basePrice}
+            customers={customers}
+            disabled={updateProductMutation.isPending}
+            defaultExpanded={existingPricing && existingPricing.length > 0}
+          />
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t">
