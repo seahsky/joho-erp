@@ -3,13 +3,7 @@ import { router, requirePermission, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import type { UserRole } from '../context';
-
-/**
- * Valid internal roles for staff users
- * Excludes 'customer' as that's for external users
- */
-const internalRoles = ['admin', 'sales', 'manager', 'packer', 'driver'] as const;
-type InternalRole = (typeof internalRoles)[number];
+import { INTERNAL_ROLES, type InternalRole } from '../types/invitation';
 
 /**
  * User representation returned from the API
@@ -84,7 +78,7 @@ export const userRouter = router({
         // Filter to only internal users (non-customer roles)
         const mappedUsers = usersResponse.data
           .map(mapClerkUserToResponse)
-          .filter((user) => internalRoles.includes(user.role as InternalRole));
+          .filter((user) => INTERNAL_ROLES.includes(user.role as InternalRole));
 
         allUsers.push(...mappedUsers);
 
@@ -239,6 +233,21 @@ export const userRouter = router({
           throw new TRPCError({
             code: 'CONFLICT',
             message: 'A user with this email already exists',
+          });
+        }
+
+        // Check if there's already a pending invitation for this email
+        const existingInvitations = await client.invitations.getInvitationList({
+          status: 'pending',
+        });
+        const pendingInvitation = existingInvitations.data.find(
+          (inv) => inv.emailAddress.toLowerCase() === input.email.toLowerCase()
+        );
+
+        if (pendingInvitation) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'A pending invitation already exists for this email address',
           });
         }
 

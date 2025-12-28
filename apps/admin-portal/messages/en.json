@@ -1307,6 +1307,7 @@
       },
       "inviteSuccess": "Invitation sent successfully",
       "inviteError": "Failed to send invitation",
+      "duplicateInvitationError": "A pending invitation already exists for this email address",
       "userUpdated": "User role updated successfully",
       "userDeactivated": "User status updated successfully",
       "updateError": "Failed to update user",

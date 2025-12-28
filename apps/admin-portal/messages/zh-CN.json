@@ -1307,6 +1307,7 @@
       },
       "inviteSuccess": "邀请发送成功",
       "inviteError": "发送邀请失败",
+      "duplicateInvitationError": "该电子邮件地址已有待处理的邀请",
       "userUpdated": "用户角色更新成功",
       "userDeactivated": "用户状态更新成功",
       "updateError": "更新用户失败",

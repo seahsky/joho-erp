@@ -1307,6 +1307,7 @@
       },
       "inviteSuccess": "邀請發送成功",
       "inviteError": "發送邀請失敗",
+      "duplicateInvitationError": "該電子郵件地址已有待處理的邀請",
       "userUpdated": "使用者角色更新成功",
       "userDeactivated": "使用者狀態更新成功",
       "updateError": "更新使用者失敗",
