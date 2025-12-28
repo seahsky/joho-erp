@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
-import { Package } from 'lucide-react';
+import { Package, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
@@ -25,6 +26,7 @@ interface Product {
 
 export function ProductList() {
   const t = useTranslations();
+  const locale = useLocale();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<ProductCategory | undefined>();
@@ -38,8 +40,16 @@ export function ProductList() {
 
   const utils = api.useUtils();
 
-  // Get cart data to check which products are in cart
-  const { data: cart } = api.cart.getCart.useQuery();
+  // Check onboarding and credit status
+  const { data: onboardingStatus } = api.customer.getOnboardingStatus.useQuery();
+
+  // Determine if user can add to cart
+  const canAddToCart = onboardingStatus?.hasCustomerRecord && onboardingStatus?.creditStatus === 'approved';
+
+  // Get cart data to check which products are in cart (only if user can add to cart)
+  const { data: cart } = api.cart.getCart.useQuery(undefined, {
+    enabled: canAddToCart,
+  });
 
   const addToCart = api.cart.addItem.useMutation({
     onSuccess: (data, variables) => {
@@ -50,9 +60,10 @@ export function ProductList() {
       });
       void utils.cart.getCart.invalidate();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: t('cart.messages.errorAddingToCart'),
+        description: error.message,
         variant: 'destructive',
       });
     },
@@ -62,9 +73,10 @@ export function ProductList() {
     onSuccess: () => {
       void utils.cart.getCart.invalidate();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: t('cart.messages.errorUpdatingQuantity'),
+        description: error.message,
         variant: 'destructive',
       });
     },
@@ -77,9 +89,10 @@ export function ProductList() {
       });
       void utils.cart.getCart.invalidate();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: t('cart.messages.errorRemovingItem'),
+        description: error.message,
         variant: 'destructive',
       });
     },
@@ -199,8 +212,58 @@ export function ProductList() {
 
   const totalProducts = inStockProducts.length;
 
+  // Render warning banner based on onboarding/credit status
+  const renderStatusBanner = () => {
+    if (!onboardingStatus) return null;
+
+    if (!onboardingStatus.hasCustomerRecord) {
+      return (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <div className="flex-1 flex items-center justify-between gap-4">
+            <span className="text-amber-800 dark:text-amber-200 text-sm">
+              {t('products.onboardingRequired')}
+            </span>
+            <Link href={`/${locale}/onboarding`}>
+              <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900">
+                {t('products.completeOnboarding')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    if (onboardingStatus.creditStatus === 'pending') {
+      return (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <Clock className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <span className="text-amber-800 dark:text-amber-200 text-sm">
+            {t('products.creditPending')}
+          </span>
+        </div>
+      );
+    }
+
+    if (onboardingStatus.creditStatus === 'rejected') {
+      return (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-destructive bg-destructive/10">
+          <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+          <span className="text-destructive text-sm">
+            {t('products.creditRejected')}
+          </span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Status Banner */}
+      {renderStatusBanner()}
+
       {/* Search */}
       <MobileSearch
         placeholder={t('products.searchPlaceholder')}
@@ -311,7 +374,7 @@ export function ProductList() {
                 {/* Inline Quantity Controls */}
                 <div className="flex-shrink-0">
                   <div className="flex items-center gap-1">
-                    {getCartQuantity(product.id) > 0 && (
+                    {canAddToCart && getCartQuantity(product.id) > 0 && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -326,19 +389,23 @@ export function ProductList() {
                     <button
                       type="button"
                       onClick={() => handleProductClick(productWithPricing)}
-                      className={`h-10 w-14 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-lg ${
-                        getCartQuantity(product.id) === 0 ? 'border-l-2 rounded-l-xl' : ''
-                      }`}
-                      title={t('products.tapToEdit')}
+                      className={cn(
+                        'h-10 w-14 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-lg',
+                        (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
+                        canAddToCart && 'hover:bg-muted/50',
+                        !canAddToCart && 'opacity-50 cursor-not-allowed'
+                      )}
+                      title={canAddToCart ? t('products.tapToEdit') : undefined}
+                      disabled={!canAddToCart}
                     >
-                      {getCartQuantity(product.id)}
+                      {canAddToCart ? getCartQuantity(product.id) : '-'}
                     </button>
                     <Button
                       size="sm"
                       variant="outline"
                       className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
                       onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                      disabled={addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                      disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
                       aria-label={t('products.incrementBy5')}
                     >
                       +5
@@ -401,7 +468,7 @@ export function ProductList() {
                   <div className="flex items-center gap-2">
                     {getStockBadge(product.currentStock)}
                     <div className="flex items-center">
-                      {getCartQuantity(product.id) > 0 && (
+                      {canAddToCart && getCartQuantity(product.id) > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -416,19 +483,23 @@ export function ProductList() {
                       <button
                         type="button"
                         onClick={() => handleProductClick(productWithPricing)}
-                        className={`h-10 w-12 border-y-2 border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-bold text-base ${
-                          getCartQuantity(product.id) === 0 ? 'border-l-2 rounded-l-xl' : ''
-                        }`}
-                        title={t('products.tapToEdit')}
+                        className={cn(
+                          'h-10 w-12 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-base',
+                          (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
+                          canAddToCart && 'hover:bg-muted/50',
+                          !canAddToCart && 'opacity-50 cursor-not-allowed'
+                        )}
+                        title={canAddToCart ? t('products.tapToEdit') : undefined}
+                        disabled={!canAddToCart}
                       >
-                        {getCartQuantity(product.id)}
+                        {canAddToCart ? getCartQuantity(product.id) : '-'}
                       </button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
                         onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                        disabled={addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                        disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
                         aria-label={t('products.incrementBy5')}
                       >
                         +5
@@ -466,6 +537,9 @@ export function ProductList() {
         product={selectedProduct}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        canAddToCart={canAddToCart}
+        creditStatus={onboardingStatus?.creditStatus}
+        hasCustomerRecord={onboardingStatus?.hasCustomerRecord}
       />
     </div>
   );

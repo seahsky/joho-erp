@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
 import { MobileDrawer } from '@joho-erp/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@joho-erp/ui';
-import { Package, Minus, Plus, X } from 'lucide-react';
+import { Package, Minus, Plus, X, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
@@ -26,10 +27,21 @@ interface ProductDetailSidebarProps {
   product: (Product & ProductWithPricing) | null;
   open: boolean;
   onClose: () => void;
+  canAddToCart?: boolean;
+  creditStatus?: string | null;
+  hasCustomerRecord?: boolean;
 }
 
-export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSidebarProps) {
+export function ProductDetailSidebar({
+  product,
+  open,
+  onClose,
+  canAddToCart = true,
+  creditStatus,
+  hasCustomerRecord = true,
+}: ProductDetailSidebarProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const { toast } = useToast();
   const [quantity, setQuantity] = React.useState(1);
 
@@ -44,9 +56,10 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
       setQuantity(1);
       onClose();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: t('cart.messages.errorAddingToCart'),
+        description: error.message,
         variant: 'destructive',
       });
     },
@@ -254,25 +267,65 @@ export function ProductDetailSidebar({ product, open, onClose }: ProductDetailSi
             </div>
           </div>
 
+          {/* Status Warning */}
+          {!canAddToCart && (
+            <div className="space-y-3">
+              {!hasCustomerRecord ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                  <span className="text-amber-800 dark:text-amber-200 text-sm">
+                    {t('products.onboardingRequired')}
+                  </span>
+                </div>
+              ) : creditStatus === 'pending' ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+                  <Clock className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                  <span className="text-amber-800 dark:text-amber-200 text-sm">
+                    {t('products.creditPending')}
+                  </span>
+                </div>
+              ) : creditStatus === 'rejected' ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-destructive bg-destructive/10">
+                  <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                  <span className="text-destructive text-sm">
+                    {t('products.creditRejected')}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* Add to Cart Button */}
           <div className="pt-4">
-            <Button
-              className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-              size="lg"
-              disabled={product.currentStock === 0 || addToCart.isPending}
-              onClick={handleAddToCart}
-            >
-              {addToCart.isPending ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  {t('products.adding')}
-                </span>
-              ) : (
-                <>
-                  {t('products.addToCart')} • {formatAUD(product.effectivePrice * quantity)}
-                </>
-              )}
-            </Button>
+            {!hasCustomerRecord ? (
+              <Link href={`/${locale}/onboarding`} className="w-full block">
+                <Button
+                  className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                  size="lg"
+                  variant="outline"
+                >
+                  {t('products.completeOnboarding')}
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                size="lg"
+                disabled={!canAddToCart || product.currentStock === 0 || addToCart.isPending}
+                onClick={handleAddToCart}
+              >
+                {addToCart.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin">⏳</span>
+                    {t('products.adding')}
+                  </span>
+                ) : (
+                  <>
+                    {t('products.addToCart')} • {formatAUD(product.effectivePrice * quantity)}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>

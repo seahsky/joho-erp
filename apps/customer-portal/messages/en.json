@@ -167,7 +167,11 @@
     "incrementBy5": "Add 5 more",
     "decrementBy5": "Remove 5",
     "tapToEdit": "Tap to edit quantity",
-    "maxStockReached": "Maximum stock reached"
+    "maxStockReached": "Maximum stock reached",
+    "onboardingRequired": "Complete your onboarding to start ordering",
+    "creditPending": "Your credit application is pending approval",
+    "creditRejected": "Your credit application was not approved. Please contact us.",
+    "completeOnboarding": "Complete Onboarding"
   },
   "categories": {
     "beef": "Beef",

@@ -167,7 +167,11 @@
     "incrementBy5": "增加5件",
     "decrementBy5": "减少5件",
     "tapToEdit": "点击编辑数量",
-    "maxStockReached": "已达到最大库存"
+    "maxStockReached": "已达到最大库存",
+    "onboardingRequired": "请完成注册流程以开始订购",
+    "creditPending": "您的信用申请正在审核中",
+    "creditRejected": "您的信用申请未获批准，请联系我们",
+    "completeOnboarding": "完成注册"
   },
   "categories": {
     "beef": "牛肉",
