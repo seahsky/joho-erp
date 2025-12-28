@@ -9,55 +9,97 @@ import {
   sendOrderReturnedToWarehouseEmail,
 } from '../services/email';
 import { enqueueXeroJob } from '../services/xero-queue';
+import { sortInputSchema } from '../schemas';
 
 export const deliveryRouter = router({
-  // Get all deliveries with filtering
+  // Get all deliveries with filtering and sorting
   getAll: requirePermission('deliveries:view')
     .input(
-      z.object({
-        status: z
-          .enum(['ready_for_delivery', 'delivered'])
-          .optional(),
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
-        dateFrom: z.date().optional(),
-        dateTo: z.date().optional(),
-        page: z.number().default(1),
-        limit: z.number().default(50),
-      })
+      z
+        .object({
+          status: z.enum(['ready_for_delivery', 'delivered']).optional(),
+          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+          dateFrom: z.date().optional(),
+          dateTo: z.date().optional(),
+          search: z.string().optional(),
+          page: z.number().default(1),
+          limit: z.number().default(50),
+        })
+        .merge(sortInputSchema)
     )
     .query(async ({ input }) => {
+      const { page, limit, sortBy, sortOrder, search, ...filters } = input;
       const where: any = {
         status: {
-          in: input.status
-            ? [input.status]
-            : ['ready_for_delivery', 'delivered'],
+          in: filters.status ? [filters.status] : ['ready_for_delivery', 'delivered'],
         },
       };
 
-      if (input.areaTag) {
+      if (filters.areaTag) {
         where.deliveryAddress = {
-          is: { areaTag: input.areaTag },
+          is: { areaTag: filters.areaTag },
         };
       }
 
-      if (input.dateFrom || input.dateTo) {
+      if (filters.dateFrom || filters.dateTo) {
         where.requestedDeliveryDate = {};
-        if (input.dateFrom) where.requestedDeliveryDate.gte = input.dateFrom;
-        if (input.dateTo) where.requestedDeliveryDate.lte = input.dateTo;
+        if (filters.dateFrom) where.requestedDeliveryDate.gte = filters.dateFrom;
+        if (filters.dateTo) where.requestedDeliveryDate.lte = filters.dateTo;
       }
 
-      const skip = (input.page - 1) * input.limit;
+      // Add search functionality
+      if (search) {
+        where.OR = [
+          { orderNumber: { contains: search, mode: 'insensitive' } },
+          { customerName: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const skip = (page - 1) * limit;
+
+      // Build orderBy based on sort parameters
+      type OrderByType = Record<string, 'asc' | 'desc' | Record<string, 'asc' | 'desc'>>;
+      let orderBy: OrderByType[];
+
+      if (sortBy) {
+        const direction = sortOrder || 'asc';
+        switch (sortBy) {
+          case 'customer':
+            orderBy = [{ customerName: direction }];
+            break;
+          case 'requestedDeliveryDate':
+            orderBy = [{ requestedDeliveryDate: direction }];
+            break;
+          case 'areaTag':
+            orderBy = [{ deliveryAddress: { areaTag: direction } }];
+            break;
+          case 'deliverySequence':
+            orderBy = [{ delivery: { deliverySequence: direction } }];
+            break;
+          case 'status':
+            orderBy = [{ status: direction }];
+            break;
+          default:
+            orderBy = [
+              { delivery: { deliverySequence: 'asc' } },
+              { requestedDeliveryDate: 'asc' },
+              { createdAt: 'desc' },
+            ];
+        }
+      } else {
+        orderBy = [
+          { delivery: { deliverySequence: 'asc' } },
+          { requestedDeliveryDate: 'asc' },
+          { createdAt: 'desc' },
+        ];
+      }
 
       const [orders, total] = await Promise.all([
         prisma.order.findMany({
           where,
           skip,
-          take: input.limit,
-          orderBy: [
-            { delivery: { deliverySequence: 'asc' } },
-            { requestedDeliveryDate: 'asc' },
-            { createdAt: 'desc' },
-          ],
+          take: limit,
+          orderBy,
           include: {
             customer: {
               select: {
@@ -79,7 +121,12 @@ export const deliveryRouter = router({
         longitude: order.customer?.deliveryAddress?.longitude ?? null,
         areaTag: order.deliveryAddress.areaTag,
         status: order.status,
-        estimatedTime: order.status === 'delivered' ? 'Completed' : order.delivery?.estimatedArrival ? new Date(order.delivery.estimatedArrival).toLocaleTimeString() : 'Pending',
+        estimatedTime:
+          order.status === 'delivered'
+            ? 'Completed'
+            : order.delivery?.estimatedArrival
+              ? new Date(order.delivery.estimatedArrival).toLocaleTimeString()
+              : 'Pending',
         items: order.items.length,
         totalAmount: order.totalAmount,
         requestedDeliveryDate: order.requestedDeliveryDate,
@@ -91,8 +138,8 @@ export const deliveryRouter = router({
       return {
         deliveries,
         total,
-        page: input.page,
-        totalPages: Math.ceil(total / input.limit),
+        page,
+        totalPages: Math.ceil(total / limit),
       };
     }),
 
@@ -324,6 +371,8 @@ export const deliveryRouter = router({
     .input(
       z.object({
         date: z.date().optional(), // Defaults to today
+        search: z.string().optional(),
+        status: z.enum(['ready_for_delivery', 'out_for_delivery']).optional(),
       }).optional()
     )
     .query(async ({ input, ctx }) => {
@@ -334,22 +383,33 @@ export const deliveryRouter = router({
       const endOfDay = new Date(targetDate);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Get orders assigned to this driver
-      const orders = await prisma.order.findMany({
-        where: {
-          requestedDeliveryDate: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
-          status: {
-            in: ['ready_for_delivery', 'out_for_delivery'],
-          },
-          delivery: {
-            is: {
-              driverId: ctx.userId,
-            },
+      // Build where clause for orders
+      const where: any = {
+        requestedDeliveryDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: input?.status
+          ? { equals: input.status }
+          : { in: ['ready_for_delivery', 'out_for_delivery'] },
+        delivery: {
+          is: {
+            driverId: ctx.userId,
           },
         },
+      };
+
+      // Add search functionality
+      if (input?.search) {
+        where.OR = [
+          { orderNumber: { contains: input.search, mode: 'insensitive' } },
+          { customerName: { contains: input.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Get orders assigned to this driver
+      const orders = await prisma.order.findMany({
+        where,
         orderBy: [
           { delivery: { deliverySequence: 'asc' } },
           { orderNumber: 'asc' },

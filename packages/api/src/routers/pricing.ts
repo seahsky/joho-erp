@@ -2,8 +2,9 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@joho-erp/shared';
+import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing, buildPrismaOrderBy } from '@joho-erp/shared';
 import { logPricingChangeWithUser, logBulkPricingImport } from '../services/audit';
+import { sortInputSchema } from '../schemas';
 
 export const pricingRouter = router({
   /**
@@ -109,39 +110,78 @@ export const pricingRouter = router({
     }),
 
   /**
-   * Get all custom pricing (with pagination and filtering)
+   * Get all custom pricing (with pagination, filtering, sorting, and search)
    */
   getAll: requirePermission('pricing:view')
     .input(
-      z.object({
-        customerId: z.string().optional(),
-        productId: z.string().optional(),
-        includeExpired: z.boolean().default(false),
-        page: z.number().default(1),
-        limit: z.number().default(50),
-      })
+      z
+        .object({
+          customerId: z.string().optional(),
+          productId: z.string().optional(),
+          includeExpired: z.boolean().default(false),
+          search: z.string().optional(),
+          page: z.number().default(1),
+          limit: z.number().default(50),
+        })
+        .merge(sortInputSchema)
     )
     .query(async ({ input }) => {
+      const { page, limit, sortBy, sortOrder, search, ...filters } = input;
       const where: any = {};
 
-      if (input.customerId) {
-        where.customerId = input.customerId;
+      if (filters.customerId) {
+        where.customerId = filters.customerId;
       }
 
-      if (input.productId) {
-        where.productId = input.productId;
+      if (filters.productId) {
+        where.productId = filters.productId;
       }
 
       // Filter out expired pricing if not requested
-      if (!input.includeExpired) {
+      if (!filters.includeExpired) {
         const now = new Date();
-        where.OR = [
-          { effectiveTo: null }, // No expiration
-          { effectiveTo: { gte: now } }, // Not yet expired
+        where.AND = [
+          {
+            OR: [
+              { effectiveTo: null }, // No expiration
+              { effectiveTo: { gte: now } }, // Not yet expired
+            ],
+          },
         ];
       }
 
-      const skip = (input.page - 1) * input.limit;
+      // Add search functionality
+      if (search) {
+        const searchCondition = {
+          OR: [
+            { customer: { businessName: { contains: search, mode: 'insensitive' as const } } },
+            { product: { name: { contains: search, mode: 'insensitive' as const } } },
+            { product: { sku: { contains: search, mode: 'insensitive' as const } } },
+          ],
+        };
+        if (where.AND) {
+          where.AND.push(searchCondition);
+        } else {
+          where.AND = [searchCondition];
+        }
+      }
+
+      const skip = (page - 1) * limit;
+
+      // Build orderBy from sort parameters
+      const pricingSortFieldMapping: Record<string, string> = {
+        customer: 'customer.businessName',
+        product: 'product.name',
+        customPrice: 'customPrice',
+        effectiveFrom: 'effectiveFrom',
+        effectiveTo: 'effectiveTo',
+        createdAt: 'createdAt',
+      };
+
+      const orderBy =
+        sortBy && pricingSortFieldMapping[sortBy]
+          ? buildPrismaOrderBy(sortBy, sortOrder, pricingSortFieldMapping)
+          : { createdAt: 'desc' as const };
 
       const [pricings, total] = await Promise.all([
         prisma.customerPricing.findMany({
@@ -161,8 +201,8 @@ export const pricingRouter = router({
             },
           },
           skip,
-          take: input.limit,
-          orderBy: { createdAt: 'desc' },
+          take: limit,
+          orderBy,
         }),
         prisma.customerPricing.count({ where }),
       ]);
@@ -170,7 +210,7 @@ export const pricingRouter = router({
       // Filter out records with missing customer or product (orphaned records)
       const validPricings = pricings.filter((p) => p.customer && p.product);
 
-      const totalPages = Math.ceil(total / input.limit);
+      const totalPages = Math.ceil(total / limit);
 
       return {
         pricings: validPricings.map((pricing) => ({
@@ -185,9 +225,9 @@ export const pricingRouter = router({
               },
         })),
         total: validPricings.length,
-        page: input.page,
+        page,
         totalPages,
-        hasMore: input.page < totalPages,
+        hasMore: page < totalPages,
       };
     }),
 

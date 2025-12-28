@@ -44,3 +44,17 @@ export {
   sendBulkOrderReminderSms,
   isSmsConfigured,
 } from './services/sms';
+
+// Table query schemas for sorting/filtering/pagination
+export {
+  sortInputSchema,
+  paginationInputSchema,
+  tableQueryInputSchema,
+  searchInputSchema,
+  fullTableQueryInputSchema,
+  type SortInput,
+  type PaginationInput,
+  type TableQueryInput,
+  type SearchInput,
+  type FullTableQueryInput,
+} from './schemas';

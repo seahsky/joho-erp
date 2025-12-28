@@ -78,7 +78,7 @@ export default function CreateOrderOnBehalfPage() {
   );
 
   const customers = customersData?.customers || [];
-  const products = productsData || [];
+  const products = productsData?.items || [];
 
   // Create order mutation
   const createOrderMutation = api.order.createOnBehalf.useMutation({

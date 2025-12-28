@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma, type InventoryReferenceType } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy } from '@joho-erp/shared';
+import { sortInputSchema } from '../schemas';
 import {
   sendBackorderSubmittedEmail,
   sendBackorderApprovedEmail,
@@ -858,38 +859,64 @@ export const orderRouter = router({
   // Get all orders (admin)
   getAll: requirePermission('orders:view')
     .input(
-      z.object({
-        status: z.string().optional(),
-        customerId: z.string().optional(),
-        dateFrom: z.date().optional(),
-        dateTo: z.date().optional(),
-        areaTag: z.string().optional(),
-        page: z.number().default(1),
-        limit: z.number().default(20),
-      })
+      z
+        .object({
+          status: z.string().optional(),
+          customerId: z.string().optional(),
+          dateFrom: z.date().optional(),
+          dateTo: z.date().optional(),
+          areaTag: z.string().optional(),
+          search: z.string().optional(),
+          page: z.number().default(1),
+          limit: z.number().default(20),
+        })
+        .merge(sortInputSchema)
     )
     .query(async ({ input }) => {
+      const { page, limit, sortBy, sortOrder, search, ...filters } = input;
       const where: any = {};
 
-      if (input.status) where.status = input.status;
-      if (input.customerId) where.customerId = input.customerId;
+      if (filters.status) where.status = filters.status;
+      if (filters.customerId) where.customerId = filters.customerId;
 
-      if (input.areaTag) {
+      if (filters.areaTag) {
         where.deliveryAddress = {
-          is: { areaTag: input.areaTag },
+          is: { areaTag: filters.areaTag },
         };
       }
 
-      if (input.dateFrom || input.dateTo) {
+      if (filters.dateFrom || filters.dateTo) {
         where.orderedAt = {};
-        if (input.dateFrom) where.orderedAt.gte = input.dateFrom;
-        if (input.dateTo) where.orderedAt.lte = input.dateTo;
+        if (filters.dateFrom) where.orderedAt.gte = filters.dateFrom;
+        if (filters.dateTo) where.orderedAt.lte = filters.dateTo;
       }
 
+      // Add search functionality
+      if (search) {
+        where.OR = [
+          { orderNumber: { contains: search, mode: 'insensitive' } },
+          { customer: { businessName: { contains: search, mode: 'insensitive' } } },
+        ];
+      }
+
+      // Build orderBy from sort parameters
+      const orderSortFieldMapping: Record<string, string> = {
+        orderNumber: 'orderNumber',
+        orderedAt: 'orderedAt',
+        totalAmount: 'totalAmount',
+        status: 'status',
+        customer: 'customer.businessName',
+      };
+
+      const orderBy =
+        sortBy && orderSortFieldMapping[sortBy]
+          ? buildPrismaOrderBy(sortBy, sortOrder, orderSortFieldMapping)
+          : { orderedAt: 'desc' as const };
+
       const result = await paginatePrismaQuery(prisma.order, where, {
-        page: input.page,
-        limit: input.limit,
-        orderBy: { orderedAt: 'desc' },
+        page,
+        limit,
+        orderBy,
       });
 
       return {

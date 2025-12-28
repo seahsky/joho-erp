@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency, formatDate } from '@joho-erp/shared';
+import { useTableSort } from '@joho-erp/shared/hooks';
 import { SetPriceDialog } from './components/SetPriceDialog';
 import { BulkImportDialog } from './components/BulkImportDialog';
 import { PermissionGate } from '@/components/permission-gate';
@@ -64,9 +65,13 @@ export default function PricingPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>();
   const [includeExpired, setIncludeExpired] = useState(false);
+  const [searchQuery, _setSearchQuery] = useState('');
   const [editingPricing, setEditingPricing] = useState<CustomerPricing | null>(null);
   const [showSetPriceDialog, setShowSetPriceDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
+
+  // Sorting state
+  const { sortBy, sortOrder, handleSort } = useTableSort('createdAt', 'desc');
 
   // Fetch pricing data
   const {
@@ -78,6 +83,9 @@ export default function PricingPage() {
     customerId: selectedCustomerId,
     productId: selectedProductId,
     includeExpired,
+    search: searchQuery || undefined,
+    sortBy,
+    sortOrder,
     page: 1,
     limit: 100,
   });
@@ -145,7 +153,7 @@ export default function PricingPage() {
   }, 0);
 
   const customers = customersData?.customers ?? [];
-  const products = (productsData ?? []) as Array<{
+  const products = (productsData?.items ?? []) as Array<{
     id: string;
     sku: string;
     name: string;
@@ -156,6 +164,7 @@ export default function PricingPage() {
     {
       key: 'customer',
       label: t('pricing.table.customer'),
+      sortable: true,
       render: (pricing) => (
         <div className="font-medium">{pricing?.customer?.businessName ?? t('pricing.messages.unknownCustomer')}</div>
       ),
@@ -163,6 +172,7 @@ export default function PricingPage() {
     {
       key: 'product',
       label: t('pricing.table.product'),
+      sortable: true,
       render: (pricing) => (
         <div>
           <div className="font-medium">{pricing?.product?.name ?? t('pricing.messages.unknownProduct')}</div>
@@ -444,6 +454,9 @@ export default function PricingPage() {
             <ResponsiveTable
               data={pricings}
               columns={columns}
+              sortColumn={sortBy}
+              sortDirection={sortOrder}
+              onSort={handleSort}
             />
           )}
         </CardContent>

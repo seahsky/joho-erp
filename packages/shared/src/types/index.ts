@@ -106,3 +106,6 @@ export interface DeliveryAddress extends Address {
 
 // Permission types
 export * from './permissions';
+
+// Table types (sorting, filtering)
+export * from './table';

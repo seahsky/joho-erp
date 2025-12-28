@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
+import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
@@ -76,11 +77,17 @@ export default function OrdersPage() {
   const [selectedConfirmOrder, setSelectedConfirmOrder] = useState<ConfirmOrder | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
+  // Sorting hook
+  const { sortBy, sortOrder, handleSort } = useTableSort('orderedAt', 'desc');
+
   const utils = api.useUtils();
 
   const { data, isLoading, error } = api.order.getAll.useQuery({
     status: statusFilter || undefined,
     areaTag: areaFilter || undefined,
+    search: searchQuery || undefined,
+    sortBy,
+    sortOrder,
     limit: 100,
   });
 
@@ -252,15 +259,19 @@ export default function OrdersPage() {
       key: 'orderNumber',
       label: t('orderNumber'),
       className: 'font-medium',
+      sortable: true,
     },
     {
-      key: 'customerName',
+      key: 'customer',
       label: t('customer'),
+      render: (order) => order.customerName,
+      sortable: true,
     },
     {
       key: 'orderedAt',
       label: t('date'),
       render: (order) => new Date(order.orderedAt).toLocaleDateString(),
+      sortable: true,
     },
     {
       key: 'items',
@@ -276,6 +287,7 @@ export default function OrdersPage() {
       key: 'totalAmount',
       label: t('total'),
       render: (order) => formatCurrency(order.totalAmount), // value is in cents
+      sortable: true,
     },
     {
       key: 'status',
@@ -287,6 +299,7 @@ export default function OrdersPage() {
           <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} />
         </div>
       ),
+      sortable: true,
     },
     {
       key: 'actions',
@@ -588,6 +601,9 @@ export default function OrdersPage() {
               columns={columns}
               mobileCard={mobileCard}
               className="md:border-0"
+              sortColumn={sortBy}
+              sortDirection={sortOrder}
+              onSort={handleSort}
             />
           ) : (
             <EmptyState

@@ -266,12 +266,13 @@ export const dashboardRouter = router({
           .enum(['stock_received', 'stock_count_correction', 'damaged_goods', 'expired_stock'])
           .optional(),
         productId: z.string().optional(),
+        search: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       })
     )
     .query(async ({ input }) => {
-      const { dateFrom, dateTo, type, adjustmentType, productId, limit, offset } = input;
+      const { dateFrom, dateTo, type, adjustmentType, productId, search, limit, offset } = input;
 
       // Build where clause
       const where: Record<string, unknown> = {};
@@ -292,6 +293,18 @@ export const dashboardRouter = router({
 
       if (productId) {
         where.productId = productId;
+      }
+
+      // Add search functionality for product name or SKU
+      if (search) {
+        where.product = {
+          is: {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { sku: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        };
       }
 
       const [transactions, totalCount] = await Promise.all([

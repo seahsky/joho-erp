@@ -41,7 +41,30 @@
     "brand": "Joho Foods",
     "noEmail": "No email",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "sort": {
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "sortBy": "Sort by",
+      "clearSort": "Clear sort",
+      "sortAsc": "Sort A to Z",
+      "sortDesc": "Sort Z to A",
+      "sortNewest": "Newest first",
+      "sortOldest": "Oldest first",
+      "sortHighest": "Highest first",
+      "sortLowest": "Lowest first"
+    },
+    "filters": {
+      "all": "All",
+      "allStatuses": "All Statuses",
+      "allCategories": "All Categories",
+      "clearFilters": "Clear filters",
+      "applyFilters": "Apply filters"
+    },
+    "table": {
+      "noResults": "No results found",
+      "noResultsWithFilters": "No results match your filters. Try adjusting your search or filter criteria."
+    }
   },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
@@ -194,8 +217,20 @@
     "realTimeTracking": "Real-time delivery tracking on map",
     "noDeliveriesFound": "No deliveries found",
     "area": "Area",
+    "sequence": "Sequence",
     "noDeliveriesAvailable": "No deliveries available",
-    "deliveriesWillAppear": "Deliveries will appear here when ready"
+    "deliveriesWillAppear": "Deliveries will appear here when ready",
+    "searchPlaceholder": "Search by order or customer...",
+    "filters": {
+      "allStatuses": "All Statuses",
+      "readyForDelivery": "Ready",
+      "delivered": "Delivered",
+      "allAreas": "All Areas",
+      "north": "North",
+      "south": "South",
+      "east": "East",
+      "west": "West"
+    }
   },
   "orders": {
     "title": "Order Management",
@@ -1630,6 +1665,12 @@
   "driver": {
     "title": "My Deliveries",
     "subtitle": "Today's delivery schedule",
+    "searchPlaceholder": "Search by order or customer...",
+    "filters": {
+      "all": "All",
+      "ready": "Ready",
+      "inProgress": "In Progress"
+    },
     "loading": "Loading deliveries...",
     "errorLoading": "Error loading deliveries",
     "noDeliveries": "No Deliveries Assigned",
@@ -1725,6 +1766,7 @@
     "lowStock": "low",
     "transactionHistory": "Transaction History",
     "recentTransactions": "Recent stock movements",
+    "searchPlaceholder": "Search by product name or SKU...",
     "noCategories": "No categories found",
     "noTransactions": "No transactions found",
     "showingOf": "Showing {shown} of {total} transactions",

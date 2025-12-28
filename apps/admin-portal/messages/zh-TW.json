@@ -41,7 +41,30 @@
     "brand": "Joho Foods",
     "noEmail": "無電子郵件",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "sort": {
+      "ascending": "升序",
+      "descending": "降序",
+      "sortBy": "排序方式",
+      "clearSort": "清除排序",
+      "sortAsc": "從A到Z排序",
+      "sortDesc": "從Z到A排序",
+      "sortNewest": "最新優先",
+      "sortOldest": "最早優先",
+      "sortHighest": "最高優先",
+      "sortLowest": "最低優先"
+    },
+    "filters": {
+      "all": "全部",
+      "allStatuses": "所有狀態",
+      "allCategories": "所有類別",
+      "clearFilters": "清除篩選",
+      "applyFilters": "套用篩選"
+    },
+    "table": {
+      "noResults": "未找到結果",
+      "noResultsWithFilters": "沒有符合篩選條件的結果。請嘗試調整搜尋或篩選條件。"
+    }
   },
   "statusBadges": {
     "awaiting_approval": "待審批",
@@ -183,12 +206,10 @@
     "orderId": "訂單編號",
     "customer": "客戶",
     "address": "地址",
-
     "estimatedTime": "預計送達",
     "packages": "包裹",
     "items": "件",
     "markAsDelivered": "標記為已送達",
-
     "readyForDelivery": "準備配送",
     "delivered": "已送達",
     "deliveriesInProgress": "進行中的配送",
@@ -196,8 +217,20 @@
     "realTimeTracking": "地圖上的即時配送追蹤",
     "noDeliveriesFound": "未找到配送",
     "area": "區域",
+    "sequence": "順序",
     "noDeliveriesAvailable": "暫無配送",
-    "deliveriesWillAppear": "配送準備好後將在此顯示"
+    "deliveriesWillAppear": "配送準備好後將在此顯示",
+    "searchPlaceholder": "按訂單或客戶搜尋...",
+    "filters": {
+      "allStatuses": "所有狀態",
+      "readyForDelivery": "待配送",
+      "delivered": "已送達",
+      "allAreas": "所有區域",
+      "north": "北區",
+      "south": "南區",
+      "east": "東區",
+      "west": "西區"
+    }
   },
   "orders": {
     "title": "訂單管理",
@@ -1630,6 +1663,12 @@
   "driver": {
     "title": "我的配送",
     "subtitle": "今天的配送任務",
+    "searchPlaceholder": "按訂單或客戶搜尋...",
+    "filters": {
+      "all": "全部",
+      "ready": "待配送",
+      "inProgress": "配送中"
+    },
     "loading": "載入配送中...",
     "errorLoading": "載入配送失敗",
     "noDeliveries": "暫無配送任務",
@@ -1725,6 +1764,7 @@
     "lowStock": "低庫存",
     "transactionHistory": "交易記錄",
     "recentTransactions": "最近的庫存變動",
+    "searchPlaceholder": "按產品名稱或SKU搜尋...",
     "noCategories": "未找到類別",
     "noTransactions": "未找到交易記錄",
     "showingOf": "顯示 {shown} / {total} 條交易",

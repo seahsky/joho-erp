@@ -7,5 +7,5 @@ export * from './constants';
 // Utils
 export * from './utils';
 
-// Hooks
-export * from './hooks';
+// Note: Hooks are not exported from main entry to avoid issues with server-side imports.
+// Import hooks directly: import { useTableSort } from '@joho-erp/shared/hooks';

@@ -43,7 +43,7 @@ export function ProductList() {
 
   const addToCart = api.cart.addItem.useMutation({
     onSuccess: (data, variables) => {
-      const product = products?.find(p => p.id === variables.productId);
+      const product = products?.items?.find(p => p.id === variables.productId);
       toast({
         title: t('cart.messages.addedToCart'),
         description: product ? t('cart.messages.productAddedToCart', { productName: product.name }) : undefined,
@@ -129,9 +129,9 @@ export function ProductList() {
 
   // Extract unique categories
   const categories = React.useMemo(() => {
-    if (!products) return [];
+    if (!products?.items) return [];
     const uniqueCategories = new Set<ProductCategory>();
-    products.forEach(p => {
+    products.items.forEach(p => {
       if (p.category) uniqueCategories.add(p.category);
     });
     return Array.from(uniqueCategories).sort();
@@ -153,7 +153,7 @@ export function ProductList() {
 
   // Filter products to only show in-stock items
   const inStockProducts = React.useMemo(() => {
-    return products?.filter(p => p.currentStock > 0) || [];
+    return products?.items?.filter(p => p.currentStock > 0) || [];
   }, [products]);
 
   const handleProductClick = (product: Product & ProductWithPricing) => {

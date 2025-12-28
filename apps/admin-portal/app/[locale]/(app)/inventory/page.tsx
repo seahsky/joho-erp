@@ -21,6 +21,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Input,
 } from '@joho-erp/ui';
 import {
   Package,
@@ -30,6 +31,7 @@ import {
   ArrowDownUp,
   RefreshCw,
   Layers,
+  Search,
 } from 'lucide-react';
 import {
   StockMovementChart,
@@ -48,6 +50,7 @@ export default function InventoryPage() {
 
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
+  const [productSearch, setProductSearch] = useState('');
 
   // API calls
   const { data: summary, isLoading: summaryLoading } = api.dashboard.getInventorySummary.useQuery();
@@ -55,6 +58,7 @@ export default function InventoryPage() {
   const { data: transactionsData, isLoading: transactionsLoading, refetch: refetchTransactions } =
     api.dashboard.getInventoryTransactions.useQuery({
       type: transactionType,
+      search: productSearch || undefined,
       limit: 20,
     });
 
@@ -304,6 +308,17 @@ export default function InventoryPage() {
                   <Button variant="ghost" size="sm" onClick={() => refetchTransactions()}>
                     <RefreshCw className="h-4 w-4" />
                   </Button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative mt-4">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={t('inventory.searchPlaceholder')}
+                    className="pl-10"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                  />
                 </div>
 
                 {/* Filter Buttons */}

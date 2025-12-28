@@ -14,6 +14,7 @@ import {
   StatusBadge,
   type StatusType,
   toast,
+  Input,
 } from '@joho-erp/ui';
 import {
   Truck,
@@ -27,6 +28,7 @@ import {
   Undo2,
   RefreshCw,
   Navigation,
+  Search,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -55,6 +57,10 @@ export default function DriverPage() {
   const t = useTranslations('driver');
   const utils = api.useUtils();
 
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'out_for_delivery' | ''>('');
+
   // Dialog states
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
@@ -62,8 +68,11 @@ export default function DriverPage() {
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
 
-  // Fetch today's deliveries
-  const { data, isLoading, error, refetch } = api.delivery.getDriverDeliveries.useQuery(undefined, {
+  // Fetch today's deliveries with search and filter
+  const { data, isLoading, error, refetch } = api.delivery.getDriverDeliveries.useQuery({
+    search: searchQuery || undefined,
+    status: statusFilter || undefined,
+  }, {
     refetchInterval: 60000, // Refresh every minute
   });
 
@@ -190,6 +199,45 @@ export default function DriverPage() {
           <RefreshCw className="h-4 w-4 mr-2" />
           {t('refresh')}
         </Button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="mb-6 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={t('searchPlaceholder')}
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={statusFilter === '' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('')}
+            className="flex-1"
+          >
+            {t('filters.all')}
+          </Button>
+          <Button
+            variant={statusFilter === 'ready_for_delivery' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('ready_for_delivery')}
+            className="flex-1"
+          >
+            {t('filters.ready')}
+          </Button>
+          <Button
+            variant={statusFilter === 'out_for_delivery' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('out_for_delivery')}
+            className="flex-1"
+          >
+            {t('filters.inProgress')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

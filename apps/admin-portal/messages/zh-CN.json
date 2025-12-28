@@ -41,7 +41,30 @@
     "brand": "Joho Foods",
     "noEmail": "无邮箱",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "sort": {
+      "ascending": "升序",
+      "descending": "降序",
+      "sortBy": "排序方式",
+      "clearSort": "清除排序",
+      "sortAsc": "从A到Z排序",
+      "sortDesc": "从Z到A排序",
+      "sortNewest": "最新优先",
+      "sortOldest": "最早优先",
+      "sortHighest": "最高优先",
+      "sortLowest": "最低优先"
+    },
+    "filters": {
+      "all": "全部",
+      "allStatuses": "所有状态",
+      "allCategories": "所有类别",
+      "clearFilters": "清除筛选",
+      "applyFilters": "应用筛选"
+    },
+    "table": {
+      "noResults": "未找到结果",
+      "noResultsWithFilters": "没有符合筛选条件的结果。请尝试调整搜索或筛选条件。"
+    }
   },
   "statusBadges": {
     "awaiting_approval": "待审批",
@@ -183,12 +206,10 @@
     "orderId": "订单编号",
     "customer": "客户",
     "address": "地址",
-
     "estimatedTime": "预计送达",
     "packages": "包裹",
     "items": "件",
     "markAsDelivered": "标记为已送达",
-
     "readyForDelivery": "准备配送",
     "delivered": "已送达",
     "deliveriesInProgress": "进行中的配送",
@@ -196,8 +217,20 @@
     "realTimeTracking": "地图上的实时配送追踪",
     "noDeliveriesFound": "未找到配送",
     "area": "区域",
+    "sequence": "顺序",
     "noDeliveriesAvailable": "暂无配送",
-    "deliveriesWillAppear": "配送准备好后将在此显示"
+    "deliveriesWillAppear": "配送准备好后将在此显示",
+    "searchPlaceholder": "按订单或客户搜索...",
+    "filters": {
+      "allStatuses": "所有状态",
+      "readyForDelivery": "待配送",
+      "delivered": "已送达",
+      "allAreas": "所有区域",
+      "north": "北区",
+      "south": "南区",
+      "east": "东区",
+      "west": "西区"
+    }
   },
   "orders": {
     "title": "订单管理",
@@ -1630,6 +1663,12 @@
   "driver": {
     "title": "我的配送",
     "subtitle": "今天的配送任务",
+    "searchPlaceholder": "按订单或客户搜索...",
+    "filters": {
+      "all": "全部",
+      "ready": "待配送",
+      "inProgress": "配送中"
+    },
     "loading": "加载配送中...",
     "errorLoading": "加载配送失败",
     "noDeliveries": "暂无配送任务",
@@ -1725,6 +1764,7 @@
     "lowStock": "低库存",
     "transactionHistory": "交易记录",
     "recentTransactions": "最近的库存变动",
+    "searchPlaceholder": "按产品名称或SKU搜索...",
     "noCategories": "未找到类别",
     "noTransactions": "未找到交易记录",
     "showingOf": "显示 {shown} / {total} 条交易",

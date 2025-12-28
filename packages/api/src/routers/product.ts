@@ -2,45 +2,76 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { getEffectivePrice } from '@joho-erp/shared';
+import { getEffectivePrice, buildPrismaOrderBy } from '@joho-erp/shared';
 import { logProductCreated, logProductUpdated } from '../services/audit';
+import { sortInputSchema, paginationInputSchema } from '../schemas';
 
 const productCategoryEnum = z.enum(['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed']);
+
+// Product-specific sort field mapping
+const productSortFieldMapping: Record<string, string> = {
+  name: 'name',
+  sku: 'sku',
+  basePrice: 'basePrice',
+  currentStock: 'currentStock',
+  category: 'category',
+  status: 'status',
+  createdAt: 'createdAt',
+};
 
 export const productRouter = router({
   // Get all products (with customer-specific pricing if authenticated customer)
   getAll: protectedProcedure
     .input(
-      z.object({
-        category: productCategoryEnum.optional(),
-        status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
-        search: z.string().optional(),
-      })
+      z
+        .object({
+          category: productCategoryEnum.optional(),
+          status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
+          search: z.string().optional(),
+          showAll: z.boolean().optional(), // If true, show all statuses (for admin)
+        })
+        .merge(sortInputSchema)
+        .merge(paginationInputSchema)
     )
     .query(async ({ input, ctx: _ctx }) => {
+      const { page, limit, sortBy, sortOrder, showAll, ...filters } = input;
       const where: any = {};
 
-      if (input.category) {
-        where.category = input.category;
+      if (filters.category) {
+        where.category = filters.category;
       }
 
-      if (input.status) {
-        where.status = input.status;
-      } else {
+      if (filters.status) {
+        where.status = filters.status;
+      } else if (!showAll) {
         // By default, only show active products to customers
         where.status = 'active';
       }
 
-      if (input.search) {
+      if (filters.search) {
         where.OR = [
-          { name: { contains: input.search, mode: 'insensitive' } },
-          { sku: { contains: input.search, mode: 'insensitive' } },
+          { name: { contains: filters.search, mode: 'insensitive' } },
+          { sku: { contains: filters.search, mode: 'insensitive' } },
         ];
       }
 
+      // Build orderBy from sort parameters
+      const orderBy =
+        sortBy && productSortFieldMapping[sortBy]
+          ? buildPrismaOrderBy(sortBy, sortOrder, productSortFieldMapping)
+          : { name: 'asc' as const };
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Get total count for pagination
+      const totalCount = await prisma.product.count({ where });
+
       const products = await prisma.product.findMany({
         where,
-        orderBy: { name: 'asc' },
+        orderBy,
+        skip,
+        take: limit,
         include: {
           categoryRelation: true,
         },
@@ -58,6 +89,15 @@ export const productRouter = router({
         customerId = customer?.id || null;
       }
 
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalCount / limit);
+      const paginationMeta = {
+        total: totalCount,
+        page,
+        totalPages,
+        hasMore: page < totalPages,
+      };
+
       // If customer exists, fetch their custom pricing
       if (customerId) {
         const customerPricings = await prisma.customerPricing.findMany({
@@ -70,7 +110,7 @@ export const productRouter = router({
         // Map pricing to products
         const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
-        return products.map((product) => {
+        const items = products.map((product) => {
           const customPricing = pricingMap.get(product.id);
           const priceInfo = getEffectivePrice(product.basePrice, customPricing);
 
@@ -79,13 +119,17 @@ export const productRouter = router({
             ...priceInfo,
           };
         });
+
+        return { items, ...paginationMeta };
       }
 
       // No customer pricing, return products with base price as effective price
-      return products.map((product) => ({
+      const items = products.map((product) => ({
         ...product,
         ...getEffectivePrice(product.basePrice),
       }));
+
+      return { items, ...paginationMeta };
     }),
 
   // Get product by ID (with customer-specific pricing if applicable)

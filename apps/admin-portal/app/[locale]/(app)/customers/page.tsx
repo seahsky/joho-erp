@@ -23,6 +23,7 @@ import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loade
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
+import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 
 type Customer = {
@@ -57,15 +58,16 @@ export default function CustomersPage() {
   const [creditStatusFilter, setCreditStatusFilter] = useState<string>('');
   const [areaFilter, setAreaFilter] = useState<string>('');
 
-  // Sorting state (client-side)
-  const [sortField, setSortField] = useState<string>('businessName');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  // Sorting state (server-side)
+  const { sortBy, sortOrder, handleSort } = useTableSort('businessName', 'asc');
 
   const { data, isLoading, error } = api.customer.getAll.useQuery({
     search: searchQuery || undefined,
     status: statusFilter as 'active' | 'suspended' | 'closed' || undefined,
     approvalStatus: creditStatusFilter as 'pending' | 'approved' | 'rejected' || undefined,
     areaTag: areaFilter as 'north' | 'south' | 'east' | 'west' || undefined,
+    sortBy,
+    sortOrder,
     limit: 100,
   });
 
@@ -95,57 +97,11 @@ export default function CustomersPage() {
     );
   }
 
-  // Sort customers client-side
-  const sortCustomers = (customerList: Customer[], field: string, order: 'asc' | 'desc') => {
-    return [...customerList].sort((a, b) => {
-      let aValue: string | number;
-      let bValue: string | number;
-
-      switch (field) {
-        case 'businessName':
-          aValue = a.businessName.toLowerCase();
-          bValue = b.businessName.toLowerCase();
-          break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt || 0).getTime();
-          bValue = new Date(b.createdAt || 0).getTime();
-          break;
-        case 'creditLimit':
-          aValue = a.creditApplication.creditLimit;
-          bValue = b.creditApplication.creditLimit;
-          break;
-        case 'orders':
-          aValue = a.orders || 0;
-          bValue = b.orders || 0;
-          break;
-        default:
-          aValue = a.businessName.toLowerCase();
-          bValue = b.businessName.toLowerCase();
-      }
-
-      if (order === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-  };
-
-  // Sort handler for column headers
-  const handleSort = (column: string) => {
-    if (sortField === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(column);
-      setSortOrder('asc');
-    }
-  };
-
+  // Data from API (already sorted server-side)
   const customers = (data?.customers ?? []) as Customer[];
-  const sortedCustomers = sortCustomers(customers, sortField, sortOrder);
   const totalCustomers = data?.total || 0;
-  const activeCustomers = sortedCustomers.filter((c) => c.status === 'active').length;
-  const pendingCredit = sortedCustomers.filter((c) => c.creditApplication.status === 'pending').length;
+  const activeCustomers = customers.filter((c) => c.status === 'active').length;
+  const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;
 
   const columns: TableColumn<Customer>[] = [
     {
@@ -412,13 +368,13 @@ export default function CustomersPage() {
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {sortedCustomers.length > 0 ? (
+          {customers.length > 0 ? (
             <ResponsiveTable
-              data={sortedCustomers}
+              data={customers}
               columns={columns}
               mobileCard={mobileCard}
               className="md:border-0"
-              sortColumn={sortField}
+              sortColumn={sortBy}
               sortDirection={sortOrder}
               onSort={handleSort}
             />
