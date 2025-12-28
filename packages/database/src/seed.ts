@@ -41,6 +41,7 @@ const products = [
     currentStock: 250,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-rump.jpg',
   },
   {
     sku: 'BEEF-SCOTCH-5KG',
@@ -53,6 +54,7 @@ const products = [
     currentStock: 180,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-scotch-fillet.jpg',
   },
   {
     sku: 'BEEF-TENDER-3KG',
@@ -65,6 +67,7 @@ const products = [
     currentStock: 120,
     lowStockThreshold: 30,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-tenderloin.jpg',
   },
   {
     sku: 'BEEF-TBONE-10KG',
@@ -77,6 +80,7 @@ const products = [
     currentStock: 200,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-tbone.jpg',
   },
   {
     sku: 'BEEF-SIRLOIN-8KG',
@@ -89,6 +93,7 @@ const products = [
     currentStock: 220,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-sirloin.jpg',
   },
 
   // Secondary Beef Cuts
@@ -103,6 +108,7 @@ const products = [
     currentStock: 300,
     lowStockThreshold: 60,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-brisket.jpg',
   },
   {
     sku: 'BEEF-CHUCK-15KG',
@@ -115,6 +121,7 @@ const products = [
     currentStock: 350,
     lowStockThreshold: 80,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-chuck.jpg',
   },
   {
     sku: 'BEEF-MINCE-10KG',
@@ -127,6 +134,7 @@ const products = [
     currentStock: 400,
     lowStockThreshold: 100,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-mince.jpg',
   },
 
   // Premium Pork Cuts
@@ -141,6 +149,7 @@ const products = [
     currentStock: 200,
     lowStockThreshold: 50,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-loin.jpg',
   },
   {
     sku: 'PORK-BELLY-10KG',
@@ -153,6 +162,7 @@ const products = [
     currentStock: 250,
     lowStockThreshold: 60,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-belly.jpg',
   },
   {
     sku: 'PORK-SHOULDER-12KG',
@@ -165,6 +175,7 @@ const products = [
     currentStock: 280,
     lowStockThreshold: 70,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-shoulder.jpg',
   },
   {
     sku: 'PORK-RIBS-10KG',
@@ -177,6 +188,7 @@ const products = [
     currentStock: 180,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-ribs.jpg',
   },
   {
     sku: 'PORK-CHOPS-8KG',
@@ -189,6 +201,7 @@ const products = [
     currentStock: 160,
     lowStockThreshold: 40,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-chops.jpg',
   },
   {
     sku: 'PORK-MINCE-10KG',
@@ -201,6 +214,7 @@ const products = [
     currentStock: 300,
     lowStockThreshold: 80,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-mince.jpg',
   },
 
   // Specialty Items
@@ -215,6 +229,7 @@ const products = [
     currentStock: 150,
     lowStockThreshold: 30,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-sausages.jpg',
   },
 
   // Products with Different Units
@@ -229,6 +244,7 @@ const products = [
     currentStock: 85,
     lowStockThreshold: 20,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-patties.jpg',
   },
   {
     sku: 'STEAK-PREMIUM-CARTON',
@@ -241,6 +257,7 @@ const products = [
     currentStock: 45,
     lowStockThreshold: 10,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/premium-steaks-carton.jpg',
   },
   {
     sku: 'LAMB-CUTLET-PIECE',
@@ -253,6 +270,7 @@ const products = [
     currentStock: 120,
     lowStockThreshold: 25,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/lamb-cutlet.jpg',
   },
 
   // Discontinued Products
@@ -267,6 +285,7 @@ const products = [
     currentStock: 25,
     lowStockThreshold: 10,
     status: 'discontinued' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-oxtail.jpg',
   },
   {
     sku: 'PORK-HOCK-8KG',
@@ -279,6 +298,7 @@ const products = [
     currentStock: 15,
     lowStockThreshold: 5,
     status: 'discontinued' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-hock.jpg',
   },
 
   // Out of Stock Products
@@ -293,6 +313,7 @@ const products = [
     currentStock: 0,
     lowStockThreshold: 5,
     status: 'out_of_stock' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/wagyu-sirloin.jpg',
   },
   {
     sku: 'BEEF-TONGUE-4KG',
@@ -305,6 +326,7 @@ const products = [
     currentStock: 0,
     lowStockThreshold: 10,
     status: 'out_of_stock' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-tongue.jpg',
   },
 
   // Products at Low Stock Threshold (for alerts testing)
@@ -319,6 +341,7 @@ const products = [
     currentStock: 30, // Exactly at threshold
     lowStockThreshold: 30,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/pork-sausages.jpg',
   },
   {
     sku: 'BEEF-LIVER-3KG',
@@ -331,6 +354,7 @@ const products = [
     currentStock: 18, // Below threshold (20)
     lowStockThreshold: 20,
     status: 'active' as ProductStatus,
+    imageUrl: 'https://pub-joho-erp.r2.dev/products/beef-liver.jpg',
   },
 ];
 
@@ -434,6 +458,11 @@ const customers = [
       notes: 'Long-standing customer, excellent payment history',
     },
     status: 'active' as CustomerStatus,
+    smsReminderPreferences: {
+      enabled: true,
+      reminderDay: 'monday',
+      lastReminderSentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+    },
   },
   {
     clerkUserId: 'user_seed_002',
@@ -509,6 +538,11 @@ const customers = [
       notes: 'High volume customer',
     },
     status: 'active' as CustomerStatus,
+    smsReminderPreferences: {
+      enabled: true,
+      reminderDay: 'wednesday',
+      lastReminderSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+    },
   },
   {
     clerkUserId: 'user_seed_003',
@@ -638,6 +672,11 @@ const customers = [
       paymentTerms: '30 days',
     },
     status: 'active' as CustomerStatus,
+    smsReminderPreferences: {
+      enabled: true,
+      reminderDay: 'friday',
+      lastReminderSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    },
   },
   {
     clerkUserId: 'user_seed_005',
@@ -699,6 +738,9 @@ const customers = [
       paymentTerms: '14 days',
     },
     status: 'active' as CustomerStatus,
+    smsReminderPreferences: {
+      enabled: false, // Customer opted out
+    },
   },
   {
     clerkUserId: 'user_seed_007',
@@ -730,6 +772,11 @@ const customers = [
       paymentTerms: '30 days',
     },
     status: 'active' as CustomerStatus,
+    smsReminderPreferences: {
+      enabled: true,
+      reminderDay: 'monday',
+      lastReminderSentAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+    },
   },
   {
     clerkUserId: 'user_seed_008',
@@ -1112,6 +1159,39 @@ function createOrdersForCustomer(
       };
     }
 
+    if (statusInfo.status === 'out_for_delivery') {
+      order.statusHistory.push({
+        status: 'packing',
+        changedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+        changedBy: 'admin_user',
+        notes: 'Order being packed',
+      });
+      order.statusHistory.push({
+        status: 'ready_for_delivery',
+        changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        changedBy: 'admin_user',
+        notes: 'Ready for delivery',
+      });
+      order.statusHistory.push({
+        status: 'out_for_delivery',
+        changedAt: new Date(Date.now() - 30 * 60 * 1000),
+        changedBy: statusInfo.driverId || 'driver_user',
+        notes: `Driver ${statusInfo.driverName || 'assigned'} started delivery route`,
+      });
+      order.packing = {
+        packedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        packedBy: 'admin_user',
+        packingSequence: Math.floor(Math.random() * 100) + 1,
+        notes: 'All items packed and verified',
+      };
+      order.delivery = {
+        driverId: statusInfo.driverId || 'driver_user',
+        driverName: statusInfo.driverName || 'Delivery Driver',
+        assignedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+        startedAt: new Date(Date.now() - 30 * 60 * 1000),
+      };
+    }
+
     return order;
   });
 }
@@ -1137,6 +1217,8 @@ async function seed() {
     console.log('   Step 1: Deleting child entities (Orders, Pricing, Transactions, Logs, Routes)...');
     await prisma.routeOptimization.deleteMany({});
     console.log('      ✓ Route optimizations deleted');
+    await prisma.packingSession.deleteMany({});
+    console.log('      ✓ Packing sessions deleted');
     await prisma.order.deleteMany({});
     console.log('      ✓ Orders deleted');
     await prisma.inventoryTransaction.deleteMany({});
@@ -1216,6 +1298,11 @@ async function seed() {
             creditApproved: true,
           },
           quietHoursEnabled: false,
+        },
+        smsSettings: {
+          enabled: true,
+          messageTemplate: 'Hi {customerName}, this is a reminder from {companyName} to place your weekly order. Order by 2pm for next-day delivery!',
+          sendTime: '09:00', // 9 AM AEST
         },
         logoUrl: 'https://example.com/logo.png',
       },
@@ -1584,6 +1671,7 @@ async function seed() {
           { status: 'confirmed' },         // More confirmed orders
           { status: 'packing' },           // Currently being packed
           { status: 'ready_for_delivery' }, // Already packed
+          { status: 'out_for_delivery', ...drivers[i % drivers.length] }, // Currently out for delivery
           { status: 'delivered', ...drivers[i % drivers.length], hasProofOfDelivery: true, hasXero: true }, // Historical
         ];
         orderStatuses.push(statusOptions[j % statusOptions.length]);
@@ -1784,6 +1872,62 @@ async function seed() {
 
     // Merge admin orders with regular orders
     const allCreatedOrders = [...createdOrders, ...createdAdminOrders];
+
+    // Seed Packing Sessions
+    console.log('📦 Creating packing sessions...');
+    const packingSessions = [];
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Get orders that are being packed or ready for delivery
+    const packingOrders = allCreatedOrders.filter(
+      (o) => o.status === 'packing' || o.status === 'ready_for_delivery'
+    );
+
+    // Active session - currently packing today's orders
+    const todayPackingOrders = packingOrders.filter(
+      (o) => o.requestedDeliveryDate.toDateString() === today.toDateString()
+    );
+    if (todayPackingOrders.length > 0) {
+      packingSessions.push({
+        packerId: 'packer_user_001',
+        deliveryDate: today,
+        orderIds: todayPackingOrders.slice(0, 3).map((o) => o.id),
+        status: 'active' as const,
+        startedAt: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
+        lastActivityAt: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
+      });
+    }
+
+    // Completed session - from yesterday
+    packingSessions.push({
+      packerId: 'packer_user_001',
+      deliveryDate: yesterday,
+      orderIds: packingOrders.slice(0, 2).map((o) => o.id),
+      status: 'completed' as const,
+      startedAt: new Date(Date.now() - 26 * 60 * 60 * 1000), // 26 hours ago
+      lastActivityAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
+      endedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      endReason: 'all_orders_packed' as const,
+    });
+
+    // Timed out session - for testing timeout handling
+    packingSessions.push({
+      packerId: 'packer_user_002',
+      deliveryDate: yesterday,
+      orderIds: packingOrders.slice(2, 4).map((o) => o.id),
+      status: 'timed_out' as const,
+      startedAt: new Date(Date.now() - 28 * 60 * 60 * 1000),
+      lastActivityAt: new Date(Date.now() - 27 * 60 * 60 * 1000),
+      endedAt: new Date(Date.now() - 26.5 * 60 * 60 * 1000),
+      endReason: 'timeout' as const,
+    });
+
+    const createdPackingSessions = await Promise.all(
+      packingSessions.map((ps) => prisma.packingSession.create({ data: ps }))
+    );
+    console.log(`✅ Created ${createdPackingSessions.length} packing sessions\n`);
 
     // Create sale inventory transactions for delivered orders
     console.log('📤 Creating sale inventory transactions for delivered orders...');
@@ -2261,6 +2405,7 @@ async function seed() {
     console.log(`   - Customers: ${createdCustomers.length} (active: ${createdCustomers.filter(c => c.status === 'active').length}, suspended: ${createdCustomers.filter(c => c.status === 'suspended').length}, closed: ${createdCustomers.filter(c => c.status === 'closed').length})`);
     console.log(`   - Customer Pricing: ${createdPricing.length}`);
     console.log(`   - Orders: ${allCreatedOrders.length} (${createdOrders.length} regular + ${createdAdminOrders.length} admin override)`);
+    console.log(`   - Packing Sessions: ${createdPackingSessions.length} (active: ${createdPackingSessions.filter(ps => ps.status === 'active').length}, completed: ${createdPackingSessions.filter(ps => ps.status === 'completed').length}, timed_out: ${createdPackingSessions.filter(ps => ps.status === 'timed_out').length})`);
     console.log(`   - Route Optimizations: ${createdRouteOptimizations.length}`);
     console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length})`);
     console.log(`   - Audit Logs: ${createdAuditLogs.length} (including approve/reject/delete actions)`);
