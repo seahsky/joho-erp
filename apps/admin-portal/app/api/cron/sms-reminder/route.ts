@@ -47,6 +47,19 @@ function getCurrentHourMinute(timezone: string = "Australia/Sydney"): string {
   return new Intl.DateTimeFormat("en-US", options).format(now);
 }
 
+function getTodayStartAEST(): Date {
+  const now = new Date();
+  // Get current date in AEST
+  const aestDateStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  // Create date at midnight AEST (parsed as UTC, then we use it for comparison)
+  return new Date(aestDateStr + "T00:00:00+11:00");
+}
+
 export async function GET(request: Request) {
   // Verify authorization
   const authHeader = request.headers.get("authorization");
@@ -168,7 +181,9 @@ export async function GET(request: Request) {
     // Send SMS to each customer
     let sentCount = 0;
     let failedCount = 0;
+    let skippedCount = 0;
     const errors: Array<{ customer: string; error: string }> = [];
+    const todayStart = getTodayStartAEST();
 
     for (const customer of customers) {
       const customerName =
@@ -182,6 +197,14 @@ export async function GET(request: Request) {
         continue;
       }
 
+      // Check if already sent today (idempotency check)
+      const lastSent = customer.smsReminderPreferences?.lastReminderSentAt;
+      if (lastSent && new Date(lastSent) >= todayStart) {
+        console.log(`[Cron] Skipping ${customerName} - already sent today`);
+        skippedCount++;
+        continue;
+      }
+
       try {
         const result = await sendOrderReminderSms({
           customerName,
@@ -191,6 +214,16 @@ export async function GET(request: Request) {
         });
 
         if (result.success) {
+          // Update lastReminderSentAt to prevent duplicate sends
+          await prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+              smsReminderPreferences: {
+                ...customer.smsReminderPreferences,
+                lastReminderSentAt: new Date(),
+              },
+            },
+          });
           sentCount++;
           console.log(`[Cron] SMS sent to ${customerName}`);
         } else {
@@ -214,28 +247,30 @@ export async function GET(request: Request) {
       data: {
         level: failedCount > 0 ? "warning" : "info",
         service: "sms-reminder-cron",
-        message: `SMS reminders sent: ${sentCount} success, ${failedCount} failed`,
+        message: `SMS reminders sent: ${sentCount} success, ${failedCount} failed, ${skippedCount} skipped`,
         context: {
           day: currentDay,
           totalCustomers: customers.length,
           sentCount,
           failedCount,
+          skippedCount,
           errors: errors.length > 0 ? errors : undefined,
         },
       },
     });
 
     console.log(
-      `[Cron] SMS reminder complete: ${sentCount} sent, ${failedCount} failed`
+      `[Cron] SMS reminder complete: ${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped`
     );
 
     return NextResponse.json({
       success: true,
-      message: `SMS reminders sent: ${sentCount} success, ${failedCount} failed`,
+      message: `SMS reminders sent: ${sentCount} success, ${failedCount} failed, ${skippedCount} skipped`,
       day: currentDay,
       totalCustomers: customers.length,
       sentCount,
       failedCount,
+      skippedCount,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
