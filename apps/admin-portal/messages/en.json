@@ -1744,6 +1744,56 @@
       "stock_count_correction": "Stock Count Correction",
       "damaged_goods": "Damaged Goods",
       "expired_stock": "Expired Stock"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "trends": "Trends",
+      "turnover": "Turnover",
+      "comparison": "Comparison"
+    },
+    "stats": {
+      "periods": {
+        "daily": "Last 30 Days",
+        "weekly": "Last 12 Weeks",
+        "monthly": "Last 12 Months"
+      },
+      "stockMovement": {
+        "title": "Stock Movement Trends",
+        "description": "Track stock ins and outs over time",
+        "stockIn": "Stock In",
+        "stockOut": "Stock Out",
+        "noData": "No movement data available for this period"
+      },
+      "inventoryValue": {
+        "title": "Inventory Value Over Time",
+        "description": "Track total inventory value trends",
+        "noData": "No value data available for this period"
+      },
+      "turnover": {
+        "title": "Product Turnover Metrics",
+        "description": "Stock velocity and days-on-hand analysis",
+        "product": "Product",
+        "currentStock": "Current Stock",
+        "totalSold": "Total Sold",
+        "velocity": "Velocity",
+        "daysOnHand": "Days on Hand",
+        "days": "days",
+        "noSales": "No sales",
+        "noData": "No turnover data available for this period"
+      },
+      "comparison": {
+        "title": "Period Comparison",
+        "description": "Compare performance across periods",
+        "weekOverWeek": "Week over Week",
+        "monthOverMonth": "Month over Month",
+        "stockIn": "Stock In",
+        "stockOut": "Stock Out",
+        "transactions": "Transactions",
+        "netMovement": "Net Movement",
+        "thisPeriod": "This Period",
+        "lastPeriod": "Last Period",
+        "change": "Change"
+      }
     }
   },
   "customerDetail": {

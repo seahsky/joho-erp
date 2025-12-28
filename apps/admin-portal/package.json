@@ -41,6 +41,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-map-gl": "^8.1.0",
+    "recharts": "^3.6.0",
     "superjson": "^2.2.1",
     "tailwind-merge": "^3.4.0",
     "use-debounce": "^10.0.6",

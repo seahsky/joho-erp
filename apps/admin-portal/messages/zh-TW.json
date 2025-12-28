@@ -1744,6 +1744,56 @@
       "stock_count_correction": "盤點調整",
       "damaged_goods": "損壞商品",
       "expired_stock": "過期商品"
+    },
+    "tabs": {
+      "overview": "概覽",
+      "trends": "趨勢",
+      "turnover": "週轉率",
+      "comparison": "對比分析"
+    },
+    "stats": {
+      "periods": {
+        "daily": "最近30天",
+        "weekly": "最近12週",
+        "monthly": "最近12個月"
+      },
+      "stockMovement": {
+        "title": "庫存變動趨勢",
+        "description": "追蹤入庫和出庫隨時間的變化",
+        "stockIn": "入庫",
+        "stockOut": "出庫",
+        "noData": "該時間段暫無變動數據"
+      },
+      "inventoryValue": {
+        "title": "庫存價值趨勢",
+        "description": "追蹤庫存總價值變化趨勢",
+        "noData": "該時間段暫無價值數據"
+      },
+      "turnover": {
+        "title": "產品週轉指標",
+        "description": "庫存週轉速度和在庫天數分析",
+        "product": "產品",
+        "currentStock": "當前庫存",
+        "totalSold": "銷售總量",
+        "velocity": "週轉速度",
+        "daysOnHand": "在庫天數",
+        "days": "天",
+        "noSales": "無銷售",
+        "noData": "該時間段暫無週轉數據"
+      },
+      "comparison": {
+        "title": "週期對比",
+        "description": "比較不同週期的表現",
+        "weekOverWeek": "週環比",
+        "monthOverMonth": "月環比",
+        "stockIn": "入庫量",
+        "stockOut": "出庫量",
+        "transactions": "交易次數",
+        "netMovement": "淨變動",
+        "thisPeriod": "本期",
+        "lastPeriod": "上期",
+        "change": "變化"
+      }
     }
   },
   "customerDetail": {

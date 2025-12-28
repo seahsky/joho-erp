@@ -357,6 +357,7 @@ model InventoryTransaction {
   @@index([referenceId, referenceType])
   @@index([type])
   @@index([adjustmentType])
+  @@index([createdAt(sort: Desc), type])
   @@map("inventorytransactions")
 }
 

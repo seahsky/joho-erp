@@ -1744,6 +1744,56 @@
       "stock_count_correction": "盘点调整",
       "damaged_goods": "损坏商品",
       "expired_stock": "过期商品"
+    },
+    "tabs": {
+      "overview": "概览",
+      "trends": "趋势",
+      "turnover": "周转率",
+      "comparison": "对比分析"
+    },
+    "stats": {
+      "periods": {
+        "daily": "最近30天",
+        "weekly": "最近12周",
+        "monthly": "最近12个月"
+      },
+      "stockMovement": {
+        "title": "库存变动趋势",
+        "description": "跟踪入库和出库随时间的变化",
+        "stockIn": "入库",
+        "stockOut": "出库",
+        "noData": "该时间段暂无变动数据"
+      },
+      "inventoryValue": {
+        "title": "库存价值趋势",
+        "description": "跟踪库存总价值变化趋势",
+        "noData": "该时间段暂无价值数据"
+      },
+      "turnover": {
+        "title": "产品周转指标",
+        "description": "库存周转速度和在库天数分析",
+        "product": "产品",
+        "currentStock": "当前库存",
+        "totalSold": "销售总量",
+        "velocity": "周转速度",
+        "daysOnHand": "在库天数",
+        "days": "天",
+        "noSales": "无销售",
+        "noData": "该时间段暂无周转数据"
+      },
+      "comparison": {
+        "title": "周期对比",
+        "description": "比较不同周期的表现",
+        "weekOverWeek": "周环比",
+        "monthOverMonth": "月环比",
+        "stockIn": "入库量",
+        "stockOut": "出库量",
+        "transactions": "交易次数",
+        "netMovement": "净变动",
+        "thisPeriod": "本期",
+        "lastPeriod": "上期",
+        "change": "变化"
+      }
     }
   },
   "customerDetail": {

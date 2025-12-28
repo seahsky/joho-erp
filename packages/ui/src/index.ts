@@ -22,6 +22,7 @@ export * from './components/toaster';
 export * from './components/use-toast';
 export * from './components/image-upload';
 export * from './components/product-image-upload';
+export * from './components/tabs';
 
 // Mobile Components
 export * from './components/mobile';
