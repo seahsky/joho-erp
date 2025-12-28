@@ -1,42 +1,46 @@
-// Order Status Types
-export const ORDER_STATUSES = ['pending', 'confirmed', 'packing', 'ready_for_delivery', 'delivered', 'cancelled'] as const;
+// Order Status Types - matches Prisma OrderStatus enum
+export const ORDER_STATUSES = ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery', 'delivered', 'cancelled'] as const;
 
 // Order Status Translation Keys - use with t('statusBadges.{key}')
 export const ORDER_STATUS_KEYS = {
-  pending: 'statusBadges.pending',
+  awaiting_approval: 'statusBadges.awaiting_approval',
   confirmed: 'statusBadges.confirmed',
   packing: 'statusBadges.packing',
   ready_for_delivery: 'statusBadges.ready_for_delivery',
+  out_for_delivery: 'statusBadges.out_for_delivery',
   delivered: 'statusBadges.delivered',
   cancelled: 'statusBadges.cancelled',
 } as const;
 
 // Order Status Description Keys - use with t('orderStatusDescriptions.{key}')
 export const ORDER_STATUS_DESCRIPTION_KEYS = {
-  pending: 'orderStatusDescriptions.pending',
+  awaiting_approval: 'orderStatusDescriptions.awaiting_approval',
   confirmed: 'orderStatusDescriptions.confirmed',
   packing: 'orderStatusDescriptions.packing',
   ready_for_delivery: 'orderStatusDescriptions.ready_for_delivery',
+  out_for_delivery: 'orderStatusDescriptions.out_for_delivery',
   delivered: 'orderStatusDescriptions.delivered',
   cancelled: 'orderStatusDescriptions.cancelled',
 } as const;
 
 // @deprecated Use ORDER_STATUS_KEYS with translations instead
 export const ORDER_STATUS_LABELS = {
-  pending: 'Pending',
+  awaiting_approval: 'Awaiting Approval',
   confirmed: 'Confirmed',
   packing: 'Packing',
   ready_for_delivery: 'Ready for Delivery',
+  out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
 } as const;
 
 // @deprecated Use ORDER_STATUS_DESCRIPTION_KEYS with translations instead
 export const ORDER_STATUS_DESCRIPTIONS = {
-  pending: 'Your order is being processed',
+  awaiting_approval: 'Your order is awaiting approval',
   confirmed: 'Order confirmed, preparing for packing',
   packing: 'Your order is being packed',
   ready_for_delivery: 'Order packed and ready for dispatch',
+  out_for_delivery: 'Your order is out for delivery',
   delivered: 'Order delivered',
   cancelled: 'Order cancelled',
 } as const;
@@ -44,12 +48,12 @@ export const ORDER_STATUS_DESCRIPTIONS = {
 // Order Cancellation Eligibility
 // Customers can only cancel orders in these statuses
 // Once confirmed, they must contact admin to cancel
-export const CUSTOMER_CANCELLABLE_STATUSES = ['pending'] as const;
+export const CUSTOMER_CANCELLABLE_STATUSES = ['awaiting_approval'] as const;
 
 // Admin/Sales can cancel orders in any of these statuses
 // (with manager approval required for packing+ statuses)
 export const ADMIN_CANCELLABLE_STATUSES = [
-  'pending',
+  'awaiting_approval',
   'confirmed',
   'packing',
   'ready_for_delivery',

@@ -1006,13 +1006,13 @@ function createOrdersForCustomer(
       status: statusInfo.status,
       statusHistory: [
         {
-          status: 'pending',
+          status: 'awaiting_approval',
           changedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
           changedBy: customer.clerkUserId,
           notes: 'Order placed',
         },
-        // Only add 'confirmed' entry if status is not 'pending'
-        ...(statusInfo.status !== 'pending'
+        // Only add 'confirmed' entry if status is not 'awaiting_approval'
+        ...(statusInfo.status !== 'awaiting_approval'
           ? [
               {
                 status: 'confirmed',
@@ -1577,9 +1577,9 @@ async function seed() {
       const numOrders = Math.floor(Math.random() * 3) + 2; // 2-4 orders
 
       for (let j = 0; j < numOrders; j++) {
-        // Status distribution - pending first to ensure at least 1 pending order per customer for testing
+        // Status distribution - awaiting_approval first to ensure at least 1 pending order per customer for testing
         const statusOptions = [
-          { status: 'pending' },           // First order is pending - for testing confirm order
+          { status: 'awaiting_approval' }, // First order is awaiting_approval - for testing confirm order
           { status: 'confirmed' },         // Ready for packing
           { status: 'confirmed' },         // More confirmed orders
           { status: 'packing' },           // Currently being packed
@@ -1669,7 +1669,7 @@ async function seed() {
           status: 'confirmed' as OrderStatus,
           statusHistory: [
             {
-              status: 'pending',
+              status: 'awaiting_approval',
               changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
               changedBy: 'admin_user_001',
               notes: 'Order placed by admin on behalf of customer',
@@ -1748,7 +1748,7 @@ async function seed() {
           status: 'packing' as OrderStatus,
           statusHistory: [
             {
-              status: 'pending',
+              status: 'awaiting_approval',
               changedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
               changedBy: 'admin_user_002',
               notes: 'Late order placed by admin after cutoff time',
@@ -2026,7 +2026,7 @@ async function seed() {
           orderNumber: order.orderNumber,
           customerId: order.customerId,
           totalAmount: order.totalAmount,
-          status: 'pending',
+          status: 'awaiting_approval',
         },
         metadata: {
           source: 'database_seed',
@@ -2046,7 +2046,7 @@ async function seed() {
           entityId: order.id,
           changes: {
             status: statusChange.status,
-            previousStatus: order.statusHistory[order.statusHistory.indexOf(statusChange) - 1]?.status || 'pending',
+            previousStatus: order.statusHistory[order.statusHistory.indexOf(statusChange) - 1]?.status || 'awaiting_approval',
           },
           metadata: {
             source: 'database_seed',

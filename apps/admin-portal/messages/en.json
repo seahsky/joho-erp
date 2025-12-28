@@ -46,6 +46,7 @@
     "confirmed": "Confirmed",
     "packing": "Packing",
     "ready_for_delivery": "Ready for Delivery",
+    "out_for_delivery": "Out for Delivery",
     "delivered": "Delivered",
     "cancelled": "Cancelled",
     "pending": "Pending",
@@ -64,6 +65,7 @@
     "confirmed": "Order confirmed, preparing for packing",
     "packing": "Your order is being packed",
     "ready_for_delivery": "Order packed and ready for dispatch",
+    "out_for_delivery": "Order is out for delivery",
     "delivered": "Order delivered",
     "cancelled": "Order cancelled"
   },

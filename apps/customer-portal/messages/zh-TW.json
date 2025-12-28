@@ -49,6 +49,7 @@
     "confirmed": "已確認",
     "packing": "打包中",
     "ready_for_delivery": "待配送",
+    "out_for_delivery": "配送中",
     "delivered": "已送達",
     "cancelled": "已取消",
     "pending": "待處理",
@@ -67,6 +68,7 @@
     "confirmed": "訂單已確認，正在準備打包",
     "packing": "您的訂單正在打包中",
     "ready_for_delivery": "訂單已打包，準備發貨",
+    "out_for_delivery": "訂單正在配送途中",
     "delivered": "訂單已送達",
     "cancelled": "訂單已取消"
   },
