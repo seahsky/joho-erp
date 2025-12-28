@@ -20,6 +20,8 @@ const isPublicRoute = createRouteMatcher([
   '/:locale/sign-up(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  // Onboarding is semi-public (requires Clerk auth but not customer registration)
+  '/:locale/onboarding(.*)',
 ]);
 
 // Define patterns that should bypass i18n processing

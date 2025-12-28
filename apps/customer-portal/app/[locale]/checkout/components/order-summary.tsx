@@ -15,10 +15,12 @@ import {
   Input,
   Label,
 } from '@joho-erp/ui';
-import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, Clock } from 'lucide-react';
+import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, Clock, ClipboardList, CreditCard } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 export function OrderSummary() {
   const t = useTranslations('checkout');
@@ -26,14 +28,20 @@ export function OrderSummary() {
   const tBackorder = useTranslations('checkout.backorderWarning');
   const tDelivery = useTranslations('checkout.deliveryDate');
   const tCredit = useTranslations('checkout.credit');
+  const tBlocking = useTranslations('checkout.blocking');
   const router = useRouter();
   const { toast } = useToast();
+  const params = useParams();
+  const locale = params.locale as string;
 
   // State for delivery date
   const [deliveryDate, setDeliveryDate] = React.useState<string>('');
 
   // Fetch customer profile for delivery address
   const { data: customer, isLoading: isLoadingCustomer } = api.customer.getProfile.useQuery();
+
+  // Fetch onboarding status
+  const { data: onboardingStatus, isLoading: isLoadingStatus } = api.customer.getOnboardingStatus.useQuery();
 
   // Fetch cutoff info
   const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
@@ -121,13 +129,17 @@ export function OrderSummary() {
     return cart.total > creditInfo.availableCredit;
   }, [creditInfo, cart]);
 
+  // Check for blocking conditions
+  const isOnboardingIncomplete = !onboardingStatus?.onboardingComplete;
+  const isCreditPending = onboardingStatus?.creditStatus !== 'approved';
+
   // Cart totals (already calculated by backend)
   const subtotal = cart?.subtotal ?? 0;
   const gst = cart?.gst ?? 0;
   const total = cart?.total ?? 0;
 
   // Loading state
-  if (isLoadingCustomer || isLoadingCart || isLoadingCredit) {
+  if (isLoadingCustomer || isLoadingCart || isLoadingCredit || isLoadingStatus) {
     return (
       <div className="space-y-4">
         <Card>
@@ -178,6 +190,128 @@ export function OrderSummary() {
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Blocking state - onboarding incomplete
+  if (isOnboardingIncomplete) {
+    return (
+      <div className="space-y-4">
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <ClipboardList className="h-8 w-8 text-amber-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <H3 className="text-lg text-amber-800 mb-2">{tBlocking('onboardingTitle')}</H3>
+                <p className="text-amber-700 mb-4">{tBlocking('onboardingMessage')}</p>
+                <Link href={`/${locale}/onboarding`}>
+                  <Button className="bg-amber-600 hover:bg-amber-700">
+                    {tBlocking('completeOnboarding')}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Still show cart items as reference */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              {t('orderItems')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {cart.items.map((item) => (
+              <div key={item.productId} className="flex justify-between items-start pb-3 border-b last:border-0 last:pb-0 opacity-60">
+                <div className="flex-1">
+                  <p className="font-medium">{item.productName}</p>
+                  <Muted className="text-sm">
+                    {item.quantity} × {formatAUD(item.unitPrice)}
+                  </Muted>
+                </div>
+                <p className="font-semibold">{formatAUD(item.subtotal)}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Blocking state - credit pending
+  if (isCreditPending) {
+    return (
+      <div className="space-y-4">
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <CreditCard className="h-8 w-8 text-amber-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <H3 className="text-lg text-amber-800 mb-2">{tBlocking('creditTitle')}</H3>
+                <p className="text-amber-700 mb-4">
+                  {onboardingStatus?.creditStatus === 'rejected'
+                    ? tBlocking('creditRejectedMessage')
+                    : tBlocking('creditPendingMessage')
+                  }
+                </p>
+                <Link href={`/${locale}/profile`}>
+                  <Button variant="outline" className="border-amber-600 text-amber-700 hover:bg-amber-100">
+                    {tBlocking('viewProfile')}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Still show cart items as reference */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              {t('orderItems')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {cart.items.map((item) => (
+              <div key={item.productId} className="flex justify-between items-start pb-3 border-b last:border-0 last:pb-0 opacity-60">
+                <div className="flex-1">
+                  <p className="font-medium">{item.productName}</p>
+                  <Muted className="text-sm">
+                    {item.quantity} × {formatAUD(item.unitPrice)}
+                  </Muted>
+                </div>
+                <p className="font-semibold">{formatAUD(item.subtotal)}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Show order total */}
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex justify-between">
+              <Muted>{tCommon('subtotal')}</Muted>
+              <span>{formatAUD(subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <Muted>{tCommon('tax')}</Muted>
+              <span>{formatAUD(gst)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg pt-2 border-t">
+              <span>{tCommon('total')}</span>
+              <span>{formatAUD(total)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Disabled order button */}
+        <Button className="w-full" size="lg" disabled>
+          {tBlocking('creditPendingButton')}
+        </Button>
+      </div>
     );
   }
 

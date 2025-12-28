@@ -323,6 +323,48 @@
     "removeItem": "移除",
     "cartWithItems": "購物車, {count}件商品"
   },
+  "dashboard": {
+    "title": "儀表板",
+    "subtitle": "歡迎來到您的客戶入口",
+    "loading": "載入儀表板...",
+    "errorLoading": "載入儀表板時出錯",
+    "welcome": "歡迎",
+    "onboarding": {
+      "title": "註冊狀態",
+      "complete": "註冊完成",
+      "incomplete": "未完成",
+      "incompleteTitle": "完成您的註冊",
+      "incompleteMessage": "請完成您的企業註冊以開始下單。",
+      "completeButton": "完成註冊"
+    },
+    "credit": {
+      "title": "信用申請",
+      "approved": "已批准",
+      "pending": "審核中",
+      "pendingMessage": "您的信用申請正在審核中。批准後我們會通知您。",
+      "rejected": "未批准",
+      "rejectedMessage": "您的信用申請未獲批准。請聯繫我們獲取幫助。"
+    },
+    "quickActions": {
+      "title": "快捷操作",
+      "browseProducts": "瀏覽產品",
+      "browseProductsDesc": "查看我們的產品目錄",
+      "viewOrders": "查看訂單",
+      "viewOrdersDesc": "追蹤您的訂單歷史"
+    },
+    "restrictions": {
+      "title": "結帳受限",
+      "onboardingRequired": "完成註冊後才能下單。",
+      "creditPending": "您的信用申請正在審核中。批准後即可下單。",
+      "creditRejected": "您的信用申請未獲批准。請聯繫我們獲取幫助。"
+    },
+    "recentOrders": {
+      "title": "最近訂單",
+      "viewAll": "查看全部",
+      "noOrders": "暫無訂單",
+      "startShopping": "開始購物"
+    }
+  },
   "checkout": {
     "title": "結帳",
     "subtitle": "在下單前檢查您的訂單",
@@ -340,6 +382,16 @@
     "emptyCart": "您的購物車是空的",
     "emptyCartDescription": "結帳前請添加一些產品到購物車",
     "continueShopping": "繼續購物",
+    "blocking": {
+      "onboardingTitle": "需要完成註冊",
+      "onboardingMessage": "請在下單前完成您的企業註冊。您仍可以瀏覽產品並將商品添加到購物車。",
+      "completeOnboarding": "完成註冊",
+      "creditTitle": "需要信用審批",
+      "creditPendingMessage": "您的信用申請正在審核中。您可以瀏覽產品並將商品添加到購物車，但在信用批准之前無法下單。",
+      "creditRejectedMessage": "您的信用申請未獲批准。請聯繫我們的銷售團隊獲取幫助。",
+      "viewProfile": "查看個人資料",
+      "creditPendingButton": "信用審批中"
+    },
     "backorderWarning": {
       "title": "需要缺貨訂單審批",
       "message": "您訂單中的某些商品超出當前庫存水平。您的訂單將提交審批，我們會通知您審批結果。",

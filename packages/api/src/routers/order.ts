@@ -189,11 +189,19 @@ export const orderRouter = router({
         });
       }
 
+      // Check if onboarding is complete
+      if (!customer.onboardingComplete) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Please complete your registration before placing orders.',
+        });
+      }
+
       // Check credit approval
       if (customer.creditApplication.status !== 'approved') {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: 'Your credit application is pending approval',
+          message: 'Your credit application is pending approval. You can browse products and add to cart, but orders cannot be placed until your credit is approved.',
         });
       }
 

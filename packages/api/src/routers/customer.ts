@@ -220,6 +220,7 @@ export const customerRouter = router({
           financialDetails: input.financialDetails,
           tradeReferences: input.tradeReferences || [],
           status: 'active',
+          onboardingComplete: true,
         },
       });
 
@@ -296,6 +297,26 @@ export const customerRouter = router({
     return {
       ...customer,
       usedCredit,
+    };
+  }),
+
+  // Check onboarding status
+  getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
+    const customer = await prisma.customer.findUnique({
+      where: { clerkUserId: ctx.userId },
+      select: {
+        id: true,
+        onboardingComplete: true,
+        businessName: true,
+        creditApplication: true,
+      },
+    });
+
+    return {
+      hasCustomerRecord: !!customer,
+      onboardingComplete: customer?.onboardingComplete ?? false,
+      businessName: customer?.businessName ?? null,
+      creditStatus: customer?.creditApplication?.status ?? null,
     };
   }),
 
@@ -586,6 +607,7 @@ export const customerRouter = router({
           financialDetails: input.financialDetails,
           tradeReferences: input.tradeReferences || [],
           status: 'active',
+          onboardingComplete: true, // Admin-created customers skip onboarding
         },
       });
 

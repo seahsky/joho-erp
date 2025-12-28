@@ -544,6 +544,48 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome to your customer portal",
+    "loading": "Loading dashboard...",
+    "errorLoading": "Error loading dashboard",
+    "welcome": "Welcome",
+    "onboarding": {
+      "title": "Registration Status",
+      "complete": "Registration Complete",
+      "incomplete": "Incomplete",
+      "incompleteTitle": "Complete Your Registration",
+      "incompleteMessage": "Please complete your business registration to start placing orders.",
+      "completeButton": "Complete Registration"
+    },
+    "credit": {
+      "title": "Credit Application",
+      "approved": "Approved",
+      "pending": "Pending Review",
+      "pendingMessage": "Your credit application is being reviewed. We'll notify you once approved.",
+      "rejected": "Not Approved",
+      "rejectedMessage": "Your credit application was not approved. Please contact us for assistance."
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "browseProducts": "Browse Products",
+      "browseProductsDesc": "View our product catalog",
+      "viewOrders": "View Orders",
+      "viewOrdersDesc": "Track your order history"
+    },
+    "restrictions": {
+      "title": "Checkout Restricted",
+      "onboardingRequired": "Complete your registration to place orders.",
+      "creditPending": "Your credit application is pending. Orders will be enabled once approved.",
+      "creditRejected": "Your credit application was not approved. Please contact us for assistance."
+    },
+    "recentOrders": {
+      "title": "Recent Orders",
+      "viewAll": "View All",
+      "noOrders": "No orders yet",
+      "startShopping": "Start Shopping"
+    }
+  },
   "checkout": {
     "title": "Checkout",
     "subtitle": "Review your order before placing it",
@@ -561,6 +603,16 @@
     "emptyCart": "Your cart is empty",
     "emptyCartDescription": "Add some products to your cart before checking out",
     "continueShopping": "Continue Shopping",
+    "blocking": {
+      "onboardingTitle": "Complete Registration Required",
+      "onboardingMessage": "Please complete your business registration before placing orders. You can still browse products and add items to your cart.",
+      "completeOnboarding": "Complete Registration",
+      "creditTitle": "Credit Approval Required",
+      "creditPendingMessage": "Your credit application is being reviewed. You can browse products and add items to your cart, but orders cannot be placed until your credit is approved.",
+      "creditRejectedMessage": "Your credit application was not approved. Please contact our sales team for assistance.",
+      "viewProfile": "View Profile",
+      "creditPendingButton": "Credit Approval Pending"
+    },
     "backorderWarning": {
       "title": "Backorder Approval Required",
       "message": "Some items in your order exceed current stock levels. Your order will be submitted for approval and you'll be notified of the decision.",
