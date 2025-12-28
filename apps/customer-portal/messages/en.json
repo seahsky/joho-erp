@@ -746,5 +746,13 @@
     "unauthorized": "You are not authorized to perform this action",
     "forbidden": "Access denied",
     "unknownError": "An unexpected error occurred"
+  },
+  "cutoffReminder": {
+    "beforeCutoffTitle": "Order by {time} for next-day delivery",
+    "beforeCutoffMessage": "Orders placed before cutoff are delivered tomorrow.",
+    "afterCutoffTitle": "Today's cutoff ({time}) has passed",
+    "nextAvailable": "Next available delivery: {date}",
+    "compactBeforeCutoff": "Order by {time} for next-day delivery",
+    "compactAfterCutoff": "Next delivery: {date}"
   }
 }

@@ -15,12 +15,13 @@ import {
   Input,
   Label,
 } from '@joho-erp/ui';
-import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, Clock, ClipboardList, CreditCard } from 'lucide-react';
+import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, ClipboardList, CreditCard } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { CutoffReminder } from '@/components/cutoff-reminder';
 
 export function OrderSummary() {
   const t = useTranslations('checkout');
@@ -355,25 +356,13 @@ export function OrderSummary() {
             />
           </div>
 
-          {/* Cutoff Warning */}
-          {cutoffInfo?.isAfterCutoff && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
-              <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  {tDelivery('cutoffWarning', { time: cutoffInfo.cutoffTime })}
-                </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  {tDelivery('nextAvailable', {
-                    date: new Date(cutoffInfo.nextAvailableDeliveryDate).toLocaleDateString('en-AU', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                    }),
-                  })}
-                </p>
-              </div>
-            </div>
+          {/* Cutoff Reminder */}
+          {cutoffInfo && (
+            <CutoffReminder
+              cutoffTime={cutoffInfo.cutoffTime}
+              isAfterCutoff={cutoffInfo.isAfterCutoff}
+              nextAvailableDate={new Date(cutoffInfo.nextAvailableDeliveryDate)}
+            />
           )}
         </CardContent>
       </Card>

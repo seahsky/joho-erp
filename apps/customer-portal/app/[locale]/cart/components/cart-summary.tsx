@@ -6,6 +6,8 @@ import { Button, Card, CardContent, CardHeader, H3, Badge } from '@joho-erp/ui';
 import { AlertTriangle, ShoppingCart } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { useRouter } from 'next/navigation';
+import { api } from '@/trpc/client';
+import { CutoffReminder } from '@/components/cutoff-reminder';
 
 interface CartSummaryProps {
   subtotalCents: number; // in cents
@@ -26,6 +28,11 @@ export function CartSummary({
 }: CartSummaryProps) {
   const t = useTranslations();
   const router = useRouter();
+
+  // Fetch cutoff info
+  const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   const handleCheckout = () => {
     // Navigate to checkout page (to be implemented)
@@ -64,6 +71,17 @@ export function CartSummary({
                 <span className="text-muted-foreground">{t('cart.availableCredit')}</span>
                 <span className="font-medium">{formatAUD(creditLimitCents)}</span>
               </div>
+            </div>
+          )}
+
+          {/* Cutoff Reminder */}
+          {cutoffInfo && (
+            <div className="mb-4">
+              <CutoffReminder
+                cutoffTime={cutoffInfo.cutoffTime}
+                isAfterCutoff={cutoffInfo.isAfterCutoff}
+                nextAvailableDate={new Date(cutoffInfo.nextAvailableDeliveryDate)}
+              />
             </div>
           )}
 

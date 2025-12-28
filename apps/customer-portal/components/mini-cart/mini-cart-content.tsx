@@ -8,6 +8,7 @@ import { ShoppingCart, ArrowRight, Package, Sparkles } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { MiniCartItem } from './mini-cart-item';
+import { CutoffReminder } from '@/components/cutoff-reminder';
 
 interface MiniCartContentProps {
   locale: string;
@@ -18,6 +19,9 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   const t = useTranslations();
   const router = useRouter();
   const { data: cart, isLoading } = api.cart.getCart.useQuery();
+  const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   const handleViewCart = () => {
     onClose();
@@ -148,6 +152,17 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
             </span>
           </div>
         </div>
+
+        {/* Cutoff Reminder */}
+        {cutoffInfo && (
+          <CutoffReminder
+            cutoffTime={cutoffInfo.cutoffTime}
+            isAfterCutoff={cutoffInfo.isAfterCutoff}
+            nextAvailableDate={new Date(cutoffInfo.nextAvailableDeliveryDate)}
+            variant="compact"
+            className="mb-4"
+          />
+        )}
 
         {/* Credit warning */}
         {cart.exceedsCredit && (

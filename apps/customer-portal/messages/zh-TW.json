@@ -746,5 +746,13 @@
     "unauthorized": "您無權執行此操作",
     "forbidden": "存取被拒絕",
     "unknownError": "發生未知錯誤"
+  },
+  "cutoffReminder": {
+    "beforeCutoffTitle": "在 {time} 前下單，可於次日送達",
+    "beforeCutoffMessage": "截止時間前下單的訂單將於明天送達。",
+    "afterCutoffTitle": "今天的截止時間 ({time}) 已過",
+    "nextAvailable": "最早可配送日期：{date}",
+    "compactBeforeCutoff": "在 {time} 前下單，可於次日送達",
+    "compactAfterCutoff": "下次配送：{date}"
   }
 }
