@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure, isAdminOrSales } from '../trpc';
+import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma, type InventoryReferenceType } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
@@ -471,7 +471,7 @@ export const orderRouter = router({
     }),
 
   // Create order on behalf of customer (Admin only)
-  createOnBehalf: isAdminOrSales
+  createOnBehalf: requirePermission('orders:create')
     .input(
       z.object({
         customerId: z.string(), // Required - which customer to place order for
@@ -848,7 +848,7 @@ export const orderRouter = router({
     }),
 
   // Get all orders (admin)
-  getAll: isAdminOrSales
+  getAll: requirePermission('orders:view')
     .input(
       z.object({
         status: z.string().optional(),
@@ -935,7 +935,7 @@ export const orderRouter = router({
     }),
 
   // Update order status
-  updateStatus: isAdminOrSales
+  updateStatus: requirePermission('orders:edit')
     .input(
       z.object({
         orderId: z.string(),
@@ -1447,7 +1447,7 @@ export const orderRouter = router({
     }),
 
   // Get pending backorders (Admin only)
-  getPendingBackorders: isAdminOrSales
+  getPendingBackorders: requirePermission('orders:approve_backorder')
     .input(
       z.object({
         customerId: z.string().optional(),
@@ -1500,7 +1500,7 @@ export const orderRouter = router({
     }),
 
   // Approve backorder (Admin only)
-  approveBackorder: isAdminOrSales
+  approveBackorder: requirePermission('orders:approve_backorder')
     .input(
       z.object({
         orderId: z.string(),
@@ -1809,7 +1809,7 @@ export const orderRouter = router({
     }),
 
   // Reject backorder (Admin only)
-  rejectBackorder: isAdminOrSales
+  rejectBackorder: requirePermission('orders:approve_backorder')
     .input(
       z.object({
         orderId: z.string(),
@@ -1948,7 +1948,7 @@ export const orderRouter = router({
   // ============================================================================
 
   // Confirm a pending order (Admin/Sales only)
-  confirmOrder: isAdminOrSales
+  confirmOrder: requirePermission('orders:confirm')
     .input(
       z.object({
         orderId: z.string(),
@@ -2180,7 +2180,7 @@ export const orderRouter = router({
   // ============================================================================
 
   // Resend order confirmation email (Admin/Sales only)
-  resendConfirmation: isAdminOrSales
+  resendConfirmation: requirePermission('orders:confirm')
     .input(z.object({ orderId: z.string() }))
     .mutation(async ({ input }) => {
       const { orderId } = input;

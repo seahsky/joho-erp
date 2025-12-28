@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure, isAdmin } from '../trpc';
+import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getEffectivePrice } from '@joho-erp/shared';
@@ -141,7 +141,7 @@ export const productRouter = router({
 
   // Admin: Create product (with optional customer-specific pricing)
   // NOTE: basePrice and customPrice must be in cents (Int)
-  create: isAdmin
+  create: requirePermission('products:create')
     .input(
       z.object({
         sku: z.string().min(1),
@@ -226,7 +226,7 @@ export const productRouter = router({
 
   // Admin: Update product (with optional customer-specific pricing)
   // NOTE: basePrice and customPrice must be in cents (Int)
-  update: isAdmin
+  update: requirePermission('products:edit')
     .input(
       z.object({
         productId: z.string(),
@@ -344,7 +344,7 @@ export const productRouter = router({
     }),
 
   // Admin: Adjust stock level (manual stock management)
-  adjustStock: isAdmin
+  adjustStock: requirePermission('products:adjust_stock')
     .input(
       z.object({
         productId: z.string(),
@@ -415,7 +415,7 @@ export const productRouter = router({
     }),
 
   // Admin: Get stock transaction history for a product
-  getStockHistory: isAdmin
+  getStockHistory: requirePermission('inventory:view')
     .input(
       z.object({
         productId: z.string(),

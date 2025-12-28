@@ -31,6 +31,7 @@ import { api } from '@/trpc/client';
 import { formatCurrency, formatDate } from '@joho-erp/shared';
 import { SetPriceDialog } from './components/SetPriceDialog';
 import { BulkImportDialog } from './components/BulkImportDialog';
+import { PermissionGate } from '@/components/permission-gate';
 
 type CustomerPricing = {
   id: string;
@@ -246,22 +247,26 @@ export default function PricingPage() {
       label: t('pricing.table.actions'),
       render: (pricing) => (
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => pricing && handleEdit(pricing)}
-            disabled={!pricing}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => pricing?.id && handleDelete(pricing.id)}
-            disabled={!pricing?.id}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <PermissionGate permission="pricing:edit">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => pricing && handleEdit(pricing)}
+              disabled={!pricing}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="pricing:delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => pricing?.id && handleDelete(pricing.id)}
+              disabled={!pricing?.id}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </PermissionGate>
         </div>
       ),
     },
@@ -355,14 +360,18 @@ export default function PricingPage() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleAddNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('pricing.buttons.addCustomPrice')}
-              </Button>
-              <Button variant="outline" onClick={() => setShowBulkImportDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                {t('pricing.buttons.bulkImport')}
-              </Button>
+              <PermissionGate permission="pricing:create">
+                <Button onClick={handleAddNew}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('pricing.buttons.addCustomPrice')}
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="pricing:create">
+                <Button variant="outline" onClick={() => setShowBulkImportDialog(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t('pricing.buttons.bulkImport')}
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>

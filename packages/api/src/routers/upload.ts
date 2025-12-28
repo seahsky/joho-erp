@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { router, isAdmin, publicProcedure } from '../trpc';
+import { router, requirePermission, publicProcedure } from '../trpc';
 import {
   generateUploadUrl,
   generateSignatureUploadUrl,
@@ -28,15 +28,15 @@ export const uploadRouter = router({
    * Check if R2 storage is configured
    * Useful for conditional UI rendering
    */
-  isConfigured: isAdmin.query(() => {
+  isConfigured: requirePermission('products:edit').query(() => {
     return { configured: isR2Configured() };
   }),
 
   /**
    * Get presigned URL for uploading a product image
-   * Admin only - generates a secure temporary URL for direct upload to R2
+   * Requires products:edit permission - generates a secure temporary URL for direct upload to R2
    */
-  getProductImageUploadUrl: isAdmin
+  getProductImageUploadUrl: requirePermission('products:edit')
     .input(
       z.object({
         productId: z.string().min(1, 'Product ID is required'),
@@ -86,9 +86,9 @@ export const uploadRouter = router({
 
   /**
    * Delete a product image from R2
-   * Admin only - removes the image from storage
+   * Requires products:edit permission - removes the image from storage
    */
-  deleteProductImage: isAdmin
+  deleteProductImage: requirePermission('products:edit')
     .input(
       z.object({
         imageUrl: z.string().url('Invalid image URL'),

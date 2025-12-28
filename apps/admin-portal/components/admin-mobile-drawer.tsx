@@ -10,6 +10,7 @@ import { UserButton, useClerk } from '@clerk/nextjs';
 import { formatUserName } from '@joho-erp/shared';
 import type { SerializableUser } from '@/types/user';
 import { ADMIN_NAV_ITEMS } from '@/config/navigation';
+import { usePermission } from './permission-provider';
 
 interface AdminMobileDrawerProps {
   open: boolean;
@@ -25,12 +26,17 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
   const tMobileDrawer = useTranslations('mobileDrawer');
   const pathname = usePathname();
   const { signOut } = useClerk();
+  const { hasPermission } = usePermission();
 
-  const navigationItems = ADMIN_NAV_ITEMS.map((item) => ({
-    ...item,
-    label: t(item.labelKey),
-    href: `/${locale}${item.path}`,
-  }));
+  const navigationItems = ADMIN_NAV_ITEMS
+    .filter((item) => hasPermission(item.permission))
+    .map((item) => ({
+      ...item,
+      label: t(item.labelKey),
+      href: `/${locale}${item.path}`,
+    }));
+
+  const canViewSettings = hasPermission('settings:view');
 
   const handleNavigate = () => {
     onClose();
@@ -73,26 +79,28 @@ export function AdminMobileDrawer({ open, onClose, locale, user }: AdminMobileDr
       </DrawerSection>
 
       {/* Settings */}
-      <DrawerSection title={tSettings('title')}>
-        <DrawerItem icon={Settings} label={t('settings')} onClick={onClose} />
-        <DrawerItem icon={User} label={tSettings('profile')} onClick={onClose} />
-        <DrawerItem
-          icon={Moon}
-          label={tSettings('darkMode')}
-          onClick={() => {
-            // TODO: Implement dark mode toggle
-            onClose();
-          }}
-        />
-        <DrawerItem
-          icon={Globe}
-          label={tSettings('language')}
-          onClick={() => {
-            // Language switcher
-            onClose();
-          }}
-        />
-      </DrawerSection>
+      {canViewSettings && (
+        <DrawerSection title={tSettings('title')}>
+          <DrawerItem icon={Settings} label={t('settings')} onClick={onClose} />
+          <DrawerItem icon={User} label={tSettings('profile')} onClick={onClose} />
+          <DrawerItem
+            icon={Moon}
+            label={tSettings('darkMode')}
+            onClick={() => {
+              // TODO: Implement dark mode toggle
+              onClose();
+            }}
+          />
+          <DrawerItem
+            icon={Globe}
+            label={tSettings('language')}
+            onClick={() => {
+              // Language switcher
+              onClose();
+            }}
+          />
+        </DrawerSection>
+      )}
 
       {/* Sign Out */}
       <div className="mt-auto pt-4 border-t">

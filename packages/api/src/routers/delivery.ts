@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, isAdminOrSales, isDriver } from '../trpc';
+import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getRouteOptimization } from '../services/route-optimizer';
@@ -12,7 +12,7 @@ import { enqueueXeroJob } from '../services/xero-queue';
 
 export const deliveryRouter = router({
   // Get all deliveries with filtering
-  getAll: isAdminOrSales
+  getAll: requirePermission('deliveries:view')
     .input(
       z.object({
         status: z
@@ -97,7 +97,7 @@ export const deliveryRouter = router({
     }),
 
   // Mark delivery as completed
-  markDelivered: isAdminOrSales
+  markDelivered: requirePermission('deliveries:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -147,7 +147,7 @@ export const deliveryRouter = router({
     }),
 
   // Get delivery statistics
-  getStats: isAdminOrSales.query(async () => {
+  getStats: requirePermission('deliveries:view').query(async () => {
     const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
     const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
@@ -177,7 +177,7 @@ export const deliveryRouter = router({
   }),
 
   // Get optimized route with geometry for map display
-  getOptimizedRoute: isAdminOrSales
+  getOptimizedRoute: requirePermission('deliveries:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -251,7 +251,7 @@ export const deliveryRouter = router({
     }),
 
   // Get deliveries sorted by sequence
-  getDeliveriesWithSequence: isAdminOrSales
+  getDeliveriesWithSequence: requirePermission('deliveries:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -320,7 +320,7 @@ export const deliveryRouter = router({
   // ============================================================================
 
   // Get deliveries assigned to the current driver
-  getDriverDeliveries: isDriver
+  getDriverDeliveries: requirePermission('driver:view')
     .input(
       z.object({
         date: z.date().optional(), // Defaults to today
@@ -394,7 +394,7 @@ export const deliveryRouter = router({
     }),
 
   // Mark order as out for delivery (driver starts delivery)
-  markOutForDelivery: isDriver
+  markOutForDelivery: requirePermission('driver:complete')
     .input(
       z.object({
         orderId: z.string(),
@@ -480,7 +480,7 @@ export const deliveryRouter = router({
     }),
 
   // Upload proof of delivery (photo or signature)
-  uploadProofOfDelivery: isDriver
+  uploadProofOfDelivery: requirePermission('driver:upload_pod')
     .input(
       z.object({
         orderId: z.string(),
@@ -542,7 +542,7 @@ export const deliveryRouter = router({
     }),
 
   // Complete delivery (requires POD)
-  completeDelivery: isDriver
+  completeDelivery: requirePermission('driver:complete')
     .input(
       z.object({
         orderId: z.string(),
@@ -632,7 +632,7 @@ export const deliveryRouter = router({
     }),
 
   // Return order to warehouse
-  returnToWarehouse: isDriver
+  returnToWarehouse: requirePermission('driver:complete')
     .input(
       z.object({
         orderId: z.string(),
@@ -740,7 +740,7 @@ export const deliveryRouter = router({
     }),
 
   // Assign driver to order (Admin/Sales only)
-  assignDriver: isAdminOrSales
+  assignDriver: requirePermission('deliveries:manage')
     .input(
       z.object({
         orderId: z.string(),

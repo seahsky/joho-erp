@@ -4,6 +4,7 @@ import * as React from 'react';
 import { AdminMobileDrawer } from './admin-mobile-drawer';
 import { AdminDesktopSidebar } from './admin-desktop-sidebar';
 import { TopNavigationBar } from './top-navigation-bar';
+import { PermissionProvider } from './permission-provider';
 import { MobileAppBar } from '@joho-erp/ui';
 import { useIsMobileOrTablet } from '@joho-erp/ui';
 import { UserButton } from '@clerk/nextjs';
@@ -27,7 +28,7 @@ export function AdminLayoutWrapper({
   const isMobileOrTablet = useIsMobileOrTablet();
 
   return (
-    <>
+    <PermissionProvider>
       {isMobileOrTablet ? (
         <>
           <MobileAppBar
@@ -70,6 +71,6 @@ export function AdminLayoutWrapper({
           </main>
         </>
       )}
-    </>
+    </PermissionProvider>
   );
 }

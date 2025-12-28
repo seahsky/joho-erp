@@ -13,6 +13,7 @@ import { notificationRouter } from './routers/notification';
 import { userRouter } from './routers/user';
 import { uploadRouter } from './routers/upload';
 import { xeroRouter } from './routers/xero';
+import { permissionRouter } from './routers/permission';
 
 export const appRouter = router({
   category: categoryRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
   user: userRouter,
   upload: uploadRouter,
   xero: xeroRouter,
+  permission: permissionRouter,
 });
 
 export type AppRouter = typeof appRouter;

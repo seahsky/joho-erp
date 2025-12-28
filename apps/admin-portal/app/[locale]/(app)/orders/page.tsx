@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
+import { PermissionGate } from '@/components/permission-gate';
 import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
 import { ConfirmOrderDialog, type ConfirmOrder } from './components/ConfirmOrderDialog';
@@ -294,24 +295,28 @@ export default function OrdersPage() {
       render: (order) => (
         <div className="flex justify-end gap-2">
           {order.backorderStatus === 'pending_approval' && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => handleReviewBackorder(order)}
-            >
-              {t('backorder.reviewBackorder')}
-            </Button>
+            <PermissionGate permission="orders:approve_backorder">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => handleReviewBackorder(order)}
+              >
+                {t('backorder.reviewBackorder')}
+              </Button>
+            </PermissionGate>
           )}
           {/* Confirm button only for awaiting_approval orders (backorders) */}
           {order.status === 'awaiting_approval' && order.backorderStatus !== 'pending_approval' && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => handleConfirmOrder(order)}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              {t('confirmOrder')}
-            </Button>
+            <PermissionGate permission="orders:confirm">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => handleConfirmOrder(order)}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                {t('confirmOrder')}
+              </Button>
+            </PermissionGate>
           )}
           <Button
             variant="ghost"
@@ -362,14 +367,16 @@ export default function OrdersPage() {
       <div className="flex gap-2 pt-2 border-t">
         {order.backorderStatus === 'pending_approval' ? (
           <>
-            <Button
-              variant="default"
-              size="sm"
-              className="flex-1"
-              onClick={() => handleReviewBackorder(order)}
-            >
-              {t('backorder.reviewBackorder')}
-            </Button>
+            <PermissionGate permission="orders:approve_backorder">
+              <Button
+                variant="default"
+                size="sm"
+                className="flex-1"
+                onClick={() => handleReviewBackorder(order)}
+              >
+                {t('backorder.reviewBackorder')}
+              </Button>
+            </PermissionGate>
             <Button
               variant="outline"
               size="sm"
@@ -380,15 +387,17 @@ export default function OrdersPage() {
           </>
         ) : order.status === 'awaiting_approval' ? (
           <>
-            <Button
-              variant="default"
-              size="sm"
-              className="flex-1"
-              onClick={() => handleConfirmOrder(order)}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              {t('confirmOrder')}
-            </Button>
+            <PermissionGate permission="orders:confirm">
+              <Button
+                variant="default"
+                size="sm"
+                className="flex-1"
+                onClick={() => handleConfirmOrder(order)}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                {t('confirmOrder')}
+              </Button>
+            </PermissionGate>
             <Button
               variant="outline"
               size="sm"
@@ -421,10 +430,12 @@ export default function OrdersPage() {
             {t('subtitle')}
           </p>
         </div>
-        <Button onClick={() => router.push('/orders/create')}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('createOrderOnBehalf')}
-        </Button>
+        <PermissionGate permission="orders:create">
+          <Button onClick={() => router.push('/orders/create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('createOrderOnBehalf')}
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Stats */}

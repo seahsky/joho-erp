@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, isAdminOrSales } from '../trpc';
+import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { sendTestEmail } from '../services/email';
@@ -8,7 +8,7 @@ export const notificationRouter = router({
   /**
    * Get notification settings
    */
-  getSettings: isAdminOrSales.query(async () => {
+  getSettings: requirePermission('settings.notifications:view').query(async () => {
     const company = await prisma.company.findFirst({
       select: {
         notificationSettings: true,
@@ -52,7 +52,7 @@ export const notificationRouter = router({
   /**
    * Update notification settings
    */
-  updateSettings: isAdminOrSales
+  updateSettings: requirePermission('settings.notifications:edit')
     .input(
       z.object({
         emailRecipients: z.array(z.string().email('Valid email is required')),
@@ -110,7 +110,7 @@ export const notificationRouter = router({
   /**
    * Send a test notification email
    */
-  sendTestEmail: isAdminOrSales
+  sendTestEmail: requirePermission('settings.notifications:edit')
     .input(
       z.object({
         recipient: z.string().email('Valid email is required'),

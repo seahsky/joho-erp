@@ -23,6 +23,7 @@ import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loade
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
+import { PermissionGate } from '@/components/permission-gate';
 
 type Customer = {
   id: string;
@@ -201,11 +202,13 @@ export default function CustomersPage() {
       render: (customer) => (
         <div className="flex justify-end gap-2">
           {customer.creditApplication.status === 'pending' && (
-            <Link href={`/customers/${customer.id}/credit-review`}>
-              <Button variant="default" size="sm">
-                {t('reviewCredit')}
-              </Button>
-            </Link>
+            <PermissionGate permission="customers:approve_credit">
+              <Link href={`/customers/${customer.id}/credit-review`}>
+                <Button variant="default" size="sm">
+                  {t('reviewCredit')}
+                </Button>
+              </Link>
+            </PermissionGate>
           )}
           <Link href={`/customers/${customer.id}`}>
             <Button variant="ghost" size="sm" aria-label={t('view')}>
@@ -266,7 +269,7 @@ export default function CustomersPage() {
       {/* Actions */}
       <div className="flex gap-2 pt-2">
         {customer.creditApplication.status === 'pending' && (
-          <>
+          <PermissionGate permission="customers:approve_credit">
             <Button variant="outline" size="sm" className="flex-1">
               <Check className="h-4 w-4 mr-1" />
               {t('approve')}
@@ -275,7 +278,7 @@ export default function CustomersPage() {
               <X className="h-4 w-4 mr-1" />
               {t('reject')}
             </Button>
-          </>
+          </PermissionGate>
         )}
         <Button variant="outline" size="sm" className="flex-1">
           <Eye className="h-4 w-4 mr-1" />
@@ -294,12 +297,14 @@ export default function CustomersPage() {
             {t('subtitle')}
           </p>
         </div>
-        <Link href="/customers/new">
-          <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
-            <UserPlus className="mr-2 h-4 w-4" />
-            {t('addCustomer')}
-          </Button>
-        </Link>
+        <PermissionGate permission="customers:create">
+          <Link href="/customers/new">
+            <Button className="btn-enhanced btn-primary-enhanced w-full sm:w-auto">
+              <UserPlus className="mr-2 h-4 w-4" />
+              {t('addCustomer')}
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
 
       {/* Stats */}

@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { router, isAdminOrSales } from '../trpc';
+import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import {
@@ -19,7 +19,7 @@ export const xeroRouter = router({
   /**
    * Get sync jobs with filtering and pagination
    */
-  getSyncJobs: isAdminOrSales
+  getSyncJobs: requirePermission('settings.xero:view')
     .input(
       z.object({
         status: z
@@ -44,14 +44,14 @@ export const xeroRouter = router({
   /**
    * Get sync stats for dashboard
    */
-  getSyncStats: isAdminOrSales.query(async () => {
+  getSyncStats: requirePermission('settings.xero:view').query(async () => {
     return getSyncStats();
   }),
 
   /**
    * Retry a failed sync job
    */
-  retryJob: isAdminOrSales
+  retryJob: requirePermission('settings.xero:sync')
     .input(z.object({ jobId: z.string() }))
     .mutation(async ({ input }) => {
       const result = await retryJob(input.jobId);
@@ -69,7 +69,7 @@ export const xeroRouter = router({
   /**
    * Manually trigger contact sync for a customer
    */
-  syncContact: isAdminOrSales
+  syncContact: requirePermission('settings.xero:sync')
     .input(z.object({ customerId: z.string() }))
     .mutation(async ({ input }) => {
       const customer = await prisma.customer.findUnique({
@@ -100,7 +100,7 @@ export const xeroRouter = router({
   /**
    * Manually trigger invoice creation for an order
    */
-  createInvoice: isAdminOrSales
+  createInvoice: requirePermission('settings.xero:sync')
     .input(z.object({ orderId: z.string() }))
     .mutation(async ({ input }) => {
       const order = await prisma.order.findUnique({
@@ -137,7 +137,7 @@ export const xeroRouter = router({
   /**
    * Manually trigger credit note creation for an order
    */
-  createCreditNote: isAdminOrSales
+  createCreditNote: requirePermission('settings.xero:sync')
     .input(z.object({ orderId: z.string() }))
     .mutation(async ({ input }) => {
       const order = await prisma.order.findUnique({
@@ -181,7 +181,7 @@ export const xeroRouter = router({
   /**
    * Get order sync status
    */
-  getOrderSyncStatus: isAdminOrSales
+  getOrderSyncStatus: requirePermission('settings.xero:view')
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input }) => {
       const order = await prisma.order.findUnique({
@@ -223,7 +223,7 @@ export const xeroRouter = router({
   /**
    * Get customer sync status
    */
-  getCustomerSyncStatus: isAdminOrSales
+  getCustomerSyncStatus: requirePermission('settings.xero:view')
     .input(z.object({ customerId: z.string() }))
     .query(async ({ input }) => {
       const customer = await prisma.customer.findUnique({
@@ -247,7 +247,7 @@ export const xeroRouter = router({
   /**
    * Get a specific sync job by ID
    */
-  getJob: isAdminOrSales
+  getJob: requirePermission('settings.xero:view')
     .input(z.object({ jobId: z.string() }))
     .query(async ({ input }) => {
       const job = await prisma.xeroSyncJob.findUnique({

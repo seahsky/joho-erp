@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure, isAdmin, isAdminOrSales } from '../trpc';
+import { router, publicProcedure, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { paginatePrismaQuery } from '@joho-erp/shared';
@@ -384,7 +384,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Get all customers
-  getAll: isAdminOrSales
+  getAll: requirePermission('customers:view')
     .input(
       z.object({
         status: z.enum(['active', 'suspended', 'closed']).optional(),
@@ -437,7 +437,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Get customer by ID
-  getById: isAdminOrSales
+  getById: requirePermission('customers:view')
     .input(z.object({ customerId: z.string() }))
     .query(async ({ input }) => {
       const resolvedCustomerId = await resolveCustomerId(input.customerId);
@@ -457,7 +457,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Create customer
-  createCustomer: isAdmin
+  createCustomer: requirePermission('customers:create')
     .input(
       z.object({
         // Business Information
@@ -615,7 +615,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Approve credit
-  approveCredit: isAdmin
+  approveCredit: requirePermission('customers:approve_credit')
     .input(
       z.object({
         customerId: z.string(),
@@ -688,7 +688,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Reject credit
-  rejectCredit: isAdmin
+  rejectCredit: requirePermission('customers:approve_credit')
     .input(
       z.object({
         customerId: z.string(),
@@ -748,7 +748,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Suspend customer account
-  suspend: isAdmin
+  suspend: requirePermission('customers:suspend')
     .input(
       z.object({
         customerId: z.string(),
@@ -811,7 +811,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Activate (unsuspend) customer account
-  activate: isAdmin
+  activate: requirePermission('customers:suspend')
     .input(
       z.object({
         customerId: z.string(),
@@ -875,7 +875,7 @@ export const customerRouter = router({
     }),
 
   // Admin: Update customer details
-  update: isAdmin
+  update: requirePermission('customers:edit')
     .input(
       z.object({
         customerId: z.string(),

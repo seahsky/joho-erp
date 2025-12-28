@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, isPacker } from "../trpc";
+import { router, requirePermission } from "../trpc";
 import { prisma } from "@joho-erp/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
@@ -20,7 +20,7 @@ export const packingRouter = router({
    * Returns all orders that need packing and aggregated product summary
    * Also starts/resumes a packing session for timeout tracking
    */
-  getSession: isPacker
+  getSession: requirePermission('packing:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -126,7 +126,7 @@ export const packingRouter = router({
   /**
    * Get detailed order information for packing
    */
-  getOrderDetails: isPacker
+  getOrderDetails: requirePermission('packing:view')
     .input(
       z.object({
         orderId: z.string(),
@@ -183,7 +183,7 @@ export const packingRouter = router({
    * Persists packed state to database for optimistic UI updates
    * Also updates lastPackedAt/lastPackedBy and clears pausedAt when actively packing
    */
-  markItemPacked: isPacker
+  markItemPacked: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -255,7 +255,7 @@ export const packingRouter = router({
   /**
    * Mark entire order as ready for delivery
    */
-  markOrderReady: isPacker
+  markOrderReady: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -326,7 +326,7 @@ export const packingRouter = router({
   /**
    * Add packing notes to an order
    */
-  addPackingNotes: isPacker
+  addPackingNotes: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -366,7 +366,7 @@ export const packingRouter = router({
    * Pause packing on an order - saves progress for later
    * Sets pausedAt timestamp and keeps order in 'packing' status
    */
-  pauseOrder: isPacker
+  pauseOrder: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -430,7 +430,7 @@ export const packingRouter = router({
    * Resume packing on a paused order
    * Clears pausedAt and updates lastPackedAt/lastPackedBy
    */
-  resumeOrder: isPacker
+  resumeOrder: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -490,7 +490,7 @@ export const packingRouter = router({
    * Reset order packing progress - clears all packed items
    * Reverts order to 'confirmed' status
    */
-  resetOrder: isPacker
+  resetOrder: requirePermission('packing:manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -553,7 +553,7 @@ export const packingRouter = router({
    * Optimize delivery route for a specific date
    * Calculates packing and delivery sequences using Mapbox
    */
-  optimizeRoute: isPacker
+  optimizeRoute: requirePermission('packing:manage')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -607,7 +607,7 @@ export const packingRouter = router({
    * Enhanced version of getSession that includes sequence numbers
    * Also starts/resumes a packing session and auto-triggers route optimization if needed
    */
-  getOptimizedSession: isPacker
+  getOptimizedSession: requirePermission('packing:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
@@ -795,7 +795,7 @@ export const packingRouter = router({
   /**
    * Get route optimization status for a date
    */
-  getRouteStatus: isPacker
+  getRouteStatus: requirePermission('packing:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),

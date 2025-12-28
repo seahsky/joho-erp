@@ -103,3 +103,6 @@ export interface DeliveryAddress extends Address {
   latitude?: number;
   longitude?: number;
 }
+
+// Permission types
+export * from './permissions';

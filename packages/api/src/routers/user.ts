@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, isAdmin, protectedProcedure } from '../trpc';
+import { router, requirePermission, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import type { UserRole } from '../context';
@@ -61,7 +61,7 @@ export const userRouter = router({
    * Get all internal users (non-customer roles)
    * Only returns users with admin, sales, manager, packer, or driver roles
    */
-  getAll: isAdmin.query(async () => {
+  getAll: requirePermission('settings.users:view').query(async () => {
     try {
       const client = await clerkClient();
 
@@ -109,7 +109,7 @@ export const userRouter = router({
   /**
    * Get user by ID
    */
-  getById: isAdmin
+  getById: requirePermission('settings.users:view')
     .input(
       z.object({
         userId: z.string().min(1, 'User ID is required'),
@@ -134,7 +134,7 @@ export const userRouter = router({
    * Update user role
    * Can only update to internal roles (admin, sales, manager, packer, driver)
    */
-  updateRole: isAdmin
+  updateRole: requirePermission('settings.users:edit')
     .input(
       z.object({
         userId: z.string().min(1, 'User ID is required'),
@@ -173,7 +173,7 @@ export const userRouter = router({
   /**
    * Deactivate (ban) or reactivate a user
    */
-  deactivate: isAdmin
+  deactivate: requirePermission('settings.users:delete')
     .input(
       z.object({
         userId: z.string().min(1, 'User ID is required'),
@@ -217,7 +217,7 @@ export const userRouter = router({
    * Invite a new internal user
    * Creates an invitation in Clerk with the specified role
    */
-  invite: isAdmin
+  invite: requirePermission('settings.users:create')
     .input(
       z.object({
         email: z.string().email('Valid email is required'),
@@ -278,7 +278,7 @@ export const userRouter = router({
   /**
    * Get pending invitations
    */
-  getPendingInvitations: isAdmin.query(async () => {
+  getPendingInvitations: requirePermission('settings.users:view').query(async () => {
     try {
       const client = await clerkClient();
 
@@ -305,7 +305,7 @@ export const userRouter = router({
   /**
    * Revoke a pending invitation
    */
-  revokeInvitation: isAdmin
+  revokeInvitation: requirePermission('settings.users:delete')
     .input(
       z.object({
         invitationId: z.string().min(1, 'Invitation ID is required'),

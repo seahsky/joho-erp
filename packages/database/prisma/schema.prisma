@@ -382,6 +382,47 @@ model AuditLog {
   @@map("auditlogs")
 }
 
+// ============================================================================
+// RBAC MODELS
+// ============================================================================
+
+// Permission definition - stores all available permissions in the system
+model Permission {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  module      String   // e.g., "customers", "orders", "products"
+  action      String   // e.g., "view", "create", "edit", "delete"
+  code        String   @unique // e.g., "customers:view", "orders:create"
+  description String?  // Human-readable description
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@index([module])
+  @@index([isActive])
+  @@map("permissions")
+}
+
+// Role-Permission mapping - which roles have which permissions
+model RolePermission {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  role         String   // e.g., "admin", "sales", "manager"
+  permissionId String   @db.ObjectId
+  grantedAt    DateTime @default(now())
+  grantedBy    String?  // User ID who granted the permission
+
+  // Relations
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
 // System Log Model
 model SystemLog {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId

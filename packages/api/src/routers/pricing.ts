@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure, isAdminOrSales } from '../trpc';
+import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { isCustomPriceValid, getEffectivePrice, validateCustomerPricing } from '@joho-erp/shared';
@@ -9,7 +9,7 @@ export const pricingRouter = router({
   /**
    * Get all custom prices for a specific customer
    */
-  getCustomerPrices: isAdminOrSales
+  getCustomerPrices: requirePermission('pricing:view')
     .input(
       z.object({
         customerId: z.string(),
@@ -57,7 +57,7 @@ export const pricingRouter = router({
   /**
    * Get all customers with custom pricing for a specific product
    */
-  getProductPrices: isAdminOrSales
+  getProductPrices: requirePermission('pricing:view')
     .input(
       z.object({
         productId: z.string(),
@@ -111,7 +111,7 @@ export const pricingRouter = router({
   /**
    * Get all custom pricing (with pagination and filtering)
    */
-  getAll: isAdminOrSales
+  getAll: requirePermission('pricing:view')
     .input(
       z.object({
         customerId: z.string().optional(),
@@ -228,7 +228,7 @@ export const pricingRouter = router({
    * Set or update custom price for a customer-product pair
    * NOTE: customPrice must be in cents (Int) not dollars
    */
-  setCustomerPrice: isAdminOrSales
+  setCustomerPrice: requirePermission('pricing:edit')
     .input(
       z.object({
         customerId: z.string(),
@@ -370,7 +370,7 @@ export const pricingRouter = router({
   /**
    * Delete custom pricing
    */
-  deleteCustomerPrice: isAdminOrSales
+  deleteCustomerPrice: requirePermission('pricing:delete')
     .input(
       z.object({
         pricingId: z.string(),
@@ -424,7 +424,7 @@ export const pricingRouter = router({
    * Bulk import pricing from CSV data
    * NOTE: customPrice must be in cents (Int)
    */
-  bulkImport: isAdminOrSales
+  bulkImport: requirePermission('pricing:create')
     .input(
       z.object({
         pricings: z.array(
@@ -545,7 +545,7 @@ export const pricingRouter = router({
   /**
    * Get pricing statistics for a customer
    */
-  getCustomerPricingStats: isAdminOrSales
+  getCustomerPricingStats: requirePermission('pricing:view')
     .input(
       z.object({
         customerId: z.string(),

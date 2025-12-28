@@ -24,6 +24,7 @@ import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
 import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@joho-erp/shared';
+import { PermissionGate } from '@/components/permission-gate';
 
 type Product = {
   id: string;
@@ -154,28 +155,32 @@ export default function ProductsPage() {
       className: 'text-right',
       render: (product) => (
         <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={tStock('buttons.adjustStock')}
-            onClick={() => {
-              setSelectedProduct(product);
-              setShowStockDialog(true);
-            }}
-          >
-            <PackagePlus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={t('edit')}
-            onClick={() => {
-              setSelectedProduct(product);
-              setShowEditDialog(true);
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          <PermissionGate permission="products:adjust_stock">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={tStock('buttons.adjustStock')}
+              onClick={() => {
+                setSelectedProduct(product);
+                setShowStockDialog(true);
+              }}
+            >
+              <PackagePlus className="h-4 w-4" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="products:edit">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={t('edit')}
+              onClick={() => {
+                setSelectedProduct(product);
+                setShowEditDialog(true);
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </PermissionGate>
         </div>
       ),
     },
@@ -213,30 +218,34 @@ export default function ProductsPage() {
       </div>
 
       <div className="flex gap-2 pt-2 border-t">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={() => {
-            setSelectedProduct(product);
-            setShowStockDialog(true);
-          }}
-        >
-          <PackagePlus className="h-4 w-4 mr-1" />
-          {tStock('buttons.adjustStock')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={() => {
-            setSelectedProduct(product);
-            setShowEditDialog(true);
-          }}
-        >
-          <Edit className="h-4 w-4 mr-1" />
-          {t('edit')}
-        </Button>
+        <PermissionGate permission="products:adjust_stock">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              setSelectedProduct(product);
+              setShowStockDialog(true);
+            }}
+          >
+            <PackagePlus className="h-4 w-4 mr-1" />
+            {tStock('buttons.adjustStock')}
+          </Button>
+        </PermissionGate>
+        <PermissionGate permission="products:edit">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              setSelectedProduct(product);
+              setShowEditDialog(true);
+            }}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            {t('edit')}
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );
@@ -250,13 +259,15 @@ export default function ProductsPage() {
             {t('subtitle')}
           </p>
         </div>
-        <Button
-          className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
-          onClick={() => setShowAddDialog(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {tProductForm('buttons.addProduct')}
-        </Button>
+        <PermissionGate permission="products:create">
+          <Button
+            className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
+            onClick={() => setShowAddDialog(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {tProductForm('buttons.addProduct')}
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Stats */}

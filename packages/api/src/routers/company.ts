@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, isAdminOrSales } from '../trpc';
+import { router, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import * as xeroService from '../services/xero';
@@ -8,7 +8,7 @@ export const companyRouter = router({
   /**
    * Get company settings including delivery configuration
    */
-  getSettings: isAdminOrSales.query(async () => {
+  getSettings: requireAnyPermission(['settings.company:view', 'settings.delivery:view', 'settings.xero:view']).query(async () => {
     const company = await prisma.company.findFirst({
       select: {
         id: true,
@@ -37,7 +37,7 @@ export const companyRouter = router({
   /**
    * Update company profile (business info, address, bank details)
    */
-  updateProfile: isAdminOrSales
+  updateProfile: requirePermission('settings.company:edit')
     .input(
       z.object({
         businessName: z.string().min(1, 'Business name is required'),
@@ -95,7 +95,7 @@ export const companyRouter = router({
   /**
    * Update logo URL
    */
-  updateLogo: isAdminOrSales
+  updateLogo: requirePermission('settings.company:edit')
     .input(
       z.object({
         logoUrl: z.string().url('Valid URL is required'),
@@ -128,7 +128,7 @@ export const companyRouter = router({
   /**
    * Update Xero integration settings
    */
-  updateXeroSettings: isAdminOrSales
+  updateXeroSettings: requirePermission('settings.integrations:edit')
     .input(
       z.object({
         clientId: z.string().min(1, 'Client ID is required'),
@@ -167,7 +167,7 @@ export const companyRouter = router({
   /**
    * Test Xero connection with detailed verification
    */
-  testXeroConnection: isAdminOrSales.mutation(async () => {
+  testXeroConnection: requirePermission('settings.xero:sync').mutation(async () => {
     const company = await prisma.company.findFirst();
 
     if (!company || !company.xeroSettings) {
@@ -193,7 +193,7 @@ export const companyRouter = router({
   /**
    * Get Xero connection status
    */
-  getXeroStatus: isAdminOrSales.query(async () => {
+  getXeroStatus: requirePermission('settings.xero:view').query(async () => {
     const status = await xeroService.getConnectionStatus();
 
     return {
@@ -207,7 +207,7 @@ export const companyRouter = router({
   /**
    * Disconnect from Xero
    */
-  disconnectXero: isAdminOrSales.mutation(async () => {
+  disconnectXero: requirePermission('settings.integrations:edit').mutation(async () => {
     try {
       await xeroService.disconnect();
 
@@ -226,7 +226,7 @@ export const companyRouter = router({
   /**
    * Update delivery settings (warehouse address, Mapbox token, cut-off times)
    */
-  updateDeliverySettings: isAdminOrSales
+  updateDeliverySettings: requirePermission('settings.delivery:edit')
     .input(
       z.object({
         warehouseAddress: z.object({
@@ -277,7 +277,7 @@ export const companyRouter = router({
   /**
    * Geocode an address using Mapbox
    */
-  geocodeAddress: isAdminOrSales
+  geocodeAddress: requirePermission('settings.delivery:edit')
     .input(
       z.object({
         address: z.string().min(1, 'Address is required'),

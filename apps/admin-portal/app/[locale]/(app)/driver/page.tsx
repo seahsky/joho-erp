@@ -35,6 +35,7 @@ import { StartDeliveryDialog } from './components/StartDeliveryDialog';
 import { PODUploadDialog } from './components/PODUploadDialog';
 import { CompleteDeliveryDialog } from './components/CompleteDeliveryDialog';
 import { ReturnDialog } from './components/ReturnDialog';
+import { PermissionGate } from '@/components/permission-gate';
 
 interface Delivery {
   id: string;
@@ -307,48 +308,56 @@ export default function DriverPage() {
 
                     {/* Start Delivery - for ready_for_delivery */}
                     {delivery.status === 'ready_for_delivery' && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleStartDelivery(delivery)}
-                        className="flex-1 min-h-[44px]"
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        {t('actions.startDelivery')}
-                      </Button>
+                      <PermissionGate permission="driver:complete">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStartDelivery(delivery)}
+                          className="flex-1 min-h-[44px]"
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          {t('actions.startDelivery')}
+                        </Button>
+                      </PermissionGate>
                     )}
 
                     {/* Out for Delivery Actions */}
                     {delivery.status === 'out_for_delivery' && (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUploadPOD(delivery)}
-                          className="min-h-[44px]"
-                        >
-                          <Camera className="h-4 w-4 mr-1" />
-                          {t('actions.uploadPod')}
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleCompleteDelivery(delivery)}
-                          className="flex-1 min-h-[44px]"
-                          disabled={!delivery.hasProofOfDelivery}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          {t('actions.completeDelivery')}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleReturn(delivery)}
-                          className="min-h-[44px]"
-                        >
-                          <Undo2 className="h-4 w-4 mr-1" />
-                          {t('actions.returnToWarehouse')}
-                        </Button>
+                        <PermissionGate permission="driver:upload_pod">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUploadPOD(delivery)}
+                            className="min-h-[44px]"
+                          >
+                            <Camera className="h-4 w-4 mr-1" />
+                            {t('actions.uploadPod')}
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="driver:complete">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleCompleteDelivery(delivery)}
+                            className="flex-1 min-h-[44px]"
+                            disabled={!delivery.hasProofOfDelivery}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            {t('actions.completeDelivery')}
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="driver:complete">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReturn(delivery)}
+                            className="min-h-[44px]"
+                          >
+                            <Undo2 className="h-4 w-4 mr-1" />
+                            {t('actions.returnToWarehouse')}
+                          </Button>
+                        </PermissionGate>
                       </>
                     )}
 

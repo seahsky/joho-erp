@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { router, isAdminOrSales } from '../trpc';
+import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 
 export const dashboardRouter = router({
   // Get dashboard statistics
-  getStats: isAdminOrSales.query(async () => {
+  getStats: requirePermission('dashboard:view').query(async () => {
     const [totalOrders, pendingOrders, totalCustomers, activeDeliveries, lowStockCount] = await Promise.all([
       // Total orders count
       prisma.order.count(),
@@ -61,7 +61,7 @@ export const dashboardRouter = router({
   }),
 
   // Get recent orders
-  getRecentOrders: isAdminOrSales
+  getRecentOrders: requirePermission('dashboard:view')
     .input(z.object({ limit: z.number().default(10) }))
     .query(async ({ input }) => {
       const orders = await prisma.order.findMany({
@@ -81,7 +81,7 @@ export const dashboardRouter = router({
     }),
 
   // Get low stock items
-  getLowStockItems: isAdminOrSales
+  getLowStockItems: requirePermission('dashboard:view')
     .input(z.object({ limit: z.number().default(10) }))
     .query(async ({ input }) => {
       // Using raw aggregation for field comparison
@@ -128,7 +128,7 @@ export const dashboardRouter = router({
   // ============================================================================
 
   // Get inventory summary statistics
-  getInventorySummary: isAdminOrSales.query(async () => {
+  getInventorySummary: requirePermission('inventory:view').query(async () => {
     const [
       totalProducts,
       outOfStockCount,
@@ -202,7 +202,7 @@ export const dashboardRouter = router({
   }),
 
   // Get inventory breakdown by category
-  getInventoryByCategory: isAdminOrSales.query(async () => {
+  getInventoryByCategory: requirePermission('inventory:view').query(async () => {
     const categoryBreakdown = await prisma.product.aggregateRaw({
       pipeline: [
         {
@@ -256,7 +256,7 @@ export const dashboardRouter = router({
   }),
 
   // Get inventory transactions with filters
-  getInventoryTransactions: isAdminOrSales
+  getInventoryTransactions: requirePermission('inventory:view')
     .input(
       z.object({
         dateFrom: z.date().optional(),

@@ -11,6 +11,7 @@ import {
 } from '@joho-erp/ui';
 import { Settings } from 'lucide-react';
 import { ADMIN_NAV_ITEMS } from '@/config/navigation';
+import { usePermission } from './permission-provider';
 
 interface AdminDesktopSidebarProps {
   locale: string;
@@ -20,12 +21,17 @@ interface AdminDesktopSidebarProps {
 export function AdminDesktopSidebar({ locale, onCollapsedChange }: AdminDesktopSidebarProps) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
+  const { hasPermission } = usePermission();
 
-  const navigationItems = ADMIN_NAV_ITEMS.map((item) => ({
-    ...item,
-    label: t(item.labelKey),
-    href: `/${locale}${item.path}`,
-  }));
+  const navigationItems = ADMIN_NAV_ITEMS
+    .filter((item) => hasPermission(item.permission))
+    .map((item) => ({
+      ...item,
+      label: t(item.labelKey),
+      href: `/${locale}${item.path}`,
+    }));
+
+  const canViewSettings = hasPermission('settings:view');
 
   return (
     <DesktopSidebar topOffset="top-16" onCollapsedChange={onCollapsedChange}>
@@ -46,16 +52,18 @@ export function AdminDesktopSidebar({ locale, onCollapsedChange }: AdminDesktopS
           </SidebarSection>
 
           {/* Settings Section */}
-          <SidebarSection title={collapsed ? undefined : t('settingsSection')} collapsed={collapsed}>
-            <Link href={`/${locale}/settings`}>
-              <SidebarItem
-                icon={Settings}
-                label={t('settings')}
-                active={pathname.startsWith(`/${locale}/settings`)}
-                collapsed={collapsed}
-              />
-            </Link>
-          </SidebarSection>
+          {canViewSettings && (
+            <SidebarSection title={collapsed ? undefined : t('settingsSection')} collapsed={collapsed}>
+              <Link href={`/${locale}/settings`}>
+                <SidebarItem
+                  icon={Settings}
+                  label={t('settings')}
+                  active={pathname.startsWith(`/${locale}/settings`)}
+                  collapsed={collapsed}
+                />
+              </Link>
+            </SidebarSection>
+          )}
         </>
       )}
     </DesktopSidebar>

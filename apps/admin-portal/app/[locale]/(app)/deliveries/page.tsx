@@ -6,6 +6,7 @@ import { MapPin, Navigation, CheckCircle, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { PermissionGate } from '@/components/permission-gate';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -141,10 +142,12 @@ export default function DeliveriesPage() {
                       {delivery.deliverySequence && ` • ${t('sequence')}: #${delivery.deliverySequence}`}
                     </span>
                     {delivery.status === 'ready_for_delivery' && (
-                      <Button size="sm" variant="ghost" className="h-7 text-xs">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        {t('markAsDelivered')}
-                      </Button>
+                      <PermissionGate permission="deliveries:manage">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {t('markAsDelivered')}
+                        </Button>
+                      </PermissionGate>
                     )}
                   </div>
                 </div>
