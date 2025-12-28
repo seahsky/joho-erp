@@ -39,7 +39,9 @@
     "area": "区域",
     "sequence": "顺序",
     "brand": "Joho Foods",
-    "noEmail": "无邮箱"
+    "noEmail": "无邮箱",
+    "yes": "是",
+    "no": "否"
   },
   "statusBadges": {
     "awaiting_approval": "待审批",
@@ -90,6 +92,15 @@
     "south": "南区",
     "east": "东区",
     "west": "西区"
+  },
+  "days": {
+    "monday": "星期一",
+    "tuesday": "星期二",
+    "wednesday": "星期三",
+    "thursday": "星期四",
+    "friday": "星期五",
+    "saturday": "星期六",
+    "sunday": "星期日"
   },
   "dashboard": {
     "title": "仪表板",
@@ -1119,6 +1130,8 @@
       "usersDescription": "管理管理员用户、角色和权限",
       "notifications": "通知",
       "notificationsDescription": "配置电子邮件警报和通知偏好设置",
+      "sms": "短信提醒",
+      "smsDescription": "配置客户短信订单提醒",
       "profile": "个人资料设置",
       "profileDescription": "管理您的个人资料、安全和账户设置"
     },
@@ -1445,6 +1458,45 @@
       "testEmailError": "发送测试通知失败",
       "testEmailRequired": "请输入邮箱地址",
       "loading": "加载通知设置中..."
+    },
+    "sms": {
+      "title": "短信设置",
+      "subtitle": "通过Twilio配置短信订单提醒",
+      "notConfigured": "Twilio未配置。请设置TWILIO_ACCOUNT_SID、TWILIO_AUTH_TOKEN和TWILIO_PHONE_NUMBER环境变量。",
+      "globalEnabled": "启用短信提醒",
+      "globalEnabledDescription": "为已选择接收的客户开启短信提醒",
+      "messageTemplate": {
+        "title": "消息模板",
+        "description": "自定义短信提醒内容",
+        "label": "短信内容",
+        "placeholder": "您好 {customerName}，{companyName} 提醒您本周下单。",
+        "hint": "可用占位符：{customerName}、{companyName}。最多160个字符。",
+        "charCount": "{count}/160 字符"
+      },
+      "sendTime": {
+        "title": "发送时间",
+        "description": "配置短信提醒发送时间",
+        "label": "每日发送时间 (AEST)",
+        "hint": "短信提醒将在每天此时间发送给当天预定的客户"
+      },
+      "testSms": {
+        "title": "测试短信",
+        "description": "发送测试消息以验证配置",
+        "phoneNumber": "测试手机号",
+        "phoneNumberPlaceholder": "+61400000000",
+        "send": "发送测试短信",
+        "sending": "发送中...",
+        "success": "测试短信发送成功",
+        "successDescription": "请检查您的手机",
+        "error": "发送测试短信失败"
+      },
+      "saveChanges": "保存更改",
+      "saving": "保存中...",
+      "unsavedChanges": "未保存的更改",
+      "settingsSaved": "短信设置保存成功",
+      "settingsSavedDescription": "您的短信设置已更新",
+      "saveError": "保存短信设置失败",
+      "loading": "加载短信设置中..."
     },
     "dropdown": {
       "header": "设置",
@@ -1856,6 +1908,16 @@
       "TAS": "塔斯马尼亚州",
       "NT": "北领地",
       "ACT": "澳大利亚首都领地"
+    },
+    "smsReminder": {
+      "title": "短信订单提醒",
+      "description": "发送每周短信提醒下单",
+      "enable": "启用短信提醒",
+      "reminderDay": "提醒日期",
+      "selectDay": "选择日期...",
+      "mobileRequired": "启用短信提醒需要填写手机号码",
+      "globalDisabled": "管理员已禁用短信提醒功能",
+      "notConfigured": "短信服务未配置"
     }
   },
   "orderDetail": {

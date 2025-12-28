@@ -225,6 +225,7 @@ model Customer {
   directors           DirectorDetails[]
   financialDetails    FinancialDetails?
   tradeReferences     TradeReference[]
+  smsReminderPreferences SmsReminderPreferences?
   status              CustomerStatus      @default(active)
   suspensionReason    String?             // Reason for suspension (if suspended)
   suspendedAt         DateTime?           // When account was suspended
@@ -454,6 +455,7 @@ model Company {
   xeroSettings            XeroSettings?
   deliverySettings        DeliverySettings?
   notificationSettings    NotificationSettings?
+  smsSettings             SmsSettings?
   logoUrl                 String?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -804,4 +806,15 @@ type CustomerNotifications {
   newCustomer             Boolean             @default(true)
   creditApplication       Boolean             @default(true)
   creditApproved          Boolean             @default(true)
+}
+
+type SmsSettings {
+  enabled                 Boolean             @default(false)
+  messageTemplate         String?             // SMS template with placeholders: {customerName}, {companyName}
+  sendTime                String?             // HH:mm format, e.g. "09:00" (AEST)
+}
+
+type SmsReminderPreferences {
+  enabled                 Boolean             @default(false)
+  reminderDay             String?             // "monday", "tuesday", etc.
 }

@@ -202,6 +202,36 @@ export const FILE_UPLOAD = {
   ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/jpg'],
 } as const;
 
+// Days of Week (for SMS reminders)
+export const DAYS_OF_WEEK = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const;
+
+export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
+
+// Days of Week Translation Keys - use with t('days.{key}')
+export const DAY_OF_WEEK_KEYS = {
+  monday: 'days.monday',
+  tuesday: 'days.tuesday',
+  wednesday: 'days.wednesday',
+  thursday: 'days.thursday',
+  friday: 'days.friday',
+  saturday: 'days.saturday',
+  sunday: 'days.sunday',
+} as const;
+
+// SMS Settings Defaults
+export const DEFAULT_SMS_TEMPLATE =
+  'Hi {customerName}, reminder from {companyName} to place your order for this week.';
+
+export const DEFAULT_SMS_SEND_TIME = '09:00';
+
 // API Error Codes
 export * from './errors';
 

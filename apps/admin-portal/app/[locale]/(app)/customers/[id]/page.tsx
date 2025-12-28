@@ -55,8 +55,9 @@ import {
   Briefcase,
   Plus,
   Trash2,
+  MessageSquare,
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@joho-erp/shared';
+import { formatCurrency, formatDate, DAYS_OF_WEEK, type DayOfWeek } from '@joho-erp/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -102,6 +103,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const t = useTranslations('customerDetail');
   const tCustomers = useTranslations('customers');
   const tCommon = useTranslations('common');
+  const tDays = useTranslations('days');
   const router = useRouter();
   const { toast } = useToast();
   const utils = api.useUtils();
@@ -153,6 +155,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
     directors: [] as DirectorFormData[],
     // Trade references
     tradeReferences: [] as TradeReferenceFormData[],
+    // SMS reminder preferences
+    smsReminderEnabled: false,
+    smsReminderDay: '' as DayOfWeek | '',
   });
 
   // Fetch customer data
@@ -315,6 +320,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
       // Directors and trade references
       directors: directorsData,
       tradeReferences: tradeRefsData,
+      // SMS reminder preferences
+      smsReminderEnabled: customer.smsReminderPreferences?.enabled ?? false,
+      smsReminderDay: (customer.smsReminderPreferences?.reminderDay as DayOfWeek) || '',
     });
     setIsEditing(true);
   };
@@ -416,6 +424,14 @@ export default function CustomerDetailPage({ params }: PageProps) {
         email: r.email,
       }));
     }
+
+    // Add SMS reminder preferences
+    payload.smsReminderPreferences = {
+      enabled: editForm.smsReminderEnabled,
+      reminderDay: editForm.smsReminderEnabled && editForm.smsReminderDay
+        ? (editForm.smsReminderDay as DayOfWeek)
+        : null,
+    };
 
     updateMutation.mutate(payload);
   };
@@ -1444,6 +1460,81 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 <span className="text-sm text-muted-foreground">{t('stats.memberSince')}</span>
                 <span className="font-medium">{formatDate(customer.createdAt)}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* SMS Reminder Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                {t('smsReminder.title')}
+                {isEditing && (
+                  <Badge variant="outline" className="ml-2">{t('edit.editMode')}</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>{t('smsReminder.description')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isEditing ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="smsReminderEnabled">{t('smsReminder.enable')}</Label>
+                    <Checkbox
+                      id="smsReminderEnabled"
+                      checked={editForm.smsReminderEnabled}
+                      onCheckedChange={(checked) => {
+                        setEditForm({
+                          ...editForm,
+                          smsReminderEnabled: checked === true,
+                          smsReminderDay: checked === true ? editForm.smsReminderDay : '',
+                        });
+                      }}
+                      disabled={!customer.contactPerson.mobile}
+                    />
+                  </div>
+                  {!customer.contactPerson.mobile && (
+                    <p className="text-xs text-destructive">{t('smsReminder.mobileRequired')}</p>
+                  )}
+                  {editForm.smsReminderEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="smsReminderDay">{t('smsReminder.reminderDay')}</Label>
+                      <Select
+                        value={editForm.smsReminderDay}
+                        onValueChange={(value) => setEditForm({ ...editForm, smsReminderDay: value as DayOfWeek })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('smsReminder.selectDay')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DAYS_OF_WEEK.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {tDays(day)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t('smsReminder.enable')}</span>
+                    <Badge variant={customer.smsReminderPreferences?.enabled ? 'default' : 'secondary'}>
+                      {customer.smsReminderPreferences?.enabled ? tCommon('yes') : tCommon('no')}
+                    </Badge>
+                  </div>
+                  {customer.smsReminderPreferences?.enabled && customer.smsReminderPreferences?.reminderDay && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t('smsReminder.reminderDay')}</span>
+                      <span className="font-medium capitalize">
+                        {tDays(customer.smsReminderPreferences.reminderDay as DayOfWeek)}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 

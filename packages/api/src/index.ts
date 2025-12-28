@@ -36,3 +36,11 @@ export {
   IMAGE_UPLOAD_CONFIG,
   type AllowedMimeType,
 } from './services/r2';
+
+export {
+  sendSms,
+  sendTestSms,
+  sendOrderReminderSms,
+  sendBulkOrderReminderSms,
+  isSmsConfigured,
+} from './services/sms';

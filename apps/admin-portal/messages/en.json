@@ -39,7 +39,9 @@
     "area": "Area",
     "sequence": "Sequence",
     "brand": "Joho Foods",
-    "noEmail": "No email"
+    "noEmail": "No email",
+    "yes": "Yes",
+    "no": "No"
   },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
@@ -90,6 +92,15 @@
     "south": "South",
     "east": "East",
     "west": "West"
+  },
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1119,6 +1130,8 @@
       "permissionsDescription": "Configure role-based access control for each user role",
       "notifications": "Notifications",
       "notificationsDescription": "Configure email alerts and notification preferences",
+      "sms": "SMS Reminders",
+      "smsDescription": "Configure SMS order reminders for customers",
       "profile": "Profile Settings",
       "profileDescription": "Manage your personal profile, security, and account settings"
     },
@@ -1445,6 +1458,45 @@
       "testEmailError": "Failed to send test notification",
       "testEmailRequired": "Please enter an email address",
       "loading": "Loading notification settings..."
+    },
+    "sms": {
+      "title": "SMS Settings",
+      "subtitle": "Configure SMS order reminders via Twilio",
+      "notConfigured": "Twilio is not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.",
+      "globalEnabled": "Enable SMS Reminders",
+      "globalEnabledDescription": "Turn on SMS reminders for customers who have opted in",
+      "messageTemplate": {
+        "title": "Message Template",
+        "description": "Customize the SMS reminder message",
+        "label": "SMS Message",
+        "placeholder": "Hi {customerName}, reminder from {companyName} to place your order for this week.",
+        "hint": "Available placeholders: {customerName}, {companyName}. Max 160 characters.",
+        "charCount": "{count}/160 characters"
+      },
+      "sendTime": {
+        "title": "Send Time",
+        "description": "Configure when SMS reminders are sent",
+        "label": "Daily send time (AEST)",
+        "hint": "SMS reminders will be sent at this time each day to customers scheduled for that day"
+      },
+      "testSms": {
+        "title": "Test SMS",
+        "description": "Send a test message to verify your configuration",
+        "phoneNumber": "Test Phone Number",
+        "phoneNumberPlaceholder": "+61400000000",
+        "send": "Send Test SMS",
+        "sending": "Sending...",
+        "success": "Test SMS sent successfully",
+        "successDescription": "Check your phone for the test message",
+        "error": "Failed to send test SMS"
+      },
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "unsavedChanges": "Unsaved changes",
+      "settingsSaved": "SMS settings saved successfully",
+      "settingsSavedDescription": "Your SMS settings have been updated",
+      "saveError": "Failed to save SMS settings",
+      "loading": "Loading SMS settings..."
     },
     "dropdown": {
       "header": "Settings",
@@ -1856,6 +1908,16 @@
       "TAS": "Tasmania",
       "NT": "Northern Territory",
       "ACT": "Australian Capital Territory"
+    },
+    "smsReminder": {
+      "title": "SMS Order Reminder",
+      "description": "Send weekly SMS reminders to place orders",
+      "enable": "Enable SMS Reminders",
+      "reminderDay": "Reminder Day",
+      "selectDay": "Select a day...",
+      "mobileRequired": "A mobile number is required to enable SMS reminders",
+      "globalDisabled": "SMS reminders are currently disabled by administrator",
+      "notConfigured": "SMS service is not configured"
     }
   },
   "orderDetail": {

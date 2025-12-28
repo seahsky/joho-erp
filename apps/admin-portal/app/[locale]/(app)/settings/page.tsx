@@ -13,6 +13,7 @@ import {
   Puzzle,
   Users,
   Bell,
+  MessageSquare,
   ChevronRight,
   Settings as SettingsIcon,
 } from 'lucide-react';
@@ -72,6 +73,14 @@ export default function SettingsPage() {
       titleKey: 'categories.notifications',
       descriptionKey: 'categories.notificationsDescription',
       href: `/${locale}/settings/notifications`,
+      available: true,
+    },
+    {
+      id: 'sms',
+      icon: MessageSquare,
+      titleKey: 'categories.sms',
+      descriptionKey: 'categories.smsDescription',
+      href: `/${locale}/settings/sms`,
       available: true,
     },
   ];

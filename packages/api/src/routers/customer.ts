@@ -999,6 +999,16 @@ export const customerRouter = router({
             })
           )
           .optional(),
+        // SMS reminder preferences
+        smsReminderPreferences: z
+          .object({
+            enabled: z.boolean(),
+            reminderDay: z
+              .enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
+              .nullable()
+              .optional(),
+          })
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1168,6 +1178,22 @@ export const customerRouter = router({
           field: 'tradeReferences',
           oldValue: currentCustomer.tradeReferences,
           newValue: newTradeReferences,
+        });
+      }
+
+      // Handle SMS reminder preferences
+      if (input.smsReminderPreferences !== undefined) {
+        const newSmsPreferences = {
+          enabled: input.smsReminderPreferences.enabled,
+          reminderDay: input.smsReminderPreferences.enabled
+            ? input.smsReminderPreferences.reminderDay ?? null
+            : null,
+        };
+        updateData.smsReminderPreferences = newSmsPreferences;
+        changes.push({
+          field: 'smsReminderPreferences',
+          oldValue: currentCustomer.smsReminderPreferences,
+          newValue: newSmsPreferences,
         });
       }
 

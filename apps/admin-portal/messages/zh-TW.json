@@ -39,7 +39,9 @@
     "area": "區域",
     "sequence": "順序",
     "brand": "Joho Foods",
-    "noEmail": "無電子郵件"
+    "noEmail": "無電子郵件",
+    "yes": "是",
+    "no": "否"
   },
   "statusBadges": {
     "awaiting_approval": "待審批",
@@ -90,6 +92,15 @@
     "south": "南區",
     "east": "東區",
     "west": "西區"
+  },
+  "days": {
+    "monday": "星期一",
+    "tuesday": "星期二",
+    "wednesday": "星期三",
+    "thursday": "星期四",
+    "friday": "星期五",
+    "saturday": "星期六",
+    "sunday": "星期日"
   },
   "dashboard": {
     "title": "儀表板",
@@ -1119,6 +1130,8 @@
       "usersDescription": "管理管理員使用者、角色和權限",
       "notifications": "通知",
       "notificationsDescription": "配置電子郵件警報和通知偏好設定",
+      "sms": "簡訊提醒",
+      "smsDescription": "配置客戶簡訊訂單提醒",
       "profile": "個人資料設定",
       "profileDescription": "管理您的個人資料、安全和帳戶設定"
     },
@@ -1445,6 +1458,45 @@
       "testEmailError": "發送測試通知失敗",
       "testEmailRequired": "請輸入郵箱地址",
       "loading": "載入通知設定中..."
+    },
+    "sms": {
+      "title": "簡訊設定",
+      "subtitle": "透過Twilio配置簡訊訂單提醒",
+      "notConfigured": "Twilio未配置。請設定TWILIO_ACCOUNT_SID、TWILIO_AUTH_TOKEN和TWILIO_PHONE_NUMBER環境變數。",
+      "globalEnabled": "啟用簡訊提醒",
+      "globalEnabledDescription": "為已選擇接收的客戶開啟簡訊提醒",
+      "messageTemplate": {
+        "title": "訊息範本",
+        "description": "自訂簡訊提醒內容",
+        "label": "簡訊內容",
+        "placeholder": "您好 {customerName}，{companyName} 提醒您本週下單。",
+        "hint": "可用佔位符：{customerName}、{companyName}。最多160個字元。",
+        "charCount": "{count}/160 字元"
+      },
+      "sendTime": {
+        "title": "發送時間",
+        "description": "配置簡訊提醒發送時間",
+        "label": "每日發送時間 (AEST)",
+        "hint": "簡訊提醒將在每天此時間發送給當天預定的客戶"
+      },
+      "testSms": {
+        "title": "測試簡訊",
+        "description": "發送測試訊息以驗證配置",
+        "phoneNumber": "測試手機號",
+        "phoneNumberPlaceholder": "+61400000000",
+        "send": "發送測試簡訊",
+        "sending": "發送中...",
+        "success": "測試簡訊發送成功",
+        "successDescription": "請檢查您的手機",
+        "error": "發送測試簡訊失敗"
+      },
+      "saveChanges": "儲存更改",
+      "saving": "儲存中...",
+      "unsavedChanges": "未儲存的更改",
+      "settingsSaved": "簡訊設定儲存成功",
+      "settingsSavedDescription": "您的簡訊設定已更新",
+      "saveError": "儲存簡訊設定失敗",
+      "loading": "載入簡訊設定中..."
     },
     "dropdown": {
       "header": "設定",
@@ -1856,6 +1908,16 @@
       "TAS": "塔斯馬尼亞州",
       "NT": "北領地",
       "ACT": "澳洲首都領地"
+    },
+    "smsReminder": {
+      "title": "簡訊訂單提醒",
+      "description": "發送每週簡訊提醒下單",
+      "enable": "啟用簡訊提醒",
+      "reminderDay": "提醒日期",
+      "selectDay": "選擇日期...",
+      "mobileRequired": "啟用簡訊提醒需要填寫手機號碼",
+      "globalDisabled": "管理員已停用簡訊提醒功能",
+      "notConfigured": "簡訊服務未配置"
     }
   },
   "orderDetail": {

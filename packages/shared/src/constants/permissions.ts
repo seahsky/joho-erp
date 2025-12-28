@@ -253,6 +253,17 @@ export const PERMISSION_DEFINITIONS: Record<
     action: 'sync',
     description: 'Trigger Xero synchronization',
   },
+
+  'settings.sms:view': {
+    module: 'settings.sms',
+    action: 'view',
+    description: 'View SMS reminder settings',
+  },
+  'settings.sms:edit': {
+    module: 'settings.sms',
+    action: 'edit',
+    description: 'Edit SMS settings and send test messages',
+  },
 };
 
 // Default permissions for each role
