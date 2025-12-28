@@ -54,31 +54,42 @@ export function OrderListView({
 
     if (orderInOrders && !orderInFiltered) {
       setAreaFilter('all');
-      // Let the next render cycle handle the scroll after filter resets
       return;
     }
 
-    // Use a small timeout to ensure DOM has updated after any filter changes
-    const scrollTimer = setTimeout(() => {
-      const element = document.getElementById(`order-card-${focusedOrderNumber}`);
-      if (element) {
-        // Scroll to the element with smooth behavior
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    let attempts = 0;
+    const maxAttempts = 10;
+    const retryInterval = 100;
+    let scrollTimer: NodeJS.Timeout | null = null;
+    let highlightTimer: NodeJS.Timeout | null = null;
 
-        // Add highlight animation class
+    const attemptScroll = () => {
+      const element = document.getElementById(`order-card-${focusedOrderNumber}`);
+
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         element.classList.add('order-card-highlight');
 
-        // Remove highlight class and clear focus after animation
-        const highlightTimer = setTimeout(() => {
+        highlightTimer = setTimeout(() => {
           element.classList.remove('order-card-highlight');
           stableClearFocus();
         }, 1500);
-
-        return () => clearTimeout(highlightTimer);
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        scrollTimer = setTimeout(attemptScroll, retryInterval);
+      } else {
+        // Max attempts reached, clear focus to avoid stuck state
+        stableClearFocus();
       }
-    }, 100);
+    };
 
-    return () => clearTimeout(scrollTimer);
+    // Initial delay to allow for any pending renders
+    scrollTimer = setTimeout(attemptScroll, 100);
+
+    return () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      if (highlightTimer) clearTimeout(highlightTimer);
+    };
   }, [focusedOrderNumber, orders, areaFilter, stableClearFocus]);
 
   // Get unique area tags
