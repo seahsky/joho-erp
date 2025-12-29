@@ -183,7 +183,7 @@ export async function optimizeRoutesByArea(
 
     const result = await optimizeRoute(coordinatesWithWarehouse, accessToken, {
       source: "first", // Warehouse is always first
-      destination: "any", // Last delivery can be any stop
+      destination: "last", // Only valid option when roundtrip=false
       roundtrip: false, // Don't return to warehouse
     });
 
