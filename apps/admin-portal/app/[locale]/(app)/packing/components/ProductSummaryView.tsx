@@ -131,10 +131,18 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
           const allOrdersReady = item.orders?.every(order => order.status === 'ready_for_delivery') ?? false;
 
           return (
-            <button
+            <div
               key={item.productId}
+              role="button"
+              tabIndex={0}
               onClick={() => toggleProductGathered(item.productId)}
-              className={`w-full text-left p-3 transition-all duration-200 hover:bg-muted/50 group ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleProductGathered(item.productId);
+                }
+              }}
+              className={`w-full text-left p-3 transition-all duration-200 hover:bg-muted/50 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
                 isGathered ? 'bg-success/10 hover:bg-success/15' : ''
               } ${allOrdersReady ? 'bg-muted/30' : ''}`}
               style={{
@@ -206,7 +214,7 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
                   )}
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
         </div>
