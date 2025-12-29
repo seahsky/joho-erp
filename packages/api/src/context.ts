@@ -18,6 +18,8 @@ export interface CreateContextOptions extends FetchCreateContextFnOptions {
     sessionId: string | null;
     // User role from Clerk's publicMetadata
     userRole?: UserRole | null;
+    // User display name (firstName + lastName)
+    userName?: string | null;
   };
 }
 
@@ -26,6 +28,7 @@ export async function createContext(opts: CreateContextOptions) {
     userId: opts.auth.userId,
     sessionId: opts.auth.sessionId,
     userRole: opts.auth.userRole || ('customer' as UserRole), // Default to customer
+    userName: opts.auth.userName || null,
     req: opts.req,
     resHeaders: opts.resHeaders,
   };

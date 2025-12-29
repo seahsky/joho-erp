@@ -157,7 +157,7 @@ export const permissionRouter = router({
       clearPermissionCache(role);
 
       // Audit log - CRITICAL: Permission changes must be tracked
-      await logBulkPermissionUpdate(ctx.userId, undefined, ctx.userRole, {
+      await logBulkPermissionUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         targetRole: role,
         permissionsGranted: permissions,
         permissionsRevoked: [], // Full replacement, so all previous were revoked
@@ -237,7 +237,7 @@ export const permissionRouter = router({
       clearPermissionCache(role);
 
       // Audit log - CRITICAL: Permission toggle must be tracked
-      await logPermissionToggle(ctx.userId, undefined, ctx.userRole, {
+      await logPermissionToggle(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         targetRole: role,
         permissionCode,
         enabled,
@@ -303,7 +303,7 @@ export const permissionRouter = router({
       clearPermissionCache(role);
 
       // Audit log - CRITICAL: Permission reset must be tracked
-      await logRolePermissionReset(ctx.userId, undefined, ctx.userRole, {
+      await logRolePermissionReset(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         targetRole: role,
         previousPermissions,
       }).catch((error) => {

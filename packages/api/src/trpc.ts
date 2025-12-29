@@ -36,6 +36,7 @@ export const publicProcedure = t.procedure;
  * - userId: Clerk user ID (guaranteed to be non-null)
  * - sessionId: Clerk session ID
  * - userRole: User's role from Clerk metadata (defaults to 'customer')
+ * - userName: User's display name (firstName + lastName from Clerk)
  *
  * This is the base for all authenticated endpoints. Use this when:
  * - Any authenticated user should have access
@@ -55,6 +56,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
       userId: ctx.userId,
       sessionId: ctx.sessionId,
       userRole: ctx.userRole,
+      userName: ctx.userName,
     },
   });
 });

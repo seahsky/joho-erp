@@ -1482,7 +1482,7 @@ export const orderRouter = router({
       });
 
       // Audit log - MEDIUM: Reorder creation
-      await logReorder(ctx.userId, undefined, ctx.userRole, newOrder.id, {
+      await logReorder(ctx.userId, undefined, ctx.userRole, ctx.userName, newOrder.id, {
         originalOrderId: input.orderId,
         originalOrderNumber: originalOrder.orderNumber,
         newOrderNumber: newOrder.orderNumber,
@@ -2102,7 +2102,7 @@ export const orderRouter = router({
       });
 
       // Audit log - HIGH: Order confirmation must be tracked
-      await logOrderConfirmation(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logOrderConfirmation(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         customerId: order.customerId,
       }).catch((error) => {
@@ -2313,7 +2313,7 @@ export const orderRouter = router({
       });
 
       // Audit log - LOW: Resend confirmation tracked for visibility
-      await logResendConfirmation(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logResendConfirmation(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         recipientEmail: order.customer.contactPerson.email,
       }).catch((error) => {

@@ -71,7 +71,7 @@ export const uploadRouter = router({
         });
 
         // Audit log the image upload
-        await logProductImageUpload(ctx.userId, undefined, ctx.userRole, {
+        await logProductImageUpload(ctx.userId, undefined, ctx.userRole, ctx.userName, {
           productId,
           filename,
           contentType,
@@ -118,7 +118,7 @@ export const uploadRouter = router({
         await deleteImage(input.imageUrl);
 
         // Audit log the image deletion
-        await logProductImageDelete(ctx.userId, undefined, ctx.userRole, {
+        await logProductImageDelete(ctx.userId, undefined, ctx.userRole, ctx.userName, {
           productId: input.productId,
           imageUrl: input.imageUrl,
         }).catch((error) => {

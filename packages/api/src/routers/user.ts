@@ -166,7 +166,7 @@ export const userRouter = router({
         });
 
         // Audit log - CRITICAL: User role changes must be tracked
-        await logUserRoleChange(ctx.userId, undefined, ctx.userRole, input.userId, {
+        await logUserRoleChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.userId, {
           targetUserEmail: targetEmail,
           oldRole,
           newRole: input.role,
@@ -220,7 +220,7 @@ export const userRouter = router({
         }
 
         // Audit log - CRITICAL: User status changes must be tracked
-        await logUserStatusChange(ctx.userId, undefined, ctx.userRole, input.userId, {
+        await logUserStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.userId, {
           targetUserEmail: targetEmail,
           action: input.deactivate ? 'deactivate' : 'activate',
         }).catch((error) => {
@@ -298,7 +298,7 @@ export const userRouter = router({
         });
 
         // Audit log - HIGH: User invitations must be tracked
-        await logUserInvitation(ctx.userId, undefined, ctx.userRole, {
+        await logUserInvitation(ctx.userId, undefined, ctx.userRole, ctx.userName, {
           invitedEmail: input.email,
           invitedRole: input.role,
           invitationId: invitation.id,
@@ -375,7 +375,7 @@ export const userRouter = router({
         await client.invitations.revokeInvitation(input.invitationId);
 
         // Audit log - HIGH: Invitation revocation must be tracked
-        await logInvitationRevoke(ctx.userId, undefined, ctx.userRole, {
+        await logInvitationRevoke(ctx.userId, undefined, ctx.userRole, ctx.userName, {
           invitationId: input.invitationId,
           revokedEmail,
         }).catch((error) => {

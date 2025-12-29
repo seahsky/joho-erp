@@ -398,6 +398,7 @@ export const customerRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         customer.id,
         customer.businessName,
         changes
@@ -648,6 +649,7 @@ export const customerRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         customer.id,
         customer.businessName,
         customer.abn
@@ -833,6 +835,7 @@ export const customerRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         customer.id,
         {
           businessName: customer.businessName,
@@ -890,6 +893,7 @@ export const customerRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         customer.id,
         {
           businessName: customer.businessName,

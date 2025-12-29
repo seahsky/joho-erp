@@ -486,7 +486,7 @@ export default function AuditLogsSettingsPage() {
                               <User className="h-4 w-4 text-muted-foreground" />
                               <div>
                                 <div className="text-sm font-medium">
-                                  {log.userEmail || log.userId}
+                                  {log.userName || log.userEmail || log.userId}
                                 </div>
                                 {log.userRole && (
                                   <Badge variant="outline" className="text-xs">

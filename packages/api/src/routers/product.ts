@@ -283,6 +283,7 @@ export const productRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         result.product.id,
         result.product.sku,
         result.product.name,
@@ -402,6 +403,7 @@ export const productRouter = router({
           ctx.userId,
           undefined, // userEmail not available in context
           ctx.userRole,
+          ctx.userName,
           result.product.id,
           result.product.sku,
           changes
@@ -480,7 +482,7 @@ export const productRouter = router({
       });
 
       // Audit log - HIGH: Stock adjustments must be tracked
-      await logStockAdjustment(ctx.userId, undefined, ctx.userRole, productId, {
+      await logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, productId, {
         sku: product.sku,
         adjustmentType,
         previousStock,

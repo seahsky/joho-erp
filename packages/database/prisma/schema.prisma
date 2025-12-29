@@ -368,6 +368,7 @@ model AuditLog {
   userId              String
   userEmail           String?             // Email of the user who performed the action
   userRole            String?             // Role of the user (admin, sales, packer, driver, manager)
+  userName            String?             // Display name of the user who performed the action
   action              AuditAction
   entity              String
   entityId            String?             @db.ObjectId

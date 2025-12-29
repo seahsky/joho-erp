@@ -197,7 +197,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: Delivery completion must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         oldStatus: currentOrder.status,
         newStatus: 'delivered',
@@ -715,7 +715,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: Out for delivery status change must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: updatedOrder.orderNumber,
         oldStatus: 'ready_for_delivery',
         newStatus: 'out_for_delivery',
@@ -784,7 +784,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: POD upload must be tracked
-      await logProofOfDeliveryUpload(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logProofOfDeliveryUpload(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         fileUrl,
         uploadType: type,
@@ -887,7 +887,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: Delivery completion must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         oldStatus: 'out_for_delivery',
         newStatus: 'delivered',
@@ -1002,7 +1002,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: Return to warehouse must be tracked
-      await logReturnToWarehouse(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logReturnToWarehouse(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         reason,
         driverId: ctx.userId,
@@ -1074,7 +1074,7 @@ export const deliveryRouter = router({
       });
 
       // Audit log - HIGH: Driver assignment must be tracked
-      await logDriverAssignment(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logDriverAssignment(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         driverId,
         driverName: driverName || 'Unknown',

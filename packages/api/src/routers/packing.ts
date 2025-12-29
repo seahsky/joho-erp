@@ -393,7 +393,7 @@ export const packingRouter = router({
       ]);
 
       // Audit log - HIGH: Quantity changes during packing must be tracked
-      await logPackingItemQuantityUpdate(ctx.userId, undefined, ctx.userRole, orderId, {
+      await logPackingItemQuantityUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
         orderNumber: order.orderNumber,
         itemSku: item.sku,
         oldQuantity,
@@ -482,7 +482,7 @@ export const packingRouter = router({
       }
 
       // Audit log - MEDIUM: Item packing tracked
-      await logPackingItemUpdate(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logPackingItemUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         itemSku: input.itemSku,
         action: input.packed ? 'packed' : 'unpacked',
@@ -565,7 +565,7 @@ export const packingRouter = router({
       });
 
       // Audit log - HIGH: Ready for delivery must be tracked
-      await logOrderReadyForDelivery(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logOrderReadyForDelivery(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         packedBy: ctx.userId || 'system',
       }).catch((error) => {
@@ -612,7 +612,7 @@ export const packingRouter = router({
       });
 
       // Audit log - LOW: Packing notes tracked
-      await logPackingNotesUpdate(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logPackingNotesUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         notes: input.notes,
       }).catch((error) => {
@@ -684,7 +684,7 @@ export const packingRouter = router({
       });
 
       // Audit log - MEDIUM: Packing pause tracked
-      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         action: 'pause',
         reason: input.notes,
@@ -753,7 +753,7 @@ export const packingRouter = router({
       }
 
       // Audit log - MEDIUM: Packing resume tracked
-      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         action: 'resume',
       }).catch((error) => {
@@ -824,7 +824,7 @@ export const packingRouter = router({
       });
 
       // Audit log - MEDIUM: Packing reset tracked
-      await logPackingOrderReset(ctx.userId, undefined, ctx.userRole, input.orderId, {
+      await logPackingOrderReset(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
         reason: input.reason,
       }).catch((error) => {

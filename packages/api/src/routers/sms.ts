@@ -86,6 +86,7 @@ export const smsRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         company.id,
         [],
         { fieldsChanged: Object.keys(input) }

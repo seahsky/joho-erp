@@ -104,7 +104,7 @@ export const companyRouter = router({
       });
 
       // Audit log - CRITICAL: Company profile changes must be tracked
-      await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, company.id, changes, {
+      await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, changes, {
         businessName: input.businessName,
         changeType: 'profile',
       }).catch((error) => {
@@ -147,7 +147,7 @@ export const companyRouter = router({
       });
 
       // Audit log - Company logo changes
-      await logCompanyLogoUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+      await logCompanyLogoUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, {
         previousLogoUrl,
         newLogoUrl: input.logoUrl,
       }).catch((error) => {
@@ -194,7 +194,7 @@ export const companyRouter = router({
       });
 
       // Audit log - CRITICAL: Xero credential changes must be tracked
-      await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+      await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, {
         action: 'update',
         fieldsChanged: ['clientId', 'clientSecret', ...(input.tenantId ? ['tenantId'] : [])],
       }).catch((error) => {
@@ -259,7 +259,7 @@ export const companyRouter = router({
 
       // Audit log - CRITICAL: Xero disconnect must be tracked
       if (company) {
-        await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+        await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, {
           action: 'disconnect',
         }).catch((error) => {
           console.error('Audit log failed for Xero disconnect:', error);
@@ -330,7 +330,7 @@ export const companyRouter = router({
       });
 
       // Audit log - HIGH: Delivery settings changes affect operations
-      await logDeliverySettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, changes, {
+      await logDeliverySettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, changes, {
         settingType: 'delivery',
       }).catch((error) => {
         console.error('Audit log failed for delivery settings update:', error);
@@ -455,7 +455,7 @@ export const companyRouter = router({
       });
 
       // Audit log - CRITICAL: Packing PIN changes must be tracked
-      await logPackingPinUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+      await logPackingPinUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, {
         pinChanged: true,
         pinEnabled: !input.removePin,
       }).catch((error) => {

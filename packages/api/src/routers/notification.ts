@@ -102,7 +102,7 @@ export const notificationRouter = router({
       });
 
       // Audit log - MEDIUM: Notification settings changes tracked
-      await logNotificationSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, [], {
+      await logNotificationSettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, [], {
         settingType: 'all',
       }).catch((error) => {
         console.error('Audit log failed for notification settings update:', error);

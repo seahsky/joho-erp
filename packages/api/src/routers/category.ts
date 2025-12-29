@@ -44,7 +44,7 @@ export const categoryRouter = router({
       });
 
       // Audit log - MEDIUM: Category creation tracked
-      await logCategoryCreate(ctx.userId, undefined, ctx.userRole, category.id, {
+      await logCategoryCreate(ctx.userId, undefined, ctx.userRole, ctx.userName, category.id, {
         name: input.name,
         description: input.description,
       }).catch((error) => {
@@ -108,7 +108,7 @@ export const categoryRouter = router({
       });
 
       // Audit log - MEDIUM: Category update tracked
-      await logCategoryUpdate(ctx.userId, undefined, ctx.userRole, id, changes, {
+      await logCategoryUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, id, changes, {
         name: category.name,
       }).catch((error) => {
         console.error('Audit log failed for category update:', error);

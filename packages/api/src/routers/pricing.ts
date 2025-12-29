@@ -358,6 +358,7 @@ export const pricingRouter = router({
           ctx.userId,
           undefined, // userEmail not available in context
           ctx.userRole,
+          ctx.userName,
           pricing.id,
           input.customerId,
           input.productId,
@@ -395,6 +396,7 @@ export const pricingRouter = router({
           ctx.userId,
           undefined, // userEmail not available in context
           ctx.userRole,
+          ctx.userName,
           pricing.id,
           input.customerId,
           input.productId,
@@ -449,6 +451,7 @@ export const pricingRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         input.pricingId,
         pricing.customerId,
         pricing.productId,
@@ -574,6 +577,7 @@ export const pricingRouter = router({
         ctx.userId,
         undefined, // userEmail not available in context
         ctx.userRole,
+        ctx.userName,
         input.pricings.length,
         results.success,
         results.failed

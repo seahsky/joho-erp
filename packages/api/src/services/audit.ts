@@ -16,6 +16,7 @@ export interface AuditLogParams {
   userId: string;
   userEmail?: string;
   userRole?: string;
+  userName?: string | null;
   action: AuditAction;
   entity: string;
   entityId?: string;
@@ -45,6 +46,7 @@ export async function createAuditLog(params: AuditLogParams): Promise<void> {
         userId: params.userId,
         userEmail: params.userEmail,
         userRole: params.userRole,
+        userName: params.userName,
         action: params.action,
         entity: params.entity,
         entityId: params.entityId,
@@ -297,6 +299,7 @@ export async function logCustomerProfileUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   customerId: string,
   customerName: string,
   changes: AuditChange[]
@@ -305,6 +308,7 @@ export async function logCustomerProfileUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'customer',
     entityId: customerId,
@@ -323,6 +327,7 @@ export async function logCustomerCreatedByAdmin(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   customerId: string,
   businessName: string,
   abn: string
@@ -331,6 +336,7 @@ export async function logCustomerCreatedByAdmin(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'customer',
     entityId: customerId,
@@ -349,6 +355,7 @@ export async function logProductCreated(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   productId: string,
   sku: string,
   productName: string,
@@ -358,6 +365,7 @@ export async function logProductCreated(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'product',
     entityId: productId,
@@ -376,6 +384,7 @@ export async function logProductUpdated(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   productId: string,
   sku: string,
   changes: AuditChange[]
@@ -384,6 +393,7 @@ export async function logProductUpdated(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'product',
     entityId: productId,
@@ -401,6 +411,7 @@ export async function logPricingChangeWithUser(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   pricingId: string,
   customerId: string,
   productId: string,
@@ -442,6 +453,7 @@ export async function logBulkPricingImport(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   importCount: number,
   successCount: number,
   errorCount: number
@@ -450,6 +462,7 @@ export async function logBulkPricingImport(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'customer_pricing',
     metadata: {
@@ -472,6 +485,7 @@ export async function logPermissionToggle(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     targetRole: string;
     permissionCode: string;
@@ -482,6 +496,7 @@ export async function logPermissionToggle(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'permission',
     changes: [
@@ -506,6 +521,7 @@ export async function logBulkPermissionUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     targetRole: string;
     permissionsGranted: string[];
@@ -517,6 +533,7 @@ export async function logBulkPermissionUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'permission',
     metadata: {
@@ -536,6 +553,7 @@ export async function logRolePermissionReset(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     targetRole: string;
     previousPermissions: string[];
@@ -545,6 +563,7 @@ export async function logRolePermissionReset(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'permission',
     metadata: {
@@ -566,6 +585,7 @@ export async function logUserRoleChange(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   targetUserId: string,
   metadata: {
     targetUserEmail: string;
@@ -577,6 +597,7 @@ export async function logUserRoleChange(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'user',
     entityId: targetUserId,
@@ -601,6 +622,7 @@ export async function logUserStatusChange(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   targetUserId: string,
   metadata: {
     targetUserEmail: string;
@@ -611,6 +633,7 @@ export async function logUserStatusChange(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'user',
     entityId: targetUserId,
@@ -635,6 +658,7 @@ export async function logUserInvitation(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     invitedEmail: string;
     invitedRole: string;
@@ -645,6 +669,7 @@ export async function logUserInvitation(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'user_invitation',
     entityId: metadata.invitationId,
@@ -663,6 +688,7 @@ export async function logInvitationRevoke(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     invitationId: string;
     revokedEmail: string;
@@ -672,6 +698,7 @@ export async function logInvitationRevoke(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'delete',
     entity: 'user_invitation',
     entityId: metadata.invitationId,
@@ -693,6 +720,7 @@ export async function logCompanyProfileUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   changes: AuditChange[],
   metadata: {
@@ -704,6 +732,7 @@ export async function logCompanyProfileUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'company',
     entityId: companyId,
@@ -722,6 +751,7 @@ export async function logCompanyLogoUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   metadata: {
     previousLogoUrl?: string;
@@ -732,6 +762,7 @@ export async function logCompanyLogoUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'company',
     entityId: companyId,
@@ -755,6 +786,7 @@ export async function logXeroSettingsUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   metadata: {
     action: 'update' | 'disconnect';
@@ -765,6 +797,7 @@ export async function logXeroSettingsUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: metadata.action === 'disconnect' ? 'delete' : 'update',
     entity: 'company_xero_settings',
     entityId: companyId,
@@ -783,6 +816,7 @@ export async function logPackingPinUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   metadata: {
     pinChanged: boolean;
@@ -793,6 +827,7 @@ export async function logPackingPinUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'company_packing_settings',
     entityId: companyId,
@@ -811,6 +846,7 @@ export async function logDeliverySettingsUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   changes: AuditChange[],
   metadata: {
@@ -822,6 +858,7 @@ export async function logDeliverySettingsUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'company_delivery_settings',
     entityId: companyId,
@@ -845,6 +882,7 @@ export async function logDriverAssignment(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -857,6 +895,7 @@ export async function logDriverAssignment(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -882,6 +921,7 @@ export async function logDeliveryStatusChange(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -895,6 +935,7 @@ export async function logDeliveryStatusChange(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -921,6 +962,7 @@ export async function logProofOfDeliveryUpload(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -932,6 +974,7 @@ export async function logProofOfDeliveryUpload(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'proof_of_delivery',
     entityId: orderId,
@@ -951,6 +994,7 @@ export async function logReturnToWarehouse(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -962,6 +1006,7 @@ export async function logReturnToWarehouse(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -985,6 +1030,7 @@ export async function logOrderConfirmation(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -995,6 +1041,7 @@ export async function logOrderConfirmation(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'approve',
     entity: 'order',
     entityId: orderId,
@@ -1013,6 +1060,7 @@ export async function logReorder(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   newOrderId: string,
   metadata: {
     originalOrderId: string;
@@ -1025,6 +1073,7 @@ export async function logReorder(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'order',
     entityId: newOrderId,
@@ -1045,6 +1094,7 @@ export async function logResendConfirmation(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1055,6 +1105,7 @@ export async function logResendConfirmation(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -1077,6 +1128,7 @@ export async function logStockAdjustment(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   productId: string,
   metadata: {
     sku: string;
@@ -1091,6 +1143,7 @@ export async function logStockAdjustment(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'product',
     entityId: productId,
@@ -1119,6 +1172,7 @@ export async function logProductImageUpload(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     productId: string;
     filename: string;
@@ -1130,6 +1184,7 @@ export async function logProductImageUpload(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'product-image',
     entityId: metadata.productId,
@@ -1148,6 +1203,7 @@ export async function logProductImageDelete(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     productId?: string;
     imageUrl: string;
@@ -1157,6 +1213,7 @@ export async function logProductImageDelete(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'delete',
     entity: 'product-image',
     entityId: metadata.productId,
@@ -1177,6 +1234,7 @@ export async function logPackingItemUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1189,6 +1247,7 @@ export async function logPackingItemUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order_item',
     entityId: orderId,
@@ -1209,6 +1268,7 @@ export async function logPackingNotesUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1219,6 +1279,7 @@ export async function logPackingNotesUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -1237,6 +1298,7 @@ export async function logOrderReadyForDelivery(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1247,6 +1309,7 @@ export async function logOrderReadyForDelivery(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -1265,6 +1328,7 @@ export async function logPackingOrderPauseResume(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1276,6 +1340,7 @@ export async function logPackingOrderPauseResume(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -1295,6 +1360,7 @@ export async function logPackingOrderReset(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1305,6 +1371,7 @@ export async function logPackingOrderReset(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -1323,6 +1390,7 @@ export async function logPackingItemQuantityUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   orderId: string,
   metadata: {
     orderNumber: string;
@@ -1336,6 +1404,7 @@ export async function logPackingItemQuantityUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'order_item',
     entityId: orderId,
@@ -1366,6 +1435,7 @@ export async function logCategoryCreate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   categoryId: string,
   metadata: {
     name: string;
@@ -1376,6 +1446,7 @@ export async function logCategoryCreate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'category',
     entityId: categoryId,
@@ -1394,6 +1465,7 @@ export async function logCategoryUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   categoryId: string,
   changes: AuditChange[],
   metadata: {
@@ -1404,6 +1476,7 @@ export async function logCategoryUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'category',
     entityId: categoryId,
@@ -1426,6 +1499,7 @@ export async function logNotificationSettingsUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   changes: AuditChange[],
   metadata: {
@@ -1436,6 +1510,7 @@ export async function logNotificationSettingsUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'notification_settings',
     entityId: companyId,
@@ -1454,6 +1529,7 @@ export async function logSmsSettingsUpdate(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   companyId: string,
   changes: AuditChange[],
   metadata: {
@@ -1464,6 +1540,7 @@ export async function logSmsSettingsUpdate(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'sms_settings',
     entityId: companyId,
@@ -1486,6 +1563,7 @@ export async function logXeroSyncTrigger(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     jobType: 'create_invoice' | 'create_credit_note' | 'sync_contact';
     entityType: string;
@@ -1496,6 +1574,7 @@ export async function logXeroSyncTrigger(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'create',
     entity: 'xero_sync_job',
     entityId: metadata.entityId,
@@ -1514,6 +1593,7 @@ export async function logXeroJobRetry(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   metadata: {
     jobId: string;
     jobType: string;
@@ -1526,6 +1606,7 @@ export async function logXeroJobRetry(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'xero_sync_job',
     entityId: metadata.jobId,
@@ -1550,6 +1631,7 @@ export async function logCustomerStatusChange(
   userId: string,
   userEmail: string | undefined,
   userRole: string | undefined,
+  userName: string | null | undefined,
   customerId: string,
   metadata: {
     businessName: string;
@@ -1561,6 +1643,7 @@ export async function logCustomerStatusChange(
     userId,
     userEmail,
     userRole,
+    userName,
     action: 'update',
     entity: 'customer',
     entityId: customerId,

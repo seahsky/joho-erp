@@ -12,8 +12,9 @@ const handler = async (req: Request) => {
       const authData = await auth();
 
       let userRole: UserRole | null = null;
+      let userName: string | null = null;
 
-      // Fetch user role from Clerk's publicMetadata if authenticated
+      // Fetch user role and name from Clerk if authenticated
       if (authData.userId) {
         try {
           const client = await clerkClient();
@@ -24,9 +25,17 @@ const handler = async (req: Request) => {
           // Example: user.publicMetadata = { role: 'admin' }
           const metadata = user.publicMetadata as { role?: UserRole };
           userRole = metadata.role || 'customer'; // Default to customer if not set
+
+          // Extract user display name from Clerk user
+          // Prefer fullName, fallback to firstName + lastName, then email
+          if (user.firstName || user.lastName) {
+            userName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+          } else if (user.emailAddresses?.[0]?.emailAddress) {
+            userName = user.emailAddresses[0].emailAddress;
+          }
         } catch (error) {
           // If we can't fetch the user, log error and default to customer
-          console.error('Failed to fetch user role from Clerk:', error);
+          console.error('Failed to fetch user data from Clerk:', error);
           userRole = 'customer';
         }
       }
@@ -37,6 +46,7 @@ const handler = async (req: Request) => {
           userId: authData.userId,
           sessionId: authData.sessionId,
           userRole,
+          userName,
         },
       });
     },

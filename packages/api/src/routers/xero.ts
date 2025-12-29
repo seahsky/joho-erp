@@ -70,7 +70,7 @@ export const xeroRouter = router({
       }
 
       // Audit log - MEDIUM: Job retry tracked
-      await logXeroJobRetry(ctx.userId, undefined, ctx.userRole, {
+      await logXeroJobRetry(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         jobId: input.jobId,
         jobType: job?.type || 'unknown',
         entityType: job?.entityType || 'unknown',
@@ -113,7 +113,7 @@ export const xeroRouter = router({
       const jobId = await enqueueXeroJob('sync_contact', 'customer', input.customerId);
 
       // Audit log - MEDIUM: Xero sync trigger tracked
-      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         jobType: 'sync_contact',
         entityType: 'customer',
         entityId: input.customerId,
@@ -160,7 +160,7 @@ export const xeroRouter = router({
       const jobId = await enqueueXeroJob('create_invoice', 'order', input.orderId);
 
       // Audit log - MEDIUM: Xero sync trigger tracked
-      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         jobType: 'create_invoice',
         entityType: 'order',
         entityId: input.orderId,
@@ -214,7 +214,7 @@ export const xeroRouter = router({
       const jobId = await enqueueXeroJob('create_credit_note', 'order', input.orderId);
 
       // Audit log - MEDIUM: Xero sync trigger tracked
-      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
         jobType: 'create_credit_note',
         entityType: 'order',
         entityId: input.orderId,

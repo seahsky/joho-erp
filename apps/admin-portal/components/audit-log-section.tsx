@@ -172,7 +172,7 @@ export function AuditLogSection({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 text-sm">
                             <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">{log.userEmail || log.userId}</span>
+                            <span className="truncate">{log.userName || log.userEmail || log.userId}</span>
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
