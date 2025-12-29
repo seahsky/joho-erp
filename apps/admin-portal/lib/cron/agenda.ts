@@ -68,10 +68,10 @@ function getCronSecret(): string | undefined {
 async function executeCronJob(job: CronJobConfig): Promise<void> {
   const baseUrl = getBaseUrl();
   const cronSecret = getCronSecret();
+  const url = `${baseUrl}${job.endpoint}`;
 
-  console.log(
-    `[Agenda] Executing: ${job.name} (${job.description})`
-  );
+  console.log(`[Agenda] Executing: ${job.name} (${job.description})`);
+  console.log(`[Agenda] Calling: ${url}`);
 
   try {
     const headers: Record<string, string> = {
@@ -83,30 +83,37 @@ async function executeCronJob(job: CronJobConfig): Promise<void> {
       headers["Authorization"] = `Bearer ${cronSecret}`;
     }
 
-    const response = await fetch(`${baseUrl}${job.endpoint}`, {
+    const response = await fetch(url, {
       method: "GET",
       headers,
     });
 
+    // Check content-type before parsing JSON
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      // Log the actual response for debugging
+      const text = await response.text();
+      console.error(`[Agenda] ${job.name} received non-JSON response:`);
+      console.error(`[Agenda] Status: ${response.status} ${response.statusText}`);
+      console.error(`[Agenda] Content-Type: ${contentType}`);
+      console.error(`[Agenda] Body preview: ${text.substring(0, 200)}`);
+      throw new Error(
+        `Expected JSON response but got ${contentType || "unknown content-type"}. ` +
+        `Status: ${response.status}. Check CRON_BASE_URL configuration.`
+      );
+    }
+
     const result = await response.json();
 
     if (response.ok) {
-      console.log(
-        `[Agenda] ${job.name} completed:`,
-        result.message || "Success"
-      );
+      console.log(`[Agenda] ${job.name} completed:`, result.message || "Success");
     } else {
-      console.error(
-        `[Agenda] ${job.name} failed:`,
-        result.error || response.statusText
-      );
+      console.error(`[Agenda] ${job.name} failed:`, result.error || response.statusText);
       throw new Error(result.error || response.statusText);
     }
   } catch (error) {
-    console.error(
-      `[Agenda] ${job.name} error:`,
-      error instanceof Error ? error.message : error
-    );
+    console.error(`[Agenda] ${job.name} error:`, error instanceof Error ? error.message : error);
     throw error; // Re-throw to let Agenda handle retry
   }
 }
