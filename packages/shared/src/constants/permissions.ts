@@ -275,6 +275,17 @@ export const PERMISSION_DEFINITIONS: Record<
     action: 'edit',
     description: 'Edit packing settings including PIN configuration',
   },
+
+  'settings.audit:view': {
+    module: 'settings.audit',
+    action: 'view',
+    description: 'View audit logs',
+  },
+  'settings.audit:export': {
+    module: 'settings.audit',
+    action: 'export',
+    description: 'Export audit logs to CSV',
+  },
 };
 
 // Default permissions for each role

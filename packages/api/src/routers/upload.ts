@@ -14,6 +14,7 @@ import {
   type AllowedMimeType,
 } from '../services/r2';
 import { TRPCError } from '@trpc/server';
+import { logProductImageUpload, logProductImageDelete } from '../services/audit';
 
 // Allowed MIME types as Zod enum
 const allowedMimeTypes = z.enum([
@@ -51,7 +52,7 @@ export const uploadRouter = router({
           }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (!isR2Configured()) {
         throw new TRPCError({
           code: 'PRECONDITION_FAILED',
@@ -67,6 +68,16 @@ export const uploadRouter = router({
           filename,
           contentType: contentType as AllowedMimeType,
           contentLength,
+        });
+
+        // Audit log the image upload
+        await logProductImageUpload(ctx.userId, undefined, ctx.userRole, {
+          productId,
+          filename,
+          contentType,
+          publicUrl: result.publicUrl,
+        }).catch((error) => {
+          console.error('Audit log failed:', error);
         });
 
         return {
@@ -92,9 +103,10 @@ export const uploadRouter = router({
     .input(
       z.object({
         imageUrl: z.string().url('Invalid image URL'),
+        productId: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       if (!isR2Configured()) {
         throw new TRPCError({
           code: 'PRECONDITION_FAILED',
@@ -104,6 +116,15 @@ export const uploadRouter = router({
 
       try {
         await deleteImage(input.imageUrl);
+
+        // Audit log the image deletion
+        await logProductImageDelete(ctx.userId, undefined, ctx.userRole, {
+          productId: input.productId,
+          imageUrl: input.imageUrl,
+        }).catch((error) => {
+          console.error('Audit log failed:', error);
+        });
+
         return { success: true };
       } catch (error) {
         console.error('Failed to delete image:', error);

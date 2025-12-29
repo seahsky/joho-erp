@@ -1111,6 +1111,61 @@ export async function logStockAdjustment(
   });
 }
 
+
+/**
+ * Log product image upload
+ */
+export async function logProductImageUpload(
+  userId: string,
+  userEmail: string | undefined,
+  userRole: string | undefined,
+  metadata: {
+    productId: string;
+    filename: string;
+    contentType: string;
+    publicUrl: string;
+  }
+): Promise<void> {
+  await createAuditLog({
+    userId,
+    userEmail,
+    userRole,
+    action: 'create',
+    entity: 'product-image',
+    entityId: metadata.productId,
+    metadata: {
+      filename: metadata.filename,
+      contentType: metadata.contentType,
+      publicUrl: metadata.publicUrl,
+    },
+  });
+}
+
+/**
+ * Log product image deletion
+ */
+export async function logProductImageDelete(
+  userId: string,
+  userEmail: string | undefined,
+  userRole: string | undefined,
+  metadata: {
+    productId?: string;
+    imageUrl: string;
+  }
+): Promise<void> {
+  await createAuditLog({
+    userId,
+    userEmail,
+    userRole,
+    action: 'delete',
+    entity: 'product-image',
+    entityId: metadata.productId,
+    metadata: {
+      imageUrl: metadata.imageUrl,
+    },
+  });
+}
+
 // ============================================================================
 // PACKING DOMAIN - HIGH PRIORITY
 // ============================================================================

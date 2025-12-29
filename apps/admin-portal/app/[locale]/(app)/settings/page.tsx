@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Settings as SettingsIcon,
   Package,
+  FileText,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -90,6 +91,14 @@ export default function SettingsPage() {
       titleKey: 'categories.packing',
       descriptionKey: 'categories.packingDescription',
       href: `/${locale}/settings/packing`,
+      available: true,
+    },
+    {
+      id: 'auditLogs',
+      icon: FileText,
+      titleKey: 'categories.auditLogs',
+      descriptionKey: 'categories.auditLogsDescription',
+      href: `/${locale}/settings/audit-logs`,
       available: true,
     },
   ];

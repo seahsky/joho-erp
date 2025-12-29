@@ -58,6 +58,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { formatCurrency, formatDate, DAYS_OF_WEEK, type DayOfWeek } from '@joho-erp/shared';
+import { AuditLogSection } from '@/components/audit-log-section';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -1564,6 +1565,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
+
+          {/* Activity History */}
+          <AuditLogSection entity="customer" entityId={customer.id} />
         </div>
       </div>
 

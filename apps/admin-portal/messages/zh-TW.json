@@ -1266,7 +1266,9 @@
       "packing": "包裝",
       "packingDescription": "配置包裝工作流程和安全選項",
       "permissions": "權限管理",
-      "permissionsDescription": "為每個使用者角色配置基於角色的存取控制"
+      "permissionsDescription": "為每個使用者角色配置基於角色的存取控制",
+      "auditLogs": "稽核日誌",
+      "auditLogsDescription": "檢視系統活動並匯出稽核追蹤"
     },
     "packing": {
       "title": "包裝設定",
@@ -1658,6 +1660,79 @@
       "settingsSavedDescription": "您的簡訊設定已更新",
       "saveError": "儲存簡訊設定失敗",
       "loading": "載入簡訊設定中..."
+    },
+    "auditLogs": {
+      "title": "稽核日誌",
+      "subtitle": "檢視和匯出系統稽核追蹤",
+      "exportCsv": "匯出CSV",
+      "exporting": "匯出中...",
+      "exportSuccess": "匯出完成",
+      "exportSuccessDescription": "已匯出 {count} 筆稽核日誌記錄",
+      "exportError": "匯出失敗",
+      "stats": {
+        "totalLogs": "總日誌數",
+        "creates": "新增",
+        "updates": "更新",
+        "deletes": "刪除"
+      },
+      "filters": {
+        "title": "篩選條件",
+        "active": "已啟用",
+        "clear": "清除",
+        "search": "搜尋",
+        "searchPlaceholder": "按實體ID或電子郵件搜尋...",
+        "entity": "實體類型",
+        "allEntities": "所有實體",
+        "action": "操作",
+        "allActions": "所有操作",
+        "dateFrom": "開始日期",
+        "dateTo": "結束日期"
+      },
+      "table": {
+        "title": "稽核日誌條目",
+        "description": "顯示 {count} 筆記錄",
+        "timestamp": "時間戳記",
+        "user": "使用者",
+        "action": "操作",
+        "entity": "實體",
+        "entityId": "實體ID",
+        "details": "詳情"
+      },
+      "actions": {
+        "create": "新增",
+        "update": "更新",
+        "delete": "刪除",
+        "approve": "核准",
+        "reject": "拒絕"
+      },
+      "entities": {
+        "order": "訂單",
+        "customer": "客戶",
+        "product": "產品",
+        "customerPricing": "客戶定價",
+        "orderItem": "訂單項目",
+        "company": "公司",
+        "user": "使用者",
+        "permission": "權限",
+        "category": "分類",
+        "notification": "通知",
+        "sms": "簡訊",
+        "xero": "Xero",
+        "proofOfDelivery": "交付證明"
+      },
+      "details": {
+        "changes": "變更",
+        "metadata": "附加資料",
+        "fullEntityId": "完整實體ID",
+        "userId": "使用者ID"
+      },
+      "pagination": {
+        "page": "第 {page} 頁"
+      },
+      "emptyState": {
+        "title": "找不到稽核日誌",
+        "description": "請嘗試調整篩選條件或日期範圍"
+      }
     },
     "dropdown": {
       "header": "設定",
@@ -2331,5 +2406,17 @@
     "unauthorized": "您無權執行此操作",
     "forbidden": "存取被拒絕",
     "unknownError": "發生未知錯誤"
+  },
+  "auditLogSection": {
+    "title": "活動歷史",
+    "description": "此記錄的最近變更",
+    "noLogs": "此記錄尚無活動記錄。",
+    "viewFullHistory": "檢視完整歷史",
+    "changes": "變更",
+    "metadata": "詳情",
+    "justNow": "剛剛",
+    "minutesAgo": "{count} 分鐘前",
+    "hoursAgo": "{count} 小時前",
+    "daysAgo": "{count} 天前"
   }
 }

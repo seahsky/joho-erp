@@ -1266,7 +1266,9 @@
       "packing": "包装",
       "packingDescription": "配置包装工作流程和安全选项",
       "permissions": "权限管理",
-      "permissionsDescription": "为每个用户角色配置基于角色的访问控制"
+      "permissionsDescription": "为每个用户角色配置基于角色的访问控制",
+      "auditLogs": "审计日志",
+      "auditLogsDescription": "查看系统活动并导出审计跟踪"
     },
     "packing": {
       "title": "包装设置",
@@ -1658,6 +1660,79 @@
       "settingsSavedDescription": "您的短信设置已更新",
       "saveError": "保存短信设置失败",
       "loading": "加载短信设置中..."
+    },
+    "auditLogs": {
+      "title": "审计日志",
+      "subtitle": "查看和导出系统审计跟踪",
+      "exportCsv": "导出CSV",
+      "exporting": "导出中...",
+      "exportSuccess": "导出完成",
+      "exportSuccessDescription": "已导出 {count} 条审计日志记录",
+      "exportError": "导出失败",
+      "stats": {
+        "totalLogs": "总日志数",
+        "creates": "创建",
+        "updates": "更新",
+        "deletes": "删除"
+      },
+      "filters": {
+        "title": "筛选条件",
+        "active": "已激活",
+        "clear": "清除",
+        "search": "搜索",
+        "searchPlaceholder": "按实体ID或邮箱搜索...",
+        "entity": "实体类型",
+        "allEntities": "所有实体",
+        "action": "操作",
+        "allActions": "所有操作",
+        "dateFrom": "开始日期",
+        "dateTo": "结束日期"
+      },
+      "table": {
+        "title": "审计日志条目",
+        "description": "显示 {count} 条记录",
+        "timestamp": "时间戳",
+        "user": "用户",
+        "action": "操作",
+        "entity": "实体",
+        "entityId": "实体ID",
+        "details": "详情"
+      },
+      "actions": {
+        "create": "创建",
+        "update": "更新",
+        "delete": "删除",
+        "approve": "批准",
+        "reject": "拒绝"
+      },
+      "entities": {
+        "order": "订单",
+        "customer": "客户",
+        "product": "产品",
+        "customerPricing": "客户定价",
+        "orderItem": "订单项",
+        "company": "公司",
+        "user": "用户",
+        "permission": "权限",
+        "category": "分类",
+        "notification": "通知",
+        "sms": "短信",
+        "xero": "Xero",
+        "proofOfDelivery": "交付证明"
+      },
+      "details": {
+        "changes": "变更",
+        "metadata": "附加数据",
+        "fullEntityId": "完整实体ID",
+        "userId": "用户ID"
+      },
+      "pagination": {
+        "page": "第 {page} 页"
+      },
+      "emptyState": {
+        "title": "未找到审计日志",
+        "description": "请尝试调整筛选条件或日期范围"
+      }
     },
     "dropdown": {
       "header": "设置",
@@ -2331,5 +2406,17 @@
     "unauthorized": "您无权执行此操作",
     "forbidden": "访问被拒绝",
     "unknownError": "发生未知错误"
+  },
+  "auditLogSection": {
+    "title": "活动历史",
+    "description": "此记录的最近更改",
+    "noLogs": "此记录尚无活动记录。",
+    "viewFullHistory": "查看完整历史",
+    "changes": "更改",
+    "metadata": "详情",
+    "justNow": "刚刚",
+    "minutesAgo": "{count} 分钟前",
+    "hoursAgo": "{count} 小时前",
+    "daysAgo": "{count} 天前"
   }
 }

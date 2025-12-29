@@ -1266,7 +1266,9 @@
       "profile": "Profile Settings",
       "profileDescription": "Manage your personal profile, security, and account settings",
       "packing": "Packing",
-      "packingDescription": "Configure packing workflow and security options"
+      "packingDescription": "Configure packing workflow and security options",
+      "auditLogs": "Audit Logs",
+      "auditLogsDescription": "View system activity and export audit trail"
     },
     "packing": {
       "title": "Packing Settings",
@@ -1658,6 +1660,79 @@
       "settingsSavedDescription": "Your SMS settings have been updated",
       "saveError": "Failed to save SMS settings",
       "loading": "Loading SMS settings..."
+    },
+    "auditLogs": {
+      "title": "Audit Logs",
+      "subtitle": "View and export system audit trail",
+      "exportCsv": "Export CSV",
+      "exporting": "Exporting...",
+      "exportSuccess": "Export Complete",
+      "exportSuccessDescription": "Exported {count} audit log records",
+      "exportError": "Export Failed",
+      "stats": {
+        "totalLogs": "Total Logs",
+        "creates": "Creates",
+        "updates": "Updates",
+        "deletes": "Deletes"
+      },
+      "filters": {
+        "title": "Filters",
+        "active": "Active",
+        "clear": "Clear",
+        "search": "Search",
+        "searchPlaceholder": "Search by entity ID or email...",
+        "entity": "Entity Type",
+        "allEntities": "All Entities",
+        "action": "Action",
+        "allActions": "All Actions",
+        "dateFrom": "Date From",
+        "dateTo": "Date To"
+      },
+      "table": {
+        "title": "Audit Log Entries",
+        "description": "Showing {count} records",
+        "timestamp": "Timestamp",
+        "user": "User",
+        "action": "Action",
+        "entity": "Entity",
+        "entityId": "Entity ID",
+        "details": "Details"
+      },
+      "actions": {
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "entities": {
+        "order": "Order",
+        "customer": "Customer",
+        "product": "Product",
+        "customerPricing": "Customer Pricing",
+        "orderItem": "Order Item",
+        "company": "Company",
+        "user": "User",
+        "permission": "Permission",
+        "category": "Category",
+        "notification": "Notification",
+        "sms": "SMS",
+        "xero": "Xero",
+        "proofOfDelivery": "Proof of Delivery"
+      },
+      "details": {
+        "changes": "Changes",
+        "metadata": "Additional Data",
+        "fullEntityId": "Full Entity ID",
+        "userId": "User ID"
+      },
+      "pagination": {
+        "page": "Page {page}"
+      },
+      "emptyState": {
+        "title": "No audit logs found",
+        "description": "Try adjusting your filters or date range"
+      }
     },
     "dropdown": {
       "header": "Settings",
@@ -2331,5 +2406,17 @@
     "unauthorized": "You are not authorized to perform this action",
     "forbidden": "Access denied",
     "unknownError": "An unexpected error occurred"
+  },
+  "auditLogSection": {
+    "title": "Activity History",
+    "description": "Recent changes made to this record",
+    "noLogs": "No activity recorded for this record yet.",
+    "viewFullHistory": "View full history",
+    "changes": "Changes",
+    "metadata": "Details",
+    "justNow": "Just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count} hr ago",
+    "daysAgo": "{count} days ago"
   }
 }

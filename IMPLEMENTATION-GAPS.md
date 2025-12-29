@@ -122,7 +122,7 @@ The customer detail page at `/customers/[id]` supports editing ALL customer fiel
 | Order Validation | ✅ 100% | Cutoff times, credit limits, stock validation |
 | Route Optimizer | ✅ 100% | Mapbox integration for LIFO packing |
 | R2 Storage | ✅ 100% | Cloudflare R2 for POD images |
-| Audit | ✅ 100% | Comprehensive audit logging |
+| Audit | ✅ 100% | Comprehensive audit logging with viewer UI |
 
 ---
 

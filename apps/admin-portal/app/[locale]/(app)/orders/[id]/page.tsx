@@ -21,6 +21,7 @@ import { StatusTimeline } from './components/StatusTimeline';
 import { DeliveryInfo } from './components/DeliveryInfo';
 import { XeroSyncCard } from './components/XeroSyncCard';
 import { OrderActions } from './components/OrderActions';
+import { AuditLogSection } from '@/components/audit-log-section';
 import { type BackorderStatusType } from '../components/BackorderStatusBadge';
 
 interface PageProps {
@@ -214,6 +215,9 @@ export default function OrderDetailPage({ params }: PageProps) {
 
           {/* Xero Sync Status */}
           <XeroSyncCard xero={xero} orderId={order.id} />
+
+          {/* Activity History */}
+          <AuditLogSection entity="order" entityId={order.id} />
         </div>
       </div>
     </div>
