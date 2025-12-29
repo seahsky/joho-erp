@@ -122,7 +122,7 @@ export default function SmsSettingsPage() {
     if (!testPhoneNumber) {
       toast({
         title: t('testSms.error'),
-        description: 'Please enter a phone number',
+        description: t('testSms.phoneNumberRequired'),
         variant: 'destructive',
       });
       return;
