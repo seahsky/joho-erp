@@ -44,6 +44,7 @@ export default function DeliveryMap({
 }: DeliveryMapProps) {
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
   const mapRef = useRef<MapRef | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
   const hasDeliveries = deliveries.length > 0;
 
   // Sydney CBD coordinates as default center
@@ -54,7 +55,7 @@ export default function DeliveryMap({
   });
 
   useEffect(() => {
-    if (selectedDelivery && mapRef.current && hasDeliveries) {
+    if (selectedDelivery && mapRef.current && isMapReady && hasDeliveries) {
       const delivery = deliveries.find((d) => d.id === selectedDelivery);
       if (delivery && delivery.latitude && delivery.longitude) {
         mapRef.current.flyTo({
@@ -65,7 +66,7 @@ export default function DeliveryMap({
         setPopupInfo(delivery);
       }
     }
-  }, [selectedDelivery, deliveries, hasDeliveries]);
+  }, [selectedDelivery, isMapReady, hasDeliveries, deliveries]);
 
   // Empty state when no deliveries available
   if (!hasDeliveries) {
@@ -103,6 +104,7 @@ export default function DeliveryMap({
         ref={mapRef}
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
+        onLoad={() => setIsMapReady(true)}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
