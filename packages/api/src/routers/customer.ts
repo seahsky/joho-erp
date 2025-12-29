@@ -16,6 +16,7 @@ import {
   logCustomerRegistration,
   logCustomerProfileUpdate,
   logCustomerCreatedByAdmin,
+  logCustomerStatusChange,
 } from '../services/audit';
 
 // Validation schemas for credit application
@@ -828,23 +829,17 @@ export const customerRouter = router({
       });
 
       // Log suspension to audit trail
-      await prisma.auditLog.create({
-        data: {
-          userId: ctx.userId,
-          action: 'update',
-          entity: 'customer',
-          entityId: customer.id,
-          changes: [
-            { field: 'status', oldValue: customer.status, newValue: 'suspended' },
-            { field: 'suspensionReason', oldValue: null, newValue: input.reason },
-          ],
-          metadata: {
-            actionType: 'suspend',
-            businessName: customer.businessName,
-          },
-          timestamp: new Date(),
-        },
-      }).catch((error) => {
+      await logCustomerStatusChange(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        customer.id,
+        {
+          businessName: customer.businessName,
+          action: 'suspend',
+          reason: input.reason,
+        }
+      ).catch((error) => {
         console.error('Failed to log customer suspension:', error);
       });
 
@@ -891,24 +886,16 @@ export const customerRouter = router({
       });
 
       // Log activation to audit trail
-      await prisma.auditLog.create({
-        data: {
-          userId: ctx.userId,
-          action: 'update',
-          entity: 'customer',
-          entityId: customer.id,
-          changes: [
-            { field: 'status', oldValue: 'suspended', newValue: 'active' },
-            { field: 'suspensionReason', oldValue: customer.suspensionReason, newValue: null },
-          ],
-          metadata: {
-            actionType: 'activate',
-            businessName: customer.businessName,
-            notes: input.notes,
-          },
-          timestamp: new Date(),
-        },
-      }).catch((error) => {
+      await logCustomerStatusChange(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        customer.id,
+        {
+          businessName: customer.businessName,
+          action: 'activate',
+        }
+      ).catch((error) => {
         console.error('Failed to log customer activation:', error);
       });
 

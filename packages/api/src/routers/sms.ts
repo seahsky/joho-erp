@@ -4,6 +4,7 @@ import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { sendTestSms, isSmsConfigured } from '../services/sms';
 import { DEFAULT_SMS_TEMPLATE, DEFAULT_SMS_SEND_TIME } from '@joho-erp/shared';
+import { logSmsSettingsUpdate } from '../services/audit';
 
 export const smsRouter = router({
   /**
@@ -59,7 +60,7 @@ export const smsRouter = router({
           .nullable(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
       if (!company) {
@@ -78,6 +79,18 @@ export const smsRouter = router({
             sendTime: input.sendTime || DEFAULT_SMS_SEND_TIME,
           },
         },
+      });
+
+      // Audit log for SMS settings update
+      await logSmsSettingsUpdate(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        company.id,
+        [],
+        { fieldsChanged: Object.keys(input) }
+      ).catch((error) => {
+        console.error('Audit log failed for SMS settings update:', error);
       });
 
       return {
