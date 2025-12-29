@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input } from '@joho-erp/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, TableSkeleton } from '@joho-erp/ui';
 import { MapPin, Navigation, CheckCircle, Package, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -51,39 +51,6 @@ export default function DeliveriesPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">{t('title')}</h1>
-            <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
-          </div>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-20 bg-muted rounded"></div>
-                  <div className="h-20 bg-muted rounded"></div>
-                  <div className="h-20 bg-muted rounded"></div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-2">
-            <Card>
-              <CardContent className="p-6">
-                <div className="w-full h-[600px] bg-muted animate-pulse rounded-lg"></div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto py-10">
@@ -137,7 +104,9 @@ export default function DeliveriesPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6 space-y-4">
-              {deliveries.length === 0 ? (
+              {isLoading ? (
+                <TableSkeleton rows={4} columns={3} showMobileCards />
+              ) : deliveries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t('noDeliveriesFound')}</p>
               ) : (
                 deliveries.map((delivery) => (

@@ -13,6 +13,7 @@ export * from './components/dropdown-menu';
 export * from './components/language-switcher';
 export * from './components/typography';
 export * from './components/skeleton';
+export * from './components/table-skeleton';
 export * from './components/count-up';
 export * from './components/empty-state';
 export * from './components/dialog';

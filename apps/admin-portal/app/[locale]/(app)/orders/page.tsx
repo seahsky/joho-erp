@@ -18,8 +18,9 @@ import {
   CountUp,
   EmptyState,
   toast,
+  TableSkeleton,
 } from '@joho-erp/ui';
-import { Search, ShoppingBag, Loader2, Eye, Package, PackageX, Plus, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingBag, Eye, Package, PackageX, Plus, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
@@ -150,28 +151,7 @@ export default function OrdersPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Data from API with fallbacks for loading state
   const orders = (data?.orders ?? []).map((order) => ({
     ...order,
     backorderStatus: (order.backorderStatus as BackorderStatusType) || 'none',
@@ -205,6 +185,17 @@ export default function OrdersPage() {
   const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
   const pendingBackorders = orders.filter((o) => o.backorderStatus === 'pending_approval').length;
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   // Handler functions
   const handleReviewBackorder = (order: Order) => {
@@ -595,7 +586,9 @@ export default function OrdersPage() {
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {filteredOrders.length > 0 ? (
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : filteredOrders.length > 0 ? (
             <ResponsiveTable
               data={filteredOrders}
               columns={columns}

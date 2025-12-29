@@ -18,8 +18,9 @@ import {
   type StatusType,
   CountUp,
   EmptyState,
+  TableSkeleton,
 } from '@joho-erp/ui';
-import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Loader2, Users } from 'lucide-react';
+import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
@@ -75,16 +76,11 @@ export default function CustomersPage() {
   // const _approveMutation = api.customer.approveCredit.useMutation();
   // const _rejectMutation = api.customer.rejectCredit.useMutation();
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  // Data from API with fallbacks for loading state (already sorted server-side)
+  const customers = (data?.customers ?? []) as Customer[];
+  const totalCustomers = data?.total ?? 0;
+  const activeCustomers = customers.filter((c) => c.status === 'active').length;
+  const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;
 
   if (error) {
     return (
@@ -96,12 +92,6 @@ export default function CustomersPage() {
       </div>
     );
   }
-
-  // Data from API (already sorted server-side)
-  const customers = (data?.customers ?? []) as Customer[];
-  const totalCustomers = data?.total || 0;
-  const activeCustomers = customers.filter((c) => c.status === 'active').length;
-  const pendingCredit = customers.filter((c) => c.creditApplication.status === 'pending').length;
 
   const columns: TableColumn<Customer>[] = [
     {
@@ -368,7 +358,9 @@ export default function CustomersPage() {
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {customers.length > 0 ? (
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : customers.length > 0 ? (
             <ResponsiveTable
               data={customers}
               columns={columns}

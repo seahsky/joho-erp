@@ -16,8 +16,9 @@ import {
   Badge,
   CountUp,
   EmptyState,
+  TableSkeleton,
 } from '@joho-erp/ui';
-import { Search, Package, Plus, Edit, Loader2, PackageX, PackagePlus } from 'lucide-react';
+import { Search, Package, Plus, Edit, PackageX, PackagePlus } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
@@ -71,16 +72,14 @@ export default function ProductsPage() {
     limit: 1000, // Fetch all products for admin view
   });
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  // Data from API with fallbacks for loading state
+  const productList = (productsData?.items ?? []) as Product[];
+  const totalProducts = productsData?.total ?? productList.length;
+  const activeProducts = productList.filter((p) => p.status === 'active').length;
+  const lowStockProducts = productList.filter(
+    (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
+  ).length;
+  const totalValue = productList.reduce((sum, p) => sum + p.basePrice * p.currentStock, 0);
 
   if (error) {
     return (
@@ -92,14 +91,6 @@ export default function ProductsPage() {
       </div>
     );
   }
-
-  const productList = (productsData?.items ?? []) as Product[];
-  const totalProducts = productsData?.total ?? productList.length;
-  const activeProducts = productList.filter((p) => p.status === 'active').length;
-  const lowStockProducts = productList.filter(
-    (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
-  ).length;
-  const totalValue = productList.reduce((sum, p) => sum + p.basePrice * p.currentStock, 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -386,7 +377,9 @@ export default function ProductsPage() {
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {productList.length > 0 ? (
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : productList.length > 0 ? (
             <ResponsiveTable
               data={productList}
               columns={columns}

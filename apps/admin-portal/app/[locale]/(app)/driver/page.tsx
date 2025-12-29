@@ -15,10 +15,10 @@ import {
   type StatusType,
   toast,
   Input,
+  TableSkeleton,
 } from '@joho-erp/ui';
 import {
   Truck,
-  Loader2,
   Phone,
   MapPin,
   Package,
@@ -124,17 +124,14 @@ export default function DriverPage() {
     },
   });
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  // Data from API with fallbacks for loading state
+  const deliveries = data?.deliveries ?? [];
+
+  // Calculate stats
+  const totalDeliveries = deliveries.length;
+  const readyDeliveries = data?.readyForDelivery ?? 0;
+  const inProgressDeliveries = data?.outForDelivery ?? 0;
+  const completedDeliveries = deliveries.filter((d) => d.status === 'delivered').length;
 
   // Error state
   if (error) {
@@ -148,14 +145,6 @@ export default function DriverPage() {
       </div>
     );
   }
-
-  const deliveries = data?.deliveries ?? [];
-
-  // Calculate stats
-  const totalDeliveries = deliveries.length;
-  const readyDeliveries = data?.readyForDelivery ?? 0;
-  const inProgressDeliveries = data?.outForDelivery ?? 0;
-  const completedDeliveries = deliveries.filter((d) => d.status === 'delivered').length;
 
   // Handler functions
   const handleStartDelivery = (delivery: (typeof deliveries)[0]) => {
@@ -277,7 +266,9 @@ export default function DriverPage() {
       </div>
 
       {/* Deliveries List */}
-      {deliveries.length === 0 ? (
+      {isLoading ? (
+        <TableSkeleton rows={5} columns={4} showMobileCards />
+      ) : deliveries.length === 0 ? (
         <EmptyState
           icon={Truck}
           title={t('noDeliveries')}

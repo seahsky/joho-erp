@@ -3,8 +3,8 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast } from '@joho-erp/ui';
-import { Package, Calendar, Loader2, PlayCircle, PauseCircle } from 'lucide-react';
+import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
+import { Package, Calendar, PlayCircle, PauseCircle, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
@@ -117,16 +117,12 @@ export default function PackingPage() {
     return session.orders.filter((order) => order.status === 'ready_for_delivery').length;
   }, [session?.orders]);
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground font-medium">{t('loadingSession')}</p>
-        </div>
-      </div>
-    );
-  }
+  // Data from API with fallbacks for loading state
+  const orders = session?.orders ?? [];
+  const productSummary = session?.productSummary ?? [];
+  const totalOrders = orders.length;
+  const totalProducts = productSummary.length;
+  const totalItems = productSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
 
   if (error) {
     return (
@@ -138,12 +134,6 @@ export default function PackingPage() {
       </div>
     );
   }
-
-  const orders = session?.orders ?? [];
-  const productSummary = session?.productSummary ?? [];
-  const totalOrders = orders.length;
-  const totalProducts = productSummary.length;
-  const totalItems = productSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
 
   // Format date for display (using UTC to avoid timezone discrepancy)
   const formatDate = (date: Date) => {
@@ -240,7 +230,26 @@ export default function PackingPage() {
         )}
 
         {/* Main Packing Interface */}
-        {totalOrders > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardDescription>{t('productSummary')}</CardDescription>
+              </CardHeader>
+              <div className="p-4">
+                <TableSkeleton rows={5} columns={3} showMobileCards />
+              </div>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>{t('orders')}</CardDescription>
+              </CardHeader>
+              <div className="p-4">
+                <TableSkeleton rows={5} columns={3} showMobileCards />
+              </div>
+            </Card>
+          </div>
+        ) : totalOrders > 0 ? (
           <PackingLayout
             summaryPanel={
               <ProductSummaryView

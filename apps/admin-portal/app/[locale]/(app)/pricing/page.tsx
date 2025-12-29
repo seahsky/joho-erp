@@ -16,13 +16,13 @@ import {
   Badge,
   CountUp,
   EmptyState,
+  TableSkeleton,
 } from '@joho-erp/ui';
 import {
   DollarSign,
   Plus,
   Edit,
   Trash2,
-  Loader2,
   TrendingDown,
   Tag,
   Upload,
@@ -121,28 +121,7 @@ export default function PricingPage() {
     setShowSetPriceDialog(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">{t('pricing.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">{t('pricing.errorLoading')}</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Data from API with fallbacks for loading state
   const pricings = ((pricingData?.pricings ?? []) as CustomerPricing[])
     .filter((p) => p && p.customer && p.product); // Filter out invalid/orphaned records
   const totalPricings = pricingData?.total ?? 0;
@@ -159,6 +138,17 @@ export default function PricingPage() {
     name: string;
     basePrice: number;
   }>;
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-destructive text-lg mb-2">{t('pricing.errorLoading')}</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   const columns: TableColumn<CustomerPricing>[] = [
     {
@@ -440,7 +430,9 @@ export default function PricingPage() {
       {/* Pricing Table */}
       <Card>
         <CardContent className="pt-6">
-          {pricings.length === 0 ? (
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : pricings.length === 0 ? (
             <EmptyState
               icon={DollarSign}
               title={t('pricing.messages.noPricing')}

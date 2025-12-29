@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Skeleton,
   H1,
   Muted,
   Small,
@@ -22,6 +21,7 @@ import {
   TabsTrigger,
   TabsContent,
   Input,
+  TableSkeleton,
 } from '@joho-erp/ui';
 import {
   Package,
@@ -53,7 +53,7 @@ export default function InventoryPage() {
   const [productSearch, setProductSearch] = useState('');
 
   // API calls
-  const { data: summary, isLoading: summaryLoading } = api.dashboard.getInventorySummary.useQuery();
+  const { data: summary } = api.dashboard.getInventorySummary.useQuery();
   const { data: categoryData, isLoading: categoryLoading } = api.dashboard.getInventoryByCategory.useQuery();
   const { data: transactionsData, isLoading: transactionsLoading, refetch: refetchTransactions } =
     api.dashboard.getInventoryTransactions.useQuery({
@@ -61,8 +61,6 @@ export default function InventoryPage() {
       search: productSearch || undefined,
       limit: 20,
     });
-
-  const isLoading = summaryLoading || categoryLoading || transactionsLoading;
 
   // Get type badge variant
   const getTypeBadge = (type: string) => {
@@ -94,72 +92,6 @@ export default function InventoryPage() {
         return type;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-6 md:py-10">
-        {/* Header Skeleton */}
-        <div className="mb-6 md:mb-8">
-          <Skeleton className="h-10 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-
-        {/* Stats Cards Skeleton */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4 rounded" />
-              </CardHeader>
-              <CardContent className="p-4 md:p-6">
-                <Skeleton className="h-8 w-16 mb-2" />
-                <Skeleton className="h-3 w-20" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Category Breakdown & Transactions Skeleton */}
-        <div className="grid gap-4 lg:grid-cols-7">
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <Skeleton className="h-6 w-40 mb-2" />
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex justify-between pb-3 border-b last:border-0">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-4">
-            <CardHeader>
-              <Skeleton className="h-6 w-48 mb-2" />
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex justify-between pb-3 border-b last:border-0">
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                    <Skeleton className="h-5 w-16" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
@@ -259,7 +191,9 @@ export default function InventoryPage() {
                 <CardDescription>{t('inventory.categoryBreakdownDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                {categoryData && categoryData.length > 0 ? (
+                {categoryLoading ? (
+                  <TableSkeleton rows={5} columns={3} showMobileCards />
+                ) : categoryData && categoryData.length > 0 ? (
                   <div className="space-y-4">
                     {categoryData.map((category) => (
                       <div
@@ -354,7 +288,9 @@ export default function InventoryPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                {transactionsData && transactionsData.transactions.length > 0 ? (
+                {transactionsLoading ? (
+                  <TableSkeleton rows={5} columns={4} showMobileCards />
+                ) : transactionsData && transactionsData.transactions.length > 0 ? (
                   <div className="space-y-4 max-h-[400px] overflow-y-auto">
                     {transactionsData.transactions.map((tx) => (
                       <div
