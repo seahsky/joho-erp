@@ -264,6 +264,17 @@ export const PERMISSION_DEFINITIONS: Record<
     action: 'edit',
     description: 'Edit SMS settings and send test messages',
   },
+
+  'settings.packing:view': {
+    module: 'settings.packing',
+    action: 'view',
+    description: 'View packing settings',
+  },
+  'settings.packing:edit': {
+    module: 'settings.packing',
+    action: 'edit',
+    description: 'Edit packing settings including PIN configuration',
+  },
 };
 
 // Default permissions for each role
@@ -310,6 +321,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'settings.company:view',
     'settings.delivery:view',
     'settings.xero:view',
+    'settings.packing:view',
+    'settings.packing:edit',
   ],
 
   packer: ['packing:view', 'packing:manage', 'orders:view', 'products:view'],

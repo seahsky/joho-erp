@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Input } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useDebouncedCallback } from 'use-debounce';
+import { PinEntryDialog } from './PinEntryDialog';
 
 interface PackingOrderCardProps {
   order: {
@@ -32,7 +33,17 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   const [packingNotes, setPackingNotes] = useState('');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editQuantity, setEditQuantity] = useState<string>('');
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pendingQuantityChange, setPendingQuantityChange] = useState<{
+    productId: string;
+    newQuantity: number;
+    currentStock: number;
+  } | null>(null);
   const utils = api.useUtils();
+
+  // Check if PIN is required for quantity modifications
+  const { data: pinData } = api.packing.isPinRequired.useQuery();
+  const isPinRequired = pinData?.required ?? false;
 
   const { data: orderDetails, isLoading } = api.packing.getOrderDetails.useQuery({
     orderId: order.orderId,
@@ -359,6 +370,50 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     });
   };
 
+  // Execute quantity change (with optional PIN)
+  const executeQuantityChange = useCallback((productId: string, newQuantity: number, pin?: string) => {
+    updateItemQuantityMutation.mutate({
+      orderId: order.orderId,
+      productId,
+      newQuantity,
+      pin,
+    });
+  }, [order.orderId, updateItemQuantityMutation]);
+
+  // Handle PIN submission
+  const handlePinSubmit = useCallback(async (pin: string): Promise<boolean> => {
+    if (!pendingQuantityChange) return false;
+
+    return new Promise((resolve) => {
+      updateItemQuantityMutation.mutate(
+        {
+          orderId: order.orderId,
+          productId: pendingQuantityChange.productId,
+          newQuantity: pendingQuantityChange.newQuantity,
+          pin,
+        },
+        {
+          onSuccess: () => {
+            setPinDialogOpen(false);
+            setPendingQuantityChange(null);
+            resolve(true);
+          },
+          onError: (error) => {
+            // Check if error is PIN-related
+            if (error.message === 'Invalid PIN') {
+              resolve(false);
+            } else {
+              // For other errors, close dialog and show error toast
+              setPinDialogOpen(false);
+              setPendingQuantityChange(null);
+              resolve(true); // Return true to prevent lockout for non-PIN errors
+            }
+          },
+        }
+      );
+    });
+  }, [pendingQuantityChange, order.orderId, updateItemQuantityMutation]);
+
   const handleQuantityChange = (productId: string, newQuantity: number, currentStock: number) => {
     if (newQuantity <= 0) {
       toast({
@@ -377,11 +432,14 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       return;
     }
 
-    updateItemQuantityMutation.mutate({
-      orderId: order.orderId,
-      productId,
-      newQuantity,
-    });
+    // If PIN is required, show PIN dialog
+    if (isPinRequired) {
+      setPendingQuantityChange({ productId, newQuantity, currentStock });
+      setPinDialogOpen(true);
+    } else {
+      // Execute directly without PIN
+      executeQuantityChange(productId, newQuantity);
+    }
   };
 
   const handleIncrement = (productId: string, currentQuantity: number, currentStock: number) => {
@@ -968,6 +1026,19 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           }
         }
       `}</style>
+
+      {/* PIN Entry Dialog */}
+      <PinEntryDialog
+        open={pinDialogOpen}
+        onOpenChange={(open) => {
+          setPinDialogOpen(open);
+          if (!open) {
+            setPendingQuantityChange(null);
+          }
+        }}
+        onPinSubmit={handlePinSubmit}
+        isLoading={updateItemQuantityMutation.isPending}
+      />
     </div>
   );
 }

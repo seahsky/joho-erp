@@ -458,6 +458,7 @@ model Company {
   deliverySettings        DeliverySettings?
   notificationSettings    NotificationSettings?
   smsSettings             SmsSettings?
+  packingSettings         PackingSettings?
   logoUrl                 String?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -820,4 +821,10 @@ type SmsReminderPreferences {
   enabled                 Boolean             @default(false)
   reminderDays            String[]            // Array of days: ["monday", "wednesday", etc.]
   lastReminderSentAt      DateTime?           // Track last send to prevent duplicate SMS
+}
+
+type PackingSettings {
+  quantityPinHash         String?             // SHA-256 hash of 4-digit PIN for quantity modifications
+  pinUpdatedAt            DateTime?           // When PIN was last changed
+  pinUpdatedBy            String?             // User ID who set the PIN
 }

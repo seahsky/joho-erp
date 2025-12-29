@@ -1160,7 +1160,14 @@
     "insufficientStock": "庫存不足",
     "quantityMustBePositive": "數量必須大於零",
     "increaseQuantity": "增加數量",
-    "decreaseQuantity": "減少數量"
+    "decreaseQuantity": "減少數量",
+    "pinDialog": {
+      "title": "輸入PIN碼",
+      "description": "修改訂單數量需要輸入4位PIN碼",
+      "invalidPin": "PIN碼無效，請重試。",
+      "tooManyAttempts": "嘗試次數過多，請等待30秒。",
+      "cancel": "取消"
+    }
   },
   "settings": {
     "title": "設定",
@@ -1180,7 +1187,33 @@
       "sms": "簡訊提醒",
       "smsDescription": "配置客戶簡訊訂單提醒",
       "profile": "個人資料設定",
-      "profileDescription": "管理您的個人資料、安全和帳戶設定"
+      "profileDescription": "管理您的個人資料、安全和帳戶設定",
+      "packing": "包裝",
+      "packingDescription": "配置包裝工作流程和安全選項"
+    },
+    "packing": {
+      "title": "包裝設定",
+      "subtitle": "配置包裝工作流程和安全選項",
+      "backToSettings": "返回設定",
+      "saving": "儲存中...",
+      "saveChanges": "儲存變更",
+      "pinUpdated": "PIN碼已更新",
+      "pinUpdatedDescription": "包裝PIN碼已成功更新",
+      "errorUpdatingPin": "更新PIN碼失敗",
+      "pinSecurity": {
+        "title": "數量修改安全",
+        "description": "包裝員修改訂單數量時需要PIN碼驗證",
+        "enablePin": "啟用PIN碼保護",
+        "enablePinDescription": "包裝員必須輸入4位PIN碼才能更改商品數量",
+        "newPin": "新PIN碼（4位數字）",
+        "confirmPin": "確認PIN碼",
+        "currentPinSet": "已配置PIN碼",
+        "warning": "如果忘記PIN碼，具有設定權限的管理員可以重設。"
+      },
+      "validation": {
+        "invalidPin": "PIN碼必須是4位數字",
+        "pinMismatch": "兩次輸入的PIN碼不一致"
+      }
     },
     "profile": {
       "title": "個人資料設定",

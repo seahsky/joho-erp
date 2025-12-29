@@ -16,6 +16,7 @@ import {
   MessageSquare,
   ChevronRight,
   Settings as SettingsIcon,
+  Package,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -81,6 +82,14 @@ export default function SettingsPage() {
       titleKey: 'categories.sms',
       descriptionKey: 'categories.smsDescription',
       href: `/${locale}/settings/sms`,
+      available: true,
+    },
+    {
+      id: 'packing',
+      icon: Package,
+      titleKey: 'categories.packing',
+      descriptionKey: 'categories.packingDescription',
+      href: `/${locale}/settings/packing`,
       available: true,
     },
   ];

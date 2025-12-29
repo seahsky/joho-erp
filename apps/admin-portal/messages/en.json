@@ -1160,7 +1160,14 @@
     "insufficientStock": "Insufficient stock available",
     "quantityMustBePositive": "Quantity must be greater than zero",
     "increaseQuantity": "Increase quantity",
-    "decreaseQuantity": "Decrease quantity"
+    "decreaseQuantity": "Decrease quantity",
+    "pinDialog": {
+      "title": "Enter PIN",
+      "description": "A 4-digit PIN is required to modify order quantities",
+      "invalidPin": "Invalid PIN. Please try again.",
+      "tooManyAttempts": "Too many failed attempts. Please wait 30 seconds.",
+      "cancel": "Cancel"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -1182,7 +1189,33 @@
       "sms": "SMS Reminders",
       "smsDescription": "Configure SMS order reminders for customers",
       "profile": "Profile Settings",
-      "profileDescription": "Manage your personal profile, security, and account settings"
+      "profileDescription": "Manage your personal profile, security, and account settings",
+      "packing": "Packing",
+      "packingDescription": "Configure packing workflow and security options"
+    },
+    "packing": {
+      "title": "Packing Settings",
+      "subtitle": "Configure packing workflow and security options",
+      "backToSettings": "Back to Settings",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "pinUpdated": "PIN Updated",
+      "pinUpdatedDescription": "Packing PIN has been updated successfully",
+      "errorUpdatingPin": "Error Updating PIN",
+      "pinSecurity": {
+        "title": "Quantity Modification Security",
+        "description": "Require PIN authentication when packers modify order quantities",
+        "enablePin": "Enable PIN Protection",
+        "enablePinDescription": "Packers must enter a 4-digit PIN to change item quantities",
+        "newPin": "New PIN (4 digits)",
+        "confirmPin": "Confirm PIN",
+        "currentPinSet": "A PIN is currently configured",
+        "warning": "If you forget the PIN, an admin with settings access can reset it."
+      },
+      "validation": {
+        "invalidPin": "PIN must be exactly 4 digits",
+        "pinMismatch": "PINs do not match"
+      }
     },
     "profile": {
       "title": "Profile Settings",

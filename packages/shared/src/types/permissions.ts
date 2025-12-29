@@ -19,6 +19,7 @@ export const MODULES = [
   'settings.notifications',
   'settings.xero',
   'settings.sms',
+  'settings.packing',
 ] as const;
 
 export type Module = (typeof MODULES)[number];
@@ -42,6 +43,7 @@ export const MODULE_ACTIONS = {
   'settings.notifications': ['view', 'edit'] as const,
   'settings.xero': ['view', 'sync'] as const,
   'settings.sms': ['view', 'edit'] as const,
+  'settings.packing': ['view', 'edit'] as const,
 } as const;
 
 export type ModuleActions = typeof MODULE_ACTIONS;

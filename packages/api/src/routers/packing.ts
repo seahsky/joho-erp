@@ -14,6 +14,7 @@ import {
 } from "../services/packing-session";
 import { sendOrderReadyForDeliveryEmail } from "../services/email";
 import { createMoney, multiplyMoney, toCents, calculateOrderTotals } from "@joho-erp/shared";
+import { createHash } from "crypto";
 
 export const packingRouter = router({
   /**
@@ -207,8 +208,24 @@ export const packingRouter = router({
     }),
 
   /**
+   * Check if PIN is required for quantity modifications
+   */
+  isPinRequired: requirePermission('packing:view').query(async () => {
+    const company = await prisma.company.findFirst({
+      select: {
+        packingSettings: true,
+      },
+    });
+
+    return {
+      required: !!company?.packingSettings?.quantityPinHash,
+    };
+  }),
+
+  /**
    * Update item quantity during packing
    * Adjusts stock and recalculates order totals
+   * Requires PIN if configured in packing settings
    */
   updateItemQuantity: requirePermission('packing:manage')
     .input(
@@ -216,10 +233,38 @@ export const packingRouter = router({
         orderId: z.string(),
         productId: z.string(),
         newQuantity: z.number().positive(),
+        pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits').optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { orderId, productId, newQuantity } = input;
+      const { orderId, productId, newQuantity, pin } = input;
+
+      // Check if PIN is required and validate
+      const company = await prisma.company.findFirst({
+        select: {
+          packingSettings: true,
+        },
+      });
+
+      const pinRequired = !!company?.packingSettings?.quantityPinHash;
+
+      if (pinRequired) {
+        if (!pin) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'PIN is required for quantity modifications',
+          });
+        }
+
+        const inputPinHash = createHash('sha256').update(pin).digest('hex');
+
+        if (inputPinHash !== company.packingSettings?.quantityPinHash) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid PIN',
+          });
+        }
+      }
 
       // Fetch order
       const order = await prisma.order.findUnique({

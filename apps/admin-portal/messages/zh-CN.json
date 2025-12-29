@@ -1160,7 +1160,14 @@
     "insufficientStock": "库存不足",
     "quantityMustBePositive": "数量必须大于零",
     "increaseQuantity": "增加数量",
-    "decreaseQuantity": "减少数量"
+    "decreaseQuantity": "减少数量",
+    "pinDialog": {
+      "title": "输入PIN码",
+      "description": "修改订单数量需要输入4位PIN码",
+      "invalidPin": "PIN码无效，请重试。",
+      "tooManyAttempts": "尝试次数过多，请等待30秒。",
+      "cancel": "取消"
+    }
   },
   "settings": {
     "title": "设置",
@@ -1180,7 +1187,33 @@
       "sms": "短信提醒",
       "smsDescription": "配置客户短信订单提醒",
       "profile": "个人资料设置",
-      "profileDescription": "管理您的个人资料、安全和账户设置"
+      "profileDescription": "管理您的个人资料、安全和账户设置",
+      "packing": "包装",
+      "packingDescription": "配置包装工作流程和安全选项"
+    },
+    "packing": {
+      "title": "包装设置",
+      "subtitle": "配置包装工作流程和安全选项",
+      "backToSettings": "返回设置",
+      "saving": "保存中...",
+      "saveChanges": "保存更改",
+      "pinUpdated": "PIN码已更新",
+      "pinUpdatedDescription": "包装PIN码已成功更新",
+      "errorUpdatingPin": "更新PIN码失败",
+      "pinSecurity": {
+        "title": "数量修改安全",
+        "description": "包装员修改订单数量时需要PIN码验证",
+        "enablePin": "启用PIN码保护",
+        "enablePinDescription": "包装员必须输入4位PIN码才能更改商品数量",
+        "newPin": "新PIN码（4位数字）",
+        "confirmPin": "确认PIN码",
+        "currentPinSet": "已配置PIN码",
+        "warning": "如果忘记PIN码，具有设置权限的管理员可以重置。"
+      },
+      "validation": {
+        "invalidPin": "PIN码必须是4位数字",
+        "pinMismatch": "两次输入的PIN码不一致"
+      }
     },
     "profile": {
       "title": "个人资料设置",

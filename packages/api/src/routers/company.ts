@@ -3,6 +3,7 @@ import { router, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import * as xeroService from '../services/xero';
+import { createHash } from 'crypto';
 
 export const companyRouter = router({
   /**
@@ -326,5 +327,68 @@ export const companyRouter = router({
           message: error instanceof Error ? error.message : 'Geocoding failed',
         });
       }
+    }),
+
+  /**
+   * Get packing settings (PIN configuration status)
+   */
+  getPackingSettings: requireAnyPermission(['settings.packing:view', 'settings.packing:edit']).query(async () => {
+    const company = await prisma.company.findFirst({
+      select: {
+        packingSettings: true,
+      },
+    });
+
+    return {
+      pinConfigured: !!company?.packingSettings?.quantityPinHash,
+      pinUpdatedAt: company?.packingSettings?.pinUpdatedAt || null,
+    };
+  }),
+
+  /**
+   * Update packing PIN for quantity modifications
+   */
+  updatePackingPin: requirePermission('settings.packing:edit')
+    .input(
+      z.object({
+        pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits').optional(),
+        removePin: z.boolean().optional(),
+      }).refine(
+        (data) => data.removePin || data.pin,
+        { message: 'Either pin or removePin must be provided' }
+      )
+    )
+    .mutation(async ({ input, ctx }) => {
+      const company = await prisma.company.findFirst();
+
+      if (!company) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Company not found',
+        });
+      }
+
+      // Hash the PIN using SHA-256
+      const pinHash = input.pin
+        ? createHash('sha256').update(input.pin).digest('hex')
+        : null;
+
+      await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          packingSettings: input.removePin
+            ? null
+            : {
+                quantityPinHash: pinHash,
+                pinUpdatedAt: new Date(),
+                pinUpdatedBy: ctx.userId,
+              },
+        },
+      });
+
+      return {
+        success: true,
+        message: input.removePin ? 'PIN removed successfully' : 'PIN updated successfully',
+      };
     }),
 });
