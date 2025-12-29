@@ -15,6 +15,14 @@ import {
 import { sendOrderReadyForDeliveryEmail } from "../services/email";
 import { createMoney, multiplyMoney, toCents, calculateOrderTotals } from "@joho-erp/shared";
 import { createHash } from "crypto";
+import {
+  logPackingItemUpdate,
+  logPackingNotesUpdate,
+  logOrderReadyForDelivery,
+  logPackingOrderPauseResume,
+  logPackingOrderReset,
+  logPackingItemQuantityUpdate,
+} from "../services/audit";
 
 export const packingRouter = router({
   /**
@@ -384,6 +392,17 @@ export const packingRouter = router({
         }),
       ]);
 
+      // Audit log - HIGH: Quantity changes during packing must be tracked
+      await logPackingItemQuantityUpdate(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        itemSku: item.sku,
+        oldQuantity,
+        newQuantity,
+        reason: 'Packing adjustment',
+      }).catch((error) => {
+        console.error('Audit log failed for packing quantity update:', error);
+      });
+
       return {
         success: true,
         oldQuantity,
@@ -462,6 +481,15 @@ export const packingRouter = router({
         await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
       }
 
+      // Audit log - MEDIUM: Item packing tracked
+      await logPackingItemUpdate(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        itemSku: input.itemSku,
+        action: input.packed ? 'packed' : 'unpacked',
+      }).catch((error) => {
+        console.error('Audit log failed for mark item packed:', error);
+      });
+
       return {
         success: true,
         packedItems: updatedPackedItems,
@@ -536,6 +564,14 @@ export const packingRouter = router({
         console.error('Failed to send order ready for delivery email:', error);
       });
 
+      // Audit log - HIGH: Ready for delivery must be tracked
+      await logOrderReadyForDelivery(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        packedBy: ctx.userId || 'system',
+      }).catch((error) => {
+        console.error('Audit log failed for mark order ready:', error);
+      });
+
       return { success: true };
     }),
 
@@ -549,7 +585,7 @@ export const packingRouter = router({
         notes: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const order = await prisma.order.findUnique({
         where: {
           id: input.orderId,
@@ -573,6 +609,14 @@ export const packingRouter = router({
             notes: input.notes,
           },
         },
+      });
+
+      // Audit log - LOW: Packing notes tracked
+      await logPackingNotesUpdate(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        notes: input.notes,
+      }).catch((error) => {
+        console.error('Audit log failed for packing notes:', error);
       });
 
       return { success: true };
@@ -639,6 +683,15 @@ export const packingRouter = router({
         },
       });
 
+      // Audit log - MEDIUM: Packing pause tracked
+      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        action: 'pause',
+        reason: input.notes,
+      }).catch((error) => {
+        console.error('Audit log failed for pause order:', error);
+      });
+
       return { success: true };
     }),
 
@@ -698,6 +751,14 @@ export const packingRouter = router({
       if (ctx.userId) {
         await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
       }
+
+      // Audit log - MEDIUM: Packing resume tracked
+      await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        action: 'resume',
+      }).catch((error) => {
+        console.error('Audit log failed for resume order:', error);
+      });
 
       return { success: true };
     }),
@@ -760,6 +821,14 @@ export const packingRouter = router({
             },
           },
         },
+      });
+
+      // Audit log - MEDIUM: Packing reset tracked
+      await logPackingOrderReset(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        reason: input.reason,
+      }).catch((error) => {
+        console.error('Audit log failed for reset order:', error);
       });
 
       return { success: true };

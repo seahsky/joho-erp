@@ -3,7 +3,7 @@ import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getEffectivePrice, buildPrismaOrderBy } from '@joho-erp/shared';
-import { logProductCreated, logProductUpdated } from '../services/audit';
+import { logProductCreated, logProductUpdated, logStockAdjustment } from '../services/audit';
 import { sortInputSchema, paginationInputSchema } from '../schemas';
 
 const productCategoryEnum = z.enum(['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed']);
@@ -453,6 +453,18 @@ export const productRouter = router({
         });
 
         return updatedProduct;
+      });
+
+      // Audit log - HIGH: Stock adjustments must be tracked
+      await logStockAdjustment(ctx.userId, undefined, ctx.userRole, productId, {
+        sku: product.sku,
+        adjustmentType,
+        previousStock,
+        newStock,
+        quantity,
+        notes,
+      }).catch((error) => {
+        console.error('Audit log failed for stock adjustment:', error);
       });
 
       return result;

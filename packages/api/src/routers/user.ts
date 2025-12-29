@@ -4,6 +4,12 @@ import { TRPCError } from '@trpc/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import type { UserRole } from '../context';
 import { INTERNAL_ROLES, type InternalRole } from '../types/invitation';
+import {
+  logUserRoleChange,
+  logUserStatusChange,
+  logUserInvitation,
+  logInvitationRevoke,
+} from '../services/audit';
 
 /**
  * User representation returned from the API
@@ -147,11 +153,25 @@ export const userRouter = router({
       try {
         const client = await clerkClient();
 
+        // Get current role before update for audit
+        const currentUser = await client.users.getUser(input.userId);
+        const oldRole = (currentUser.publicMetadata as { role?: string })?.role || 'customer';
+        const targetEmail = currentUser.emailAddresses[0]?.emailAddress || '';
+
         // Update user's public metadata with new role
         const updatedUser = await client.users.updateUserMetadata(input.userId, {
           publicMetadata: {
             role: input.role,
           },
+        });
+
+        // Audit log - CRITICAL: User role changes must be tracked
+        await logUserRoleChange(ctx.userId, undefined, ctx.userRole, input.userId, {
+          targetUserEmail: targetEmail,
+          oldRole,
+          newRole: input.role,
+        }).catch((error) => {
+          console.error('Audit log failed for user role change:', error);
         });
 
         return mapClerkUserToResponse(updatedUser);
@@ -186,6 +206,10 @@ export const userRouter = router({
       try {
         const client = await clerkClient();
 
+        // Get target user email for audit
+        const targetUser = await client.users.getUser(input.userId);
+        const targetEmail = targetUser.emailAddresses[0]?.emailAddress || '';
+
         let updatedUser;
         if (input.deactivate) {
           // Ban the user
@@ -194,6 +218,14 @@ export const userRouter = router({
           // Unban the user
           updatedUser = await client.users.unbanUser(input.userId);
         }
+
+        // Audit log - CRITICAL: User status changes must be tracked
+        await logUserStatusChange(ctx.userId, undefined, ctx.userRole, input.userId, {
+          targetUserEmail: targetEmail,
+          action: input.deactivate ? 'deactivate' : 'activate',
+        }).catch((error) => {
+          console.error('Audit log failed for user status change:', error);
+        });
 
         return mapClerkUserToResponse(updatedUser);
       } catch (error) {
@@ -220,7 +252,7 @@ export const userRouter = router({
         role: z.enum(['admin', 'sales', 'manager', 'packer', 'driver']),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         const client = await clerkClient();
 
@@ -263,6 +295,15 @@ export const userRouter = router({
           redirectUrl: process.env.NEXT_PUBLIC_ADMIN_URL
             ? `${process.env.NEXT_PUBLIC_ADMIN_URL}/sign-up`
             : undefined,
+        });
+
+        // Audit log - HIGH: User invitations must be tracked
+        await logUserInvitation(ctx.userId, undefined, ctx.userRole, {
+          invitedEmail: input.email,
+          invitedRole: input.role,
+          invitationId: invitation.id,
+        }).catch((error) => {
+          console.error('Audit log failed for user invitation:', error);
         });
 
         return {
@@ -320,11 +361,26 @@ export const userRouter = router({
         invitationId: z.string().min(1, 'Invitation ID is required'),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         const client = await clerkClient();
 
+        // Get invitation details for audit before revoking
+        const invitations = await client.invitations.getInvitationList({
+          status: 'pending',
+        });
+        const invitation = invitations.data.find((inv) => inv.id === input.invitationId);
+        const revokedEmail = invitation?.emailAddress || 'unknown';
+
         await client.invitations.revokeInvitation(input.invitationId);
+
+        // Audit log - HIGH: Invitation revocation must be tracked
+        await logInvitationRevoke(ctx.userId, undefined, ctx.userRole, {
+          invitationId: input.invitationId,
+          revokedEmail,
+        }).catch((error) => {
+          console.error('Audit log failed for invitation revoke:', error);
+        });
 
         return { success: true };
       } catch (error) {

@@ -31,6 +31,9 @@ import {
   logOrderCancellation,
   logBackorderApproval,
   logBackorderRejection,
+  logOrderConfirmation,
+  logReorder,
+  logResendConfirmation,
 } from '../services/audit';
 import { assignPreliminaryPackingSequence } from '../services/route-optimizer';
 
@@ -1478,6 +1481,16 @@ export const orderRouter = router({
         console.error('Failed to send admin notification email:', error);
       });
 
+      // Audit log - MEDIUM: Reorder creation
+      await logReorder(ctx.userId, undefined, ctx.userRole, newOrder.id, {
+        originalOrderId: input.orderId,
+        originalOrderNumber: originalOrder.orderNumber,
+        newOrderNumber: newOrder.orderNumber,
+        customerId: customer.id,
+      }).catch((error) => {
+        console.error('Audit log failed for reorder:', error);
+      });
+
       return newOrder;
     }),
 
@@ -2088,6 +2101,14 @@ export const orderRouter = router({
         console.error('Failed to send order confirmed by admin email:', error);
       });
 
+      // Audit log - HIGH: Order confirmation must be tracked
+      await logOrderConfirmation(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+      }).catch((error) => {
+        console.error('Audit log failed for order confirmation:', error);
+      });
+
       return updatedOrder;
     }),
 
@@ -2207,6 +2228,11 @@ export const orderRouter = router({
         console.error('Failed to send order cancelled email:', error);
       });
 
+      // Audit log - HIGH: Customer-initiated cancellation must be tracked
+      await logOrderCancellation(ctx.userId, orderId, order.orderNumber, reason || 'Cancelled by customer', order.status).catch((error) => {
+        console.error('Audit log failed for customer order cancellation:', error);
+      });
+
       return cancelledOrder;
     }),
 
@@ -2217,7 +2243,7 @@ export const orderRouter = router({
   // Resend order confirmation email (Admin/Sales only)
   resendConfirmation: requirePermission('orders:confirm')
     .input(z.object({ orderId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { orderId } = input;
 
       // Get the order with customer
@@ -2284,6 +2310,14 @@ export const orderRouter = router({
           state: deliveryAddress.state,
           postcode: deliveryAddress.postcode,
         },
+      });
+
+      // Audit log - LOW: Resend confirmation tracked for visibility
+      await logResendConfirmation(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        recipientEmail: order.customer.contactPerson.email,
+      }).catch((error) => {
+        console.error('Audit log failed for resend confirmation:', error);
       });
 
       return { success: true, message: 'Confirmation email resent successfully' };

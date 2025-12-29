@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdmin } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
+import { logCategoryCreate, logCategoryUpdate, type AuditChange } from '../services/audit';
 
 export const categoryRouter = router({
   // Get all active categories (for dropdown)
@@ -22,7 +23,7 @@ export const categoryRouter = router({
         description: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Check if category with same name already exists
       const existing = await prisma.category.findUnique({
         where: { name: input.name },
@@ -42,6 +43,14 @@ export const categoryRouter = router({
         },
       });
 
+      // Audit log - MEDIUM: Category creation tracked
+      await logCategoryCreate(ctx.userId, undefined, ctx.userRole, category.id, {
+        name: input.name,
+        description: input.description,
+      }).catch((error) => {
+        console.error('Audit log failed for category create:', error);
+      });
+
       return category;
     }),
 
@@ -55,7 +64,7 @@ export const categoryRouter = router({
         isActive: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { id, ...updates } = input;
 
       // Check if category exists
@@ -68,6 +77,15 @@ export const categoryRouter = router({
           code: 'NOT_FOUND',
           message: 'Category not found',
         });
+      }
+
+      // Track changes for audit
+      const changes: AuditChange[] = [];
+      if (updates.name && updates.name !== existing.name) {
+        changes.push({ field: 'name', oldValue: existing.name, newValue: updates.name });
+      }
+      if (updates.isActive !== undefined && updates.isActive !== existing.isActive) {
+        changes.push({ field: 'isActive', oldValue: existing.isActive, newValue: updates.isActive });
       }
 
       // If updating name, check for duplicates
@@ -87,6 +105,13 @@ export const categoryRouter = router({
       const category = await prisma.category.update({
         where: { id },
         data: updates,
+      });
+
+      // Audit log - MEDIUM: Category update tracked
+      await logCategoryUpdate(ctx.userId, undefined, ctx.userRole, id, changes, {
+        name: category.name,
+      }).catch((error) => {
+        console.error('Audit log failed for category update:', error);
       });
 
       return category;

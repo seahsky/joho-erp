@@ -10,6 +10,12 @@ import {
 } from '../services/email';
 import { enqueueXeroJob } from '../services/xero-queue';
 import { sortInputSchema } from '../schemas';
+import {
+  logDriverAssignment,
+  logDeliveryStatusChange,
+  logProofOfDeliveryUpload,
+  logReturnToWarehouse,
+} from '../services/audit';
 
 export const deliveryRouter = router({
   // Get all deliveries with filtering and sorting
@@ -188,6 +194,16 @@ export const deliveryRouter = router({
       const { enqueueXeroJob } = await import('../services/xero-queue');
       await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
         console.error('Failed to enqueue Xero invoice creation:', error);
+      });
+
+      // Audit log - HIGH: Delivery completion must be tracked
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, input.orderId, {
+        orderNumber: order.orderNumber,
+        oldStatus: currentOrder.status,
+        newStatus: 'delivered',
+        notes: input.notes,
+      }).catch((error) => {
+        console.error('Audit log failed for mark delivered:', error);
       });
 
       return order;
@@ -698,6 +714,17 @@ export const deliveryRouter = router({
         console.error('Failed to send out for delivery email:', error);
       });
 
+      // Audit log - HIGH: Out for delivery status change must be tracked
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: updatedOrder.orderNumber,
+        oldStatus: 'ready_for_delivery',
+        newStatus: 'out_for_delivery',
+        driverId: ctx.userId,
+        notes: 'Driver started delivery',
+      }).catch((error) => {
+        console.error('Audit log failed for mark out for delivery:', error);
+      });
+
       return updatedOrder;
     }),
 
@@ -754,6 +781,15 @@ export const deliveryRouter = router({
             },
           },
         },
+      });
+
+      // Audit log - HIGH: POD upload must be tracked
+      await logProofOfDeliveryUpload(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        fileUrl,
+        uploadType: type,
+      }).catch((error) => {
+        console.error('Audit log failed for POD upload:', error);
       });
 
       return {
@@ -848,6 +884,17 @@ export const deliveryRouter = router({
       // Enqueue Xero invoice creation
       await enqueueXeroJob('create_invoice', 'order', orderId).catch((error) => {
         console.error('Failed to enqueue Xero invoice creation:', error);
+      });
+
+      // Audit log - HIGH: Delivery completion must be tracked
+      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        oldStatus: 'out_for_delivery',
+        newStatus: 'delivered',
+        driverId: ctx.userId,
+        notes,
+      }).catch((error) => {
+        console.error('Audit log failed for complete delivery:', error);
       });
 
       return updatedOrder;
@@ -954,6 +1001,15 @@ export const deliveryRouter = router({
         console.error('Failed to send order returned to warehouse email:', error);
       });
 
+      // Audit log - HIGH: Return to warehouse must be tracked
+      await logReturnToWarehouse(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        reason,
+        driverId: ctx.userId,
+      }).catch((error) => {
+        console.error('Audit log failed for return to warehouse:', error);
+      });
+
       return {
         success: true,
         message: 'Order returned to warehouse',
@@ -993,6 +1049,9 @@ export const deliveryRouter = router({
         });
       }
 
+      // Get previous driver for audit
+      const previousDriverId = order.delivery?.driverId;
+
       // Update order with driver assignment
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -1012,6 +1071,16 @@ export const deliveryRouter = router({
             },
           },
         },
+      });
+
+      // Audit log - HIGH: Driver assignment must be tracked
+      await logDriverAssignment(ctx.userId, undefined, ctx.userRole, orderId, {
+        orderNumber: order.orderNumber,
+        driverId,
+        driverName: driverName || 'Unknown',
+        previousDriverId: previousDriverId || undefined,
+      }).catch((error) => {
+        console.error('Audit log failed for driver assignment:', error);
       });
 
       return updatedOrder;

@@ -14,6 +14,7 @@ import {
   getSyncJobs,
   getSyncStats,
 } from '../services/xero-queue';
+import { logXeroSyncTrigger, logXeroJobRetry } from '../services/audit';
 
 export const xeroRouter = router({
   /**
@@ -53,7 +54,12 @@ export const xeroRouter = router({
    */
   retryJob: requirePermission('settings.xero:sync')
     .input(z.object({ jobId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Get job details for audit
+      const job = await prisma.xeroSyncJob.findUnique({
+        where: { id: input.jobId },
+      });
+
       const result = await retryJob(input.jobId);
 
       if (!result.success) {
@@ -63,6 +69,17 @@ export const xeroRouter = router({
         });
       }
 
+      // Audit log - MEDIUM: Job retry tracked
+      await logXeroJobRetry(ctx.userId, undefined, ctx.userRole, {
+        jobId: input.jobId,
+        jobType: job?.type || 'unknown',
+        entityType: job?.entityType || 'unknown',
+        entityId: job?.entityId || '',
+        previousAttempts: job?.attempts || 0,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero job retry:', error);
+      });
+
       return { success: true };
     }),
 
@@ -71,7 +88,7 @@ export const xeroRouter = router({
    */
   syncContact: requirePermission('settings.xero:sync')
     .input(z.object({ customerId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const customer = await prisma.customer.findUnique({
         where: { id: input.customerId },
         select: { id: true, creditApplication: true },
@@ -94,6 +111,16 @@ export const xeroRouter = router({
       }
 
       const jobId = await enqueueXeroJob('sync_contact', 'customer', input.customerId);
+
+      // Audit log - MEDIUM: Xero sync trigger tracked
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+        jobType: 'sync_contact',
+        entityType: 'customer',
+        entityId: input.customerId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero sync trigger:', error);
+      });
+
       return { success: true, jobId };
     }),
 
@@ -102,7 +129,7 @@ export const xeroRouter = router({
    */
   createInvoice: requirePermission('settings.xero:sync')
     .input(z.object({ orderId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const order = await prisma.order.findUnique({
         where: { id: input.orderId },
         select: { id: true, status: true, xero: true },
@@ -131,6 +158,16 @@ export const xeroRouter = router({
       }
 
       const jobId = await enqueueXeroJob('create_invoice', 'order', input.orderId);
+
+      // Audit log - MEDIUM: Xero sync trigger tracked
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+        jobType: 'create_invoice',
+        entityType: 'order',
+        entityId: input.orderId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero invoice trigger:', error);
+      });
+
       return { success: true, jobId };
     }),
 
@@ -139,7 +176,7 @@ export const xeroRouter = router({
    */
   createCreditNote: requirePermission('settings.xero:sync')
     .input(z.object({ orderId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const order = await prisma.order.findUnique({
         where: { id: input.orderId },
         select: { id: true, status: true, xero: true },
@@ -175,6 +212,16 @@ export const xeroRouter = router({
       }
 
       const jobId = await enqueueXeroJob('create_credit_note', 'order', input.orderId);
+
+      // Audit log - MEDIUM: Xero sync trigger tracked
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, {
+        jobType: 'create_credit_note',
+        entityType: 'order',
+        entityId: input.orderId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero credit note trigger:', error);
+      });
+
       return { success: true, jobId };
     }),
 

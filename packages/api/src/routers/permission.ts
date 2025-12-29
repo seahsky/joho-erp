@@ -14,6 +14,11 @@ import {
   clearPermissionCache,
 } from '../services/permission-service';
 import { isValidPermission, MODIFIABLE_ROLES, INTERNAL_ROLES } from '@joho-erp/shared';
+import {
+  logBulkPermissionUpdate,
+  logPermissionToggle,
+  logRolePermissionReset,
+} from '../services/audit';
 import type { Permission } from '@joho-erp/shared';
 
 export const permissionRouter = router({
@@ -151,6 +156,16 @@ export const permissionRouter = router({
       // Clear cache for this role
       clearPermissionCache(role);
 
+      // Audit log - CRITICAL: Permission changes must be tracked
+      await logBulkPermissionUpdate(ctx.userId, undefined, ctx.userRole, {
+        targetRole: role,
+        permissionsGranted: permissions,
+        permissionsRevoked: [], // Full replacement, so all previous were revoked
+        totalPermissions: permissions.length,
+      }).catch((error) => {
+        console.error('Audit log failed for bulk permission update:', error);
+      });
+
       return { success: true, permissionsUpdated: permissions.length };
     }),
 
@@ -221,6 +236,15 @@ export const permissionRouter = router({
       // Clear cache
       clearPermissionCache(role);
 
+      // Audit log - CRITICAL: Permission toggle must be tracked
+      await logPermissionToggle(ctx.userId, undefined, ctx.userRole, {
+        targetRole: role,
+        permissionCode,
+        enabled,
+      }).catch((error) => {
+        console.error('Audit log failed for permission toggle:', error);
+      });
+
       return { success: true };
     }),
 
@@ -238,6 +262,13 @@ export const permissionRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { role } = input;
+
+      // Get current permissions before reset for audit
+      const currentRolePermissions = await prisma.rolePermission.findMany({
+        where: { role },
+        include: { permission: { select: { code: true } } },
+      });
+      const previousPermissions = currentRolePermissions.map((rp) => rp.permission.code);
 
       // Get default permissions for this role
       const { DEFAULT_ROLE_PERMISSIONS } = await import('@joho-erp/shared');
@@ -270,6 +301,14 @@ export const permissionRouter = router({
 
       // Clear cache
       clearPermissionCache(role);
+
+      // Audit log - CRITICAL: Permission reset must be tracked
+      await logRolePermissionReset(ctx.userId, undefined, ctx.userRole, {
+        targetRole: role,
+        previousPermissions,
+      }).catch((error) => {
+        console.error('Audit log failed for role permission reset:', error);
+      });
 
       return { success: true, permissionsReset: defaultPerms.length };
     }),

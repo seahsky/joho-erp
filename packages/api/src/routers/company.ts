@@ -4,6 +4,14 @@ import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import * as xeroService from '../services/xero';
 import { createHash } from 'crypto';
+import {
+  logCompanyProfileUpdate,
+  logCompanyLogoUpdate,
+  logXeroSettingsUpdate,
+  logDeliverySettingsUpdate,
+  logPackingPinUpdate,
+} from '../services/audit';
+import type { AuditChange } from '../services/audit';
 
 export const companyRouter = router({
   /**
@@ -65,7 +73,7 @@ export const companyRouter = router({
         }).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
       if (!company) {
@@ -73,6 +81,15 @@ export const companyRouter = router({
           code: 'NOT_FOUND',
           message: 'Company not found',
         });
+      }
+
+      // Track changes for audit
+      const changes: AuditChange[] = [];
+      if (company.businessName !== input.businessName) {
+        changes.push({ field: 'businessName', oldValue: company.businessName, newValue: input.businessName });
+      }
+      if (company.abn !== input.abn) {
+        changes.push({ field: 'abn', oldValue: company.abn, newValue: input.abn });
       }
 
       const updated = await prisma.company.update({
@@ -84,6 +101,14 @@ export const companyRouter = router({
           contactPerson: input.contactPerson,
           bankDetails: input.bankDetails || null,
         },
+      });
+
+      // Audit log - CRITICAL: Company profile changes must be tracked
+      await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, company.id, changes, {
+        businessName: input.businessName,
+        changeType: 'profile',
+      }).catch((error) => {
+        console.error('Audit log failed for company profile update:', error);
       });
 
       return {
@@ -102,7 +127,7 @@ export const companyRouter = router({
         logoUrl: z.string().url('Valid URL is required'),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
       if (!company) {
@@ -112,11 +137,21 @@ export const companyRouter = router({
         });
       }
 
+      const previousLogoUrl = company.logoUrl || undefined;
+
       const updated = await prisma.company.update({
         where: { id: company.id },
         data: {
           logoUrl: input.logoUrl,
         },
+      });
+
+      // Audit log - Company logo changes
+      await logCompanyLogoUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+        previousLogoUrl,
+        newLogoUrl: input.logoUrl,
+      }).catch((error) => {
+        console.error('Audit log failed for company logo update:', error);
       });
 
       return {
@@ -137,7 +172,7 @@ export const companyRouter = router({
         tenantId: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
       if (!company) {
@@ -156,6 +191,14 @@ export const companyRouter = router({
             tenantId: input.tenantId || null,
           },
         },
+      });
+
+      // Audit log - CRITICAL: Xero credential changes must be tracked
+      await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+        action: 'update',
+        fieldsChanged: ['clientId', 'clientSecret', ...(input.tenantId ? ['tenantId'] : [])],
+      }).catch((error) => {
+        console.error('Audit log failed for Xero settings update:', error);
       });
 
       return {
@@ -208,9 +251,20 @@ export const companyRouter = router({
   /**
    * Disconnect from Xero
    */
-  disconnectXero: requirePermission('settings.integrations:edit').mutation(async () => {
+  disconnectXero: requirePermission('settings.integrations:edit').mutation(async ({ ctx }) => {
     try {
+      const company = await prisma.company.findFirst();
+
       await xeroService.disconnect();
+
+      // Audit log - CRITICAL: Xero disconnect must be tracked
+      if (company) {
+        await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+          action: 'disconnect',
+        }).catch((error) => {
+          console.error('Audit log failed for Xero disconnect:', error);
+        });
+      }
 
       return {
         success: true,
@@ -244,7 +298,7 @@ export const companyRouter = router({
         defaultDeliveryWindow: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Get existing company
       const company = await prisma.company.findFirst();
 
@@ -253,6 +307,13 @@ export const companyRouter = router({
           code: 'NOT_FOUND',
           message: 'Company not found',
         });
+      }
+
+      // Track changes for audit
+      const changes: AuditChange[] = [];
+      const oldSettings = company.deliverySettings as Record<string, unknown> | null;
+      if (oldSettings?.orderCutoffTime !== input.orderCutoffTime) {
+        changes.push({ field: 'orderCutoffTime', oldValue: oldSettings?.orderCutoffTime, newValue: input.orderCutoffTime });
       }
 
       // Update company with delivery settings
@@ -266,6 +327,13 @@ export const companyRouter = router({
             defaultDeliveryWindow: input.defaultDeliveryWindow || null,
           },
         },
+      });
+
+      // Audit log - HIGH: Delivery settings changes affect operations
+      await logDeliverySettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, changes, {
+        settingType: 'delivery',
+      }).catch((error) => {
+        console.error('Audit log failed for delivery settings update:', error);
       });
 
       return {
@@ -384,6 +452,14 @@ export const companyRouter = router({
                 pinUpdatedBy: ctx.userId,
               },
         },
+      });
+
+      // Audit log - CRITICAL: Packing PIN changes must be tracked
+      await logPackingPinUpdate(ctx.userId, undefined, ctx.userRole, company.id, {
+        pinChanged: true,
+        pinEnabled: !input.removePin,
+      }).catch((error) => {
+        console.error('Audit log failed for packing PIN update:', error);
       });
 
       return {

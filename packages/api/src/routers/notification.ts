@@ -3,6 +3,7 @@ import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { sendTestEmail } from '../services/email';
+import { logNotificationSettingsUpdate } from '../services/audit';
 
 export const notificationRouter = router({
   /**
@@ -75,7 +76,7 @@ export const notificationRouter = router({
         quietHoursEnd: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)').optional().nullable(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
       if (!company) {
@@ -98,6 +99,13 @@ export const notificationRouter = router({
             quietHoursEnd: input.quietHoursEnd || null,
           },
         },
+      });
+
+      // Audit log - MEDIUM: Notification settings changes tracked
+      await logNotificationSettingsUpdate(ctx.userId, undefined, ctx.userRole, company.id, [], {
+        settingType: 'all',
+      }).catch((error) => {
+        console.error('Audit log failed for notification settings update:', error);
       });
 
       return {
