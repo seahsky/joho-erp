@@ -375,7 +375,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               }}
               placeholder="e.g., 10000 for $10,000"
             />
-            <p className="text-xs text-muted-foreground mt-1">Enter amount in dollars</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('enterAmountHint')}</p>
           </div>
           <div>
             <Label htmlFor="forecastPurchase">{t('fields.forecastPurchase')}</Label>
@@ -391,7 +391,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               }}
               placeholder="e.g., 5000 for $5,000"
             />
-            <p className="text-xs text-muted-foreground mt-1">Enter amount in dollars</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('enterAmountHint')}</p>
           </div>
         </div>
       </div>

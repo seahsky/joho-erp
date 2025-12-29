@@ -517,7 +517,8 @@
       },
       "buttons": {
         "next": "下一步"
-      }
+      },
+      "enterAmountHint": "請以澳幣輸入金額"
     },
     "directors": {
       "title": "董事/業主詳情",

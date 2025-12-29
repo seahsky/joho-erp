@@ -844,7 +844,7 @@ export default function NewCustomerPage() {
               <CardContent className="space-y-6">
                 {formData.directors.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">No directors added yet</p>
+                    <p className="text-muted-foreground mb-4">{t('directors.emptyState')}</p>
                     <Button type="button" onClick={addDirector}>
                       <Plus className="mr-2 h-4 w-4" />
                       {t('directors.addDirector')}
@@ -1100,7 +1100,7 @@ export default function NewCustomerPage() {
               <CardContent className="space-y-6">
                 {formData.tradeReferences.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">No trade references added yet</p>
+                    <p className="text-muted-foreground mb-4">{t('tradeReferences.emptyState')}</p>
                     <Button type="button" onClick={addTradeReference}>
                       <Plus className="mr-2 h-4 w-4" />
                       {t('tradeReferences.addReference')}

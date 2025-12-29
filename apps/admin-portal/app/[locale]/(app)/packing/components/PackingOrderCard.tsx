@@ -569,7 +569,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           <div className="absolute top-0 left-0 z-10">
             <div className="bg-primary text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold opacity-90">Pack</span>
+                <span className="text-xs font-semibold opacity-90">{t('packBadge')}</span>
                 <span className="text-2xl font-black tabular-nums leading-none">
                   #{order.packingSequence}
                 </span>

@@ -25,6 +25,7 @@
     "view": "View",
     "search": "Search",
     "searchPlaceholder": "Search customers, orders, products...",
+    "selectLanguage": "Select Language",
     "filter": "Filter",
     "actions": "Actions",
     "status": "Status",
@@ -109,6 +110,11 @@
     "TAS": "Tasmania",
     "NT": "Northern Territory",
     "ACT": "Australian Capital Territory"
+  },
+  "auth": {
+    "title": "Admin Portal",
+    "signInDescription": "Sign in to access the administrative dashboard",
+    "signUpDescription": "Create an account to access the administrative dashboard"
   },
   "areaTags": {
     "north": "North",
@@ -1057,7 +1063,8 @@
         "TAS": "Tasmania",
         "NT": "Northern Territory",
         "ACT": "Australian Capital Territory"
-      }
+      },
+      "emptyState": "No directors added yet"
     },
     "financial": {
       "title": "Financial Information",
@@ -1086,7 +1093,8 @@
       "phonePlaceholder": "(02) 1234 5678",
       "email": "Email",
       "emailPlaceholder": "contact@example.com",
-      "remove": "Remove"
+      "remove": "Remove",
+      "emptyState": "No trade references added yet"
     },
     "buttons": {
       "cancel": "Cancel",
@@ -1125,6 +1133,7 @@
   "packing": {
     "title": "Packing Interface",
     "subtitle": "Pack orders efficiently for delivery",
+    "packBadge": "Pack",
     "selectDate": "Select Delivery Date",
     "selectDateDescription": "Choose the date for which to pack orders",
     "productSummary": "Product Summary",

@@ -402,7 +402,8 @@
       },
       "buttons": {
         "next": "Next"
-      }
+      },
+      "enterAmountHint": "Enter amount in dollars"
     },
     "directors": {
       "title": "Director/Proprietor Details",

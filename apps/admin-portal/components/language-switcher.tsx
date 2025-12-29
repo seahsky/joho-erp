@@ -2,7 +2,7 @@
 
 import { Languages, Check } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 
 const languages = [
@@ -17,6 +17,7 @@ export function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('common');
 
   const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
 
@@ -54,7 +55,7 @@ export function LanguageSwitcher() {
         <div className="absolute right-0 top-12 w-56 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in-0 duration-200 z-50">
           {/* Header */}
           <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-            <h3 className="font-semibold text-sm">Select Language</h3>
+            <h3 className="font-semibold text-sm">{t('selectLanguage')}</h3>
           </div>
 
           {/* Language Options */}

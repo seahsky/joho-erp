@@ -25,6 +25,7 @@
     "view": "檢視",
     "search": "搜尋",
     "searchPlaceholder": "搜尋客戶、訂單、產品...",
+    "selectLanguage": "選擇語言",
     "filter": "篩選",
     "actions": "操作",
     "status": "狀態",
@@ -109,6 +110,11 @@
     "TAS": "塔斯馬尼亞州",
     "NT": "北領地",
     "ACT": "澳洲首都領地"
+  },
+  "auth": {
+    "title": "管理入口",
+    "signInDescription": "登入以訪問管理控制台",
+    "signUpDescription": "建立帳戶以訪問管理控制台"
   },
   "areaTags": {
     "north": "北區",
@@ -1057,7 +1063,8 @@
         "TAS": "塔斯馬尼亞州",
         "NT": "北領地",
         "ACT": "澳大利亞首都領地"
-      }
+      },
+      "emptyState": "尚未新增董事"
     },
     "financial": {
       "title": "財務資訊",
@@ -1086,7 +1093,8 @@
       "phonePlaceholder": "(02) 1234 5678",
       "email": "電子郵件",
       "emailPlaceholder": "contact@example.com",
-      "remove": "移除"
+      "remove": "移除",
+      "emptyState": "尚未新增貿易參考"
     },
     "buttons": {
       "cancel": "取消",
@@ -1125,6 +1133,7 @@
   "packing": {
     "title": "打包介面",
     "subtitle": "高效打包訂單以便配送",
+    "packBadge": "打包",
     "selectDate": "選擇配送日期",
     "selectDateDescription": "選擇要打包訂單的日期",
     "productSummary": "產品彙總",
@@ -1255,7 +1264,9 @@
       "profile": "個人資料設定",
       "profileDescription": "管理您的個人資料、安全和帳戶設定",
       "packing": "包裝",
-      "packingDescription": "配置包裝工作流程和安全選項"
+      "packingDescription": "配置包裝工作流程和安全選項",
+      "permissions": "權限管理",
+      "permissionsDescription": "為每個使用者角色配置基於角色的存取控制"
     },
     "packing": {
       "title": "包裝設定",
