@@ -17,6 +17,10 @@ export type OrderStatus =
 // Product Status
 export type ProductStatus = 'active' | 'discontinued' | 'out_of_stock';
 
+
+// Stock Status (customer-facing, does not reveal exact counts)
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+
 // Product Category
 export type ProductCategory = 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed';
 

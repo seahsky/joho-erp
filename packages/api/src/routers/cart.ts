@@ -239,7 +239,7 @@ export const cartRouter = router({
       if (product.currentStock < input.quantity) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}`,
+          message: `Insufficient stock for "${product.name}". Please reduce quantity or try again later.`,
         });
       }
 
@@ -272,7 +272,7 @@ export const cartRouter = router({
         if (product.currentStock < newQuantity) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Cannot add ${input.quantity} more. Available stock: ${product.currentStock} ${product.unit}`,
+            message: `Cannot add more "${product.name}". Please reduce quantity or try again later.`,
           });
         }
 
@@ -402,7 +402,7 @@ export const cartRouter = router({
       if (product.currentStock < input.quantity) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}`,
+          message: `Insufficient stock for "${product.name}". Please reduce quantity or try again later.`,
         });
       }
 

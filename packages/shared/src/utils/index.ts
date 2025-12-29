@@ -223,6 +223,23 @@ export function getStockStatus(
   return 'ok';
 }
 
+
+/**
+ * Get customer-facing stock status (hides exact counts)
+ * @param currentStock - Current stock level
+ * @param lowStockThreshold - Product-specific threshold (optional, defaults to 10)
+ * @returns StockStatus for customer display
+ */
+export function getCustomerStockStatus(
+  currentStock: number,
+  lowStockThreshold?: number | null
+): 'in_stock' | 'low_stock' | 'out_of_stock' {
+  const threshold = lowStockThreshold ?? 10;
+  if (currentStock <= 0) return 'out_of_stock';
+  if (currentStock <= threshold) return 'low_stock';
+  return 'in_stock';
+}
+
 /**
  * Get Google Maps directions URL
  */

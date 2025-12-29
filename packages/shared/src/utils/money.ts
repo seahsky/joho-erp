@@ -25,7 +25,7 @@
  * ```
  */
 
-import { dinero, add, subtract, multiply, allocate, toDecimal, toSnapshot, greaterThan, lessThan, isZero } from 'dinero.js';
+import { dinero, add, subtract, multiply, allocate, toDecimal, greaterThan, lessThan, isZero } from 'dinero.js';
 import { AUD } from '@dinero.js/currencies';
 import type { Dinero } from 'dinero.js';
 
@@ -78,8 +78,10 @@ export function toAUD(amountInDollars: number): Money {
  * ```
  */
 export function toCents(money: Money): number {
-  const snapshot = toSnapshot(money);
-  return snapshot.amount;
+  // Use toDecimal to properly handle scale normalization
+  // (dinero.js v2 multiply operations can change scale, e.g., scale 2 + 2 = 4)
+  const dollars = parseFloat(toDecimal(money));
+  return Math.round(dollars * 100);
 }
 
 /**

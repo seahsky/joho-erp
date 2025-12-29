@@ -8,7 +8,7 @@ import { MobileDrawer } from '@joho-erp/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@joho-erp/ui';
 import { Package, Minus, Plus, X, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
-import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
+import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 
 interface Product {
@@ -19,9 +19,13 @@ interface Product {
   category: ProductCategory | null;
   unit: string;
   basePrice: number;
-  currentStock: number;
+  stockStatus: StockStatus;
+  hasStock: boolean;
   imageUrl: string | null;
 }
+
+// Reasonable quantity cap without revealing actual stock
+const MAX_QUANTITY = 999;
 
 interface ProductDetailSidebarProps {
   product: (Product & ProductWithPricing) | null;
@@ -73,12 +77,15 @@ export function ProductDetailSidebar({
   if (!product) return null;
 
   const getStockBadge = () => {
-    // Only show warning for low stock (< 10 units)
-    // No badge needed for normal stock levels since we only show in-stock products
-    if (product.currentStock < 10) {
-      return <Badge variant="warning">{t('products.lowStock')}</Badge>;
+    switch (product.stockStatus) {
+      case 'low_stock':
+        return <Badge variant="warning">{t('products.lowStock')}</Badge>;
+      case 'out_of_stock':
+        return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
+      case 'in_stock':
+      default:
+        return <Badge variant="success">{t('products.inStock')}</Badge>;
     }
-    return null;
   };
 
   const getCategoryTranslation = (category: ProductCategory) => {
@@ -87,7 +94,7 @@ export function ProductDetailSidebar({
   };
 
   const handleIncrease = () => {
-    if (quantity < product.currentStock) {
+    if (quantity < MAX_QUANTITY) {
       setQuantity(prev => prev + 1);
     }
   };
@@ -100,7 +107,7 @@ export function ProductDetailSidebar({
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 1;
-    const clampedValue = Math.max(1, Math.min(value, product.currentStock));
+    const clampedValue = Math.max(1, Math.min(value, MAX_QUANTITY));
     setQuantity(clampedValue);
   };
 
@@ -170,18 +177,9 @@ export function ProductDetailSidebar({
           </div>
 
           {/* Stock Status */}
-          <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{t('products.stock')}:</span>
-              {getStockBadge() || (
-                <Muted className="text-sm">{t('products.unitsAvailable', { count: product.currentStock, unit: product.unit })}</Muted>
-              )}
-            </div>
-            {getStockBadge() && (
-              <Muted className="text-sm">
-                {t('products.unitsAvailable', { count: product.currentStock, unit: product.unit })}
-              </Muted>
-            )}
+          <div className="flex items-center gap-3 py-3 px-4 bg-muted/50 rounded-xl">
+            <span className="text-sm font-medium">{t('products.stock')}:</span>
+            {getStockBadge()}
           </div>
 
           {/* Price */}
@@ -234,7 +232,7 @@ export function ProductDetailSidebar({
                   variant="ghost"
                   size="icon"
                   onClick={handleDecrease}
-                  disabled={quantity <= 1 || product.currentStock === 0}
+                  disabled={quantity <= 1 || !product.hasStock}
                   aria-label={t('products.decreaseQuantity')}
                   className="rounded-none h-12 w-12 hover:bg-primary/10"
                 >
@@ -243,10 +241,10 @@ export function ProductDetailSidebar({
                 <input
                   type="number"
                   min="1"
-                  max={product.currentStock}
+                  max={MAX_QUANTITY}
                   value={quantity}
                   onChange={handleQuantityChange}
-                  disabled={product.currentStock === 0}
+                  disabled={!product.hasStock}
                   aria-label={t('products.selectQuantity')}
                   className="w-20 h-12 text-center text-lg font-bold bg-transparent border-x-2 border-border focus:outline-none focus:bg-muted/50"
                 />
@@ -254,7 +252,7 @@ export function ProductDetailSidebar({
                   variant="ghost"
                   size="icon"
                   onClick={handleIncrease}
-                  disabled={quantity >= product.currentStock || product.currentStock === 0}
+                  disabled={quantity >= MAX_QUANTITY || !product.hasStock}
                   aria-label={t('products.increaseQuantity')}
                   className="rounded-none h-12 w-12 hover:bg-primary/10"
                 >
@@ -311,7 +309,7 @@ export function ProductDetailSidebar({
               <Button
                 className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 size="lg"
-                disabled={!canAddToCart || product.currentStock === 0 || addToCart.isPending}
+                disabled={!canAddToCart || !product.hasStock || addToCart.isPending}
                 onClick={handleAddToCart}
               >
                 {addToCart.isPending ? (

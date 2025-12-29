@@ -7,11 +7,12 @@ import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
 import { Package, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { api } from '@/trpc/client';
-import type { ProductWithPricing, ProductCategory } from '@joho-erp/shared';
+import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategoryFilter } from './category-filter';
 
+// Product type for customer portal (receives stockStatus/hasStock from API)
 interface Product {
   id: string;
   name: string;
@@ -20,9 +21,13 @@ interface Product {
   category: ProductCategory | null;
   unit: string;
   basePrice: number;
-  currentStock: number;
+  stockStatus: StockStatus;
+  hasStock: boolean;
   imageUrl: string | null;
 }
+
+// Type for API response items (cast to Product since customers always get transformed data)
+type ApiProduct = Product & ProductWithPricing;
 
 export function ProductList() {
   const t = useTranslations();
@@ -106,24 +111,17 @@ export function ProductList() {
   }, [cart?.items]);
 
   // Handler for incrementing quantity by 5
-  const handleIncrementBy5 = (e: React.MouseEvent, productId: string, currentStock: number) => {
+  // Server validates stock availability - no client-side stock cap
+  const handleIncrementBy5 = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation();
     const currentQty = getCartQuantity(productId);
-    const newQty = Math.min(currentQty + 5, currentStock);
-    if (newQty !== currentQty && newQty > 0) {
-      if (currentQty === 0) {
-        // Add to cart if not already in cart
-        addToCart.mutate({ productId, quantity: newQty });
-      } else {
-        // Update existing cart item
-        updateQuantity.mutate({ productId, quantity: newQty });
-      }
-      if (newQty === currentStock && currentStock < currentQty + 5) {
-        toast({
-          title: t('products.maxStockReached'),
-          description: t('products.unitsAvailable', { count: currentStock, unit: '' }),
-        });
-      }
+    const newQty = currentQty + 5;
+    if (currentQty === 0) {
+      // Add to cart if not already in cart
+      addToCart.mutate({ productId, quantity: newQty });
+    } else {
+      // Update existing cart item
+      updateQuantity.mutate({ productId, quantity: newQty });
     }
   };
 
@@ -155,18 +153,23 @@ export function ProductList() {
     return t(`categories.${categoryKey}`);
   };
 
-  const getStockBadge = (stock: number) => {
-    // Only show warning for low stock (< 10 units)
-    // No badge needed for normal stock levels since we only show in-stock products
-    if (stock < 10) {
-      return <Badge variant="warning" className="text-xs">{t('products.lowStock')}</Badge>;
+  const getStockBadge = (stockStatus: StockStatus) => {
+    switch (stockStatus) {
+      case 'low_stock':
+        return <Badge variant="warning" className="text-xs">{t('products.lowStock')}</Badge>;
+      case 'out_of_stock':
+        return <Badge variant="destructive" className="text-xs">{t('products.outOfStock')}</Badge>;
+      case 'in_stock':
+      default:
+        return null; // No badge needed for normal stock levels
     }
-    return null;
   };
 
   // Filter products to only show in-stock items
+  // Cast to ApiProduct since customer portal always receives transformed data with stockStatus/hasStock
   const inStockProducts = React.useMemo(() => {
-    return products?.items?.filter(p => p.currentStock > 0) || [];
+    const items = (products?.items || []) as ApiProduct[];
+    return items.filter(p => p.hasStock);
   }, [products]);
 
   const handleProductClick = (product: Product & ProductWithPricing) => {
@@ -294,12 +297,10 @@ export function ProductList() {
       {/* Product List - Clean Minimalist Rows */}
       <div className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
         {inStockProducts.map((product) => {
-          const productWithPricing = product as typeof product & ProductWithPricing;
-
           return (
             <div
               key={product.id}
-              onClick={() => handleProductClick(productWithPricing)}
+              onClick={() => handleProductClick(product)}
               className={cn(
                 'group relative bg-background hover:bg-muted/50 transition-all duration-200 cursor-pointer',
                 'active:scale-[0.99]'
@@ -344,17 +345,17 @@ export function ProductList() {
 
                 {/* Price */}
                 <div className="flex-shrink-0 text-right min-w-[140px]">
-                  {productWithPricing.hasCustomPricing ? (
+                  {product.hasCustomPricing ? (
                     <div>
                       <Large className="text-2xl font-bold text-green-600 dark:text-green-500">
-                        {formatAUD(productWithPricing.effectivePrice)}
+                        {formatAUD(product.effectivePrice)}
                       </Large>
                       <div className="flex items-center justify-end gap-2 mt-1">
                         <Muted className="line-through text-xs">
-                          {formatAUD(productWithPricing.basePrice)}
+                          {formatAUD(product.basePrice)}
                         </Muted>
                         <Badge variant="success" className="text-xs px-1.5 py-0">
-                          -{productWithPricing.discountPercentage?.toFixed(0)}%
+                          -{product.discountPercentage?.toFixed(0)}%
                         </Badge>
                       </div>
                     </div>
@@ -368,7 +369,7 @@ export function ProductList() {
 
                 {/* Stock Badge */}
                 <div className="flex-shrink-0 min-w-[100px] flex justify-center">
-                  {getStockBadge(product.currentStock)}
+                  {getStockBadge(product.stockStatus)}
                 </div>
 
                 {/* Inline Quantity Controls */}
@@ -388,7 +389,7 @@ export function ProductList() {
                     )}
                     <button
                       type="button"
-                      onClick={() => handleProductClick(productWithPricing)}
+                      onClick={() => handleProductClick(product)}
                       className={cn(
                         'h-10 w-14 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-lg',
                         (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
@@ -404,8 +405,8 @@ export function ProductList() {
                       size="sm"
                       variant="outline"
                       className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
-                      onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                      disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                      onClick={(e) => handleIncrementBy5(e, product.id)}
+                      disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending}
                       aria-label={t('products.incrementBy5')}
                     >
                       +5
@@ -444,17 +445,17 @@ export function ProductList() {
                 {/* Bottom Row: Price + Stock + Quick Add */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    {productWithPricing.hasCustomPricing ? (
+                    {product.hasCustomPricing ? (
                       <div>
                         <Large className="text-xl font-bold text-green-600 dark:text-green-500">
-                          {formatAUD(productWithPricing.effectivePrice)}
+                          {formatAUD(product.effectivePrice)}
                         </Large>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Muted className="line-through text-xs">
-                            {formatAUD(productWithPricing.basePrice)}
+                            {formatAUD(product.basePrice)}
                           </Muted>
                           <Badge variant="success" className="text-xs px-1.5 py-0">
-                            -{productWithPricing.discountPercentage?.toFixed(0)}%
+                            -{product.discountPercentage?.toFixed(0)}%
                           </Badge>
                         </div>
                       </div>
@@ -466,7 +467,7 @@ export function ProductList() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {getStockBadge(product.currentStock)}
+                    {getStockBadge(product.stockStatus)}
                     <div className="flex items-center">
                       {canAddToCart && getCartQuantity(product.id) > 0 && (
                         <Button
@@ -482,7 +483,7 @@ export function ProductList() {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleProductClick(productWithPricing)}
+                        onClick={() => handleProductClick(product)}
                         className={cn(
                           'h-10 w-12 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-base',
                           (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
@@ -498,8 +499,8 @@ export function ProductList() {
                         size="sm"
                         variant="outline"
                         className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
-                        onClick={(e) => handleIncrementBy5(e, product.id, product.currentStock)}
-                        disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending || getCartQuantity(product.id) >= product.currentStock}
+                        onClick={(e) => handleIncrementBy5(e, product.id)}
+                        disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending}
                         aria-label={t('products.incrementBy5')}
                       >
                         +5

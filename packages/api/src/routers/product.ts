@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { getEffectivePrice, buildPrismaOrderBy } from '@joho-erp/shared';
+import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus } from '@joho-erp/shared';
 import { logProductCreated, logProductUpdated, logStockAdjustment } from '../services/audit';
 import { sortInputSchema, paginationInputSchema } from '../schemas';
 
@@ -98,6 +98,21 @@ export const productRouter = router({
         hasMore: page < totalPages,
       };
 
+      // Determine if caller is a customer (hide exact stock counts for customers)
+      const isCustomer = !_ctx.userRole || _ctx.userRole === 'customer';
+
+      // Helper to transform product for customer (hide exact stock, show status only)
+      const transformForCustomer = <T extends { currentStock: number; lowStockThreshold: number | null }>(
+        product: T
+      ) => {
+        const { currentStock, lowStockThreshold, ...rest } = product;
+        return {
+          ...rest,
+          stockStatus: getCustomerStockStatus(currentStock, lowStockThreshold),
+          hasStock: currentStock > 0,
+        };
+      };
+
       // If customer exists, fetch their custom pricing
       if (customerId) {
         const customerPricings = await prisma.customerPricing.findMany({
@@ -113,21 +128,19 @@ export const productRouter = router({
         const items = products.map((product) => {
           const customPricing = pricingMap.get(product.id);
           const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+          const fullProduct = { ...product, ...priceInfo };
 
-          return {
-            ...product,
-            ...priceInfo,
-          };
+          return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
         });
 
         return { items, ...paginationMeta };
       }
 
       // No customer pricing, return products with base price as effective price
-      const items = products.map((product) => ({
-        ...product,
-        ...getEffectivePrice(product.basePrice),
-      }));
+      const items = products.map((product) => {
+        const fullProduct = { ...product, ...getEffectivePrice(product.basePrice) };
+        return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+      });
 
       return { items, ...paginationMeta };
     }),
@@ -150,6 +163,21 @@ export const productRouter = router({
         });
       }
 
+      // Determine if caller is a customer (hide exact stock counts for customers)
+      const isCustomer = !ctx.userRole || ctx.userRole === 'customer';
+
+      // Helper to transform product for customer (hide exact stock, show status only)
+      const transformForCustomer = <T extends { currentStock: number; lowStockThreshold: number | null }>(
+        prod: T
+      ) => {
+        const { currentStock, lowStockThreshold, ...rest } = prod;
+        return {
+          ...rest,
+          stockStatus: getCustomerStockStatus(currentStock, lowStockThreshold),
+          hasStock: currentStock > 0,
+        };
+      };
+
       // Try to get customer ID and their custom pricing
       let customerId: string | null = null;
       if (ctx.userId) {
@@ -169,18 +197,14 @@ export const productRouter = router({
         });
 
         const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+        const fullProduct = { ...product, ...priceInfo };
 
-        return {
-          ...product,
-          ...priceInfo,
-        };
+        return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
       }
 
       // No customer pricing, return product with base price
-      return {
-        ...product,
-        ...getEffectivePrice(product.basePrice),
-      };
+      const fullProduct = { ...product, ...getEffectivePrice(product.basePrice) };
+      return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
     }),
 
   // Admin: Create product (with optional customer-specific pricing)
