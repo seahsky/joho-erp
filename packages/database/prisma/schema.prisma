@@ -817,6 +817,6 @@ type SmsSettings {
 
 type SmsReminderPreferences {
   enabled                 Boolean             @default(false)
-  reminderDay             String?             // "monday", "tuesday", etc.
+  reminderDays            String[]            // Array of days: ["monday", "wednesday", etc.]
   lastReminderSentAt      DateTime?           // Track last send to prevent duplicate SMS
 }

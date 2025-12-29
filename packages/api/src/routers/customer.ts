@@ -1022,10 +1022,10 @@ export const customerRouter = router({
         smsReminderPreferences: z
           .object({
             enabled: z.boolean(),
-            reminderDay: z
-              .enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
-              .nullable()
-              .optional(),
+            reminderDays: z
+              .array(z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']))
+              .optional()
+              .default([]),
           })
           .optional(),
       })
@@ -1204,9 +1204,9 @@ export const customerRouter = router({
       if (input.smsReminderPreferences !== undefined) {
         const newSmsPreferences = {
           enabled: input.smsReminderPreferences.enabled,
-          reminderDay: input.smsReminderPreferences.enabled
-            ? input.smsReminderPreferences.reminderDay ?? null
-            : null,
+          reminderDays: input.smsReminderPreferences.enabled
+            ? input.smsReminderPreferences.reminderDays ?? []
+            : [],
         };
         updateData.smsReminderPreferences = newSmsPreferences;
         changes.push({

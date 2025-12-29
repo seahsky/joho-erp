@@ -2001,10 +2001,11 @@
     },
     "smsReminder": {
       "title": "短信订单提醒",
-      "description": "发送每周短信提醒下单",
+      "description": "在选定的日期发送短信提醒下单",
       "enable": "启用短信提醒",
-      "reminderDay": "提醒日期",
-      "selectDay": "选择日期...",
+      "reminderDays": "提醒日期",
+      "selectDays": "选择提醒日期",
+      "noDaysSelected": "未选择日期",
       "mobileRequired": "启用短信提醒需要填写手机号码",
       "globalDisabled": "管理员已禁用短信提醒功能",
       "notConfigured": "短信服务未配置"

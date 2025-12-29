@@ -460,7 +460,7 @@ const customers = [
     status: 'active' as CustomerStatus,
     smsReminderPreferences: {
       enabled: true,
-      reminderDay: 'monday',
+      reminderDays: ['monday', 'thursday'],
       lastReminderSentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     },
   },
@@ -540,7 +540,7 @@ const customers = [
     status: 'active' as CustomerStatus,
     smsReminderPreferences: {
       enabled: true,
-      reminderDay: 'wednesday',
+      reminderDays: ['wednesday'],
       lastReminderSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     },
   },
@@ -674,7 +674,7 @@ const customers = [
     status: 'active' as CustomerStatus,
     smsReminderPreferences: {
       enabled: true,
-      reminderDay: 'friday',
+      reminderDays: ['tuesday', 'friday'],
       lastReminderSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     },
   },
@@ -740,6 +740,7 @@ const customers = [
     status: 'active' as CustomerStatus,
     smsReminderPreferences: {
       enabled: false, // Customer opted out
+      reminderDays: [],
     },
   },
   {
@@ -774,7 +775,7 @@ const customers = [
     status: 'active' as CustomerStatus,
     smsReminderPreferences: {
       enabled: true,
-      reminderDay: 'monday',
+      reminderDays: ['monday'],
       lastReminderSentAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
     },
   },

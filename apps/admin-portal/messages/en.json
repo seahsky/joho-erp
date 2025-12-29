@@ -2003,10 +2003,11 @@
     },
     "smsReminder": {
       "title": "SMS Order Reminder",
-      "description": "Send weekly SMS reminders to place orders",
+      "description": "Send SMS reminders on selected days to place orders",
       "enable": "Enable SMS Reminders",
-      "reminderDay": "Reminder Day",
-      "selectDay": "Select a day...",
+      "reminderDays": "Reminder Days",
+      "selectDays": "Select reminder days",
+      "noDaysSelected": "No days selected",
       "mobileRequired": "A mobile number is required to enable SMS reminders",
       "globalDisabled": "SMS reminders are currently disabled by administrator",
       "notConfigured": "SMS service is not configured"

@@ -137,7 +137,7 @@ export async function GET(request: Request) {
         smsReminderPreferences: {
           is: {
             enabled: true,
-            reminderDay: currentDay,
+            reminderDays: { has: currentDay },
           },
         },
         contactPerson: {
