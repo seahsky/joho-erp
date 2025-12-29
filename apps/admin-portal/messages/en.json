@@ -1146,7 +1146,21 @@
     "errorResumingOrder": "Error Resuming Order",
     "errorResettingOrder": "Error Resetting Order",
     "paused": "paused",
-    "inProgress": "in progress"
+    "inProgress": "in progress",
+    "currentStock": "stock",
+    "stockAvailable": "{count} available",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "editQuantity": "Edit Quantity",
+    "saveQuantity": "Save",
+    "cancelEdit": "Cancel",
+    "quantityUpdated": "Quantity Updated",
+    "quantityUpdatedDescription": "Item quantity and order total have been updated",
+    "errorUpdatingQuantity": "Error Updating Quantity",
+    "insufficientStock": "Insufficient stock available",
+    "quantityMustBePositive": "Quantity must be greater than zero",
+    "increaseQuantity": "Increase quantity",
+    "decreaseQuantity": "Decrease quantity"
   },
   "settings": {
     "title": "Settings",

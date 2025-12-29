@@ -13,6 +13,7 @@ import {
   updateSessionActivityByPacker,
 } from "../services/packing-session";
 import { sendOrderReadyForDeliveryEmail } from "../services/email";
+import { createMoney, multiplyMoney, toCents, calculateOrderTotals } from "@joho-erp/shared";
 
 export const packingRouter = router({
   /**
@@ -125,6 +126,7 @@ export const packingRouter = router({
 
   /**
    * Get detailed order information for packing
+   * Includes current stock levels for each product
    */
   getOrderDetails: requirePermission('packing:view')
     .input(
@@ -156,12 +158,38 @@ export const packingRouter = router({
       // Get packed items from database
       const packedSkus = new Set(order.packing?.packedItems ?? []);
 
-      const items = order.items.map((item) => ({
-        sku: item.sku,
-        productName: item.productName,
-        quantity: item.quantity,
-        packed: packedSkus.has(item.sku), // Read from database
-      }));
+      // Fetch current stock levels for all products in the order
+      const productIds = order.items.map((item) => item.productId).filter(Boolean);
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+        },
+        select: {
+          id: true,
+          currentStock: true,
+          lowStockThreshold: true,
+        },
+      });
+
+      // Create a map for quick lookup
+      const productStockMap = new Map(
+        products.map((p) => [p.id, { currentStock: p.currentStock, lowStockThreshold: p.lowStockThreshold }])
+      );
+
+      const items = order.items.map((item) => {
+        const stockInfo = productStockMap.get(item.productId) ?? { currentStock: 0, lowStockThreshold: undefined };
+        return {
+          productId: item.productId,
+          sku: item.sku,
+          productName: item.productName,
+          quantity: item.quantity,
+          packed: packedSkus.has(item.sku),
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          currentStock: stockInfo.currentStock,
+          lowStockThreshold: stockInfo.lowStockThreshold ?? undefined,
+        };
+      });
 
       const allItemsPacked = items.length > 0 && items.every((item) => item.packed);
 
@@ -175,6 +203,149 @@ export const packingRouter = router({
         status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
         allItemsPacked,
         packingNotes: order.packing?.notes ?? undefined,
+      };
+    }),
+
+  /**
+   * Update item quantity during packing
+   * Adjusts stock and recalculates order totals
+   */
+  updateItemQuantity: requirePermission('packing:manage')
+    .input(
+      z.object({
+        orderId: z.string(),
+        productId: z.string(),
+        newQuantity: z.number().positive(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { orderId, productId, newQuantity } = input;
+
+      // Fetch order
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Find the item in the order
+      const itemIndex = order.items.findIndex((item) => item.productId === productId);
+      if (itemIndex === -1) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Item not found in order',
+        });
+      }
+
+      const item = order.items[itemIndex];
+      const oldQuantity = item.quantity;
+      const quantityDiff = newQuantity - oldQuantity;
+
+      // Fetch product for stock validation
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: {
+          id: true,
+          currentStock: true,
+          name: true,
+        },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      // If increasing quantity, validate stock availability
+      if (quantityDiff > 0 && product.currentStock < quantityDiff) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Insufficient stock. Only ${product.currentStock} ${item.unit} available.`,
+        });
+      }
+
+      // Calculate new subtotal for this item using dinero.js
+      const unitPriceMoney = createMoney(item.unitPrice);
+      const newSubtotalMoney = multiplyMoney(unitPriceMoney, newQuantity);
+      const newSubtotal = toCents(newSubtotalMoney);
+
+      // Update items array with new quantity and subtotal
+      const updatedItems = order.items.map((orderItem, idx) => {
+        if (idx === itemIndex) {
+          return {
+            ...orderItem,
+            quantity: newQuantity,
+            subtotal: newSubtotal,
+          };
+        }
+        return orderItem;
+      });
+
+      // Recalculate order totals using updated items
+      const newTotals = calculateOrderTotals(
+        updatedItems.map((i) => ({ quantity: i.quantity, unitPrice: i.unitPrice })),
+        0.1 // 10% GST
+      );
+
+      // Calculate new stock level
+      const newStock = product.currentStock - quantityDiff;
+
+      // Perform all updates in a transaction
+      await prisma.$transaction([
+        // Create inventory transaction for audit trail
+        prisma.inventoryTransaction.create({
+          data: {
+            productId,
+            type: 'adjustment',
+            adjustmentType: 'packing_adjustment',
+            quantity: -quantityDiff, // Negative when reducing stock (increasing order qty)
+            previousStock: product.currentStock,
+            newStock,
+            referenceType: 'order',
+            referenceId: orderId,
+            notes: `Packing quantity adjustment for order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit}`,
+            createdBy: ctx.userId || 'system',
+          },
+        }),
+        // Update product stock
+        prisma.product.update({
+          where: { id: productId },
+          data: { currentStock: newStock },
+        }),
+        // Update order with new items and totals
+        prisma.order.update({
+          where: { id: orderId },
+          data: {
+            items: updatedItems,
+            subtotal: newTotals.subtotal,
+            taxAmount: newTotals.taxAmount,
+            totalAmount: newTotals.totalAmount,
+            statusHistory: {
+              push: {
+                status: order.status,
+                changedAt: new Date(),
+                changedBy: ctx.userId || 'system',
+                notes: `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity} ${item.unit}`,
+              },
+            },
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        oldQuantity,
+        newQuantity,
+        newStock,
+        newSubtotal,
+        newOrderTotal: newTotals.totalAmount,
       };
     }),
 

@@ -120,6 +120,7 @@ enum AdjustmentType {
   stock_count_correction  // Fixing discrepancy from stocktake
   damaged_goods           // Writing off damaged inventory
   expired_stock           // Writing off expired inventory
+  packing_adjustment      // Quantity adjusted during packing
 }
 
 enum AuditAction {

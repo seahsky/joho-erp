@@ -58,8 +58,13 @@ export interface PackingOrderCard {
 }
 
 export interface PackingOrderItem {
+  productId: string;
   sku: string;
   productName: string;
   quantity: number;
   packed: boolean;
+  unit: string;
+  unitPrice: number; // in cents
+  currentStock: number;
+  lowStockThreshold?: number;
 }

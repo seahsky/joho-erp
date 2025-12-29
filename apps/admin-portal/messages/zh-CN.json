@@ -1146,7 +1146,21 @@
     "errorResumingOrder": "继续订单出错",
     "errorResettingOrder": "重置订单出错",
     "paused": "已暂停",
-    "inProgress": "进行中"
+    "inProgress": "进行中",
+    "currentStock": "库存",
+    "stockAvailable": "可用 {count}",
+    "lowStock": "库存不足",
+    "outOfStock": "缺货",
+    "editQuantity": "编辑数量",
+    "saveQuantity": "保存",
+    "cancelEdit": "取消",
+    "quantityUpdated": "数量已更新",
+    "quantityUpdatedDescription": "商品数量和订单总额已更新",
+    "errorUpdatingQuantity": "更新数量失败",
+    "insufficientStock": "库存不足",
+    "quantityMustBePositive": "数量必须大于零",
+    "increaseQuantity": "增加数量",
+    "decreaseQuantity": "减少数量"
   },
   "settings": {
     "title": "设置",

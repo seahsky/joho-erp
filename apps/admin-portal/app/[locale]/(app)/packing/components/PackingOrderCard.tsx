@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@joho-erp/ui';
+import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Input } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -29,6 +29,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
   const t = useTranslations('packing');
   const { toast } = useToast();
   const [packingNotes, setPackingNotes] = useState('');
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editQuantity, setEditQuantity] = useState<string>('');
   const utils = api.useUtils();
 
   const { data: orderDetails, isLoading } = api.packing.getOrderDetails.useQuery({
@@ -239,6 +241,62 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     },
   });
 
+  // Update item quantity mutation
+  const updateItemQuantityMutation = api.packing.updateItemQuantity.useMutation({
+    onMutate: async (variables) => {
+      const { orderId, productId, newQuantity } = variables;
+
+      // Cancel any outgoing refetches
+      await utils.packing.getOrderDetails.cancel({ orderId });
+
+      // Snapshot for rollback
+      const previousOrderDetails = utils.packing.getOrderDetails.getData({ orderId });
+
+      // Optimistically update quantity
+      utils.packing.getOrderDetails.setData(
+        { orderId },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) =>
+              item.productId === productId
+                ? { ...item, quantity: newQuantity }
+                : item
+            ),
+          };
+        }
+      );
+
+      return { previousOrderDetails };
+    },
+    onSuccess: () => {
+      setEditingItemId(null);
+      setEditQuantity('');
+      toast({
+        title: t('quantityUpdated'),
+        description: t('quantityUpdatedDescription'),
+      });
+      // Refetch to get updated stock levels
+      utils.packing.getOrderDetails.invalidate({ orderId: order.orderId });
+      onOrderUpdated();
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousOrderDetails) {
+        utils.packing.getOrderDetails.setData(
+          { orderId: variables.orderId },
+          context.previousOrderDetails
+        );
+      }
+      toast({
+        title: t('errorUpdatingQuantity'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Debounced auto-save (500ms delay after typing stops)
   const debouncedSaveNotes = useDebouncedCallback((notes: string) => {
     addPackingNotesMutation.mutate({
@@ -298,6 +356,84 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       orderId: order.orderId,
       reason: 'Manual reset by packer',
     });
+  };
+
+  const handleQuantityChange = (productId: string, newQuantity: number, currentStock: number) => {
+    if (newQuantity <= 0) {
+      toast({
+        title: t('quantityMustBePositive'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newQuantity > currentStock) {
+      toast({
+        title: t('insufficientStock'),
+        description: t('stockAvailable', { count: currentStock }),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateItemQuantityMutation.mutate({
+      orderId: order.orderId,
+      productId,
+      newQuantity,
+    });
+  };
+
+  const handleIncrement = (productId: string, currentQuantity: number, currentStock: number) => {
+    const newQuantity = currentQuantity + 1;
+    if (newQuantity <= currentStock) {
+      handleQuantityChange(productId, newQuantity, currentStock);
+    } else {
+      toast({
+        title: t('insufficientStock'),
+        description: t('stockAvailable', { count: currentStock }),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDecrement = (productId: string, currentQuantity: number, currentStock: number) => {
+    const newQuantity = currentQuantity - 1;
+    if (newQuantity > 0) {
+      handleQuantityChange(productId, newQuantity, currentStock);
+    } else {
+      toast({
+        title: t('quantityMustBePositive'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const startEditing = (productId: string, currentQuantity: number) => {
+    setEditingItemId(productId);
+    setEditQuantity(currentQuantity.toString());
+  };
+
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditQuantity('');
+  };
+
+  const submitEditedQuantity = (productId: string, currentStock: number) => {
+    const newQuantity = parseFloat(editQuantity);
+    if (isNaN(newQuantity) || newQuantity <= 0) {
+      toast({
+        title: t('quantityMustBePositive'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    handleQuantityChange(productId, newQuantity, currentStock);
+  };
+
+  const getStockStatus = (currentStock: number, lowStockThreshold?: number): 'normal' | 'low' | 'out' => {
+    if (currentStock === 0) return 'out';
+    if (lowStockThreshold && currentStock <= lowStockThreshold) return 'low';
+    return 'normal';
   };
 
   if (isLoading) {
@@ -430,33 +566,40 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       <div className="p-4 space-y-1.5">
         {items.map((item, index) => {
           const isPacked = item.packed;
+          const stockStatus = getStockStatus(item.currentStock, item.lowStockThreshold);
+          const isEditing = editingItemId === item.productId;
+          const isUpdating = updateItemQuantityMutation.isPending &&
+            updateItemQuantityMutation.variables?.productId === item.productId;
 
           return (
-            <button
+            <div
               key={item.sku}
-              onClick={() => toggleItemPacked(item.sku)}
-              className={`w-full flex items-center gap-3 p-3 rounded-md border transition-all duration-200 ${
+              className={`w-full flex flex-col gap-2 p-3 rounded-md border transition-all duration-200 ${
                 isPacked
-                  ? 'bg-success/10 border-success/30 hover:bg-success/15'
-                  : 'bg-background border-border hover:bg-muted/50 hover:border-primary/30'
+                  ? 'bg-success/10 border-success/30'
+                  : 'bg-background border-border hover:border-primary/30'
               }`}
               style={{
                 animationDelay: `${index * 50}ms`,
                 animation: 'itemSlide 0.3s ease-out',
               }}
             >
-              {/* Checkbox */}
-              <div className="flex-shrink-0">
-                {isPacked ? (
-                  <CheckSquare className="h-5 w-5 text-success transition-transform hover:scale-110" />
-                ) : (
-                  <Square className="h-5 w-5 text-muted-foreground transition-transform hover:scale-110" />
-                )}
-              </div>
+              {/* Top row: Checkbox, SKU, Stock indicator */}
+              <div className="flex items-center gap-3">
+                {/* Checkbox */}
+                <button
+                  onClick={() => toggleItemPacked(item.sku)}
+                  className="flex-shrink-0 p-1 hover:bg-muted rounded transition-colors"
+                >
+                  {isPacked ? (
+                    <CheckSquare className="h-5 w-5 text-success transition-transform hover:scale-110" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground transition-transform hover:scale-110" />
+                  )}
+                </button>
 
-              {/* Item Details */}
-              <div className="flex-1 text-left min-w-0">
-                <div className="flex items-baseline justify-between gap-3">
+                {/* SKU and Product Name */}
+                <div className="flex-1 min-w-0">
                   <span
                     className={`font-mono font-semibold text-xs tracking-tight ${
                       isPacked ? 'text-muted-foreground line-through' : 'text-foreground'
@@ -464,20 +607,135 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                   >
                     {item.sku}
                   </span>
-                  <span className="font-bold text-sm text-primary tabular-nums whitespace-nowrap">
-                    {item.quantity}
-                    <span className="text-xs text-muted-foreground ml-1">units</span>
-                  </span>
+                  <p
+                    className={`text-xs font-medium mt-0.5 truncate ${
+                      isPacked ? 'text-muted-foreground line-through' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {item.productName}
+                  </p>
                 </div>
-                <p
-                  className={`text-xs font-medium mt-0.5 ${
-                    isPacked ? 'text-muted-foreground line-through' : 'text-muted-foreground'
-                  }`}
-                >
-                  {item.productName}
-                </p>
+
+                {/* Stock Indicator */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Package className={`h-3.5 w-3.5 ${
+                    stockStatus === 'out' ? 'text-destructive' :
+                    stockStatus === 'low' ? 'text-warning' :
+                    'text-muted-foreground'
+                  }`} />
+                  <span className={`text-xs font-medium tabular-nums ${
+                    stockStatus === 'out' ? 'text-destructive' :
+                    stockStatus === 'low' ? 'text-warning' :
+                    'text-muted-foreground'
+                  }`}>
+                    {item.currentStock} {t('currentStock')}
+                  </span>
+                  {stockStatus === 'low' && (
+                    <AlertTriangle className="h-3 w-3 text-warning" />
+                  )}
+                </div>
               </div>
-            </button>
+
+              {/* Bottom row: Quantity controls */}
+              <div className="flex items-center justify-between pl-9">
+                {isEditing ? (
+                  // Edit mode: Input with save/cancel
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={editQuantity}
+                      onChange={(e) => setEditQuantity(e.target.value)}
+                      className="w-20 h-8 text-center text-sm font-bold"
+                      min={0.1}
+                      step={0.1}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          submitEditedQuantity(item.productId, item.currentStock);
+                        } else if (e.key === 'Escape') {
+                          cancelEditing();
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">{item.unit}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => submitEditedQuantity(item.productId, item.currentStock)}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t('saveQuantity')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={cancelEditing}
+                      disabled={isUpdating}
+                    >
+                      {t('cancelEdit')}
+                    </Button>
+                  </div>
+                ) : (
+                  // View mode: Quantity with +/- buttons
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDecrement(item.productId, item.quantity, item.currentStock);
+                      }}
+                      disabled={item.quantity <= 1 || isUpdating || isPacked}
+                      title={t('decreaseQuantity')}
+                    >
+                      {isUpdating ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Minus className="h-3 w-3" />
+                      )}
+                    </Button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isPacked) {
+                          startEditing(item.productId, item.quantity);
+                        }
+                      }}
+                      className={`min-w-[60px] px-2 py-1 font-bold text-sm text-primary tabular-nums text-center rounded hover:bg-muted transition-colors ${
+                        isPacked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      }`}
+                      disabled={isPacked}
+                      title={t('editQuantity')}
+                    >
+                      {item.quantity}
+                      <span className="text-xs text-muted-foreground ml-1">{item.unit}</span>
+                    </button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIncrement(item.productId, item.quantity, item.currentStock);
+                      }}
+                      disabled={item.quantity >= item.currentStock || isUpdating || isPacked}
+                      title={t('increaseQuantity')}
+                    >
+                      {isUpdating ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
