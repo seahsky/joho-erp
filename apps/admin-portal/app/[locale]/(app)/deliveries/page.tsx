@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, TableSkeleton } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, Search } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, Package, Search, FileText } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 import { useTableSort } from '@joho-erp/shared/hooks';
+import { RouteManifestDialog } from './components';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -21,6 +22,7 @@ export default function DeliveriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'delivered' | ''>('');
   const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | ''>('');
+  const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
   // Fetch deliveries from database
@@ -59,6 +61,12 @@ export default function DeliveriesPage() {
           <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
+        <PermissionGate permission="deliveries:view">
+          <Button onClick={() => setManifestDialogOpen(true)} variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            {t('printManifest')}
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -182,6 +190,14 @@ export default function DeliveriesPage() {
           </Card>
         </div>
       </div>
+
+      {/* Route Manifest Dialog */}
+      <RouteManifestDialog
+        open={manifestDialogOpen}
+        onOpenChange={setManifestDialogOpen}
+        selectedDate={new Date()}
+        selectedArea={areaFilter || undefined}
+      />
     </div>
   );
 }

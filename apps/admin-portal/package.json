@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.0.0",
+    "@react-pdf/renderer": "^4.3.0",
     "@fontsource-variable/outfit": "^5.2.8",
     "@joho-erp/api": "workspace:*",
     "@joho-erp/database": "workspace:*",

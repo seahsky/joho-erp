@@ -230,6 +230,72 @@
       "south": "南区",
       "east": "东区",
       "west": "西区"
+    },
+    "printManifest": "打印清单",
+    "manifest": {
+      "title": "配送清单",
+      "subtitle": "生成可打印的配送路线清单",
+      "generatePdf": "生成 PDF",
+      "generating": "正在生成...",
+      "downloadPdf": "下载 PDF",
+      "printPdf": "打印",
+      "layoutOptions": "版式选项",
+      "onePerPage": "每页一站",
+      "onePerPageDescription": "便于作为收据给客户",
+      "compactLayout": "紧凑版式",
+      "compactLayoutDescription": "每页多站，节省纸张",
+      "dateLabel": "配送日期",
+      "areaLabel": "区域",
+      "allAreas": "所有区域",
+      "noOrdersFound": "所选日期和区域没有找到订单",
+      "errorGenerating": "生成清单时出错",
+      "summary": {
+        "title": "配送清单",
+        "date": "日期",
+        "area": "区域",
+        "driver": "司机",
+        "unassigned": "未分配",
+        "totalStops": "站点",
+        "estimatedDistance": "距离",
+        "estimatedDuration": "时长",
+        "warehouseStart": "起点（仓库）",
+        "stopOverview": "站点概览",
+        "productSummary": "产品汇总（装车清点）",
+        "productSummaryDescription": "所有站点的产品总数量"
+      },
+      "stop": {
+        "stopNumber": "第 {number} 站，共 {total} 站",
+        "orderNumber": "订单号",
+        "customer": "客户",
+        "address": "配送地址",
+        "phone": "电话",
+        "deliveryInstructions": "配送说明",
+        "noInstructions": "无特殊说明",
+        "items": "商品"
+      },
+      "table": {
+        "stop": "站点",
+        "suburb": "区域",
+        "sku": "SKU",
+        "product": "产品",
+        "quantity": "数量",
+        "unit": "单位",
+        "unitPrice": "单价",
+        "subtotal": "小计",
+        "totalQuantity": "总数量"
+      },
+      "totals": {
+        "subtotal": "小计",
+        "gst": "GST (10%)",
+        "total": "总计"
+      },
+      "signature": {
+        "title": "签收证明",
+        "signatureLine": "签名",
+        "printedName": "姓名",
+        "timeReceived": "签收时间",
+        "driverNotes": "司机备注"
+      }
     }
   },
   "orders": {

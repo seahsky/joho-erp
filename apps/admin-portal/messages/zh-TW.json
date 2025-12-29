@@ -230,6 +230,72 @@
       "south": "南區",
       "east": "東區",
       "west": "西區"
+    },
+    "printManifest": "列印清單",
+    "manifest": {
+      "title": "配送清單",
+      "subtitle": "產生可列印的配送路線清單",
+      "generatePdf": "產生 PDF",
+      "generating": "正在產生...",
+      "downloadPdf": "下載 PDF",
+      "printPdf": "列印",
+      "layoutOptions": "版面選項",
+      "onePerPage": "每頁一站",
+      "onePerPageDescription": "便於作為收據給客戶",
+      "compactLayout": "緊湊版面",
+      "compactLayoutDescription": "每頁多站，節省紙張",
+      "dateLabel": "配送日期",
+      "areaLabel": "區域",
+      "allAreas": "所有區域",
+      "noOrdersFound": "所選日期和區域沒有找到訂單",
+      "errorGenerating": "產生清單時發生錯誤",
+      "summary": {
+        "title": "配送清單",
+        "date": "日期",
+        "area": "區域",
+        "driver": "司機",
+        "unassigned": "未指派",
+        "totalStops": "站點",
+        "estimatedDistance": "距離",
+        "estimatedDuration": "時長",
+        "warehouseStart": "起點（倉庫）",
+        "stopOverview": "站點概覽",
+        "productSummary": "產品彙總（裝車清點）",
+        "productSummaryDescription": "所有站點的產品總數量"
+      },
+      "stop": {
+        "stopNumber": "第 {number} 站，共 {total} 站",
+        "orderNumber": "訂單號",
+        "customer": "客戶",
+        "address": "配送地址",
+        "phone": "電話",
+        "deliveryInstructions": "配送說明",
+        "noInstructions": "無特殊說明",
+        "items": "商品"
+      },
+      "table": {
+        "stop": "站點",
+        "suburb": "區域",
+        "sku": "SKU",
+        "product": "產品",
+        "quantity": "數量",
+        "unit": "單位",
+        "unitPrice": "單價",
+        "subtotal": "小計",
+        "totalQuantity": "總數量"
+      },
+      "totals": {
+        "subtotal": "小計",
+        "gst": "GST (10%)",
+        "total": "總計"
+      },
+      "signature": {
+        "title": "簽收證明",
+        "signatureLine": "簽名",
+        "printedName": "姓名",
+        "timeReceived": "簽收時間",
+        "driverNotes": "司機備註"
+      }
     }
   },
   "orders": {
