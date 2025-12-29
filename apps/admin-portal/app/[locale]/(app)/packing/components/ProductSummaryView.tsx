@@ -190,17 +190,22 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
                   {item.orders && item.orders.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {item.orders.slice(0, 5).map((order) => (
-                        <Badge
+                        <button
                           key={order.orderNumber}
-                          variant={order.status === 'ready_for_delivery' ? 'success' : 'secondary'}
-                          className="text-xs font-mono cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-offset-1 transition-all"
-                          onClick={(e: React.MouseEvent) => {
+                          type="button"
+                          onClick={(e) => {
                             e.stopPropagation();
                             onOrderBadgeClick?.(order.orderNumber);
                           }}
+                          className="focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full"
                         >
-                          {order.orderNumber} ×{order.quantity}
-                        </Badge>
+                          <Badge
+                            variant={order.status === 'ready_for_delivery' ? 'success' : 'secondary'}
+                            className="text-xs font-mono cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-offset-1 transition-all"
+                          >
+                            {order.orderNumber} ×{order.quantity}
+                          </Badge>
+                        </button>
                       ))}
                       {item.orders.length > 5 && (
                         <Badge
