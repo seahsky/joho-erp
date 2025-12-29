@@ -64,7 +64,7 @@ export default function ProductsPage() {
   const { data: productsData, isLoading, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
     category: categoryFilter || undefined,
-    status: statusFilter as 'active' | 'discontinued' | 'out_of_stock' | undefined,
+    status: statusFilter ? (statusFilter as 'active' | 'discontinued' | 'out_of_stock') : undefined,
     showAll: true, // Show all statuses for admin
     sortBy,
     sortOrder,
