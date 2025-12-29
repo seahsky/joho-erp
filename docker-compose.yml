@@ -85,6 +85,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION:-ap-southeast-2}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - CRON_BASE_URL=${CRON_BASE_URL:-http://127.0.0.1:3001}
+      - CRON_SECRET=${CRON_SECRET}
     env_file:
       - .env
     restart: unless-stopped

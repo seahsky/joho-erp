@@ -52,8 +52,11 @@ let agenda: Agenda | null = null;
 
 // Get the base URL for internal API calls
 function getBaseUrl(): string {
-  const port = process.env.PORT || "3001";
-  return `http://localhost:${port}`;
+  const baseUrl = process.env.CRON_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("CRON_BASE_URL environment variable is required");
+  }
+  return baseUrl;
 }
 
 // Get the cron secret for authorization
