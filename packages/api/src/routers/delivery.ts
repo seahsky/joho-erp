@@ -250,10 +250,25 @@ export const deliveryRouter = router({
       const deliveryDate = new Date(input.deliveryDate);
       const routeOptimization = await getRouteOptimization(deliveryDate);
 
+      // Fetch company warehouse address for route origin marker
+      const company = await prisma.company.findFirst({
+        select: { deliverySettings: true },
+      });
+
+      const warehouseAddress = company?.deliverySettings?.warehouseAddress;
+      const warehouseLocation = warehouseAddress?.latitude && warehouseAddress?.longitude
+        ? {
+            latitude: warehouseAddress.latitude,
+            longitude: warehouseAddress.longitude,
+            address: `${warehouseAddress.street}, ${warehouseAddress.suburb}`,
+          }
+        : null;
+
       if (!routeOptimization) {
         return {
           hasRoute: false,
           route: null,
+          warehouseLocation,
         };
       }
 
@@ -310,6 +325,7 @@ export const deliveryRouter = router({
           optimizedAt: routeOptimization.optimizedAt,
           optimizedBy: routeOptimization.optimizedBy,
         },
+        warehouseLocation,
       };
     }),
 

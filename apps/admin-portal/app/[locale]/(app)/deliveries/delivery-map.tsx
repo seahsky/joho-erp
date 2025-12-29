@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MapPin } from 'lucide-react';
+import { MapPin, Warehouse } from 'lucide-react';
 
 interface Delivery {
   id: string;
@@ -27,10 +27,17 @@ interface RouteData {
   totalDuration: number;
 }
 
+interface WarehouseLocation {
+  latitude: number;
+  longitude: number;
+  address?: string;
+}
+
 interface DeliveryMapProps {
   deliveries: Delivery[];
   selectedDelivery: string | null;
   routeData?: RouteData | null;
+  warehouseLocation?: WarehouseLocation | null;
   emptyStateTitle?: string;
   emptyStateDescription?: string;
 }
@@ -39,6 +46,7 @@ export default function DeliveryMap({
   deliveries,
   selectedDelivery,
   routeData,
+  warehouseLocation,
   emptyStateTitle = 'No deliveries available',
   emptyStateDescription = 'Deliveries will appear here when ready',
 }: DeliveryMapProps) {
@@ -143,6 +151,25 @@ export default function DeliveryMap({
               }}
             />
           </Source>
+        )}
+
+        {/* Warehouse Origin Marker */}
+        {warehouseLocation && (
+          <Marker
+            longitude={warehouseLocation.longitude}
+            latitude={warehouseLocation.latitude}
+            anchor="center"
+          >
+            <div className="cursor-pointer transform hover:scale-110 transition-transform">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-600 text-white shadow-lg border-2 border-white">
+                  <Warehouse className="h-6 w-6" />
+                </div>
+                {/* Arrow pointer */}
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
+              </div>
+            </div>
+          </Marker>
         )}
 
         {/* Delivery Markers with Sequence Numbers */}

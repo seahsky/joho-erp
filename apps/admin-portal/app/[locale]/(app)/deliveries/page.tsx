@@ -34,7 +34,22 @@ export default function DeliveriesPage() {
     sortOrder,
   });
 
+  // Fetch optimized route data for the map
+  const { data: routeData } = api.delivery.getOptimizedRoute.useQuery({
+    deliveryDate: new Date().toISOString(),
+  });
+
   const deliveries = useMemo(() => data?.deliveries || [], [data?.deliveries]);
+
+  // Transform route data for the map component
+  const mapRouteData = useMemo(() => {
+    if (!routeData?.hasRoute || !routeData.route) return null;
+    return {
+      geometry: routeData.route.routeGeometry,
+      totalDistance: routeData.route.totalDistance,
+      totalDuration: routeData.route.totalDuration,
+    };
+  }, [routeData]);
 
   // Auto-select the first delivery when data loads (already sorted by deliverySequence from API)
   useEffect(() => {
@@ -183,6 +198,8 @@ export default function DeliveriesPage() {
               <DeliveryMap
                 deliveries={deliveries}
                 selectedDelivery={selectedDelivery}
+                routeData={mapRouteData}
+                warehouseLocation={routeData?.warehouseLocation}
                 emptyStateTitle={t('noDeliveriesAvailable')}
                 emptyStateDescription={t('deliveriesWillAppear')}
               />
