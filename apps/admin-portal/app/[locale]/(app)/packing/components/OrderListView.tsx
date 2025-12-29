@@ -14,6 +14,7 @@ interface OrderListViewProps {
     areaTag: string;
     packingSequence: number | null;
     deliverySequence: number | null;
+    status: string;
     // Partial progress fields
     isPaused?: boolean;
     lastPackedBy?: string | null;
@@ -96,9 +97,16 @@ export function OrderListView({
   const areaTags = Array.from(new Set(orders.map((o) => o.areaTag))).sort();
 
   // Filter orders by area
-  const filteredOrders = areaFilter === 'all'
+  const filteredByArea = areaFilter === 'all'
     ? orders
     : orders.filter((o) => o.areaTag === areaFilter);
+
+  // Sort orders: move ready_for_delivery orders to the bottom
+  const filteredOrders = [...filteredByArea].sort((a, b) => {
+    if (a.status === 'ready_for_delivery' && b.status !== 'ready_for_delivery') return 1;
+    if (a.status !== 'ready_for_delivery' && b.status === 'ready_for_delivery') return -1;
+    return 0; // Preserve original order for same status
+  });
 
   const getAreaBadgeColor = (areaTag: string) => {
     switch (areaTag.toLowerCase()) {

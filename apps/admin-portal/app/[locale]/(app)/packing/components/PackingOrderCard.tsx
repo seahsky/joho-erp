@@ -15,6 +15,7 @@ interface PackingOrderCardProps {
     areaTag: string;
     packingSequence: number | null;
     deliverySequence: number | null;
+    status: string;
     // Partial progress fields
     isPaused?: boolean;
     lastPackedBy?: string | null;
@@ -460,10 +461,15 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   const isPaused = order.isPaused ?? false;
   const hasProgress = packedCount > 0;
+  const isReadyForDelivery = order.status === 'ready_for_delivery';
 
   return (
     <div className={`bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${
-      isPaused ? 'border-warning/50' : 'border-border hover:border-primary/40'
+      isReadyForDelivery
+        ? 'border-success/50 bg-success/5'
+        : isPaused
+          ? 'border-warning/50'
+          : 'border-border hover:border-primary/40'
     }`}>
       {/* Paused Banner */}
       {isPaused && (
@@ -588,11 +594,18 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
               <div className="flex items-center gap-3">
                 {/* Checkbox */}
                 <button
-                  onClick={() => toggleItemPacked(item.sku)}
-                  className="flex-shrink-0 p-1 hover:bg-muted rounded transition-colors"
+                  onClick={() => !isReadyForDelivery && toggleItemPacked(item.sku)}
+                  className={`flex-shrink-0 p-1 rounded transition-colors ${
+                    isReadyForDelivery
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'hover:bg-muted'
+                  }`}
+                  disabled={isReadyForDelivery}
                 >
-                  {isPacked ? (
-                    <CheckSquare className="h-5 w-5 text-success transition-transform hover:scale-110" />
+                  {isPacked || isReadyForDelivery ? (
+                    <CheckSquare className={`h-5 w-5 transition-transform ${
+                      isReadyForDelivery ? 'text-success/60' : 'text-success hover:scale-110'
+                    }`} />
                   ) : (
                     <Square className="h-5 w-5 text-muted-foreground transition-transform hover:scale-110" />
                   )}
@@ -688,7 +701,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                         e.stopPropagation();
                         handleDecrement(item.productId, item.quantity, item.currentStock);
                       }}
-                      disabled={item.quantity <= 1 || isUpdating || isPacked}
+                      disabled={item.quantity <= 1 || isUpdating || isPacked || isReadyForDelivery}
                       title={t('decreaseQuantity')}
                     >
                       {isUpdating ? (
@@ -701,14 +714,14 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!isPacked) {
+                        if (!isPacked && !isReadyForDelivery) {
                           startEditing(item.productId, item.quantity);
                         }
                       }}
                       className={`min-w-[60px] px-2 py-1 font-bold text-sm text-primary tabular-nums text-center rounded hover:bg-muted transition-colors ${
-                        isPacked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                        isPacked || isReadyForDelivery ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
                       }`}
-                      disabled={isPacked}
+                      disabled={isPacked || isReadyForDelivery}
                       title={t('editQuantity')}
                     >
                       {item.quantity}
@@ -723,7 +736,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                         e.stopPropagation();
                         handleIncrement(item.productId, item.quantity, item.currentStock);
                       }}
-                      disabled={item.quantity >= item.currentStock || isUpdating || isPacked}
+                      disabled={item.quantity >= item.currentStock || isUpdating || isPacked || isReadyForDelivery}
                       title={t('increaseQuantity')}
                     >
                       {isUpdating ? (
@@ -756,13 +769,17 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         <textarea
           value={packingNotes}
           onChange={(e) => {
+            if (isReadyForDelivery) return;
             const newNotes = e.target.value;
             setPackingNotes(newNotes);
             debouncedSaveNotes(newNotes);
           }}
           placeholder={t('addNotes')}
-          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-xs font-medium text-foreground placeholder:text-muted-foreground bg-background"
+          className={`w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-xs font-medium text-foreground placeholder:text-muted-foreground ${
+            isReadyForDelivery ? 'bg-muted cursor-not-allowed opacity-60' : 'bg-background'
+          }`}
           rows={2}
+          disabled={isReadyForDelivery}
         />
       </div>
 
@@ -771,9 +788,9 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         {/* Main Action: Mark as Ready */}
         <Button
           onClick={handleMarkReady}
-          disabled={!allItemsPacked || markOrderReadyMutation.isPending || isPaused}
+          disabled={!allItemsPacked || markOrderReadyMutation.isPending || isPaused || isReadyForDelivery}
           className="w-full"
-          variant={allItemsPacked && !markOrderReadyMutation.isPending && !isPaused ? "default" : "secondary"}
+          variant={allItemsPacked && !markOrderReadyMutation.isPending && !isPaused && !isReadyForDelivery ? "default" : "secondary"}
         >
           {markOrderReadyMutation.isPending ? (
             <>
@@ -788,14 +805,14 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           )}
         </Button>
 
-        {!allItemsPacked && !isPaused && (
+        {!allItemsPacked && !isPaused && !isReadyForDelivery && (
           <p className="text-xs text-center text-muted-foreground font-medium">
             {t('checkAllItemsFirst')}
           </p>
         )}
 
         {/* Secondary Actions: Pause and Reset */}
-        {hasProgress && !isPaused && (
+        {hasProgress && !isPaused && !isReadyForDelivery && (
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -855,6 +872,48 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
         {/* Reset only for paused orders */}
         {isPaused && (
+          <div className="flex justify-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  {t('resetOrder')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('resetOrderTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('resetOrderDescription', {
+                      packedCount: packedCount,
+                      orderNumber: order.orderNumber
+                    })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleResetOrder}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {resetOrderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t('confirmReset')
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {/* Reset only for ready_for_delivery orders */}
+        {isReadyForDelivery && (
           <div className="flex justify-center">
             <AlertDialog>
               <AlertDialogTrigger asChild>
