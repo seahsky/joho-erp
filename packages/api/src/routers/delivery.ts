@@ -256,7 +256,8 @@ export const deliveryRouter = router({
       });
 
       const warehouseAddress = company?.deliverySettings?.warehouseAddress;
-      const warehouseLocation = warehouseAddress?.latitude && warehouseAddress?.longitude
+      // Use typeof check to handle 0 as a valid coordinate value
+      const warehouseLocation = (typeof warehouseAddress?.latitude === 'number' && typeof warehouseAddress?.longitude === 'number')
         ? {
             latitude: warehouseAddress.latitude,
             longitude: warehouseAddress.longitude,

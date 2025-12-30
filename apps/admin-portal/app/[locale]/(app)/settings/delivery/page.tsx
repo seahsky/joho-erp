@@ -172,6 +172,8 @@ export default function DeliverySettingsPage() {
 
       setHasChanges(false);
       void utils.company.getSettings.invalidate();
+      // Also invalidate delivery queries so the delivery page gets updated warehouse location
+      void utils.delivery.getOptimizedRoute.invalidate();
     } catch (error) {
       toast({
         title: t('saveFailed'),

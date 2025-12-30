@@ -56,6 +56,7 @@ export default function DeliveryMap({
   const mapRef = useRef<MapRef | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const hasDeliveries = deliveries.length > 0;
+  const hasWarehouse = !!warehouseLocation;
 
   // Sydney CBD coordinates as default center
   const [viewState, setViewState] = useState({
@@ -78,8 +79,19 @@ export default function DeliveryMap({
     }
   }, [selectedDelivery, isMapReady, hasDeliveries, deliveries]);
 
-  // Empty state when no deliveries available
-  if (!hasDeliveries) {
+  // Center on warehouse when no deliveries but warehouse exists
+  useEffect(() => {
+    if (!hasDeliveries && hasWarehouse && warehouseLocation && mapRef.current && isMapReady) {
+      mapRef.current.flyTo({
+        center: [warehouseLocation.longitude, warehouseLocation.latitude],
+        zoom: 12,
+        duration: 1000,
+      });
+    }
+  }, [hasDeliveries, hasWarehouse, warehouseLocation, isMapReady]);
+
+  // Empty state when no deliveries AND no warehouse configured
+  if (!hasDeliveries && !hasWarehouse) {
     return (
       <div className="w-full h-[600px] rounded-lg overflow-hidden bg-muted/50 flex flex-col items-center justify-center border border-dashed border-muted-foreground/20">
         <MapPin className="h-16 w-16 text-muted-foreground/30 mb-4" />
