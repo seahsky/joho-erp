@@ -237,6 +237,13 @@
       "east": "East",
       "west": "West"
     },
+    "map": {
+      "popup": {
+        "area": "Area: {areaTag}",
+        "sequence": "Seq: #{sequence}",
+        "eta": "ETA: {time}"
+      }
+    },
     "printManifest": "Print Manifest",
     "manifest": {
       "title": "Route Manifest",
@@ -267,7 +274,8 @@
         "warehouseStart": "Starting Point (Warehouse)",
         "stopOverview": "Stop Overview",
         "productSummary": "Product Summary (Van Loading)",
-        "productSummaryDescription": "Total quantities across all stops"
+        "productSummaryDescription": "Total quantities across all stops",
+        "summaryPage": "Summary Page"
       },
       "stop": {
         "stopNumber": "Stop #{number} of {total}",
@@ -277,7 +285,8 @@
         "phone": "Phone",
         "deliveryInstructions": "Delivery Instructions",
         "noInstructions": "No special instructions",
-        "items": "Items"
+        "items": "Items",
+        "stopFooter": "Stop {current} of {total}"
       },
       "table": {
         "stop": "Stop",
@@ -1908,7 +1917,8 @@
       "title": "Start Delivery",
       "description": "Mark this order as out for delivery?",
       "confirm": "Start Delivery",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "itemCount": "{count} items"
     },
     "podDialog": {
       "title": "Upload Proof of Delivery",

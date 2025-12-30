@@ -60,6 +60,8 @@ export interface ManifestTranslations {
   stopOverview: string;
   productSummaryTitle: string;
   productSummaryDescription: string;
+  summaryPage: string;
+  stopFooter: string;
 
   // Stop page
   stopNumber: string;
@@ -163,6 +165,7 @@ export function RouteManifestDocument({
           product: translations.product,
           totalQuantity: translations.totalQuantity,
           unit: translations.unit,
+          summaryPage: translations.summaryPage,
         }}
       />
 
@@ -200,6 +203,7 @@ export function RouteManifestDocument({
                   printedName: translations.printedName,
                   timeReceived: translations.timeReceived,
                   driverNotes: translations.driverNotes,
+                  stopFooter: translations.stopFooter,
                 }}
               />
             </View>
@@ -237,6 +241,7 @@ export function RouteManifestDocument({
               printedName: translations.printedName,
               timeReceived: translations.timeReceived,
               driverNotes: translations.driverNotes,
+              stopFooter: translations.stopFooter,
             }}
           />
         ))

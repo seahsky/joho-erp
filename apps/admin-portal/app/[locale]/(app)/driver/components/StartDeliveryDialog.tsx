@@ -61,7 +61,7 @@ export function StartDeliveryDialog({
               <p className="font-semibold">{formatAUD(delivery.totalAmount)}</p>
               <p className="text-sm text-muted-foreground flex items-center gap-1 justify-end">
                 <Package className="h-3 w-3" />
-                {delivery.itemCount} items
+                {t('itemCount', { count: delivery.itemCount })}
               </p>
             </div>
           </div>

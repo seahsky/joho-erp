@@ -135,6 +135,8 @@ export function RouteManifestDialog({
       printedName: t('signature.printedName'),
       timeReceived: t('signature.timeReceived'),
       driverNotes: t('signature.driverNotes'),
+      summaryPage: t('summary.summaryPage'),
+      stopFooter: t('stop.stopFooter'),
     };
   }, [t]);
 
@@ -274,7 +276,7 @@ export function RouteManifestDialog({
           {isLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading...
+              {tCommon('loading')}
             </div>
           ) : hasOrders ? (
             <div className="p-3 bg-muted rounded-lg">

@@ -57,6 +57,7 @@ interface ManifestSummaryPageProps {
     product: string;
     totalQuantity: string;
     unit: string;
+    summaryPage: string;
   };
 }
 
@@ -170,7 +171,7 @@ export function ManifestSummaryPage({
       {/* Footer */}
       <View style={styles.footer}>
         <Text>{manifestDate}</Text>
-        <Text>Summary Page</Text>
+        <Text>{translations.summaryPage}</Text>
       </View>
     </Page>
   );

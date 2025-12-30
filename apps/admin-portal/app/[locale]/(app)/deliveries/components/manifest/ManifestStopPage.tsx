@@ -61,6 +61,7 @@ interface ManifestStopPageProps {
     printedName: string;
     timeReceived: string;
     driverNotes: string;
+    stopFooter: string;
   };
 }
 
@@ -178,7 +179,9 @@ export function ManifestStopPage({
       <View style={styles.footer}>
         <Text>{manifestDate}</Text>
         <Text>
-          Stop {stop.sequence} of {totalStops}
+          {translations.stopFooter
+            .replace('{current}', String(stop.sequence))
+            .replace('{total}', String(totalStops))}
         </Text>
       </View>
     </>

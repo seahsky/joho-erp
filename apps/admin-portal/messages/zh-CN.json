@@ -237,6 +237,13 @@
       "east": "东区",
       "west": "西区"
     },
+    "map": {
+      "popup": {
+        "area": "区域: {areaTag}",
+        "sequence": "序号: #{sequence}",
+        "eta": "预计: {time}"
+      }
+    },
     "printManifest": "打印清单",
     "manifest": {
       "title": "配送清单",
@@ -267,7 +274,8 @@
         "warehouseStart": "起点（仓库）",
         "stopOverview": "站点概览",
         "productSummary": "产品汇总（装车清点）",
-        "productSummaryDescription": "所有站点的产品总数量"
+        "productSummaryDescription": "所有站点的产品总数量",
+        "summaryPage": "汇总页"
       },
       "stop": {
         "stopNumber": "第 {number} 站，共 {total} 站",
@@ -277,7 +285,8 @@
         "phone": "电话",
         "deliveryInstructions": "配送说明",
         "noInstructions": "无特殊说明",
-        "items": "商品"
+        "items": "商品",
+        "stopFooter": "第 {current} 站，共 {total} 站"
       },
       "table": {
         "stop": "站点",
@@ -1908,7 +1917,8 @@
       "title": "开始配送",
       "description": "确认将此订单标记为配送中？",
       "confirm": "开始配送",
-      "cancel": "取消"
+      "cancel": "取消",
+      "itemCount": "{count}件商品"
     },
     "podDialog": {
       "title": "上传送货证明",

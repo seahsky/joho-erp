@@ -237,6 +237,13 @@
       "east": "東區",
       "west": "西區"
     },
+    "map": {
+      "popup": {
+        "area": "區域: {areaTag}",
+        "sequence": "序號: #{sequence}",
+        "eta": "預計: {time}"
+      }
+    },
     "printManifest": "列印清單",
     "manifest": {
       "title": "配送清單",
@@ -267,7 +274,8 @@
         "warehouseStart": "起點（倉庫）",
         "stopOverview": "站點概覽",
         "productSummary": "產品彙總（裝車清點）",
-        "productSummaryDescription": "所有站點的產品總數量"
+        "productSummaryDescription": "所有站點的產品總數量",
+        "summaryPage": "匯總頁"
       },
       "stop": {
         "stopNumber": "第 {number} 站，共 {total} 站",
@@ -277,7 +285,8 @@
         "phone": "電話",
         "deliveryInstructions": "配送說明",
         "noInstructions": "無特殊說明",
-        "items": "商品"
+        "items": "商品",
+        "stopFooter": "第 {current} 站，共 {total} 站"
       },
       "table": {
         "stop": "站點",
@@ -1908,7 +1917,8 @@
       "title": "開始配送",
       "description": "確認將此訂單標記為配送中？",
       "confirm": "開始配送",
-      "cancel": "取消"
+      "cancel": "取消",
+      "itemCount": "{count}件商品"
     },
     "podDialog": {
       "title": "上傳送貨證明",

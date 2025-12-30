@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin, Warehouse } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Delivery {
   id: string;
@@ -47,9 +48,10 @@ export default function DeliveryMap({
   selectedDelivery,
   routeData,
   warehouseLocation,
-  emptyStateTitle = 'No deliveries available',
-  emptyStateDescription = 'Deliveries will appear here when ready',
+  emptyStateTitle,
+  emptyStateDescription,
 }: DeliveryMapProps) {
+  const t = useTranslations('deliveries');
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
   const mapRef = useRef<MapRef | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -82,10 +84,10 @@ export default function DeliveryMap({
       <div className="w-full h-[600px] rounded-lg overflow-hidden bg-muted/50 flex flex-col items-center justify-center border border-dashed border-muted-foreground/20">
         <MapPin className="h-16 w-16 text-muted-foreground/30 mb-4" />
         <p className="text-muted-foreground text-lg font-medium">
-          {emptyStateTitle}
+          {emptyStateTitle ?? t('noDeliveriesAvailable')}
         </p>
         <p className="text-muted-foreground/60 text-sm mt-1">
-          {emptyStateDescription}
+          {emptyStateDescription ?? t('deliveriesWillAppear')}
         </p>
       </div>
     );
@@ -224,8 +226,8 @@ export default function DeliveryMap({
               <p className="text-xs text-gray-500 mb-2">{popupInfo.address}</p>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-600">
-                  Area: {popupInfo.areaTag.toUpperCase()}
-                  {popupInfo.deliverySequence && ` • Seq: #${popupInfo.deliverySequence}`}
+                  {t('map.popup.area', { areaTag: popupInfo.areaTag.toUpperCase() })}
+                  {popupInfo.deliverySequence && ` • ${t('map.popup.sequence', { sequence: popupInfo.deliverySequence })}`}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full ${
@@ -237,7 +239,7 @@ export default function DeliveryMap({
                   {popupInfo.status.replace(/_/g, ' ')}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">ETA: {popupInfo.estimatedTime}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('map.popup.eta', { time: popupInfo.estimatedTime })}</p>
             </div>
           </Popup>
         )}
