@@ -44,6 +44,7 @@ function Switch({
 export default function SmsSettingsPage() {
   const t = useTranslations('settings.sms');
   const { toast } = useToast();
+  const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
 
   // Form state
@@ -63,6 +64,7 @@ export default function SmsSettingsPage() {
         description: t('settingsSavedDescription'),
       });
       setHasChanges(false);
+      void utils.sms.getSettings.invalidate();
     },
     onError: (error) => {
       toast({

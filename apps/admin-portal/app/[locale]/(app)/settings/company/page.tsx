@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 export default function CompanySettingsPage() {
   const t = useTranslations('settings.company');
   const { toast } = useToast();
+  const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
 
   // Form state
@@ -51,6 +52,7 @@ export default function CompanySettingsPage() {
         description: t('settingsSavedDescription'),
       });
       setHasChanges(false);
+      void utils.company.getSettings.invalidate();
     },
     onError: (error) => {
       toast({

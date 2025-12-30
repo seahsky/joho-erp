@@ -55,6 +55,7 @@ export default function IntegrationsSettingsPage() {
   const t = useTranslations('settings.integrations');
   const tXeroSync = useTranslations('xeroSync');
   const { toast } = useToast();
+  const utils = api.useUtils();
   const params = useParams();
   const locale = params.locale as string;
   const [hasChanges, setHasChanges] = useState(false);
@@ -81,6 +82,7 @@ export default function IntegrationsSettingsPage() {
         description: t('settingsSavedDescription'),
       });
       setHasChanges(false);
+      void utils.company.getSettings.invalidate();
     },
     onError: (error) => {
       toast({

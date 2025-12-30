@@ -32,6 +32,7 @@ function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean
 export default function NotificationSettingsPage() {
   const t = useTranslations('settings.notifications');
   const { toast } = useToast();
+  const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
 
   // Form state
@@ -60,6 +61,7 @@ export default function NotificationSettingsPage() {
         description: t('settingsSavedDescription'),
       });
       setHasChanges(false);
+      void utils.notification.getSettings.invalidate();
     },
     onError: (error) => {
       toast({

@@ -30,6 +30,7 @@ export default function DeliverySettingsPage() {
   const t = useTranslations('settings.delivery');
   const tCommon = useTranslations('common');
   const { toast } = useToast();
+  const utils = api.useUtils();
 
   // Form state
   const [street, setStreet] = useState('');
@@ -170,6 +171,7 @@ export default function DeliverySettingsPage() {
       });
 
       setHasChanges(false);
+      void utils.company.getSettings.invalidate();
     } catch (error) {
       toast({
         title: t('saveFailed'),

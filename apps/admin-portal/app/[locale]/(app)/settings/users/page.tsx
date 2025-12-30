@@ -35,6 +35,7 @@ type Role = 'admin' | 'sales' | 'manager' | 'packer' | 'driver';
 export default function UserManagementSettingsPage() {
   const t = useTranslations('settings.users');
   const { toast } = useToast();
+  const utils = api.useUtils();
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +63,6 @@ export default function UserManagementSettingsPage() {
   const {
     data: users,
     isLoading,
-    refetch,
   } = api.user.getAll.useQuery(undefined, {
     refetchInterval: 60000, // Refresh every minute
   });
@@ -75,7 +75,8 @@ export default function UserManagementSettingsPage() {
       toast({ title: t('inviteSuccess'), variant: 'default' });
       setIsInviteDialogOpen(false);
       setInviteData({ email: '', firstName: '', lastName: '', role: 'sales' });
-      refetch();
+      void utils.user.getAll.invalidate();
+      void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
       toast({
@@ -91,7 +92,8 @@ export default function UserManagementSettingsPage() {
       toast({ title: t('userUpdated'), variant: 'default' });
       setIsEditDialogOpen(false);
       setSelectedUser(null);
-      refetch();
+      void utils.user.getAll.invalidate();
+      void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
       toast({
@@ -107,7 +109,8 @@ export default function UserManagementSettingsPage() {
       toast({ title: t('userDeactivated'), variant: 'default' });
       setIsDeactivateDialogOpen(false);
       setSelectedUser(null);
-      refetch();
+      void utils.user.getAll.invalidate();
+      void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
       toast({
@@ -121,7 +124,8 @@ export default function UserManagementSettingsPage() {
   const revokeInvitationMutation = api.user.revokeInvitation.useMutation({
     onSuccess: () => {
       toast({ title: t('invitationRevoked'), variant: 'default' });
-      refetch();
+      void utils.user.getAll.invalidate();
+      void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
       toast({

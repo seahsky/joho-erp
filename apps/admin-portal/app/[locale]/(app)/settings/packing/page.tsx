@@ -54,6 +54,7 @@ function Switch({
 export default function PackingSettingsPage() {
   const t = useTranslations('settings.packing');
   const { toast } = useToast();
+  const utils = api.useUtils();
   const params = useParams();
   const locale = params.locale as string;
 
@@ -78,6 +79,7 @@ export default function PackingSettingsPage() {
       setConfirmPin('');
       setHasChanges(false);
       setInitialPinConfigured(pinEnabled);
+      void utils.company.getPackingSettings.invalidate();
     },
     onError: (error) => {
       toast({
