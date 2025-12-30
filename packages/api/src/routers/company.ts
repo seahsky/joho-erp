@@ -316,6 +316,11 @@ export const companyRouter = router({
         changes.push({ field: 'orderCutoffTime', oldValue: oldSettings?.orderCutoffTime, newValue: input.orderCutoffTime });
       }
 
+      // Extract old warehouse coordinates for change detection
+      const oldWarehouse = oldSettings?.warehouseAddress as { latitude?: number; longitude?: number } | undefined;
+      const oldLatitude = oldWarehouse?.latitude;
+      const oldLongitude = oldWarehouse?.longitude;
+
       // Update company with delivery settings
       const updated = await prisma.company.update({
         where: { id: company.id },
@@ -329,6 +334,38 @@ export const companyRouter = router({
         },
       });
 
+      // Check if warehouse coordinates changed significantly (~11m threshold to avoid GPS drift)
+      const COORDINATE_THRESHOLD = 0.0001;
+      const coordinatesChanged =
+        oldLatitude === undefined ||
+        oldLongitude === undefined ||
+        Math.abs(oldLatitude - input.warehouseAddress.latitude) > COORDINATE_THRESHOLD ||
+        Math.abs(oldLongitude - input.warehouseAddress.longitude) > COORDINATE_THRESHOLD;
+
+      // Mark future/today's routes for reoptimization if warehouse location changed
+      let routesMarkedCount = 0;
+      if (coordinatesChanged) {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        const result = await prisma.routeOptimization.updateMany({
+          where: {
+            deliveryDate: { gte: today },
+          },
+          data: {
+            needsReoptimization: true,
+          },
+        });
+        routesMarkedCount = result.count;
+
+        // Add coordinate change to audit trail
+        changes.push({
+          field: 'warehouseCoordinates',
+          oldValue: oldLatitude !== undefined ? `${oldLatitude},${oldLongitude}` : 'not set',
+          newValue: `${input.warehouseAddress.latitude},${input.warehouseAddress.longitude}`,
+        });
+      }
+
       // Audit log - HIGH: Delivery settings changes affect operations
       await logDeliverySettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, changes, {
         settingType: 'delivery',
@@ -338,7 +375,10 @@ export const companyRouter = router({
 
       return {
         success: true,
-        message: 'Delivery settings updated successfully',
+        message:
+          coordinatesChanged && routesMarkedCount > 0
+            ? `Delivery settings updated. ${routesMarkedCount} route(s) will be recalculated.`
+            : 'Delivery settings updated successfully',
         settings: updated.deliverySettings,
       };
     }),
