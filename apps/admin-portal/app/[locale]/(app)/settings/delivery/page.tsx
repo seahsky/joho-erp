@@ -79,20 +79,30 @@ export default function DeliverySettingsPage() {
     }
   }, [settings]);
 
-  // Track changes
+  // Track changes - always compare against saved values or defaults
   useEffect(() => {
-    if (settings?.deliverySettings) {
-      const hasModifications =
-        street !== (settings.deliverySettings.warehouseAddress?.street || '') ||
-        suburb !== (settings.deliverySettings.warehouseAddress?.suburb || '') ||
-        state !== (settings.deliverySettings.warehouseAddress?.state || '') ||
-        postcode !== (settings.deliverySettings.warehouseAddress?.postcode || '') ||
-        latitude !== (settings.deliverySettings.warehouseAddress?.latitude || -37.8136) ||
-        longitude !== (settings.deliverySettings.warehouseAddress?.longitude || 144.9631) ||
-        cutoffTime !== (settings.deliverySettings.orderCutoffTime || '14:00') ||
-        deliveryWindow !== (settings.deliverySettings.defaultDeliveryWindow || '9:00-17:00');
-      setHasChanges(hasModifications);
-    }
+    // Get the values to compare against (saved values or defaults)
+    const savedStreet = settings?.deliverySettings?.warehouseAddress?.street || '';
+    const savedSuburb = settings?.deliverySettings?.warehouseAddress?.suburb || '';
+    const savedState = settings?.deliverySettings?.warehouseAddress?.state || 'VIC';
+    const savedPostcode = settings?.deliverySettings?.warehouseAddress?.postcode || '';
+    const savedLatitude = settings?.deliverySettings?.warehouseAddress?.latitude ?? -37.8136;
+    const savedLongitude = settings?.deliverySettings?.warehouseAddress?.longitude ?? 144.9631;
+    const savedCutoffTime = settings?.deliverySettings?.orderCutoffTime || '14:00';
+    const savedDeliveryWindow = settings?.deliverySettings?.defaultDeliveryWindow || '9:00-17:00';
+
+    // Compare current form values against saved/default values
+    const hasModifications =
+      street !== savedStreet ||
+      suburb !== savedSuburb ||
+      state !== savedState ||
+      postcode !== savedPostcode ||
+      latitude !== savedLatitude ||
+      longitude !== savedLongitude ||
+      cutoffTime !== savedCutoffTime ||
+      deliveryWindow !== savedDeliveryWindow;
+
+    setHasChanges(hasModifications);
   }, [street, suburb, state, postcode, latitude, longitude, cutoffTime, deliveryWindow, settings]);
 
   // Geocode search
