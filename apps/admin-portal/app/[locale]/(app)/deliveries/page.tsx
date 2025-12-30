@@ -25,6 +25,9 @@ export default function DeliveriesPage() {
   const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
+  // Stabilize today's date to prevent infinite re-fetching
+  const todayDateISO = useMemo(() => new Date().toISOString(), []);
+
   // Fetch deliveries from database
   const { data, isLoading } = api.delivery.getAll.useQuery({
     search: searchQuery || undefined,
@@ -36,7 +39,7 @@ export default function DeliveriesPage() {
 
   // Fetch optimized route data for the map
   const { data: routeData } = api.delivery.getOptimizedRoute.useQuery({
-    deliveryDate: new Date().toISOString(),
+    deliveryDate: todayDateISO,
   });
 
   const deliveries = useMemo(() => data?.deliveries || [], [data?.deliveries]);
