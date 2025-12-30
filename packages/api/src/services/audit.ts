@@ -672,8 +672,9 @@ export async function logUserInvitation(
     userName,
     action: 'create',
     entity: 'user_invitation',
-    entityId: metadata.invitationId,
+    // entityId omitted - Clerk invitation IDs are not valid MongoDB ObjectIDs
     metadata: {
+      invitationId: metadata.invitationId,
       invitedEmail: metadata.invitedEmail,
       invitedRole: metadata.invitedRole,
       type: 'invitation_sent',
@@ -701,8 +702,9 @@ export async function logInvitationRevoke(
     userName,
     action: 'delete',
     entity: 'user_invitation',
-    entityId: metadata.invitationId,
+    // entityId omitted - Clerk invitation IDs are not valid MongoDB ObjectIDs
     metadata: {
+      invitationId: metadata.invitationId,
       revokedEmail: metadata.revokedEmail,
       type: 'invitation_revoked',
     },
