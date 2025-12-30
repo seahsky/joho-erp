@@ -20,6 +20,7 @@ const isPublicRoute = createRouteMatcher([
   '/:locale/sign-up(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/api/cron/(.*)', // Cron endpoints use CRON_SECRET for auth
 ]);
 
 // Define patterns that should bypass i18n processing
