@@ -9,6 +9,8 @@ interface StatusHistoryItem {
   status: string;
   changedAt: Date | string;
   changedBy: string;
+  changedByName?: string | null;
+  changedByEmail?: string | null;
   notes?: string | null;
 }
 
@@ -56,7 +58,7 @@ export function StatusTimeline({ statusHistory }: StatusTimelineProps) {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t('timeline.changedBy')} {item.changedBy}
+                      {t('timeline.changedBy')} {item.changedByName || item.changedByEmail || t('timeline.systemUser')}
                     </p>
                     {item.notes && (
                       <p className="text-sm text-muted-foreground mt-1 bg-muted/50 p-2 rounded">

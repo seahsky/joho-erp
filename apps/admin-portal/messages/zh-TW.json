@@ -2258,7 +2258,8 @@
     "timeline": {
       "title": "狀態歷史",
       "noHistory": "暫無狀態歷史",
-      "changedBy": "操作人"
+      "changedBy": "操作人",
+      "systemUser": "系統"
     },
     "delivery": {
       "title": "配送資訊",

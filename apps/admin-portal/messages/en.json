@@ -2258,7 +2258,8 @@
     "timeline": {
       "title": "Status History",
       "noHistory": "No status history available",
-      "changedBy": "by"
+      "changedBy": "by",
+      "systemUser": "System"
     },
     "delivery": {
       "title": "Delivery Information",

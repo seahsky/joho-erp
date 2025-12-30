@@ -46,6 +46,7 @@ const createTestCaller = (ctx: {
   userId: string;
   sessionId: string;
   userRole: 'admin' | 'sales' | 'manager' | 'packer' | 'driver' | 'customer';
+  userName?: string | null;
 }) => {
   const testRouter = router({
     user: userRouter,
@@ -57,6 +58,7 @@ const createTestCaller = (ctx: {
 
   return testRouter.createCaller({
     ...ctx,
+    userName: ctx.userName ?? 'Test User',
     req: mockRequest,
     resHeaders: mockHeaders,
   });

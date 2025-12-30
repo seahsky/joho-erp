@@ -70,6 +70,27 @@ function validateStockWithBackorder(
   return result;
 }
 
+// Helper: Get user display name and email from Clerk
+interface UserDetails {
+  changedByName: string | null;
+  changedByEmail: string | null;
+}
+
+async function getUserDetails(userId: string): Promise<UserDetails> {
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    const changedByName = user.firstName && user.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : null;
+    const changedByEmail = user.emailAddresses[0]?.emailAddress || null;
+    return { changedByName, changedByEmail };
+  } catch (error) {
+    console.error('Failed to fetch user details:', error);
+    return { changedByName: null, changedByEmail: null };
+  }
+}
+
 // Helper: Calculate available credit for a customer
 // Pending backorders don't count against credit limit (only approved ones do)
 export async function calculateAvailableCredit(customerId: string, creditLimit: number): Promise<number> {
@@ -326,6 +347,9 @@ export const orderRouter = router({
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
 
       // Create order with stock reservation in a transaction
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // For normal orders: Reduce stock immediately
       // For backorders: Stock is NOT reduced (only when approved)
       const order = await prisma.$transaction(async (tx) => {
@@ -347,6 +371,8 @@ export const orderRouter = router({
                 status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: stockValidation.requiresBackorder
                   ? 'Order created - Awaiting approval due to insufficient stock'
                   : 'Order created and confirmed',
@@ -652,7 +678,10 @@ export const orderRouter = router({
       // 13. Determine backorder status
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
 
-      // 14. Create order with stock reservation in a transaction
+      // 14. Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
+      // 15. Create order with stock reservation in a transaction
       // For normal orders: Reduce stock immediately
       // For backorders: Stock is NOT reduced (only when approved)
       const order = await prisma.$transaction(async (tx) => {
@@ -674,6 +703,8 @@ export const orderRouter = router({
                 status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: stockValidation.requiresBackorder
                   ? 'Order placed by admin - Awaiting approval due to insufficient stock'
                   : 'Order placed by admin on behalf of customer',
@@ -1001,6 +1032,9 @@ export const orderRouter = router({
         });
       }
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Check if cancelling an order with assigned driver - requires urgent driver notification
       // This applies when order is ready_for_delivery or delivered statuses and has a driver assigned
       const delivery = currentOrder.delivery as { driverId?: string; driverName?: string } | null;
@@ -1059,6 +1093,8 @@ export const orderRouter = router({
                   status: input.newStatus,
                   changedAt: new Date(),
                   changedBy: ctx.userId,
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
                   notes: input.notes,
                 },
               ],
@@ -1157,6 +1193,8 @@ export const orderRouter = router({
               status: input.newStatus,
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: input.notes,
             },
           ],
@@ -1234,7 +1272,10 @@ export const orderRouter = router({
         currentOrder.orderNumber,
         currentOrder.status,
         input.newStatus,
-        input.notes
+        input.notes,
+        userDetails.changedByEmail || undefined,
+        userDetails.changedByName,
+        undefined // userRole is not available here
       ).catch((error) => {
         console.error('Failed to log order status change:', error);
       });
@@ -1373,6 +1414,9 @@ export const orderRouter = router({
       // Set delivery date (tomorrow by default)
       const deliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Create new order with stock reservation in a transaction
       const newOrder = await prisma.$transaction(async (tx) => {
         // Create the order
@@ -1393,6 +1437,8 @@ export const orderRouter = router({
                 status: 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: `Reordered from order ${originalOrder.orderNumber}`,
               },
             ],
@@ -1583,6 +1629,9 @@ export const orderRouter = router({
         });
       }
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Determine if this is a partial approval
       const isPartialApproval = approvedQuantities && Object.keys(approvedQuantities).length > 0;
 
@@ -1631,6 +1680,8 @@ export const orderRouter = router({
                 status: 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: `Backorder partially approved by admin${notes ? `: ${notes}` : ''}`,
               },
             ],
@@ -1751,6 +1802,8 @@ export const orderRouter = router({
                 status: 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: `Backorder approved by admin${notes ? `: ${notes}` : ''}`,
               },
             ],
@@ -1890,6 +1943,9 @@ export const orderRouter = router({
         });
       }
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order to rejected and cancelled
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -1905,6 +1961,8 @@ export const orderRouter = router({
               status: 'cancelled',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: `Backorder rejected by admin: ${reason}`,
             },
           ],
@@ -2099,6 +2157,9 @@ export const orderRouter = router({
         });
       }
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order status to confirmed
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -2109,6 +2170,8 @@ export const orderRouter = router({
               status: 'confirmed',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: notes || 'Order confirmed by admin',
             },
           },
@@ -2188,6 +2251,9 @@ export const orderRouter = router({
         });
       }
 
+      // Get user details for status history
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Cancel the order and restore stock in a transaction
       const cancelledOrder = await prisma.$transaction(async (tx) => {
         // For normal orders (not backorders), restore the stock
@@ -2238,6 +2304,8 @@ export const orderRouter = router({
                 status: 'cancelled',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: reason || 'Cancelled by customer',
               },
             },

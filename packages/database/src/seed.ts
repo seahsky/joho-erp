@@ -1057,6 +1057,8 @@ function createOrdersForCustomer(
           status: 'awaiting_approval',
           changedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
           changedBy: customer.clerkUserId,
+          changedByName: customer.businessName,
+          changedByEmail: customer.contactPerson.email,
           notes: 'Order placed',
         },
         // Only add 'confirmed' entry if status is not 'awaiting_approval'
@@ -1066,6 +1068,8 @@ function createOrdersForCustomer(
                 status: 'confirmed',
                 changedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
                 changedBy: 'admin_user',
+                changedByName: 'Admin User',
+                changedByEmail: 'admin@example.com',
                 notes: 'Order confirmed',
               },
             ]
@@ -1084,6 +1088,8 @@ function createOrdersForCustomer(
         status: statusInfo.status,
         changedAt: new Date(Date.now() - 30 * 60 * 1000),
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: `Assigned to ${statusInfo.driverName}`,
       });
     }
@@ -1094,6 +1100,8 @@ function createOrdersForCustomer(
         status: 'delivered',
         changedAt: new Date(Date.now() - 15 * 60 * 1000),
         changedBy: statusInfo.driverId,
+        changedByName: statusInfo.driverName || 'Driver',
+        changedByEmail: 'driver@example.com',
         notes: 'Delivery completed',
       });
 
@@ -1124,6 +1132,8 @@ function createOrdersForCustomer(
         status: 'cancelled',
         changedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         changedBy: customer.clerkUserId,
+        changedByName: customer.businessName,
+        changedByEmail: customer.contactPerson.email,
         notes: 'Order cancelled by customer',
       });
     }
@@ -1133,6 +1143,8 @@ function createOrdersForCustomer(
         status: 'packing',
         changedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: 'Order is currently being packed',
       });
       // Note: No packing object yet - order is still in progress
@@ -1144,12 +1156,16 @@ function createOrdersForCustomer(
         status: 'packing',
         changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: 'Order being packed',
       });
       order.statusHistory.push({
         status: 'ready_for_delivery',
         changedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: 'Ready for delivery',
       });
       order.packing = {
@@ -1165,18 +1181,24 @@ function createOrdersForCustomer(
         status: 'packing',
         changedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: 'Order being packed',
       });
       order.statusHistory.push({
         status: 'ready_for_delivery',
         changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         changedBy: 'admin_user',
+        changedByName: 'Admin User',
+        changedByEmail: 'admin@example.com',
         notes: 'Ready for delivery',
       });
       order.statusHistory.push({
         status: 'out_for_delivery',
         changedAt: new Date(Date.now() - 30 * 60 * 1000),
         changedBy: statusInfo.driverId || 'driver_user',
+        changedByName: statusInfo.driverName || 'Driver',
+        changedByEmail: 'driver@example.com',
         notes: `Driver ${statusInfo.driverName || 'assigned'} started delivery route`,
       });
       order.packing = {
@@ -1761,12 +1783,16 @@ async function seed() {
               status: 'awaiting_approval',
               changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
               changedBy: 'admin_user_001',
+              changedByName: 'Admin User 1',
+              changedByEmail: 'admin1@example.com',
               notes: 'Order placed by admin on behalf of customer',
             },
             {
               status: 'confirmed',
               changedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
               changedBy: 'admin_user_001',
+              changedByName: 'Admin User 1',
+              changedByEmail: 'admin1@example.com',
               notes: 'Order confirmed - credit limit bypass approved',
             },
           ],
@@ -1840,18 +1866,24 @@ async function seed() {
               status: 'awaiting_approval',
               changedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
               changedBy: 'admin_user_002',
+              changedByName: 'Admin User 2',
+              changedByEmail: 'admin2@example.com',
               notes: 'Late order placed by admin after cutoff time',
             },
             {
               status: 'confirmed',
               changedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
               changedBy: 'admin_user_002',
+              changedByName: 'Admin User 2',
+              changedByEmail: 'admin2@example.com',
               notes: 'Order confirmed - cutoff bypass approved',
             },
             {
               status: 'packing',
               changedAt: new Date(Date.now() - 30 * 60 * 1000),
               changedBy: 'warehouse_user_001',
+              changedByName: 'Warehouse User 1',
+              changedByEmail: 'warehouse1@example.com',
               notes: 'Packing started for priority delivery',
             },
           ],

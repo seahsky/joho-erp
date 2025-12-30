@@ -95,10 +95,16 @@ export async function logOrderStatusChange(
   orderNumber: string,
   oldStatus: string,
   newStatus: string,
-  reason?: string
+  reason?: string,
+  userEmail?: string,
+  userName?: string | null,
+  userRole?: string
 ): Promise<void> {
   await createAuditLog({
     userId,
+    userEmail,
+    userName,
+    userRole,
     action: 'update',
     entity: 'order',
     entityId: orderId,
@@ -424,6 +430,7 @@ export async function logPricingChangeWithUser(
     userId,
     userEmail,
     userRole,
+    userName,
     action,
     entity: 'customer_pricing',
     entityId: pricingId,

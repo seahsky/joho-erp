@@ -645,6 +645,8 @@ type StatusHistory {
   status              String
   changedAt           DateTime            @default(now())
   changedBy           String
+  changedByName       String?
+  changedByEmail      String?
   notes               String?
 }
 
