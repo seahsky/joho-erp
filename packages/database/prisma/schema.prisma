@@ -493,6 +493,22 @@ model SuburbAreaMapping {
   @@map("suburbareamappings")
 }
 
+// Driver Area Assignment Model
+// Maps drivers to their assigned delivery areas for auto-assignment
+model DriverAreaAssignment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  driverId  String   // Clerk user ID
+  areaTag   AreaTag
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([driverId, areaTag])
+  @@index([areaTag])
+  @@index([driverId])
+  @@map("driverareaassignments")
+}
+
 // Xero Sync Job Model
 model XeroSyncJob {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId

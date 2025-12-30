@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, TableSkeleton } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, Search, FileText } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, Package, Search, FileText, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 import { useTableSort } from '@joho-erp/shared/hooks';
-import { RouteManifestDialog, DriverFilter } from './components';
+import { RouteManifestDialog, DriverFilter, AutoAssignDialog } from './components';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -18,12 +18,14 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const t = useTranslations('deliveries');
+  const utils = api.useUtils();
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'delivered' | ''>('');
   const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | ''>('');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
+  const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
   // Stabilize today's date to prevent infinite re-fetching
@@ -122,6 +124,12 @@ export default function DeliveriesPage() {
               onDriverChange={setSelectedDriverId}
             />
           )}
+          <PermissionGate permission="deliveries:manage">
+            <Button onClick={() => setAutoAssignDialogOpen(true)}>
+              <Users className="h-4 w-4 mr-2" />
+              {t('autoAssignDrivers')}
+            </Button>
+          </PermissionGate>
           <PermissionGate permission="deliveries:view">
             <Button onClick={() => setManifestDialogOpen(true)} variant="outline">
               <FileText className="h-4 w-4 mr-2" />
@@ -262,6 +270,17 @@ export default function DeliveriesPage() {
         onOpenChange={setManifestDialogOpen}
         selectedDate={new Date()}
         selectedArea={areaFilter || undefined}
+      />
+
+      {/* Auto-Assign Drivers Dialog */}
+      <AutoAssignDialog
+        deliveryDate={todayDateISO}
+        open={autoAssignDialogOpen}
+        onOpenChange={setAutoAssignDialogOpen}
+        onAssigned={() => {
+          void utils.delivery.getAll.invalidate();
+          void utils.delivery.getOptimizedRoute.invalidate();
+        }}
       />
     </div>
   );

@@ -319,6 +319,22 @@
         "timeReceived": "Time Received",
         "driverNotes": "Driver Notes"
       }
+    },
+    "autoAssignDrivers": "Auto-Assign Drivers",
+    "autoAssignment": {
+      "title": "Auto-Assign Drivers by Area",
+      "description": "Automatically assign drivers to orders based on delivery area",
+      "preview": "Preview Assignment",
+      "ordersTotal": "orders total",
+      "orders": "orders",
+      "noDrivers": "No drivers",
+      "noOrdersToAssign": "All orders already have drivers assigned",
+      "someAreasNoDrivers": "Some areas have no assigned drivers. Orders in those areas will be skipped.",
+      "confirm": "Auto-Assign All",
+      "cancel": "Cancel",
+      "success": "Drivers Auto-Assigned",
+      "successMessage": "{count} orders assigned to drivers",
+      "error": "Assignment Failed"
     }
   },
   "orders": {
@@ -1290,6 +1306,8 @@
       "companyDescription": "Manage business information, bank details, and company logo",
       "delivery": "Delivery Configuration",
       "deliveryDescription": "Configure warehouse location, routes, and delivery windows",
+      "driverAreas": "Driver Areas",
+      "driverAreasDescription": "Assign drivers to delivery areas for auto-assignment",
       "integrations": "Integrations",
       "integrationsDescription": "Connect with Xero and other third-party services",
       "users": "User Management",
@@ -1330,6 +1348,24 @@
         "invalidPin": "PIN must be exactly 4 digits",
         "pinMismatch": "PINs do not match"
       }
+    },
+    "driverAreas": {
+      "title": "Driver Area Assignments",
+      "description": "Configure which drivers serve each delivery area for auto-assignment",
+      "driver": "Driver",
+      "areas": {
+        "north": "North",
+        "south": "South",
+        "east": "East",
+        "west": "West"
+      },
+      "actions": "Actions",
+      "noDrivers": "No drivers found. Add users with the driver role to assign areas.",
+      "summary": "Area Summary",
+      "driverSingular": "driver",
+      "driverPlural": "drivers",
+      "saveSuccess": "Driver areas updated",
+      "saveError": "Failed to update driver areas"
     },
     "profile": {
       "title": "Profile Settings",
@@ -2288,6 +2324,9 @@
       "requestedDate": "Requested Delivery",
       "actualDate": "Delivered On",
       "driver": "Driver",
+      "unassigned": "Not assigned",
+      "assignDriver": "Assign Driver",
+      "changeDriver": "Change Driver",
       "pod": "Proof of Delivery",
       "podType": "Type",
       "viewPod": "View POD",
@@ -2295,6 +2334,25 @@
       "returned": "Order Returned",
       "returnReason": "Return Reason",
       "returnNotes": "Return Notes"
+    },
+    "driverAssignment": {
+      "title": "Assign Driver",
+      "description": "Select a driver for order {orderNumber}",
+      "currentDriver": "Current Driver",
+      "deliveryArea": "Delivery Area",
+      "selectDriver": "Select Driver",
+      "placeholder": "Choose a driver...",
+      "orders": "orders",
+      "noDriversForArea": "No drivers are assigned to this area.",
+      "showAllDrivers": "Show all drivers",
+      "showAreaDrivers": "Show area drivers only",
+      "noDriversAvailable": "No drivers available",
+      "highWorkloadWarning": "This driver already has a high workload today",
+      "assign": "Assign Driver",
+      "cancel": "Cancel",
+      "success": "Driver Assigned",
+      "successMessage": "Driver has been successfully assigned to this order",
+      "error": "Assignment Failed"
     },
     "xero": {
       "title": "Xero Integration",

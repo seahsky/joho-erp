@@ -208,9 +208,13 @@ export default function OrderDetailPage({ params }: PageProps) {
 
           {/* Delivery Info */}
           <DeliveryInfo
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            orderStatus={order.status}
             deliveryAddress={deliveryAddress}
             requestedDeliveryDate={order.requestedDeliveryDate}
             delivery={delivery}
+            onDriverAssigned={handleStatusUpdated}
           />
 
           {/* Xero Sync Status */}

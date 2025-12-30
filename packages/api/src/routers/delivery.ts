@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
-import { prisma } from '@joho-erp/database';
+import { prisma, AreaTag } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import {
   getRouteOptimization,
   getDeliveryRouteOptimization,
@@ -1171,6 +1172,378 @@ export const deliveryRouter = router({
       return {
         success: true,
         message: 'Per-driver sequences recalculated successfully',
+      };
+    }),
+
+  // Get all drivers with their assigned areas
+  getDriversWithAreas: requirePermission('deliveries:manage')
+    .query(async () => {
+      const client = await clerkClient();
+
+      // Fetch all users with driver role
+      const usersResponse = await client.users.getUserList({ limit: 100 });
+      const drivers = usersResponse.data
+        .filter((user) => {
+          const metadata = user.publicMetadata as { role?: string };
+          return metadata?.role === 'driver';
+        })
+        .filter((user) => !user.banned)
+        .map((user) => ({
+          id: user.id,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
+          email: user.emailAddresses[0]?.emailAddress || '',
+        }));
+
+      // Get area assignments for all drivers
+      const areaAssignments = await prisma.driverAreaAssignment.findMany({
+        where: {
+          driverId: { in: drivers.map((d) => d.id) },
+          isActive: true,
+        },
+      });
+
+      // Map assignments to drivers
+      const assignmentMap = new Map<string, AreaTag[]>();
+      for (const assignment of areaAssignments) {
+        const areas = assignmentMap.get(assignment.driverId) || [];
+        areas.push(assignment.areaTag);
+        assignmentMap.set(assignment.driverId, areas);
+      }
+
+      return drivers.map((driver) => ({
+        ...driver,
+        areas: assignmentMap.get(driver.id) || [],
+      }));
+    }),
+
+  // Set driver's assigned areas (replaces all existing)
+  setDriverAreas: requirePermission('deliveries:manage')
+    .input(
+      z.object({
+        driverId: z.string(),
+        areas: z.array(z.enum(['north', 'south', 'east', 'west'])),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { driverId, areas } = input;
+
+      // Delete existing assignments
+      await prisma.driverAreaAssignment.deleteMany({
+        where: { driverId },
+      });
+
+      // Create new assignments
+      if (areas.length > 0) {
+        await prisma.driverAreaAssignment.createMany({
+          data: areas.map((areaTag) => ({
+            driverId,
+            areaTag,
+            isActive: true,
+          })),
+        });
+      }
+
+      return { success: true };
+    }),
+
+  // Get drivers for assignment dropdown with order counts
+  getDriversForAssignment: requirePermission('deliveries:view')
+    .input(
+      z.object({
+        date: z.string().optional(),
+        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const client = await clerkClient();
+
+      // Fetch all users with driver role
+      const usersResponse = await client.users.getUserList({ limit: 100 });
+      const drivers = usersResponse.data
+        .filter((user) => {
+          const metadata = user.publicMetadata as { role?: string };
+          return metadata?.role === 'driver';
+        })
+        .filter((user) => !user.banned)
+        .map((user) => ({
+          id: user.id,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown',
+          email: user.emailAddresses[0]?.emailAddress || '',
+        }));
+
+      // Get area assignments
+      const areaAssignments = await prisma.driverAreaAssignment.findMany({
+        where: {
+          driverId: { in: drivers.map((d) => d.id) },
+          isActive: true,
+        },
+      });
+
+      const assignmentMap = new Map<string, AreaTag[]>();
+      for (const assignment of areaAssignments) {
+        const areas = assignmentMap.get(assignment.driverId) || [];
+        areas.push(assignment.areaTag);
+        assignmentMap.set(assignment.driverId, areas);
+      }
+
+      // Get order counts for today if date provided
+      let orderCountMap = new Map<string, number>();
+      if (input.date) {
+        const targetDate = new Date(input.date);
+        const startOfDay = new Date(targetDate);
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setUTCHours(23, 59, 59, 999);
+
+        const orders = await prisma.order.findMany({
+          where: {
+            requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+            status: { in: ['ready_for_delivery', 'out_for_delivery'] },
+          },
+          select: { delivery: true },
+        });
+
+        for (const order of orders) {
+          const driverId = order.delivery?.driverId;
+          if (driverId) {
+            orderCountMap.set(driverId, (orderCountMap.get(driverId) || 0) + 1);
+          }
+        }
+      }
+
+      // Filter by area if specified
+      let filteredDrivers = drivers;
+      if (input.areaTag) {
+        const driversForArea = new Set(
+          areaAssignments
+            .filter((a) => a.areaTag === input.areaTag)
+            .map((a) => a.driverId)
+        );
+        filteredDrivers = drivers.filter((d) => driversForArea.has(d.id));
+      }
+
+      return filteredDrivers.map((driver) => ({
+        ...driver,
+        areas: assignmentMap.get(driver.id) || [],
+        orderCount: orderCountMap.get(driver.id) || 0,
+      }));
+    }),
+
+  // Auto-assign drivers by area (round-robin)
+  autoAssignDriversByArea: requirePermission('deliveries:manage')
+    .input(
+      z.object({
+        deliveryDate: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const targetDate = new Date(input.deliveryDate);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      // Get all ready_for_delivery orders without a driver assigned
+      const orders = await prisma.order.findMany({
+        where: {
+          requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+          status: 'ready_for_delivery',
+          OR: [
+            { delivery: { is: { driverId: null } } },
+            { delivery: { isSet: false } },
+          ],
+        },
+      });
+
+      if (orders.length === 0) {
+        return {
+          success: true,
+          totalAssigned: 0,
+          byArea: {},
+          message: 'No orders to assign',
+        };
+      }
+
+      // Group orders by area
+      const ordersByArea = new Map<AreaTag, typeof orders>();
+      for (const order of orders) {
+        const area = order.deliveryAddress?.areaTag;
+        if (area) {
+          const areaOrders = ordersByArea.get(area) || [];
+          areaOrders.push(order);
+          ordersByArea.set(area, areaOrders);
+        }
+      }
+
+      // Get all active driver area assignments
+      const areaAssignments = await prisma.driverAreaAssignment.findMany({
+        where: { isActive: true },
+      });
+
+      // Group drivers by area
+      const driversByArea = new Map<AreaTag, string[]>();
+      for (const assignment of areaAssignments) {
+        const drivers = driversByArea.get(assignment.areaTag) || [];
+        drivers.push(assignment.driverId);
+        driversByArea.set(assignment.areaTag, drivers);
+      }
+
+      // Get driver names from Clerk
+      const client = await clerkClient();
+      const allDriverIds = [...new Set(areaAssignments.map((a) => a.driverId))];
+      const driverNames = new Map<string, string>();
+
+      for (const driverId of allDriverIds) {
+        try {
+          const user = await client.users.getUser(driverId);
+          const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown';
+          driverNames.set(driverId, name);
+        } catch {
+          driverNames.set(driverId, 'Unknown');
+        }
+      }
+
+      // Assign drivers (round-robin per area)
+      const results: { area: AreaTag; assigned: number; skipped: number }[] = [];
+      const driverCounters = new Map<AreaTag, number>();
+
+      for (const [area, areaOrders] of ordersByArea) {
+        const areaDrivers = driversByArea.get(area) || [];
+
+        if (areaDrivers.length === 0) {
+          results.push({ area, assigned: 0, skipped: areaOrders.length });
+          continue;
+        }
+
+        let counter = driverCounters.get(area) || 0;
+        let assigned = 0;
+
+        for (const order of areaOrders) {
+          const driverId = areaDrivers[counter % areaDrivers.length];
+          const driverName = driverNames.get(driverId) || 'Unknown';
+
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              delivery: {
+                ...order.delivery,
+                driverId,
+                driverName,
+                assignedAt: new Date(),
+              },
+              statusHistory: {
+                push: {
+                  status: order.status,
+                  changedAt: new Date(),
+                  changedBy: ctx.userId,
+                  changedByName: ctx.userName,
+                  notes: `Driver auto-assigned: ${driverName}`,
+                },
+              },
+            },
+          });
+
+          counter++;
+          assigned++;
+        }
+
+        driverCounters.set(area, counter);
+        results.push({ area, assigned, skipped: 0 });
+      }
+
+      // Recalculate per-driver sequences
+      await calculatePerDriverSequences(targetDate);
+
+      const byArea = Object.fromEntries(
+        results.map((r) => [r.area, { assigned: r.assigned, skipped: r.skipped }])
+      );
+
+      return {
+        success: true,
+        totalAssigned: results.reduce((sum, r) => sum + r.assigned, 0),
+        byArea,
+        message: `Auto-assigned ${results.reduce((sum, r) => sum + r.assigned, 0)} orders`,
+      };
+    }),
+
+  // Get auto-assignment preview (shows what would be assigned)
+  getAutoAssignmentPreview: requirePermission('deliveries:view')
+    .input(
+      z.object({
+        deliveryDate: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const targetDate = new Date(input.deliveryDate);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      // Get unassigned orders
+      const orders = await prisma.order.findMany({
+        where: {
+          requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+          status: 'ready_for_delivery',
+          OR: [
+            { delivery: { is: { driverId: null } } },
+            { delivery: { isSet: false } },
+          ],
+        },
+        select: {
+          id: true,
+          deliveryAddress: true,
+        },
+      });
+
+      // Group by area
+      const ordersByArea = new Map<AreaTag, number>();
+      for (const order of orders) {
+        const area = order.deliveryAddress?.areaTag;
+        if (area) {
+          ordersByArea.set(area, (ordersByArea.get(area) || 0) + 1);
+        }
+      }
+
+      // Get driver assignments
+      const areaAssignments = await prisma.driverAreaAssignment.findMany({
+        where: { isActive: true },
+      });
+
+      // Get driver names
+      const client = await clerkClient();
+      const allDriverIds = [...new Set(areaAssignments.map((a) => a.driverId))];
+      const driverInfo = new Map<string, { id: string; name: string }>();
+
+      for (const driverId of allDriverIds) {
+        try {
+          const user = await client.users.getUser(driverId);
+          const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown';
+          driverInfo.set(driverId, { id: driverId, name });
+        } catch {
+          driverInfo.set(driverId, { id: driverId, name: 'Unknown' });
+        }
+      }
+
+      // Build preview by area
+      const areas: AreaTag[] = ['north', 'south', 'east', 'west'];
+      const preview = areas.map((area) => {
+        const drivers = areaAssignments
+          .filter((a) => a.areaTag === area)
+          .map((a) => driverInfo.get(a.driverId))
+          .filter((d): d is { id: string; name: string } => d !== undefined);
+
+        return {
+          area,
+          orderCount: ordersByArea.get(area) || 0,
+          drivers,
+          hasDrivers: drivers.length > 0,
+        };
+      });
+
+      return {
+        totalOrders: orders.length,
+        preview,
       };
     }),
 });

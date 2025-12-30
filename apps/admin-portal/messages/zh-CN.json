@@ -319,6 +319,22 @@
         "timeReceived": "签收时间",
         "driverNotes": "司机备注"
       }
+    },
+    "autoAssignDrivers": "自动分配司机",
+    "autoAssignment": {
+      "title": "按区域自动分配司机",
+      "description": "根据配送区域自动将司机分配给订单",
+      "preview": "分配预览",
+      "ordersTotal": "订单总数",
+      "orders": "订单",
+      "noDrivers": "无司机",
+      "noOrdersToAssign": "所有订单已分配司机",
+      "someAreasNoDrivers": "部分区域没有分配司机。这些区域的订单将被跳过。",
+      "confirm": "确认自动分配",
+      "cancel": "取消",
+      "success": "司机已自动分配",
+      "successMessage": "已将 {count} 个订单分配给司机",
+      "error": "分配失败"
     }
   },
   "orders": {
@@ -1290,6 +1306,8 @@
       "companyDescription": "管理企业信息、银行详情和公司标志",
       "delivery": "配送配置",
       "deliveryDescription": "配置仓库位置、路线和配送时间窗口",
+      "driverAreas": "司机区域",
+      "driverAreasDescription": "为自动分配指定司机负责的配送区域",
       "integrations": "集成",
       "integrationsDescription": "连接Xero和其他第三方服务",
       "users": "用户管理",
@@ -1330,6 +1348,24 @@
         "invalidPin": "PIN码必须是4位数字",
         "pinMismatch": "两次输入的PIN码不一致"
       }
+    },
+    "driverAreas": {
+      "title": "司机区域分配",
+      "description": "配置司机负责的配送区域以实现自动分配",
+      "driver": "司机",
+      "areas": {
+        "north": "北区",
+        "south": "南区",
+        "east": "东区",
+        "west": "西区"
+      },
+      "actions": "操作",
+      "noDrivers": "未找到司机。请添加具有司机角色的用户以分配区域。",
+      "summary": "区域概览",
+      "driverSingular": "位司机",
+      "driverPlural": "位司机",
+      "saveSuccess": "司机区域已更新",
+      "saveError": "更新司机区域失败"
     },
     "profile": {
       "title": "个人资料设置",
@@ -2288,6 +2324,9 @@
       "requestedDate": "要求配送日期",
       "actualDate": "实际配送日期",
       "driver": "司机",
+      "unassigned": "未分配",
+      "assignDriver": "分配司机",
+      "changeDriver": "更换司机",
       "pod": "配送证明",
       "podType": "类型",
       "viewPod": "查看配送证明",
@@ -2295,6 +2334,25 @@
       "returned": "订单已退回",
       "returnReason": "退回原因",
       "returnNotes": "退回备注"
+    },
+    "driverAssignment": {
+      "title": "分配司机",
+      "description": "为订单 {orderNumber} 选择司机",
+      "currentDriver": "当前司机",
+      "deliveryArea": "配送区域",
+      "selectDriver": "选择司机",
+      "placeholder": "请选择司机...",
+      "orders": "订单",
+      "noDriversForArea": "该区域暂无分配的司机。",
+      "showAllDrivers": "显示所有司机",
+      "showAreaDrivers": "仅显示区域司机",
+      "noDriversAvailable": "暂无可用司机",
+      "highWorkloadWarning": "该司机今日工作量较大",
+      "assign": "分配司机",
+      "cancel": "取消",
+      "success": "司机已分配",
+      "successMessage": "已成功为此订单分配司机",
+      "error": "分配失败"
     },
     "xero": {
       "title": "Xero 集成",

@@ -18,6 +18,7 @@ import {
   Settings as SettingsIcon,
   Package,
   FileText,
+  MapPin,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -51,6 +52,14 @@ export default function SettingsPage() {
       titleKey: 'categories.delivery',
       descriptionKey: 'categories.deliveryDescription',
       href: `/${locale}/settings/delivery`,
+      available: true,
+    },
+    {
+      id: 'driverAreas',
+      icon: MapPin,
+      titleKey: 'categories.driverAreas',
+      descriptionKey: 'categories.driverAreasDescription',
+      href: `/${locale}/settings/drivers`,
       available: true,
     },
     {

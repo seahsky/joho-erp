@@ -13,10 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@joho-erp/ui';
-import { Truck, MapPin, User, Camera, Calendar, FileImage } from 'lucide-react';
+import { Truck, MapPin, User, Camera, Calendar, FileImage, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatDate } from '@joho-erp/shared';
 import Image from 'next/image';
+import { PermissionGate } from '@/components/permission-gate';
+import { DriverAssignmentDialog } from './DriverAssignmentDialog';
 
 interface DeliveryAddress {
   street: string;
@@ -48,19 +50,31 @@ interface Delivery {
 }
 
 interface DeliveryInfoProps {
+  orderId: string;
+  orderNumber: string;
+  orderStatus: string;
   deliveryAddress: DeliveryAddress;
   requestedDeliveryDate: Date | string;
   delivery?: Delivery | null;
+  onDriverAssigned?: () => void;
 }
 
 export function DeliveryInfo({
+  orderId,
+  orderNumber,
+  orderStatus,
   deliveryAddress,
   requestedDeliveryDate,
   delivery,
+  onDriverAssigned,
 }: DeliveryInfoProps) {
   const t = useTranslations('orderDetail');
   const tCommon = useTranslations('common');
   const [isPodDialogOpen, setIsPodDialogOpen] = useState(false);
+  const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
+
+  // Can assign driver when order is ready for delivery or out for delivery
+  const canAssignDriver = ['ready_for_delivery', 'out_for_delivery'].includes(orderStatus);
 
   return (
     <>
@@ -113,15 +127,29 @@ export function DeliveryInfo({
           </div>
 
           {/* Driver */}
-          {delivery?.driverName && (
-            <div>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <User className="h-4 w-4" />
-                {t('delivery.driver')}
+          <div>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <User className="h-4 w-4" />
+              {t('delivery.driver')}
+            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-sm font-medium">
+                {delivery?.driverName || t('delivery.unassigned')}
               </p>
-              <p className="text-sm font-medium">{delivery.driverName}</p>
+              {canAssignDriver && (
+                <PermissionGate permission="deliveries:manage">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsDriverDialogOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    {delivery?.driverName ? t('delivery.changeDriver') : t('delivery.assignDriver')}
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Return Info */}
           {delivery?.returnedAt && (
@@ -194,6 +222,18 @@ export function DeliveryInfo({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Driver Assignment Dialog */}
+      <DriverAssignmentDialog
+        orderId={orderId}
+        orderNumber={orderNumber}
+        areaTag={deliveryAddress.areaTag}
+        currentDriverId={delivery?.driverId}
+        currentDriverName={delivery?.driverName}
+        open={isDriverDialogOpen}
+        onOpenChange={setIsDriverDialogOpen}
+        onAssigned={() => onDriverAssigned?.()}
+      />
     </>
   );
 }
