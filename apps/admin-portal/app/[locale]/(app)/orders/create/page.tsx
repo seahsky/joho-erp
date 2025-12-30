@@ -24,6 +24,7 @@ import {
   MapPin,
   FileText,
   Shield,
+  CreditCard,
 } from 'lucide-react';
 import { useToast } from '@joho-erp/ui';
 
@@ -76,6 +77,10 @@ export default function CreateOrderOnBehalfPage() {
     { customerId: selectedCustomerId },
     { enabled: !!selectedCustomerId }
   );
+  const { data: creditInfo } = api.order.getCustomerCreditInfoForAdmin.useQuery(
+    { customerId: selectedCustomerId },
+    { enabled: !!selectedCustomerId }
+  );
 
   const customers = customersData?.customers || [];
   const products = productsData?.items || [];
@@ -111,11 +116,24 @@ export default function CreateOrderOnBehalfPage() {
     };
   }, [orderItems]);
 
-  // Credit limit check
-  const exceedsCreditLimit = useMemo(() => {
-    if (!selectedCustomer || bypassCreditLimit) return false;
-    return total > (selectedCustomer.creditApplication.creditLimit || 0);
-  }, [total, selectedCustomer, bypassCreditLimit]);
+  // Credit limit check - compares against available credit, not total credit limit
+  const exceedsAvailableCredit = useMemo(() => {
+    if (!creditInfo || bypassCreditLimit) return false;
+    return total > creditInfo.availableCredit;
+  }, [total, creditInfo, bypassCreditLimit]);
+
+  // Calculate projected credit after this order
+  const projectedRemainingCredit = useMemo(() => {
+    if (!creditInfo) return 0;
+    return creditInfo.availableCredit - total;
+  }, [creditInfo, total]);
+
+  // Calculate credit utilization percentage (including this order)
+  const creditUtilizationPercent = useMemo(() => {
+    if (!creditInfo || creditInfo.creditLimit === 0) return 0;
+    const projectedUsed = creditInfo.outstandingBalance + total;
+    return Math.min(100, (projectedUsed / creditInfo.creditLimit) * 100);
+  }, [creditInfo, total]);
 
   // Add item to order
   const handleAddItem = () => {
@@ -270,13 +288,99 @@ export default function CreateOrderOnBehalfPage() {
               </select>
             </div>
 
-            {selectedCustomer && (
-              <div className="mt-4 p-4 bg-muted rounded-md">
-                <p className="text-sm font-medium">{t('info.creditLimit')}</p>
-                <p className="text-2xl font-bold">
-                  {formatAUD(selectedCustomer.creditApplication.creditLimit)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
+            {selectedCustomer && creditInfo && (
+              <div className="mt-4 p-4 bg-muted rounded-md space-y-4">
+                {/* Credit Usage Header */}
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">{t('info.creditUsage')}</p>
+                </div>
+
+                {/* Credit Stats Grid */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('info.creditLimit')}</p>
+                    <p className="text-lg font-bold">{formatAUD(creditInfo.creditLimit)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('info.outstandingBalance')}</p>
+                    <p className="text-lg font-bold">{formatAUD(creditInfo.outstandingBalance)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('info.availableCredit')}</p>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatAUD(creditInfo.availableCredit)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Credit Usage Progress Bar */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">{t('info.used')}</span>
+                    <span className="font-medium">
+                      {formatAUD(creditInfo.outstandingBalance)} / {formatAUD(creditInfo.creditLimit)}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        creditUtilizationPercent > 100
+                          ? 'bg-destructive'
+                          : creditUtilizationPercent > 80
+                          ? 'bg-amber-500'
+                          : 'bg-primary'
+                      }`}
+                      style={{
+                        width: `${Math.min(100, (creditInfo.outstandingBalance / creditInfo.creditLimit) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Order Impact Preview - Only show when items exist */}
+                {total > 0 && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('info.thisOrder')}</p>
+                        <p className="text-lg font-bold">{formatAUD(total)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('info.afterOrder')}</p>
+                        <p
+                          className={`text-lg font-bold ${
+                            projectedRemainingCredit < 0 ? 'text-destructive' : 'text-green-600'
+                          }`}
+                        >
+                          {formatAUD(Math.max(0, projectedRemainingCredit))} {t('info.remaining')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Projected Usage Bar */}
+                    <div className="mt-2">
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            creditUtilizationPercent > 100
+                              ? 'bg-destructive'
+                              : creditUtilizationPercent > 80
+                              ? 'bg-amber-500'
+                              : 'bg-primary'
+                          }`}
+                          style={{ width: `${Math.min(100, creditUtilizationPercent)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-right">
+                        {Math.round(creditUtilizationPercent)}% {t('info.afterOrder').toLowerCase()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivery Area */}
+                <p className="text-sm text-muted-foreground pt-2 border-t border-border">
                   {t('info.deliveryArea')}: {selectedCustomer.deliveryAddress.areaTag.toUpperCase()}
                 </p>
               </div>
@@ -374,10 +478,10 @@ export default function CreateOrderOnBehalfPage() {
                       <span className="font-bold text-lg">{formatAUD(total)}</span>
                     </div>
 
-                    {exceedsCreditLimit && !bypassCreditLimit && (
+                    {exceedsAvailableCredit && !bypassCreditLimit && (
                       <div className="flex items-center gap-2 text-destructive mt-2">
                         <AlertCircle className="h-4 w-4" />
-                        <span className="text-sm">{t('warnings.exceedsCreditLimit')}</span>
+                        <span className="text-sm">{t('warnings.willExceedCredit')}</span>
                       </div>
                     )}
                   </div>

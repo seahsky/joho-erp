@@ -478,13 +478,21 @@
     },
     "info": {
       "creditLimit": "信用额度",
+      "creditUsage": "信用使用情况",
+      "outstandingBalance": "未结余额",
+      "availableCredit": "可用信用",
+      "used": "已使用",
+      "thisOrder": "本次订单",
+      "afterOrder": "下单后",
+      "remaining": "剩余",
       "deliveryArea": "配送区域",
       "usingDefaultAddress": "使用客户的默认配送地址",
       "deliveryDateOptional": "留空以使用自动配送安排",
       "adminNotesPrivate": "这些备注仅管理员可见"
     },
     "warnings": {
-      "exceedsCreditLimit": "警告：订单总额超过客户信用额度"
+      "exceedsCreditLimit": "警告：订单总额超过客户信用额度",
+      "willExceedCredit": "警告：此订单将超过可用信用额度"
     },
     "validation": {
       "customerRequired": "请选择客户",

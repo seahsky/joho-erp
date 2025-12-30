@@ -478,13 +478,21 @@
     },
     "info": {
       "creditLimit": "信用額度",
+      "creditUsage": "信用使用狀況",
+      "outstandingBalance": "未結餘額",
+      "availableCredit": "可用信用",
+      "used": "已使用",
+      "thisOrder": "本次訂單",
+      "afterOrder": "下單後",
+      "remaining": "剩餘",
       "deliveryArea": "配送區域",
       "usingDefaultAddress": "使用客戶的預設配送地址",
       "deliveryDateOptional": "留空以使用自動配送安排",
       "adminNotesPrivate": "這些備註僅管理員可見"
     },
     "warnings": {
-      "exceedsCreditLimit": "警告：訂單總額超過客戶信用額度"
+      "exceedsCreditLimit": "警告：訂單總額超過客戶信用額度",
+      "willExceedCredit": "警告：此訂單將超過可用信用額度"
     },
     "validation": {
       "customerRequired": "請選擇客戶",

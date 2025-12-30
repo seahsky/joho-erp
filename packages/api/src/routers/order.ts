@@ -1991,6 +1991,37 @@ export const orderRouter = router({
     };
   }),
 
+  // Get credit information for a specific customer (Admin only - for order on behalf)
+  getCustomerCreditInfoForAdmin: requirePermission('orders:create')
+    .input(z.object({ customerId: z.string() }))
+    .query(async ({ input }) => {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+        select: {
+          id: true,
+          creditApplication: true,
+        },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      const creditLimit = customer.creditApplication.creditLimit;
+      const outstandingBalance = await getOutstandingBalance(customer.id);
+      const availableCredit = creditLimit - outstandingBalance;
+
+      return {
+        creditLimit, // In cents
+        outstandingBalance, // In cents
+        availableCredit, // In cents
+        currency: 'AUD',
+      };
+    }),
+
   // ============================================================================
   // ORDER CONFIRMATION (Admin)
   // ============================================================================

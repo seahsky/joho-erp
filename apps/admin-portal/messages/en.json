@@ -478,13 +478,21 @@
     },
     "info": {
       "creditLimit": "Credit Limit",
+      "creditUsage": "Credit Usage",
+      "outstandingBalance": "Outstanding Balance",
+      "availableCredit": "Available Credit",
+      "used": "Used",
+      "thisOrder": "This Order",
+      "afterOrder": "After Order",
+      "remaining": "remaining",
       "deliveryArea": "Delivery Area",
       "usingDefaultAddress": "Using customer's default delivery address",
       "deliveryDateOptional": "Leave empty to use automatic delivery scheduling",
       "adminNotesPrivate": "These notes are only visible to admin users"
     },
     "warnings": {
-      "exceedsCreditLimit": "Warning: Order total exceeds customer credit limit"
+      "exceedsCreditLimit": "Warning: Order total exceeds customer credit limit",
+      "willExceedCredit": "Warning: This order will exceed available credit"
     },
     "validation": {
       "customerRequired": "Please select a customer",
