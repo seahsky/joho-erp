@@ -7,6 +7,7 @@ import {
   optimizeDeliveryRoute,
   getRouteOptimization,
   checkIfRouteNeedsReoptimization,
+  calculatePerDriverSequences,
 } from "../services/route-optimizer";
 import {
   startPackingSession,
@@ -97,6 +98,7 @@ export const packingRouter = router({
               productId: item.productId,
               sku: item.sku,
               productName: item.productName,
+              category: null, // Will be populated after fetching from products
               unit: item.unit,
               totalQuantity: item.quantity,
               orders: [
@@ -109,6 +111,24 @@ export const packingRouter = router({
             });
           }
         }
+      }
+
+      // Fetch categories for all products in the productMap
+      const productIds = Array.from(productMap.keys());
+      const productsWithCategories = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, category: true },
+      });
+
+      // Create a map of productId -> category
+      const categoryMap = new Map<string, string | null>();
+      for (const product of productsWithCategories) {
+        categoryMap.set(product.id, product.category);
+      }
+
+      // Add category to each product summary item
+      for (const [productId, item] of productMap.entries()) {
+        item.category = categoryMap.get(productId) as ProductSummaryItem['category'] ?? null;
       }
 
       const productSummary = Array.from(productMap.values()).sort((a, b) =>
@@ -952,6 +972,7 @@ export const packingRouter = router({
               productId: item.productId,
               sku: item.sku,
               productName: item.productName,
+              category: null, // Will be populated after fetching from products
               unit: item.unit,
               totalQuantity: item.quantity,
               orders: [
@@ -964,6 +985,24 @@ export const packingRouter = router({
             });
           }
         }
+      }
+
+      // Fetch categories for all products in the productMap
+      const productIds = Array.from(productMap.keys());
+      const productsWithCategories = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, category: true },
+      });
+
+      // Create a map of productId -> category
+      const categoryMap = new Map<string, string | null>();
+      for (const product of productsWithCategories) {
+        categoryMap.set(product.id, product.category);
+      }
+
+      // Add category to each product summary item
+      for (const [productId, item] of productMap.entries()) {
+        item.category = categoryMap.get(productId) as ProductSummaryItem['category'] ?? null;
       }
 
       const productSummary = Array.from(productMap.values()).sort((a, b) =>
@@ -1010,16 +1049,46 @@ export const packingRouter = router({
             ],
           });
 
-          // Use updated orders with packing sequences
+          // Calculate per-driver sequences after route optimization
+          await calculatePerDriverSequences(deliveryDate).catch((error) => {
+            console.error("Failed to calculate per-driver sequences:", error);
+          });
+
+          // Re-fetch orders with updated sequences
+          const refetchedOrders = await prisma.order.findMany({
+            where: {
+              id: { in: updatedOrders.map(o => o.id) },
+            },
+            include: {
+              customer: {
+                select: {
+                  businessName: true,
+                },
+              },
+            },
+            orderBy: [
+              { delivery: { driverId: "asc" } }, // Group by driver
+              { delivery: { driverPackingSequence: "asc" } }, // Then by per-driver packing sequence
+              { packing: { packingSequence: "asc" } }, // Fallback to global packing sequence
+              { orderNumber: "asc" },
+            ],
+          });
+
+          // Use updated orders with packing sequences and driver info
           return {
             deliveryDate,
-            orders: updatedOrders.map((order) => ({
+            orders: refetchedOrders.map((order) => ({
               orderId: order.id,
               orderNumber: order.orderNumber,
               customerName: order.customer?.businessName ?? "Unknown Customer",
               areaTag: order.deliveryAddress.areaTag,
               packingSequence: order.packing?.packingSequence ?? null,
               deliverySequence: order.delivery?.deliverySequence ?? null,
+              // Per-driver fields for multi-driver grouping
+              driverId: order.delivery?.driverId ?? null,
+              driverName: order.delivery?.driverName ?? null,
+              driverPackingSequence: order.delivery?.driverPackingSequence ?? null,
+              driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
               status: order.status,
               packedItemsCount: order.packing?.packedItems?.length ?? 0,
               totalItemsCount: order.items.length,
@@ -1046,15 +1115,33 @@ export const packingRouter = router({
         }
       }
 
+      // Sort orders by driver, then by per-driver packing sequence for multi-driver support
+      const sortedOrders = [...orders].sort((a, b) => {
+        // First sort by driverId (nulls last)
+        const driverA = a.delivery?.driverId ?? 'zzz'; // Put unassigned at end
+        const driverB = b.delivery?.driverId ?? 'zzz';
+        if (driverA !== driverB) return driverA.localeCompare(driverB);
+
+        // Then by per-driver packing sequence
+        const seqA = a.delivery?.driverPackingSequence ?? a.packing?.packingSequence ?? 999;
+        const seqB = b.delivery?.driverPackingSequence ?? b.packing?.packingSequence ?? 999;
+        return seqA - seqB;
+      });
+
       return {
         deliveryDate,
-        orders: orders.map((order) => ({
+        orders: sortedOrders.map((order) => ({
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerName: order.customer?.businessName ?? "Unknown Customer",
           areaTag: order.deliveryAddress.areaTag,
           packingSequence: order.packing?.packingSequence ?? null,
           deliverySequence: order.delivery?.deliverySequence ?? null,
+          // Per-driver fields for multi-driver grouping
+          driverId: order.delivery?.driverId ?? null,
+          driverName: order.delivery?.driverName ?? null,
+          driverPackingSequence: order.delivery?.driverPackingSequence ?? null,
+          driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
           status: order.status,
           packedItemsCount: order.packing?.packedItems?.length ?? 0,
           totalItemsCount: order.items.length,

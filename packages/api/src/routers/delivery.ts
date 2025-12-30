@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { getRouteOptimization } from '../services/route-optimizer';
+import {
+  getRouteOptimization,
+  getDeliveryRouteOptimization,
+  checkIfDeliveryRouteNeedsRecalculation,
+  optimizeDeliveryOnlyRoute,
+  calculatePerDriverSequences,
+} from '../services/route-optimizer';
 import {
   sendOrderOutForDeliveryEmail,
   sendOrderDeliveredEmail,
@@ -138,6 +144,9 @@ export const deliveryRouter = router({
         requestedDeliveryDate: order.requestedDeliveryDate,
         deliveryInstructions: order.deliveryAddress.deliveryInstructions,
         deliverySequence: order.delivery?.deliverySequence,
+        driverId: order.delivery?.driverId ?? null,
+        driverName: order.delivery?.driverName ?? null,
+        driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
         deliveredAt: order.delivery?.deliveredAt,
       }));
 
@@ -240,15 +249,16 @@ export const deliveryRouter = router({
   }),
 
   // Get optimized route with geometry for map display
+  // Auto-recalculates delivery route when needed (ready_for_delivery orders only)
   getOptimizedRoute: requirePermission('deliveries:view')
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
+        forceRecalculate: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const deliveryDate = new Date(input.deliveryDate);
-      const routeOptimization = await getRouteOptimization(deliveryDate);
 
       // Fetch company warehouse address for route origin marker
       const company = await prisma.company.findFirst({
@@ -256,7 +266,6 @@ export const deliveryRouter = router({
       });
 
       const warehouseAddress = company?.deliverySettings?.warehouseAddress;
-      // Use typeof check to handle 0 as a valid coordinate value
       const warehouseLocation = (typeof warehouseAddress?.latitude === 'number' && typeof warehouseAddress?.longitude === 'number')
         ? {
             latitude: warehouseAddress.latitude,
@@ -264,6 +273,33 @@ export const deliveryRouter = router({
             address: `${warehouseAddress.street}, ${warehouseAddress.suburb}`,
           }
         : null;
+
+      // Check if delivery route needs recalculation
+      const needsRecalculation = input.forceRecalculate ||
+        await checkIfDeliveryRouteNeedsRecalculation(deliveryDate);
+
+      if (needsRecalculation) {
+        // Check if there's a packing route first (base requirement)
+        const packingRoute = await getRouteOptimization(deliveryDate);
+
+        if (packingRoute) {
+          // Recalculate delivery route with only ready orders
+          try {
+            await optimizeDeliveryOnlyRoute(deliveryDate, ctx.userId || 'system');
+          } catch (error) {
+            console.error('Failed to recalculate delivery route:', error);
+            // Continue with whatever route exists
+          }
+        }
+      }
+
+      // Fetch the delivery route (or fall back to packing route)
+      let routeOptimization = await getDeliveryRouteOptimization(deliveryDate, null);
+
+      // If no delivery route, fall back to packing route for display
+      if (!routeOptimization) {
+        routeOptimization = await getRouteOptimization(deliveryDate);
+      }
 
       if (!routeOptimization) {
         return {
@@ -297,30 +333,37 @@ export const deliveryRouter = router({
       });
 
       // Build waypoints from route optimization data
-      const waypoints = routeOptimization.waypoints.map((wp) => {
-        const order = orders.find((o) => o.id === wp.orderId);
-        return {
-          orderId: wp.orderId,
-          orderNumber: wp.orderNumber,
-          sequence: wp.sequence,
-          address: wp.address,
-          latitude: wp.latitude,
-          longitude: wp.longitude,
-          estimatedArrival: wp.estimatedArrival,
-          distanceFromPrevious: wp.distanceFromPrevious,
-          durationFromPrevious: wp.durationFromPrevious,
-          status: order?.status || 'ready_for_delivery',
-        };
-      });
+      // Filter to only include ready_for_delivery orders (not orders still in packing)
+      const waypoints = routeOptimization.waypoints
+        .filter((wp) => {
+          const order = orders.find((o) => o.id === wp.orderId);
+          return order; // Only include if order is in ready_for_delivery or delivered
+        })
+        .map((wp) => {
+          const order = orders.find((o) => o.id === wp.orderId);
+          return {
+            orderId: wp.orderId,
+            orderNumber: wp.orderNumber,
+            sequence: wp.sequence,
+            address: wp.address,
+            latitude: wp.latitude,
+            longitude: wp.longitude,
+            estimatedArrival: wp.estimatedArrival,
+            distanceFromPrevious: wp.distanceFromPrevious,
+            durationFromPrevious: wp.durationFromPrevious,
+            status: order?.status || 'ready_for_delivery',
+          };
+        });
 
       return {
         hasRoute: true,
         route: {
           id: routeOptimization.id,
           deliveryDate: routeOptimization.deliveryDate,
+          routeType: (routeOptimization as any).routeType || 'packing',
           totalDistance: routeOptimization.totalDistance,
           totalDuration: routeOptimization.totalDuration,
-          orderCount: routeOptimization.orderCount,
+          orderCount: waypoints.length, // Use filtered count
           routeGeometry: JSON.parse(routeOptimization.routeGeometry),
           waypoints,
           optimizedAt: routeOptimization.optimizedAt,
@@ -603,10 +646,12 @@ export const deliveryRouter = router({
       }
 
       // Get orders assigned to this driver
+      // Use driverDeliverySequence for per-driver contiguous ordering
       const orders = await prisma.order.findMany({
         where,
         orderBy: [
-          { delivery: { deliverySequence: 'asc' } },
+          { delivery: { driverDeliverySequence: 'asc' } },
+          { delivery: { deliverySequence: 'asc' } }, // Fallback to global sequence
           { orderNumber: 'asc' },
         ],
         include: {
@@ -629,7 +674,9 @@ export const deliveryRouter = router({
         longitude: order.deliveryAddress.longitude,
         areaTag: order.deliveryAddress.areaTag,
         status: order.status,
-        deliverySequence: order.delivery?.deliverySequence || null,
+        // Use per-driver sequence for contiguous ordering (1, 2, 3...) or fall back to global
+        deliverySequence: order.delivery?.driverDeliverySequence || order.delivery?.deliverySequence || null,
+        globalDeliverySequence: order.delivery?.deliverySequence || null,
         estimatedArrival: order.delivery?.estimatedArrival || null,
         startedAt: order.delivery?.startedAt || null,
         itemCount: order.items.length,
@@ -1100,6 +1147,30 @@ export const deliveryRouter = router({
         console.error('Audit log failed for driver assignment:', error);
       });
 
+      // Recalculate per-driver sequences when driver assignment changes
+      await calculatePerDriverSequences(order.requestedDeliveryDate).catch((error) => {
+        console.error('Failed to recalculate per-driver sequences:', error);
+      });
+
       return updatedOrder;
+    }),
+
+  // Recalculate per-driver sequences for a delivery date
+  // Call this when driver assignments change or need to be refreshed
+  recalculatePerDriverSequences: requirePermission('deliveries:manage')
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+
+      await calculatePerDriverSequences(deliveryDate);
+
+      return {
+        success: true,
+        message: 'Per-driver sequences recalculated successfully',
+      };
     }),
 });

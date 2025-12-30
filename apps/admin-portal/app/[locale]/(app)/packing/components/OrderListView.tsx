@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Filter, Package2, PauseCircle } from 'lucide-react';
+import { Filter, Package2, PauseCircle, Truck } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
 import { Card, CardContent, Button, Badge } from '@joho-erp/ui';
 
@@ -15,6 +15,11 @@ interface OrderListViewProps {
     packingSequence: number | null;
     deliverySequence: number | null;
     status: string;
+    // Per-driver fields for multi-driver grouping
+    driverId?: string | null;
+    driverName?: string | null;
+    driverPackingSequence?: number | null;
+    driverDeliverySequence?: number | null;
     // Partial progress fields
     isPaused?: boolean;
     lastPackedBy?: string | null;
@@ -26,6 +31,13 @@ interface OrderListViewProps {
   onOrderUpdated: () => void;
   focusedOrderNumber?: string | null;
   onClearFocus?: () => void;
+}
+
+// Group orders by driver for multi-driver packing
+interface DriverGroup {
+  driverId: string | null;
+  driverName: string | null;
+  orders: OrderListViewProps['orders'];
 }
 
 export function OrderListView({
@@ -107,6 +119,38 @@ export function OrderListView({
     if (a.status !== 'ready_for_delivery' && b.status === 'ready_for_delivery') return -1;
     return 0; // Preserve original order for same status
   });
+
+  // Group orders by driver for multi-driver support
+  const driverGroups = useMemo<DriverGroup[]>(() => {
+    const groupMap = new Map<string | null, DriverGroup>();
+
+    for (const order of filteredOrders) {
+      const driverId = order.driverId ?? null;
+      const driverName = order.driverName ?? null;
+
+      if (!groupMap.has(driverId)) {
+        groupMap.set(driverId, {
+          driverId,
+          driverName,
+          orders: [],
+        });
+      }
+      groupMap.get(driverId)!.orders.push(order);
+    }
+
+    // Convert to array and sort: assigned drivers first, then unassigned
+    const groups = Array.from(groupMap.values());
+    return groups.sort((a, b) => {
+      // Unassigned (null) goes last
+      if (a.driverId === null && b.driverId !== null) return 1;
+      if (a.driverId !== null && b.driverId === null) return -1;
+      // Sort by driver name if both assigned
+      return (a.driverName || '').localeCompare(b.driverName || '');
+    });
+  }, [filteredOrders]);
+
+  // Check if we have multiple drivers (need to show grouping)
+  const hasMultipleDrivers = driverGroups.length > 1 || (driverGroups.length === 1 && driverGroups[0].driverId !== null);
 
   const getAreaBadgeColor = (areaTag: string) => {
     switch (areaTag.toLowerCase()) {
@@ -198,21 +242,56 @@ export function OrderListView({
         </div>
       </div>
 
-      {/* 2-Column Grid Layout for Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredOrders.map((order, index) => (
-          <div
-            key={order.orderId}
-            id={`order-card-${order.orderNumber}`}
-            style={{
-              animationDelay: `${index * 50}ms`,
-              animation: 'orderFadeIn 0.4s ease-out',
-            }}
-          >
-            <PackingOrderCard order={order} onOrderUpdated={onOrderUpdated} />
-          </div>
-        ))}
-      </div>
+      {/* Orders grouped by driver (or flat list if single/no driver) */}
+      {hasMultipleDrivers ? (
+        <div className="space-y-6">
+          {driverGroups.map((group) => (
+            <div key={group.driverId ?? 'unassigned'} className="space-y-3">
+              {/* Driver Header */}
+              <div className="flex items-center gap-2 px-2 py-2 bg-muted/50 rounded-lg">
+                <Truck className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">
+                  {group.driverName || t('unassignedOrders')}
+                </span>
+                <Badge variant="secondary" className="ml-auto">
+                  {group.orders.length} {group.orders.length === 1 ? t('order') : t('orders')}
+                </Badge>
+              </div>
+              {/* 2-Column Grid Layout for Driver's Orders */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {group.orders.map((order, index) => (
+                  <div
+                    key={order.orderId}
+                    id={`order-card-${order.orderNumber}`}
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                      animation: 'orderFadeIn 0.4s ease-out',
+                    }}
+                  >
+                    <PackingOrderCard order={order} onOrderUpdated={onOrderUpdated} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Flat list when no driver grouping needed */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredOrders.map((order, index) => (
+            <div
+              key={order.orderId}
+              id={`order-card-${order.orderNumber}`}
+              style={{
+                animationDelay: `${index * 50}ms`,
+                animation: 'orderFadeIn 0.4s ease-out',
+              }}
+            >
+              <PackingOrderCard order={order} onOrderUpdated={onOrderUpdated} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Empty State for Filter */}
       {filteredOrders.length === 0 && (

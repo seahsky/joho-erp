@@ -242,7 +242,15 @@
         "area": "区域: {areaTag}",
         "sequence": "序号: #{sequence}",
         "eta": "预计: {time}"
+      },
+      "legend": {
+        "title": "路线图例",
+        "unassigned": "未分配"
       }
+    },
+    "driverFilter": {
+      "placeholder": "按司机筛选",
+      "allDrivers": "所有司机"
     },
     "printManifest": "打印清单",
     "manifest": {
@@ -1159,6 +1167,15 @@
     "ordersPanel": "打包订单",
     "filterByArea": "按区域筛选",
     "showAllAreas": "显示所有区域",
+    "filterByCategory": "按类别筛选",
+    "allCategories": "所有类别",
+    "categories": {
+      "beef": "牛肉",
+      "pork": "猪肉",
+      "chicken": "鸡肉",
+      "lamb": "羊肉",
+      "processed": "加工肉"
+    },
     "totalOrders": "订单总数",
     "uniqueProducts": "产品种类",
     "totalItems": "总商品数",
@@ -1197,6 +1214,9 @@
     "noOrdersDescription": "此日期没有预定打包的订单",
     "noProducts": "没有要打包的产品",
     "noOrdersForArea": "所选区域没有订单",
+    "unassignedOrders": "未分配的订单",
+    "driverGroup": "司机: {name}",
+    "packingSequence": "打包 #{sequence}",
     "loadingSession": "加载打包会话...",
     "loadingOrder": "加载订单详情...",
     "errorLoading": "加载数据时出错",

@@ -3,13 +3,14 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
-import { Package, Calendar, PlayCircle, PauseCircle, Loader2 } from 'lucide-react';
+import { Input, EmptyState, CountUp, Card, CardHeader, CardContent, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
+import { Package, Calendar, PlayCircle, PauseCircle, Loader2, Filter } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
 import { OrderListView } from './components/OrderListView';
 import { PackingLayout } from './components/PackingLayout';
+import type { ProductCategory } from '@joho-erp/shared';
 
 export default function PackingPage() {
   const t = useTranslations('packing');
@@ -24,6 +25,7 @@ export default function PackingPage() {
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
   const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
 
   // Handlers for order badge focus functionality
   const handleFocusOrder = (orderNumber: string) => {
@@ -120,9 +122,48 @@ export default function PackingPage() {
   // Data from API with fallbacks for loading state
   const orders = session?.orders ?? [];
   const productSummary = session?.productSummary ?? [];
-  const totalOrders = orders.length;
-  const totalProducts = productSummary.length;
-  const totalItems = productSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
+
+  // Extract unique categories from productSummary
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set<ProductCategory>();
+    for (const product of productSummary) {
+      if (product.category) {
+        uniqueCategories.add(product.category);
+      }
+    }
+    return Array.from(uniqueCategories).sort();
+  }, [productSummary]);
+
+  // Filter productSummary by category
+  const filteredProductSummary = useMemo(() => {
+    if (categoryFilter === 'all') return productSummary;
+    return productSummary.filter((p) => p.category === categoryFilter);
+  }, [productSummary, categoryFilter]);
+
+  // Get productIds in the selected category for filtering orders
+  const categoryProductIds = useMemo(() => {
+    if (categoryFilter === 'all') return null;
+    return new Set(filteredProductSummary.map((p) => p.productId));
+  }, [categoryFilter, filteredProductSummary]);
+
+  // Filter orders - show orders that have at least one item from the selected category
+  const filteredOrders = useMemo(() => {
+    if (categoryFilter === 'all' || !categoryProductIds) return orders;
+    // We need to filter orders, but we don't have item-level data at this point
+    // Instead, we'll filter by checking which orders appear in the filtered productSummary
+    const ordersInCategory = new Set<string>();
+    for (const product of filteredProductSummary) {
+      for (const order of product.orders) {
+        ordersInCategory.add(order.orderNumber);
+      }
+    }
+    return orders.filter((o) => ordersInCategory.has(o.orderNumber));
+  }, [orders, categoryFilter, categoryProductIds, filteredProductSummary]);
+
+  // Stats based on filtered data
+  const totalOrders = filteredOrders.length;
+  const totalProducts = filteredProductSummary.length;
+  const totalItems = filteredProductSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
 
   if (error) {
     return (
@@ -194,6 +235,45 @@ export default function PackingPage() {
           </CardHeader>
         </Card>
 
+        {/* Category Filter - Only show if there are multiple categories */}
+        {categories.length > 1 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                  <Filter className="h-4 w-4" />
+                  <span>{t('filterByCategory')}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
+                      categoryFilter === 'all'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {t('allCategories')}
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setCategoryFilter(category)}
+                      className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
+                        categoryFilter === category
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {t(`categories.${category.toLowerCase()}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Bar */}
         {totalOrders > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6 md:mb-8">
@@ -249,18 +329,18 @@ export default function PackingPage() {
               </div>
             </Card>
           </div>
-        ) : totalOrders > 0 ? (
+        ) : orders.length > 0 ? (
           <PackingLayout
             summaryPanel={
               <ProductSummaryView
-                productSummary={productSummary}
+                productSummary={filteredProductSummary}
                 deliveryDate={deliveryDate}
                 onOrderBadgeClick={handleFocusOrder}
               />
             }
             ordersPanel={
               <OrderListView
-                orders={orders}
+                orders={filteredOrders}
                 deliveryDate={deliveryDate}
                 onOrderUpdated={refetch}
                 focusedOrderNumber={focusedOrderNumber}

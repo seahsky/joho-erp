@@ -16,6 +16,10 @@ interface PackingOrderCardProps {
     areaTag: string;
     packingSequence: number | null;
     deliverySequence: number | null;
+    driverPackingSequence?: number | null;
+    driverDeliverySequence?: number | null;
+    driverId?: string | null;
+    driverName?: string | null;
     status: string;
     // Partial progress fields
     isPaused?: boolean;
@@ -564,19 +568,22 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
       {/* Clean Header - With Sequence Badge */}
       <div className="relative">
-        {/* Sequence Badge - Prominent Position */}
-        {order.packingSequence !== null && (
-          <div className="absolute top-0 left-0 z-10">
-            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold opacity-90">{t('packBadge')}</span>
-                <span className="text-2xl font-black tabular-nums leading-none">
-                  #{order.packingSequence}
-                </span>
+        {/* Sequence Badge - Prominent Position (per-driver sequence with fallback to global) */}
+        {(() => {
+          const displaySequence = order.driverPackingSequence ?? order.packingSequence;
+          return displaySequence !== null ? (
+            <div className="absolute top-0 left-0 z-10">
+              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold opacity-90">{t('packBadge')}</span>
+                  <span className="text-2xl font-black tabular-nums leading-none">
+                    #{displaySequence}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          ) : null;
+        })()}
 
         <div className="px-5 py-4 bg-gradient-to-br from-muted/30 to-background border-b border-border pt-14">
           <div className="flex items-start justify-between gap-4 mb-3">

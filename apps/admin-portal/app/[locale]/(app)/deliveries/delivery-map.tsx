@@ -6,6 +6,18 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin, Warehouse } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+// Driver color palette for multi-route visualization
+const DRIVER_COLORS = [
+  '#3B82F6', // blue
+  '#10B981', // green
+  '#F59E0B', // amber
+  '#EF4444', // red
+  '#8B5CF6', // purple
+  '#EC4899', // pink
+  '#06B6D4', // cyan
+  '#F97316', // orange
+] as const;
+
 interface Delivery {
   id: string;
   orderId: string;
@@ -17,6 +29,9 @@ interface Delivery {
   areaTag: string;
   estimatedTime: string;
   deliverySequence?: number | null;
+  driverId?: string | null;
+  driverName?: string | null;
+  driverDeliverySequence?: number | null;
 }
 
 interface RouteData {
@@ -26,6 +41,8 @@ interface RouteData {
   };
   totalDistance: number;
   totalDuration: number;
+  driverId?: string | null;
+  driverName?: string | null;
 }
 
 interface WarehouseLocation {
@@ -38,6 +55,8 @@ interface DeliveryMapProps {
   deliveries: Delivery[];
   selectedDelivery: string | null;
   routeData?: RouteData | null;
+  multiRouteData?: RouteData[];
+  selectedDriverId?: string | null;
   warehouseLocation?: WarehouseLocation | null;
   emptyStateTitle?: string;
   emptyStateDescription?: string;
@@ -47,6 +66,8 @@ export default function DeliveryMap({
   deliveries,
   selectedDelivery,
   routeData,
+  multiRouteData,
+  selectedDriverId,
   warehouseLocation,
   emptyStateTitle,
   emptyStateDescription,
@@ -121,7 +142,7 @@ export default function DeliveryMap({
   const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjazBjbGtwZ3IwMDAwM25xbXk5Y2swbGE3In0.example';
 
   return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-[600px] rounded-lg overflow-hidden">
       <Map
         ref={mapRef}
         {...viewState}
@@ -133,8 +154,51 @@ export default function DeliveryMap({
       >
         <NavigationControl position="top-right" />
 
-        {/* Route Line */}
-        {routeData && routeData.geometry && (
+        {/* Multi-Route Lines - render each driver's route with distinct colors */}
+        {multiRouteData && multiRouteData.length > 0 ? (
+          multiRouteData.map((route, index) => {
+            const isSelected = selectedDriverId === null || selectedDriverId === route.driverId;
+            const color = DRIVER_COLORS[index % DRIVER_COLORS.length];
+            const routeKey = route.driverId || `route-${index}`;
+
+            return (
+              <Source
+                key={routeKey}
+                id={`route-${routeKey}`}
+                type="geojson"
+                data={{
+                  type: 'Feature' as const,
+                  properties: {},
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  geometry: route.geometry as any,
+                }}
+              >
+                <Layer
+                  id={`route-line-${routeKey}`}
+                  type="line"
+                  paint={{
+                    'line-color': color,
+                    'line-width': isSelected ? 4 : 2,
+                    'line-opacity': isSelected ? 0.8 : 0.3,
+                  }}
+                />
+                {isSelected && (
+                  <Layer
+                    id={`route-line-glow-${routeKey}`}
+                    type="line"
+                    paint={{
+                      'line-color': color,
+                      'line-width': 8,
+                      'line-opacity': 0.2,
+                      'line-blur': 4,
+                    }}
+                  />
+                )}
+              </Source>
+            );
+          })
+        ) : routeData && routeData.geometry ? (
+          /* Fallback: Single route for backward compatibility */
           <Source
             id="route"
             type="geojson"
@@ -165,7 +229,7 @@ export default function DeliveryMap({
               }}
             />
           </Source>
-        )}
+        ) : null}
 
         {/* Warehouse Origin Marker */}
         {warehouseLocation && (
@@ -256,6 +320,38 @@ export default function DeliveryMap({
           </Popup>
         )}
       </Map>
+
+      {/* Route Legend - shows when multiple routes exist */}
+      {multiRouteData && multiRouteData.length > 1 && (
+        <div className="absolute top-4 left-4 bg-white/95 rounded-lg shadow-md p-3 z-10 max-w-[200px]">
+          <h4 className="text-sm font-semibold mb-2 text-gray-700">
+            {t('map.legend.title')}
+          </h4>
+          <div className="space-y-1.5">
+            {multiRouteData.map((route, index) => {
+              const color = DRIVER_COLORS[index % DRIVER_COLORS.length];
+              const isSelected = selectedDriverId === null || selectedDriverId === route.driverId;
+
+              return (
+                <div
+                  key={route.driverId || index}
+                  className={`flex items-center gap-2 text-xs ${
+                    isSelected ? 'opacity-100' : 'opacity-50'
+                  }`}
+                >
+                  <div
+                    className="w-4 h-1 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="truncate">
+                    {route.driverName || t('map.legend.unassigned')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

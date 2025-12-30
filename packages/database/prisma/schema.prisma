@@ -96,6 +96,11 @@ enum DeliveryReturnReason {
   other
 }
 
+enum RouteType {
+  packing    // Initial route calculated during packing (all planned orders)
+  delivery   // Final route for actual delivery (ready_for_delivery only)
+}
+
 enum BackorderStatus {
   none                // Normal order (within stock)
   pending_approval    // Awaiting admin review
@@ -516,6 +521,8 @@ model XeroSyncJob {
 model RouteOptimization {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   deliveryDate        DateTime
+  routeType           RouteType           @default(packing) // packing = all planned orders, delivery = ready_for_delivery only
+  driverId            String?             // For per-driver delivery routes (null for global routes)
   areaTag             AreaTag?            // Null if multi-area route
   orderCount          Int
   totalDistance       Float               // In kilometers
@@ -532,6 +539,8 @@ model RouteOptimization {
 
   // Indexes
   @@index([deliveryDate, areaTag])
+  @@index([deliveryDate, routeType])
+  @@index([deliveryDate, routeType, driverId])
   @@index([optimizedAt(sort: Desc)])
   @@index([needsReoptimization, deliveryDate])
   @@map("routeoptimizations")
@@ -670,10 +679,13 @@ type Delivery {
   deliveredAt         DateTime?
   proofOfDelivery     ProofOfDelivery?
   notes               String?
-  deliverySequence    Int?                // Position in delivery route (1 = first stop)
+  deliverySequence    Int?                // Position in global delivery route (1 = first stop)
   routeId             String?             // Reference to RouteOptimization
   estimatedArrival    DateTime?           // Estimated arrival time based on route
   actualArrival       DateTime?           // Actual arrival time (for analytics)
+  // Per-driver sequences (for multi-driver scenarios)
+  driverDeliverySequence Int?             // Contiguous sequence within driver's route (1,2,3...)
+  driverPackingSequence  Int?             // LIFO sequence for this driver's vehicle
   // Return fields (when driver returns order to warehouse)
   returnReason        DeliveryReturnReason?
   returnNotes         String?

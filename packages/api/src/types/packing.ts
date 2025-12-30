@@ -36,6 +36,7 @@ export interface ProductSummaryItem {
   productId: string;
   sku: string;
   productName: string;
+  category: 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed' | null;
   unit: string;
   totalQuantity: number;
   orders: {

@@ -242,7 +242,15 @@
         "area": "區域: {areaTag}",
         "sequence": "序號: #{sequence}",
         "eta": "預計: {time}"
+      },
+      "legend": {
+        "title": "路線圖例",
+        "unassigned": "未分配"
       }
+    },
+    "driverFilter": {
+      "placeholder": "按司機篩選",
+      "allDrivers": "所有司機"
     },
     "printManifest": "列印清單",
     "manifest": {
@@ -1159,6 +1167,15 @@
     "ordersPanel": "打包訂單",
     "filterByArea": "按區域篩選",
     "showAllAreas": "顯示所有區域",
+    "filterByCategory": "按類別篩選",
+    "allCategories": "所有類別",
+    "categories": {
+      "beef": "牛肉",
+      "pork": "豬肉",
+      "chicken": "雞肉",
+      "lamb": "羊肉",
+      "processed": "加工肉"
+    },
     "totalOrders": "訂單總數",
     "uniqueProducts": "產品種類",
     "totalItems": "總商品數",
@@ -1197,6 +1214,9 @@
     "noOrdersDescription": "此日期沒有預定打包的訂單",
     "noProducts": "沒有要打包的產品",
     "noOrdersForArea": "所選區域沒有訂單",
+    "unassignedOrders": "未分配的訂單",
+    "driverGroup": "司機: {name}",
+    "packingSequence": "打包 #{sequence}",
     "loadingSession": "載入打包作業...",
     "loadingOrder": "載入訂單詳情...",
     "errorLoading": "載入資料時發生錯誤",

@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 import { useTableSort } from '@joho-erp/shared/hooks';
-import { RouteManifestDialog } from './components';
+import { RouteManifestDialog, DriverFilter } from './components';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -22,6 +22,7 @@ export default function DeliveriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'delivered' | ''>('');
   const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | ''>('');
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
@@ -43,6 +44,39 @@ export default function DeliveriesPage() {
   });
 
   const deliveries = useMemo(() => data?.deliveries || [], [data?.deliveries]);
+
+  // Extract unique drivers from deliveries for the filter
+  const driversWithRoutes = useMemo(() => {
+    if (!deliveries.length) return [];
+
+    const driverMap = new Map<string, { id: string; name: string; orderCount: number }>();
+
+    deliveries.forEach((delivery) => {
+      const driverId = delivery.driverId;
+      const driverName = delivery.driverName;
+
+      if (driverId) {
+        const existing = driverMap.get(driverId);
+        if (existing) {
+          existing.orderCount++;
+        } else {
+          driverMap.set(driverId, {
+            id: driverId,
+            name: driverName || 'Unknown Driver',
+            orderCount: 1,
+          });
+        }
+      }
+    });
+
+    return Array.from(driverMap.values());
+  }, [deliveries]);
+
+  // Filter deliveries by selected driver
+  const filteredDeliveries = useMemo(() => {
+    if (!selectedDriverId) return deliveries;
+    return deliveries.filter((d) => d.driverId === selectedDriverId);
+  }, [deliveries, selectedDriverId]);
 
   // Transform route data for the map component
   const mapRouteData = useMemo(() => {
@@ -79,12 +113,22 @@ export default function DeliveriesPage() {
           <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
-        <PermissionGate permission="deliveries:view">
-          <Button onClick={() => setManifestDialogOpen(true)} variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            {t('printManifest')}
-          </Button>
-        </PermissionGate>
+        <div className="flex gap-2">
+          {/* Driver Filter - show only if multiple drivers */}
+          {driversWithRoutes.length > 1 && (
+            <DriverFilter
+              drivers={driversWithRoutes}
+              selectedDriverId={selectedDriverId}
+              onDriverChange={setSelectedDriverId}
+            />
+          )}
+          <PermissionGate permission="deliveries:view">
+            <Button onClick={() => setManifestDialogOpen(true)} variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              {t('printManifest')}
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -93,7 +137,7 @@ export default function DeliveriesPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle>{t('activeDeliveries')}</CardTitle>
-              <CardDescription>{deliveries.length} {t('deliveriesInProgress')}</CardDescription>
+              <CardDescription>{filteredDeliveries.length} {t('deliveriesInProgress')}</CardDescription>
               {/* Search and Filters */}
               <div className="pt-3 space-y-3">
                 <div className="relative">
@@ -132,10 +176,10 @@ export default function DeliveriesPage() {
             <CardContent className="p-4 md:p-6 space-y-4">
               {isLoading ? (
                 <TableSkeleton rows={4} columns={3} showMobileCards />
-              ) : deliveries.length === 0 ? (
+              ) : filteredDeliveries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t('noDeliveriesFound')}</p>
               ) : (
-                deliveries.map((delivery) => (
+                filteredDeliveries.map((delivery) => (
                 <div
                   key={delivery.id}
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -199,9 +243,10 @@ export default function DeliveriesPage() {
             </CardHeader>
             <CardContent>
               <DeliveryMap
-                deliveries={deliveries}
+                deliveries={filteredDeliveries}
                 selectedDelivery={selectedDelivery}
                 routeData={mapRouteData}
+                selectedDriverId={selectedDriverId}
                 warehouseLocation={routeData?.warehouseLocation}
                 emptyStateTitle={t('noDeliveriesAvailable')}
                 emptyStateDescription={t('deliveriesWillAppear')}

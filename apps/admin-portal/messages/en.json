@@ -242,7 +242,15 @@
         "area": "Area: {areaTag}",
         "sequence": "Seq: #{sequence}",
         "eta": "ETA: {time}"
+      },
+      "legend": {
+        "title": "Route Legend",
+        "unassigned": "Unassigned"
       }
+    },
+    "driverFilter": {
+      "placeholder": "Filter by Driver",
+      "allDrivers": "All Drivers"
     },
     "printManifest": "Print Manifest",
     "manifest": {
@@ -1159,6 +1167,15 @@
     "ordersPanel": "Pack Orders",
     "filterByArea": "Filter by Area",
     "showAllAreas": "Show All Areas",
+    "filterByCategory": "Filter by Category",
+    "allCategories": "All Categories",
+    "categories": {
+      "beef": "Beef",
+      "pork": "Pork",
+      "chicken": "Chicken",
+      "lamb": "Lamb",
+      "processed": "Processed"
+    },
     "totalOrders": "Total Orders",
     "uniqueProducts": "Unique Products",
     "totalItems": "Total Items",
@@ -1197,6 +1214,9 @@
     "noOrdersDescription": "There are no orders scheduled for packing on this date",
     "noProducts": "No products to pack",
     "noOrdersForArea": "No orders for the selected area",
+    "unassignedOrders": "Unassigned Orders",
+    "driverGroup": "Driver: {name}",
+    "packingSequence": "Pack #{sequence}",
     "loadingSession": "Loading packing session...",
     "loadingOrder": "Loading order details...",
     "errorLoading": "Error Loading Data",
