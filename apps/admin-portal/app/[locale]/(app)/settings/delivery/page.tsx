@@ -86,10 +86,13 @@ export default function DeliverySettingsPage() {
         suburb !== (settings.deliverySettings.warehouseAddress?.suburb || '') ||
         state !== (settings.deliverySettings.warehouseAddress?.state || '') ||
         postcode !== (settings.deliverySettings.warehouseAddress?.postcode || '') ||
-        cutoffTime !== (settings.deliverySettings.orderCutoffTime || '14:00');
+        latitude !== (settings.deliverySettings.warehouseAddress?.latitude || -37.8136) ||
+        longitude !== (settings.deliverySettings.warehouseAddress?.longitude || 144.9631) ||
+        cutoffTime !== (settings.deliverySettings.orderCutoffTime || '14:00') ||
+        deliveryWindow !== (settings.deliverySettings.defaultDeliveryWindow || '9:00-17:00');
       setHasChanges(hasModifications);
     }
-  }, [street, suburb, state, postcode, cutoffTime, settings]);
+  }, [street, suburb, state, postcode, latitude, longitude, cutoffTime, deliveryWindow, settings]);
 
   // Geocode search
   const handleSearch = async () => {
