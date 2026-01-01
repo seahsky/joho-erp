@@ -15,7 +15,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { generateState, getAuthorizationUrl } from '@joho-erp/api/services/xero';
+import { generateState, getAuthorizationUrl, isXeroIntegrationEnabled } from '@joho-erp/api/services/xero';
 
 // State cookie configuration
 const STATE_COOKIE_NAME = 'xero_oauth_state';
@@ -23,6 +23,14 @@ const STATE_COOKIE_MAX_AGE = 60 * 10; // 10 minutes
 
 export async function GET() {
   try {
+    // Check if Xero integration is enabled
+    if (!isXeroIntegrationEnabled()) {
+      return NextResponse.json(
+        { error: 'Xero integration is disabled' },
+        { status: 400 }
+      );
+    }
+
     // Verify user is authenticated
     const authData = await auth();
 

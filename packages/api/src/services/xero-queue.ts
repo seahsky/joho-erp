@@ -13,6 +13,7 @@ import {
   createInvoiceInXero,
   createCreditNoteInXero,
   isConnected,
+  isXeroIntegrationEnabled,
 } from './xero';
 import { sendCreditNoteIssuedEmail } from './email';
 
@@ -22,14 +23,20 @@ import { sendCreditNoteIssuedEmail } from './email';
 
 /**
  * Enqueue a Xero sync job and process it immediately
- * Returns the job ID for tracking
+ * Returns the job ID for tracking, or null if Xero integration is disabled
  */
 export async function enqueueXeroJob(
   type: 'sync_contact' | 'create_invoice' | 'create_credit_note',
   entityType: 'customer' | 'order',
   entityId: string,
   payload?: Record<string, unknown>
-): Promise<string> {
+): Promise<string | null> {
+  // Skip if Xero integration is disabled
+  if (!isXeroIntegrationEnabled()) {
+    console.log('Xero integration is disabled, skipping job creation');
+    return null;
+  }
+
   // Create the job record
   const job = await prisma.xeroSyncJob.create({
     data: {

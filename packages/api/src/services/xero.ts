@@ -30,6 +30,16 @@ const getConfig = () => ({
 });
 
 /**
+ * Check if Xero integration is enabled via environment variable.
+ * Defaults to true for backward compatibility.
+ */
+export function isXeroIntegrationEnabled(): boolean {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED;
+  // Default to true for backward compatibility - only 'false' disables
+  return enabled !== 'false';
+}
+
+/**
  * Token response from Xero
  */
 export interface XeroTokenResponse {
@@ -540,6 +550,9 @@ export async function disconnect(): Promise<void> {
  * Check if Xero is currently connected (has valid refresh token)
  */
 export async function isConnected(): Promise<boolean> {
+  if (!isXeroIntegrationEnabled()) {
+    return false;
+  }
   const tokens = await getStoredTokens();
   return !!(tokens?.refreshToken);
 }
