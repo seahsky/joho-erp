@@ -16,12 +16,13 @@ import {
   AlertTriangle,
   ClipboardList,
 } from 'lucide-react';
-import type { User as ClerkUser } from '@clerk/nextjs/server';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 import Link from 'next/link';
 
-export function DashboardContent({ user }: { user: ClerkUser | null }) {
+type UserDisplayData = { firstName: string | null; lastName: string | null } | null;
+
+export function DashboardContent({ user }: { user: UserDisplayData }) {
   const t = useTranslations('dashboard');
   const params = useParams();
   const locale = params.locale as string;

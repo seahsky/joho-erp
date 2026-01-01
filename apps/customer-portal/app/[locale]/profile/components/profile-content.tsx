@@ -18,12 +18,13 @@ import {
   X,
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
-import type { User as ClerkUser } from '@clerk/nextjs/server';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 
-export function ProfileContent({ user }: { user: ClerkUser | null }) {
+type UserDisplayData = { firstName: string | null; lastName: string | null } | null;
+
+export function ProfileContent({ user }: { user: UserDisplayData }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const { toast } = useToast();
