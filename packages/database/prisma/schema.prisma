@@ -637,7 +637,7 @@ type CreditApplication {
   appliedAt           DateTime            @default(now())
   submittedAt         DateTime?
   reviewedAt          DateTime?
-  reviewedBy          String?             @db.ObjectId
+  reviewedBy          String?
   creditLimit         Int                 @default(0) // Stored in cents
   paymentTerms        String?
   notes               String?
