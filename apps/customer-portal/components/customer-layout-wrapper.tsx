@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { CustomerBottomNav } from './customer-bottom-nav';
 import { CustomerDesktopNav } from './customer-desktop-nav';
 import { useIsMobileOrTablet } from '@joho-erp/ui';
@@ -13,14 +14,15 @@ export function CustomerLayoutWrapper({
   locale: string;
 }) {
   const isMobileOrTablet = useIsMobileOrTablet();
+  const { isSignedIn } = useAuth();
 
   return (
     <>
-      {!isMobileOrTablet && <CustomerDesktopNav locale={locale} />}
-      <main className={isMobileOrTablet ? 'pb-16' : ''}>
+      {isSignedIn && !isMobileOrTablet && <CustomerDesktopNav locale={locale} />}
+      <main className={isSignedIn && isMobileOrTablet ? 'pb-16' : ''}>
         {children}
       </main>
-      {isMobileOrTablet && <CustomerBottomNav locale={locale} />}
+      {isSignedIn && isMobileOrTablet && <CustomerBottomNav locale={locale} />}
     </>
   );
 }
