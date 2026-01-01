@@ -1666,13 +1666,41 @@ async function seed() {
     console.log('📦 Creating orders...');
     const allOrders = [];
 
-    // Drivers for deliveries
+    // Drivers for deliveries - 8 drivers covering all areas
     const drivers = [
-      { driverId: 'driver_001', driverName: 'John Smith' },
-      { driverId: 'driver_002', driverName: 'Sarah Johnson' },
-      { driverId: 'driver_003', driverName: 'Mike Brown' },
-      { driverId: 'driver_004', driverName: 'Emma Wilson' },
+      // North area drivers
+      { driverId: 'driver_001', driverName: 'John Smith', areas: ['north'] as const },
+      { driverId: 'driver_002', driverName: 'Sarah Johnson', areas: ['north', 'east'] as const },
+      // South area drivers
+      { driverId: 'driver_003', driverName: 'Mike Brown', areas: ['south'] as const },
+      { driverId: 'driver_004', driverName: 'Emma Wilson', areas: ['south', 'west'] as const },
+      // East area drivers
+      { driverId: 'driver_005', driverName: 'David Chen', areas: ['east'] as const },
+      { driverId: 'driver_006', driverName: 'Lisa Wang', areas: ['east', 'north'] as const },
+      // West area drivers
+      { driverId: 'driver_007', driverName: 'James Taylor', areas: ['west'] as const },
+      { driverId: 'driver_008', driverName: 'Maria Garcia', areas: ['west', 'south'] as const },
     ];
+
+    // Seed driver area assignments
+    console.log('🚚 Creating driver area assignments...');
+    await prisma.driverAreaAssignment.deleteMany({});
+
+    const driverAreaAssignments: { driverId: string; areaTag: AreaTag; isActive: boolean }[] = [];
+    for (const driver of drivers) {
+      for (const area of driver.areas) {
+        driverAreaAssignments.push({
+          driverId: driver.driverId,
+          areaTag: area,
+          isActive: true,
+        });
+      }
+    }
+
+    await prisma.driverAreaAssignment.createMany({
+      data: driverAreaAssignments,
+    });
+    console.log(`   ✓ Created ${driverAreaAssignments.length} driver area assignments`);
 
     // Create orders for each customer
     for (let i = 0; i < createdCustomers.length; i++) {
