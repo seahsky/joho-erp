@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, type StatusType } from '@joho-erp/ui';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, EmptyState, type StatusType } from '@joho-erp/ui';
 import { ShoppingCart, Loader2, Search, Calendar, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
@@ -291,11 +291,14 @@ export function OrderList() {
 
       {/* Empty State */}
       {orders.length === 0 && (
-        <div className="text-center py-12">
-          <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <p className="text-lg font-medium mb-2">{t('noOrders')}</p>
-          <Button onClick={() => router.push('/products')}>{t('startShopping')}</Button>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title={t('noOrders')}
+          action={{
+            label: t('startShopping'),
+            onClick: () => router.push('/products'),
+          }}
+        />
       )}
 
       {/* Order Details Modal */}

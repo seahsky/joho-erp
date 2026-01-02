@@ -3,12 +3,13 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, H2, Muted, Skeleton, Card, CardContent, useToast } from '@joho-erp/ui';
+import { Button, Skeleton, Card, CardContent, useToast, EmptyState } from '@joho-erp/ui';
 import { ShoppingCart, Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';
 import { CartSummary } from './components/cart-summary';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { PageHeader, PageHeaderSkeleton } from '@/components/page-header';
 
 export default function CartPage() {
   const t = useTranslations();
@@ -52,13 +53,7 @@ export default function CartPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="border-b bg-background sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4">
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-        </div>
+        <PageHeaderSkeleton />
 
         {/* Content */}
         <div className="container mx-auto px-4 py-6">
@@ -123,25 +118,22 @@ export default function CartPage() {
         variant="destructive"
       />
       <div className="min-h-screen bg-background">
-        {/* Header */}
-      <div className="border-b bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <H2 className="text-2xl md:text-3xl">{t('cart.title')}</H2>
-          <Muted className="mt-1">{t('cart.subtitle')}</Muted>
-        </div>
-      </div>
+      <PageHeader
+        title={t('cart.title')}
+        subtitle={t('cart.subtitle')}
+      />
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
         {isEmpty ? (
-          /* Empty State */
-          <div className="text-center py-12">
-            <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">{t('cart.emptyCart')}</p>
-            <Button onClick={handleContinueShopping} className="mt-4">
-              {t('cart.continueShopping')}
-            </Button>
-          </div>
+          <EmptyState
+            icon={ShoppingCart}
+            title={t('cart.emptyCart')}
+            action={{
+              label: t('cart.continueShopping'),
+              onClick: handleContinueShopping,
+            }}
+          />
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Cart Items */}

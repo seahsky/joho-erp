@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
+import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, EmptyState } from '@joho-erp/ui';
 import { Package, AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
@@ -528,21 +528,16 @@ export function ProductList() {
 
       {/* Empty State */}
       {inStockProducts.length === 0 && (
-        <div className="text-center py-16 border border-dashed border-border rounded-2xl">
-          <Package className="h-20 w-20 mx-auto text-muted-foreground/50 mb-4" />
-          <H4 className="text-xl font-semibold mb-2">{t('products.noProductsFound')}</H4>
-          <Muted className="text-sm mb-6">
-            {selectedCategory ? t('products.emptyWithCategory') : t('products.emptyWithSearch')}
-          </Muted>
-          {selectedCategory && (
-            <Button
-              variant="outline"
-              onClick={() => setSelectedCategory(undefined)}
-            >
-              {t('products.clearFilters')}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={Package}
+          title={t('products.noProductsFound')}
+          description={selectedCategory ? t('products.emptyWithCategory') : t('products.emptyWithSearch')}
+          action={selectedCategory ? {
+            label: t('products.clearFilters'),
+            onClick: () => setSelectedCategory(undefined),
+          } : undefined}
+          className="border border-dashed border-border rounded-2xl"
+        />
       )}
 
       {/* Product Detail Sidebar */}

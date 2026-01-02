@@ -141,4 +141,61 @@
     background-repeat: repeat;
     background-size: 200px 200px;
   }
+
+  /* Shimmer animation with warm tones for loading states */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(30 15% 94%) 0%,
+      hsl(30 15% 98%) 50%,
+      hsl(30 15% 94%) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  .dark .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(0 0% 12%) 0%,
+      hsl(0 0% 18%) 50%,
+      hsl(0 0% 12%) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Subtle pulse animation for empty state icons */
+  @keyframes subtle-pulse {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.05);
+    }
+  }
+
+  .animate-subtle-pulse {
+    animation: subtle-pulse 3s ease-in-out infinite;
+  }
+
+  /* Empty state icon background with blur effect */
+  .empty-state-icon-bg {
+    position: absolute;
+    inset: 0;
+    background: hsl(var(--primary) / 0.08);
+    border-radius: 9999px;
+    filter: blur(1.5rem);
+    animation: subtle-pulse 3s ease-in-out infinite;
+  }
 }
