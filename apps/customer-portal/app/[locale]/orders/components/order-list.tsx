@@ -200,30 +200,21 @@ export function OrderList() {
         </div>
       </div>
 
-      {/* Filter Pills with Scroll Indicators */}
-      <div className="relative">
-        {/* Left Fade Indicator */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
-
-        {/* Scrollable Container */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-          {(['all', 'confirmed', 'delivered'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] flex items-center snap-center ${
-                filter === status
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-            >
-              {status === 'all' ? t('allOrders') : t(status)}
-            </button>
-          ))}
-        </div>
-
-        {/* Right Fade Indicator */}
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
+      {/* Filter Pills */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {(['all', 'confirmed', 'delivered'] as const).map((status) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-4 py-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] flex items-center ${
+              filter === status
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+            }`}
+          >
+            {status === 'all' ? t('allOrders') : t(status)}
+          </button>
+        ))}
       </div>
 
       {/* Order Cards */}
