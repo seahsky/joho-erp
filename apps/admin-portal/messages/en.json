@@ -19,6 +19,8 @@
   "common": {
     "loading": "Loading...",
     "save": "Save",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -571,7 +573,70 @@
     "noProductsFound": "No products found",
     "adjustSearch": "Try adjusting your search",
     "addFirstProduct": "Add your first product to get started",
-    "edit": "Edit"
+    "edit": "Edit",
+    "tabs": {
+      "products": "Products",
+      "categories": "Categories"
+    }
+  },
+  "categories": {
+    "listTitle": "Categories",
+    "listDescription": "Manage product categories",
+    "searchPlaceholder": "Search categories...",
+    "noCategories": "No categories found",
+    "adjustSearch": "Try adjusting your search",
+    "addFirst": "Add your first category to get started",
+    "stats": {
+      "total": "Total Categories",
+      "active": "Active Categories",
+      "productsAssigned": "Products Assigned"
+    },
+    "fields": {
+      "name": "Name",
+      "nameRequired": "Name *",
+      "namePlaceholder": "e.g., Beef, Pork, Chicken",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional description for this category",
+      "productCount": "Products",
+      "active": "Active",
+      "activeDescription": "Inactive categories won't appear in product selection"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "buttons": {
+      "add": "Add Category",
+      "create": "Create Category",
+      "deactivate": "Deactivate"
+    },
+    "dialog": {
+      "addTitle": "Add Category",
+      "addDescription": "Create a new product category",
+      "editTitle": "Edit Category",
+      "editDescription": "Update category details"
+    },
+    "deleteDialog": {
+      "title": "Delete Category",
+      "confirmation": "Are you sure you want to delete this category? This action cannot be undone.",
+      "hasProducts": "This category has {count} product(s) assigned. It will be deactivated instead of deleted."
+    },
+    "messages": {
+      "created": "Category created successfully",
+      "createError": "Failed to create category",
+      "updated": "Category updated successfully",
+      "updateError": "Failed to update category",
+      "deleted": "Category deleted successfully",
+      "deactivated": "Category deactivated",
+      "deactivatedDescription": "The category has products assigned and was deactivated instead of deleted",
+      "deleteError": "Failed to delete category"
+    },
+    "validation": {
+      "nameRequired": "Category name is required"
+    },
+    "info": {
+      "hasProducts": "This category has {count} product(s) assigned"
+    }
   },
   "productForm": {
     "dialog": {

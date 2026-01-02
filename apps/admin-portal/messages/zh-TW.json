@@ -19,6 +19,8 @@
   "common": {
     "loading": "載入中...",
     "save": "儲存",
+    "saveChanges": "儲存更改",
+    "saving": "儲存中...",
     "cancel": "取消",
     "delete": "刪除",
     "edit": "編輯",
@@ -571,7 +573,70 @@
     "noProductsFound": "未找到產品",
     "adjustSearch": "請調整您的搜尋條件",
     "addFirstProduct": "添加您的第一個產品以開始",
-    "edit": "編輯"
+    "edit": "編輯",
+    "tabs": {
+      "products": "產品",
+      "categories": "分類"
+    }
+  },
+  "categories": {
+    "listTitle": "分類",
+    "listDescription": "管理產品分類",
+    "searchPlaceholder": "搜尋分類...",
+    "noCategories": "未找到分類",
+    "adjustSearch": "請調整您的搜尋條件",
+    "addFirst": "添加您的第一個分類以開始",
+    "stats": {
+      "total": "總分類數",
+      "active": "啟用分類",
+      "productsAssigned": "已分配產品"
+    },
+    "fields": {
+      "name": "名稱",
+      "nameRequired": "名稱 *",
+      "namePlaceholder": "例如：牛肉、豬肉、雞肉",
+      "description": "描述",
+      "descriptionPlaceholder": "此分類的可選描述",
+      "productCount": "產品數",
+      "active": "啟用",
+      "activeDescription": "未啟用的分類不會出現在產品選擇中"
+    },
+    "status": {
+      "active": "啟用",
+      "inactive": "未啟用"
+    },
+    "buttons": {
+      "add": "添加分類",
+      "create": "創建分類",
+      "deactivate": "停用"
+    },
+    "dialog": {
+      "addTitle": "添加分類",
+      "addDescription": "創建新的產品分類",
+      "editTitle": "編輯分類",
+      "editDescription": "更新分類詳情"
+    },
+    "deleteDialog": {
+      "title": "刪除分類",
+      "confirmation": "確定要刪除此分類嗎？此操作無法撤銷。",
+      "hasProducts": "此分類已分配 {count} 個產品，將被停用而非刪除。"
+    },
+    "messages": {
+      "created": "分類創建成功",
+      "createError": "創建分類失敗",
+      "updated": "分類更新成功",
+      "updateError": "更新分類失敗",
+      "deleted": "分類刪除成功",
+      "deactivated": "分類已停用",
+      "deactivatedDescription": "該分類已分配產品，已被停用而非刪除",
+      "deleteError": "刪除分類失敗"
+    },
+    "validation": {
+      "nameRequired": "分類名稱為必填項"
+    },
+    "info": {
+      "hasProducts": "此分類已分配 {count} 個產品"
+    }
   },
   "productForm": {
     "dialog": {

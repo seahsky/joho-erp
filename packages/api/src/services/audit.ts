@@ -1497,6 +1497,38 @@ export async function logCategoryUpdate(
   });
 }
 
+/**
+ * Log category delete
+ */
+export async function logCategoryDelete(
+  userId: string,
+  userEmail: string | undefined,
+  userRole: string | undefined,
+  userName: string | null | undefined,
+  categoryId: string,
+  metadata: {
+    name: string;
+    type: 'soft_delete' | 'hard_delete';
+    productCount: number;
+  }
+): Promise<void> {
+  await createAuditLog({
+    userId,
+    userEmail,
+    userRole,
+    userName,
+    action: 'delete',
+    entity: 'category',
+    entityId: categoryId,
+    metadata: {
+      name: metadata.name,
+      deleteType: metadata.type,
+      productCount: metadata.productCount,
+      type: 'category_delete',
+    },
+  });
+}
+
 // ============================================================================
 // NOTIFICATION/SMS SETTINGS DOMAIN
 // ============================================================================

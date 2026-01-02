@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, isAdmin } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { logCategoryCreate, logCategoryUpdate, type AuditChange } from '../services/audit';
+import { logCategoryCreate, logCategoryUpdate, logCategoryDelete, type AuditChange } from '../services/audit';
 
 export const categoryRouter = router({
   // Get all active categories (for dropdown)
@@ -115,5 +115,104 @@ export const categoryRouter = router({
       });
 
       return category;
+    }),
+
+  // Admin: Get all categories with product count (for management)
+  getAllWithProductCount: isAdmin.query(async () => {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+    });
+
+    return categories.map((category) => ({
+      ...category,
+      productCount: category._count.products,
+    }));
+  }),
+
+  // Admin: Get single category by ID
+  getById: isAdmin
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const category = await prisma.category.findUnique({
+        where: { id: input.id },
+        include: {
+          _count: {
+            select: { products: true },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Category not found',
+        });
+      }
+
+      return {
+        ...category,
+        productCount: category._count.products,
+      };
+    }),
+
+  // Admin: Delete category (soft delete if has products, hard delete otherwise)
+  delete: isAdmin
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const category = await prisma.category.findUnique({
+        where: { id: input.id },
+        include: {
+          _count: {
+            select: { products: true },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Category not found',
+        });
+      }
+
+      // If category has products, soft delete (deactivate)
+      if (category._count.products > 0) {
+        await prisma.category.update({
+          where: { id: input.id },
+          data: { isActive: false },
+        });
+
+        // Audit log
+        await logCategoryDelete(ctx.userId, undefined, ctx.userRole, ctx.userName, input.id, {
+          name: category.name,
+          type: 'soft_delete',
+          productCount: category._count.products,
+        }).catch((error) => {
+          console.error('Audit log failed for category delete:', error);
+        });
+
+        return { deleted: false, deactivated: true };
+      }
+
+      // Hard delete if no products
+      await prisma.category.delete({
+        where: { id: input.id },
+      });
+
+      // Audit log
+      await logCategoryDelete(ctx.userId, undefined, ctx.userRole, ctx.userName, input.id, {
+        name: category.name,
+        type: 'hard_delete',
+        productCount: 0,
+      }).catch((error) => {
+        console.error('Audit log failed for category delete:', error);
+      });
+
+      return { deleted: true, deactivated: false };
     }),
 });

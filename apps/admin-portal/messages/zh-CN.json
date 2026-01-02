@@ -19,6 +19,8 @@
   "common": {
     "loading": "加载中...",
     "save": "保存",
+    "saveChanges": "保存更改",
+    "saving": "保存中...",
     "cancel": "取消",
     "delete": "删除",
     "edit": "编辑",
@@ -571,7 +573,70 @@
     "noProductsFound": "未找到产品",
     "adjustSearch": "请调整您的搜索条件",
     "addFirstProduct": "添加您的第一个产品以开始",
-    "edit": "编辑"
+    "edit": "编辑",
+    "tabs": {
+      "products": "产品",
+      "categories": "分类"
+    }
+  },
+  "categories": {
+    "listTitle": "分类",
+    "listDescription": "管理产品分类",
+    "searchPlaceholder": "搜索分类...",
+    "noCategories": "未找到分类",
+    "adjustSearch": "请调整您的搜索条件",
+    "addFirst": "添加您的第一个分类以开始",
+    "stats": {
+      "total": "总分类数",
+      "active": "启用分类",
+      "productsAssigned": "已分配产品"
+    },
+    "fields": {
+      "name": "名称",
+      "nameRequired": "名称 *",
+      "namePlaceholder": "例如：牛肉、猪肉、鸡肉",
+      "description": "描述",
+      "descriptionPlaceholder": "此分类的可选描述",
+      "productCount": "产品数",
+      "active": "启用",
+      "activeDescription": "未启用的分类不会出现在产品选择中"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "未启用"
+    },
+    "buttons": {
+      "add": "添加分类",
+      "create": "创建分类",
+      "deactivate": "停用"
+    },
+    "dialog": {
+      "addTitle": "添加分类",
+      "addDescription": "创建新的产品分类",
+      "editTitle": "编辑分类",
+      "editDescription": "更新分类详情"
+    },
+    "deleteDialog": {
+      "title": "删除分类",
+      "confirmation": "确定要删除此分类吗？此操作无法撤销。",
+      "hasProducts": "此分类已分配 {count} 个产品，将被停用而非删除。"
+    },
+    "messages": {
+      "created": "分类创建成功",
+      "createError": "创建分类失败",
+      "updated": "分类更新成功",
+      "updateError": "更新分类失败",
+      "deleted": "分类删除成功",
+      "deactivated": "分类已停用",
+      "deactivatedDescription": "该分类已分配产品，已被停用而非删除",
+      "deleteError": "删除分类失败"
+    },
+    "validation": {
+      "nameRequired": "分类名称为必填项"
+    },
+    "info": {
+      "hasProducts": "此分类已分配 {count} 个产品"
+    }
   },
   "productForm": {
     "dialog": {

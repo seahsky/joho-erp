@@ -17,12 +17,17 @@ import {
   CountUp,
   EmptyState,
   TableSkeleton,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from '@joho-erp/ui';
-import { Search, Package, Plus, Edit, PackageX, PackagePlus } from 'lucide-react';
+import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
+import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
 import { formatCurrency, type ProductCategory } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
@@ -271,19 +276,38 @@ export default function ProductsPage() {
             {t('subtitle')}
           </p>
         </div>
-        <PermissionGate permission="products:create">
-          <Button
-            className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
-            onClick={() => setShowAddDialog(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {tProductForm('buttons.addProduct')}
-          </Button>
-        </PermissionGate>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
+      {/* Tabs */}
+      <Tabs defaultValue="products" className="space-y-6">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="products" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            {t('tabs.products')}
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <FolderTree className="h-4 w-4" />
+            {t('tabs.categories')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Products Tab */}
+        <TabsContent value="products" className="space-y-6">
+          {/* Add Product Button */}
+          <div className="flex justify-end">
+            <PermissionGate permission="products:create">
+              <Button
+                className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
+                onClick={() => setShowAddDialog(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {tProductForm('buttons.addProduct')}
+              </Button>
+            </PermissionGate>
+          </div>
+
+          {/* Stats */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
@@ -398,6 +422,13 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories">
+          <CategoriesTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Product Dialog */}
       <AddProductDialog
