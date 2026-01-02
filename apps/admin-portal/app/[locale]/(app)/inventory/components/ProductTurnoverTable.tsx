@@ -13,8 +13,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Badge,
   Skeleton,
+  DaysOnHandBadge,
 } from '@joho-erp/ui';
 import { RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -32,30 +32,7 @@ export function ProductTurnoverTable() {
     limit: 10,
   });
 
-  const getDaysOnHandBadge = (days: number | null) => {
-    if (days === null) {
-      return <Badge variant="outline">{t('turnover.noSales')}</Badge>;
-    }
-    if (days <= 7) {
-      return (
-        <Badge variant="destructive">
-          {Math.round(days)} {t('turnover.days')}
-        </Badge>
-      );
-    }
-    if (days <= 30) {
-      return (
-        <Badge variant="secondary">
-          {Math.round(days)} {t('turnover.days')}
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline">
-        {Math.round(days)} {t('turnover.days')}
-      </Badge>
-    );
-  };
+  // Days on hand badge uses consolidated DaysOnHandBadge component
 
   if (isLoading) {
     return (
@@ -115,7 +92,7 @@ export function ProductTurnoverTable() {
                   <TableCell className="text-right tabular-nums">
                     {item.velocity.toFixed(2)}/day
                   </TableCell>
-                  <TableCell className="text-right">{getDaysOnHandBadge(item.daysOnHand)}</TableCell>
+                  <TableCell className="text-right"><DaysOnHandBadge days={item.daysOnHand} /></TableCell>
                 </TableRow>
               ))}
               {(!data || data.length === 0) && (

@@ -60,7 +60,20 @@
     "suspended": "Suspended",
     "closed": "Closed",
     "discontinued": "Discontinued",
-    "out_of_stock": "Out of Stock"
+    "out_of_stock": "Out of Stock",
+    "invited": "Pending Invitation",
+    "banned": "Banned",
+    "completed": "Completed",
+    "failed": "Failed",
+    "processing": "Processing",
+    "create": "Created",
+    "update": "Updated",
+    "delete": "Deleted",
+    "sale": "Sale",
+    "adjustment": "Adjustment",
+    "return": "Return",
+    "expired": "Expired",
+    "expiring_soon": "Expiring Soon"
   },
   "orderStatusDescriptions": {
     "awaiting_approval": "Order requires approval due to stock availability",

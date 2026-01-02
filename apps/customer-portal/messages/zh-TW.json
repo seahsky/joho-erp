@@ -60,7 +60,20 @@
     "suspended": "已暫停",
     "closed": "已關閉",
     "discontinued": "已停產",
-    "out_of_stock": "缺貨"
+    "out_of_stock": "缺貨",
+    "invited": "待接受邀請",
+    "banned": "已禁用",
+    "completed": "已完成",
+    "failed": "失敗",
+    "processing": "處理中",
+    "create": "已建立",
+    "update": "已更新",
+    "delete": "已刪除",
+    "sale": "銷售",
+    "adjustment": "調整",
+    "return": "退貨",
+    "expired": "已過期",
+    "expiring_soon": "即將過期"
   },
   "orderStatusDescriptions": {
     "awaiting_approval": "訂單因庫存原因需要審批",

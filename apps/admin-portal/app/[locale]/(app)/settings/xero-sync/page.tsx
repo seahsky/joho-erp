@@ -11,17 +11,18 @@ import {
   Button,
   Badge,
   useToast,
+  StatusBadge,
+  type StatusType,
 } from '@joho-erp/ui';
 import {
   RefreshCcw,
   Loader2,
-  CheckCircle2,
-  XCircle,
-  Clock,
   AlertTriangle,
   FileText,
   User,
   CreditCard,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatDistanceToNow } from 'date-fns';
@@ -41,40 +42,7 @@ interface SyncJob {
   completedAt?: Date | null;
 }
 
-function getStatusBadge(status: JobStatus, t: (key: string) => string) {
-  switch (status) {
-    case 'completed':
-      return (
-        <Badge variant="success">
-          <CheckCircle2 className="h-3 w-3 mr-1" />
-          {t('status.completed')}
-        </Badge>
-      );
-    case 'failed':
-      return (
-        <Badge variant="destructive">
-          <XCircle className="h-3 w-3 mr-1" />
-          {t('status.failed')}
-        </Badge>
-      );
-    case 'processing':
-      return (
-        <Badge variant="secondary" className="bg-primary/10 text-primary">
-          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          {t('status.processing')}
-        </Badge>
-      );
-    case 'pending':
-      return (
-        <Badge variant="secondary">
-          <Clock className="h-3 w-3 mr-1" />
-          {t('status.pending')}
-        </Badge>
-      );
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
-}
+// Status badge now uses consolidated StatusBadge component
 
 function getTypeIcon(type: JobType) {
   switch (type) {
@@ -307,7 +275,7 @@ export default function XeroSyncPage() {
                           {job.entityType}: {job.entityId.slice(-8)}
                         </span>
                       </td>
-                      <td className="py-3 px-4">{getStatusBadge(job.status, t)}</td>
+                      <td className="py-3 px-4"><StatusBadge status={job.status as StatusType} /></td>
                       <td className="py-3 px-4">
                         <span className="text-sm text-muted-foreground">
                           {formatDistanceToNow(new Date(job.createdAt), {

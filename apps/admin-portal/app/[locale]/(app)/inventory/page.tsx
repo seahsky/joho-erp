@@ -22,6 +22,8 @@ import {
   TabsContent,
   Input,
   TableSkeleton,
+  StatusBadge,
+  type StatusType,
 } from '@joho-erp/ui';
 import {
   Package,
@@ -62,19 +64,7 @@ export default function InventoryPage() {
       limit: 20,
     });
 
-  // Get type badge variant
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'sale':
-        return <Badge variant="default">{t('inventory.types.sale')}</Badge>;
-      case 'adjustment':
-        return <Badge variant="secondary">{t('inventory.types.adjustment')}</Badge>;
-      case 'return':
-        return <Badge variant="outline">{t('inventory.types.return')}</Badge>;
-      default:
-        return <Badge variant="outline">{type}</Badge>;
-    }
-  };
+  // Transaction type badge uses consolidated StatusBadge
 
   // Get adjustment type label
   const getAdjustmentTypeLabel = (type: string | null) => {
@@ -301,7 +291,7 @@ export default function InventoryPage() {
                           <p className="font-medium">{tx.productName}</p>
                           <p className="text-sm text-muted-foreground">{tx.productSku}</p>
                           <div className="flex items-center gap-2">
-                            {getTypeBadge(tx.type)}
+                            <StatusBadge status={tx.type as StatusType} showIcon={false} />
                             {tx.adjustmentType && (
                               <span className="text-xs text-muted-foreground">
                                 ({getAdjustmentTypeLabel(tx.adjustmentType)})

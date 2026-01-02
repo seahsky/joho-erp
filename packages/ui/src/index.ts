@@ -24,6 +24,10 @@ export * from './components/use-toast';
 export * from './components/image-upload';
 export * from './components/product-image-upload';
 export * from './components/tabs';
+export * from './components/status-badge';
+export * from './components/stock-level-badge';
+export * from './components/area-badge';
+export * from './components/days-on-hand-badge';
 
 // Mobile Components
 export * from './components/mobile';

@@ -7,24 +7,25 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
   Button,
   Input,
   Label,
   Skeleton,
   useToast,
+  Badge,
+  StatusBadge,
+  type StatusType,
 } from '@joho-erp/ui';
 import {
   Users,
   Search,
   UserPlus,
   Shield,
-  Mail,
   Clock,
-  Ban,
-  CheckCircle,
   X,
   Loader2,
+  CheckCircle,
+  Mail,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -162,35 +163,6 @@ export default function UserManagementSettingsPage() {
         return 'outline';
       default:
         return 'secondary';
-    }
-  };
-
-  // Status badge
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return (
-          <Badge variant="success">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            {t('statuses.active')}
-          </Badge>
-        );
-      case 'banned':
-        return (
-          <Badge variant="destructive">
-            <Ban className="h-3 w-3 mr-1" />
-            {t('statuses.inactive')}
-          </Badge>
-        );
-      case 'invited':
-        return (
-          <Badge variant="secondary">
-            <Mail className="h-3 w-3 mr-1" />
-            {t('statuses.pending')}
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -392,7 +364,7 @@ export default function UserManagementSettingsPage() {
                           {t(`roles.${user.role}`)}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">{getStatusBadge(user.status)}</td>
+                      <td className="py-3 px-4"><StatusBadge status={user.status as StatusType} /></td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">
                         {user.lastSignInAt
                           ? new Date(user.lastSignInAt).toLocaleDateString()

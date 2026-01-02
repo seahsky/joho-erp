@@ -85,7 +85,20 @@
     "suspended": "已暂停",
     "closed": "已关闭",
     "discontinued": "已停产",
-    "out_of_stock": "缺货"
+    "out_of_stock": "缺货",
+    "invited": "待接受邀请",
+    "banned": "已禁用",
+    "completed": "已完成",
+    "failed": "失败",
+    "processing": "处理中",
+    "create": "已创建",
+    "update": "已更新",
+    "delete": "已删除",
+    "sale": "销售",
+    "adjustment": "调整",
+    "return": "退货",
+    "expired": "已过期",
+    "expiring_soon": "即将过期"
   },
   "orderStatusDescriptions": {
     "awaiting_approval": "订单因库存原因需要审批",

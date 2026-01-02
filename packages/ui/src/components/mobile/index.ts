@@ -3,4 +3,4 @@ export * from './mobile-drawer';
 export * from './bottom-sheet';
 export * from './mobile-app-bar';
 export * from './mobile-search';
-export * from './status-badge';
+// status-badge moved to root components folder

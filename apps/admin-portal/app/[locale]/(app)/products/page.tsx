@@ -13,7 +13,6 @@ import {
   Input,
   ResponsiveTable,
   type TableColumn,
-  Badge,
   CountUp,
   EmptyState,
   TableSkeleton,
@@ -21,6 +20,9 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  StatusBadge,
+  StockLevelBadge,
+  type StatusType,
 } from '@joho-erp/ui';
 import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -97,28 +99,7 @@ export default function ProductsPage() {
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'discontinued':
-        return 'bg-gray-100 text-gray-800';
-      case 'out_of_stock':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStockBadge = (product: Product) => {
-    if (product.currentStock === 0) {
-      return <Badge className="bg-red-100 text-red-800">{product.currentStock}</Badge>;
-    }
-    if (product.lowStockThreshold && product.currentStock <= product.lowStockThreshold) {
-      return <Badge className="bg-yellow-100 text-yellow-800">{product.currentStock}</Badge>;
-    }
-    return <Badge className="bg-green-100 text-green-800">{product.currentStock}</Badge>;
-  };
+  // Status and stock badges now use consolidated components
 
   const columns: TableColumn<Product>[] = [
     {
@@ -153,16 +134,19 @@ export default function ProductsPage() {
     {
       key: 'currentStock',
       label: t('stock'),
-      render: (product) => getStockBadge(product),
+      render: (product) => (
+        <StockLevelBadge
+          currentStock={product.currentStock}
+          lowStockThreshold={product.lowStockThreshold ?? undefined}
+        />
+      ),
       sortable: true,
     },
     {
       key: 'status',
       label: tCommon('status'),
       render: (product) => (
-        <Badge className={getStatusColor(product.status)}>
-          {String(product.status).replace(/_/g, ' ')}
-        </Badge>
+        <StatusBadge status={product.status as StatusType} showIcon={false} />
       ),
       sortable: true,
     },
@@ -210,9 +194,7 @@ export default function ProductsPage() {
           <h3 className="font-semibold text-base">{product.name}</h3>
           <p className="text-sm text-muted-foreground">{t('sku')}: {product.sku}</p>
         </div>
-        <Badge className={getStatusColor(product.status)}>
-          {product.status.replace(/_/g, ' ')}
-        </Badge>
+<StatusBadge status={product.status as StatusType} showIcon={false} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -230,7 +212,10 @@ export default function ProductsPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('stock')}</p>
-          {getStockBadge(product)}
+          <StockLevelBadge
+            currentStock={product.currentStock}
+            lowStockThreshold={product.lowStockThreshold ?? undefined}
+          />
         </div>
       </div>
 

@@ -22,6 +22,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  StatusBadge,
+  type StatusType,
 } from '@joho-erp/ui';
 import { Search, FolderTree, Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -87,12 +89,8 @@ export function CategoriesTab() {
   const activeCount = categories.filter((c) => c.isActive).length;
   const totalProducts = categories.reduce((sum, c) => sum + c.productCount, 0);
 
-  const getStatusBadge = (isActive: boolean) => {
-    if (isActive) {
-      return <Badge className="bg-green-100 text-green-800">{t('categories.status.active')}</Badge>;
-    }
-    return <Badge className="bg-gray-100 text-gray-800">{t('categories.status.inactive')}</Badge>;
-  };
+  // Helper to convert boolean to status type
+  const getStatusFromActive = (isActive: boolean): StatusType => isActive ? 'active' : 'inactive';
 
   const handleDelete = (category: Category) => {
     setCategoryToDelete(category);
@@ -125,7 +123,7 @@ export function CategoriesTab() {
     {
       key: 'isActive',
       label: t('common.status'),
-      render: (category) => getStatusBadge(category.isActive),
+      render: (category) => <StatusBadge status={getStatusFromActive(category.isActive)} showIcon={false} />,
     },
     {
       key: 'actions',
@@ -170,7 +168,7 @@ export function CategoriesTab() {
             <p className="text-sm text-muted-foreground">{category.description}</p>
           )}
         </div>
-        {getStatusBadge(category.isActive)}
+        <StatusBadge status={getStatusFromActive(category.isActive)} showIcon={false} />
       </div>
 
       <div className="flex items-center gap-4 text-sm">
