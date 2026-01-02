@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@joho-erp/ui';
+import { Button, Input, Label, useToast } from '@joho-erp/ui';
 import type { FinancialInfo } from '../page';
 
 interface FinancialStepProps {
@@ -14,6 +14,7 @@ interface FinancialStepProps {
 
 export function FinancialStep({ data, onChange, onNext, onBack }: FinancialStepProps) {
   const t = useTranslations('onboarding.financial');
+  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<FinancialInfo>>(data);
 
   useEffect(() => {
@@ -34,7 +35,10 @@ export function FinancialStep({ data, onChange, onNext, onBack }: FinancialStepP
     if (validate()) {
       onNext();
     } else {
-      alert(t('validation.allFieldsRequired'));
+      toast({
+        title: t('validation.allFieldsRequired'),
+        variant: 'destructive',
+      });
     }
   };
 

@@ -67,14 +67,14 @@ export function CutoffReminder({
         'flex items-start gap-2 p-3 rounded-lg',
         isAfterCutoff
           ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
-          : 'bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800',
+          : 'bg-primary/10 border border-primary/20 dark:bg-primary/10 dark:border-primary/30',
         className
       )}
     >
       <Clock
         className={cn(
           'h-5 w-5 mt-0.5 flex-shrink-0',
-          isAfterCutoff ? 'text-amber-600' : 'text-blue-600'
+          isAfterCutoff ? 'text-amber-600' : 'text-primary'
         )}
       />
       <div>

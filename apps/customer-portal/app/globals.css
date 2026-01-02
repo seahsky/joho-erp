@@ -50,6 +50,12 @@
     --shadow-sm: 0 1px 2px hsl(30 20% 10% / 0.04);
     --shadow-md: 0 4px 12px hsl(30 20% 10% / 0.08);
     --shadow-lg: 0 12px 32px hsl(30 20% 10% / 0.12);
+
+    /* Animation timing tokens */
+    --transition-fast: 150ms ease;
+    --transition-base: 200ms ease;
+    --transition-slow: 300ms ease;
+    --animation-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   /* Dark mode color palette */

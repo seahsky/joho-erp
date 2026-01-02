@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@joho-erp/ui';
+import { Button, Input, Label, useToast } from '@joho-erp/ui';
 import type { DirectorInfo } from '../page';
 
 interface DirectorsStepProps {
@@ -14,6 +14,7 @@ interface DirectorsStepProps {
 
 export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepProps) {
   const t = useTranslations('onboarding.directors');
+  const { toast } = useToast();
   const [directors, setDirectors] = useState<DirectorInfo[]>(
     data.length > 0 ? data : [createEmptyDirector()]
   );
@@ -81,7 +82,10 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
     if (validate()) {
       onNext();
     } else {
-      alert(t('validation.allFieldsRequired'));
+      toast({
+        title: t('validation.allFieldsRequired'),
+        variant: 'destructive',
+      });
     }
   };
 
