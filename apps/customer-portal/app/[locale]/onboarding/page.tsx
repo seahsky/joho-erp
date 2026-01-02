@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { FileText } from 'lucide-react';
+import { useToast } from '@joho-erp/ui';
 import { api } from '@/trpc/client';
 import { BusinessInfoStep } from './components/business-info-step';
 import { DirectorsStep } from './components/directors-step';
@@ -86,6 +87,7 @@ export default function OnboardingPage() {
   const t = useTranslations('onboarding');
   const router = useRouter();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('business');
   const [businessInfo, setBusinessInfo] = useState<Partial<BusinessInfo>>({});
@@ -95,17 +97,25 @@ export default function OnboardingPage() {
 
   const registerMutation = api.customer.register.useMutation({
     onSuccess: () => {
-      alert(t('messages.success'));
+      toast({
+        title: t('messages.success'),
+      });
       router.push('/profile');
     },
     onError: (error: { message?: string }) => {
-      alert(error.message || t('messages.error'));
+      toast({
+        title: error.message || t('messages.error'),
+        variant: 'destructive',
+      });
     },
   });
 
   const handleSignaturesComplete = (signatureData: SignatureData[]) => {
     if (!user) {
-      alert(t('messages.notAuthenticated'));
+      toast({
+        title: t('messages.notAuthenticated'),
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -138,7 +148,7 @@ export default function OnboardingPage() {
         </div>
         <div className="h-2 w-full rounded-full bg-gray-200">
           <div
-            className="h-2 rounded-full bg-blue-600 transition-all duration-300"
+            className="h-2 rounded-full bg-primary transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -151,7 +161,7 @@ export default function OnboardingPage() {
             href={process.env.NEXT_PUBLIC_APPLICATION_PDF_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
             aria-label={t('applicationPdf.ariaLabel')}
           >
             <FileText className="h-4 w-4" aria-hidden="true" />
@@ -161,7 +171,7 @@ export default function OnboardingPage() {
       )}
 
       {/* Step Content */}
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
+      <div className="rounded-lg border bg-card p-6 shadow-sm">
         {currentStep === 'business' && (
           <BusinessInfoStep
             data={businessInfo}

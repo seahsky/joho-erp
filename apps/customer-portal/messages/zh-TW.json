@@ -314,7 +314,12 @@
     "itemCount_plural": "{count} 項",
     "incrementBy5": "增加5件",
     "decrementBy5": "減少5件",
-    "tapToEditQuantity": "點擊編輯數量"
+    "tapToEditQuantity": "點擊編輯數量",
+    "dialog": {
+      "clearCartTitle": "清空購物車",
+      "clearCartDescription": "確定要清空購物車中的所有商品嗎？此操作無法撤銷。",
+      "clearCartConfirm": "清空購物車"
+    }
   },
   "miniCart": {
     "title": "您的購物車",

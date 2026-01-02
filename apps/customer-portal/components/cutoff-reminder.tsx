@@ -35,14 +35,14 @@ export function CutoffReminder({
           'flex items-center gap-2 p-2.5 rounded-lg text-sm',
           isAfterCutoff
             ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
-            : 'bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800',
+            : 'bg-primary/10 border border-primary/20 dark:bg-primary/10 dark:border-primary/30',
           className
         )}
       >
         <Clock
           className={cn(
             'h-4 w-4 flex-shrink-0',
-            isAfterCutoff ? 'text-amber-600' : 'text-blue-600'
+            isAfterCutoff ? 'text-amber-600' : 'text-primary'
           )}
         />
         <span
@@ -50,7 +50,7 @@ export function CutoffReminder({
             'text-xs font-medium',
             isAfterCutoff
               ? 'text-amber-800 dark:text-amber-200'
-              : 'text-blue-800 dark:text-blue-200'
+              : 'text-primary dark:text-primary'
           )}
         >
           {isAfterCutoff
@@ -83,7 +83,7 @@ export function CutoffReminder({
             'text-sm font-medium',
             isAfterCutoff
               ? 'text-amber-800 dark:text-amber-200'
-              : 'text-blue-800 dark:text-blue-200'
+              : 'text-primary dark:text-primary'
           )}
         >
           {isAfterCutoff
@@ -95,7 +95,7 @@ export function CutoffReminder({
             'text-xs mt-1',
             isAfterCutoff
               ? 'text-amber-600 dark:text-amber-400'
-              : 'text-blue-600 dark:text-blue-400'
+              : 'text-primary/80 dark:text-primary/80'
           )}
         >
           {isAfterCutoff

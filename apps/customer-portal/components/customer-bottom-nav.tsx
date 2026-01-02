@@ -5,6 +5,7 @@ import { Home, Package, ShoppingCart, User, ShoppingBag } from 'lucide-react';
 import { Badge, cn } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { MiniCartSheet, CartButtonStyles } from './mini-cart';
 
@@ -43,7 +44,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 shadow-lg md:hidden">
         <div className="flex items-center justify-around h-16 px-2">
           {/* Home */}
-          <a
+          <Link
             href={`/${locale}`}
             className={cn(
               'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
@@ -52,10 +53,10 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           >
             <Home className="h-5 w-5" />
             <span className="text-xs mt-1">{t('home')}</span>
-          </a>
+          </Link>
 
           {/* Products */}
-          <a
+          <Link
             href={`/${locale}/products`}
             className={cn(
               'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
@@ -64,7 +65,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           >
             <Package className="h-5 w-5" />
             <span className="text-xs mt-1">{t('products')}</span>
-          </a>
+          </Link>
 
           {/* Cart - Opens bottom sheet */}
           <button
@@ -95,7 +96,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           </button>
 
           {/* Orders */}
-          <a
+          <Link
             href={`/${locale}/orders`}
             className={cn(
               'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
@@ -104,10 +105,10 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           >
             <ShoppingCart className="h-5 w-5" />
             <span className="text-xs mt-1">{t('myOrders')}</span>
-          </a>
+          </Link>
 
           {/* Profile */}
-          <a
+          <Link
             href={`/${locale}/profile`}
             className={cn(
               'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
@@ -116,7 +117,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           >
             <User className="h-5 w-5" />
             <span className="text-xs mt-1">{t('profile')}</span>
-          </a>
+          </Link>
         </div>
       </nav>
 

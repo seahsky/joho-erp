@@ -64,7 +64,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
               />
 
               <div className="flex flex-col">
-                <span className="text-xl font-semibold tracking-tight text-neutral-900 group-hover:text-[hsl(0,67%,35%)] transition-colors duration-300">
+                <span className="text-xl font-semibold tracking-tight text-neutral-900 group-hover:text-primary transition-colors duration-300">
                   Joho Foods
                 </span>
                 <span className="text-xs tracking-wider uppercase text-neutral-500 font-medium">
@@ -94,7 +94,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                   >
                     {/* Active background */}
                     {active && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(0,67%,35%)] to-[hsl(0,67%,28%)] rounded-lg shadow-md" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/90 rounded-lg shadow-md" />
                     )}
 
                     {/* Hover background */}
@@ -110,7 +110,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
 
                     {/* Active indicator line */}
                     {active && (
-                      <div className="absolute -bottom-[17px] left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-[hsl(0,67%,35%)] to-transparent" />
+                      <div className="absolute -bottom-[17px] left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />
                     )}
                   </Link>
                 );
@@ -131,7 +131,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
                       group relative p-3 rounded-lg
                       transition-all duration-300 ease-out
                       ${active
-                        ? 'text-white bg-gradient-to-br from-[hsl(0,67%,35%)] to-[hsl(0,67%,28%)] shadow-md'
+                        ? 'text-white bg-gradient-to-br from-primary to-primary/90 shadow-md'
                         : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
                       }
                     `}
@@ -161,12 +161,12 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
 
               <div className="relative">
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 bg-[hsl(0,67%,35%)] rounded-full opacity-0 hover:opacity-20 blur-xl transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-primary rounded-full opacity-0 hover:opacity-20 blur-xl transition-opacity duration-500" />
                 <UserButton
                   afterSignOutUrl={`/${locale}/sign-in`}
                   appearance={{
                     elements: {
-                      avatarBox: 'w-10 h-10 ring-2 ring-neutral-200 hover:ring-[hsl(0,67%,35%)] transition-all duration-300',
+                      avatarBox: 'w-10 h-10 ring-2 ring-neutral-200 hover:ring-primary transition-all duration-300',
                     },
                   }}
                 />

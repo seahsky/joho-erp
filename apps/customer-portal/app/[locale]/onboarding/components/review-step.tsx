@@ -59,7 +59,7 @@ export function ReviewStep({
       <div className="rounded-lg border p-4">
         <h3 className="mb-3 font-semibold">{t('sections.directors')}</h3>
         {directors.map((director, index) => (
-          <div key={index} className="mb-3 border-l-2 border-blue-500 pl-3">
+          <div key={index} className="mb-3 border-l-2 border-primary pl-3">
             <p className="font-medium">
               {director.givenNames} {director.familyName}
             </p>
@@ -103,8 +103,8 @@ export function ReviewStep({
       )}
 
       {/* Info about next step */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm text-blue-800">
+      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <p className="text-sm text-primary">
           {t('nextStepInfo', {
             defaultValue:
               'Please review all information above. In the next step, you will sign the Terms & Conditions and Guarantee agreements.',

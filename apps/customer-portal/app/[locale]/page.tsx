@@ -87,7 +87,7 @@ export default async function Home({
       )}
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 md:py-20">
+      <section className="bg-gradient-to-b from-primary/10 to-white dark:from-gray-900 dark:to-gray-800 py-12 md:py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl font-bold mb-4 md:mb-6">
             {t('home.heroTitle')}
@@ -125,7 +125,7 @@ export default async function Home({
               return (
                 <Card key={index}>
                   <CardHeader>
-                    <Icon className="h-10 w-10 md:h-12 md:w-12 text-blue-600 mb-3 md:mb-4" />
+                    <Icon className="h-10 w-10 md:h-12 md:w-12 text-primary mb-3 md:mb-4" />
                     <CardTitle className="text-lg md:text-xl">{feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -141,7 +141,7 @@ export default async function Home({
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 text-white py-12 md:py-20">
+      <section className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
             {t('home.getStartedSection.title')}

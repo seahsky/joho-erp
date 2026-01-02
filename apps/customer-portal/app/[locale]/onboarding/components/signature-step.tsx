@@ -249,7 +249,7 @@ export function SignatureStep({
             href="/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-block text-blue-600 underline hover:text-blue-800"
+            className="mt-3 inline-block text-primary underline hover:text-primary/80"
           >
             {t('viewFullTerms')}
           </a>
@@ -282,7 +282,7 @@ export function SignatureStep({
             href="/terms#guarantee"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-block text-blue-600 underline hover:text-blue-800"
+            className="mt-3 inline-block text-primary underline hover:text-primary/80"
           >
             {t('viewFullGuarantee')}
           </a>

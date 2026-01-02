@@ -8,6 +8,7 @@ import { ShoppingCart, Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';
 import { CartSummary } from './components/cart-summary';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 export default function CartPage() {
   const t = useTranslations();
@@ -18,6 +19,7 @@ export default function CartPage() {
 
   const { data: cart, isLoading, error } = api.cart.getCart.useQuery();
   const utils = api.useUtils();
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
 
   const clearCart = api.cart.clearCart.useMutation({
     onSuccess: () => {
@@ -35,9 +37,11 @@ export default function CartPage() {
   });
 
   const handleClearCart = () => {
-    if (confirm(t('cart.messages.cartCleared'))) {
-      clearCart.mutate();
-    }
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirmClearCart = () => {
+    clearCart.mutate();
   };
 
   const handleContinueShopping = () => {
@@ -107,8 +111,19 @@ export default function CartPage() {
   const isEmpty = !cart || cart.items.length === 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <>
+      <ConfirmDialog
+        open={isConfirmDialogOpen}
+        onOpenChange={setIsConfirmDialogOpen}
+        title={t('cart.dialog.clearCartTitle')}
+        description={t('cart.dialog.clearCartDescription')}
+        confirmText={t('cart.dialog.clearCartConfirm')}
+        cancelText={t('common.cancel')}
+        onConfirm={handleConfirmClearCart}
+        variant="destructive"
+      />
+      <div className="min-h-screen bg-background">
+        {/* Header */}
       <div className="border-b bg-background sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <H2 className="text-2xl md:text-3xl">{t('cart.title')}</H2>
@@ -171,5 +186,6 @@ export default function CartPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
