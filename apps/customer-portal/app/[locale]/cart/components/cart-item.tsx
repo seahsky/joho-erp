@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Card, CardContent, H4, Muted, useToast, Input } from '@joho-erp/ui';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2 } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 
@@ -62,6 +62,8 @@ export function CartItem({ item }: CartItemProps) {
       });
     },
   });
+
+  const isPending = updateQuantity.isPending || removeItem.isPending;
 
   const handleIncrease = () => {
     updateQuantity.mutate({
@@ -157,20 +159,20 @@ export function CartItem({ item }: CartItemProps) {
                 size="sm"
                 className="h-9 w-10 text-xs font-semibold"
                 onClick={handleDecreaseBy5}
-                disabled={updateQuantity.isPending || removeItem.isPending}
+                disabled={isPending}
                 aria-label={t('cart.decrementBy5')}
               >
-                -5
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '-5'}
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 className="h-9 w-9"
                 onClick={handleDecrease}
-                disabled={item.quantity <= 1 || updateQuantity.isPending}
+                disabled={item.quantity <= 1 || isPending}
                 aria-label={t('products.decreaseQuantity')}
               >
-                <Minus className="h-4 w-4" />
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Minus className="h-4 w-4" />}
               </Button>
               {isEditingQuantity ? (
                 <Input
@@ -198,20 +200,20 @@ export function CartItem({ item }: CartItemProps) {
                 size="icon"
                 className="h-9 w-9"
                 onClick={handleIncrease}
-                disabled={updateQuantity.isPending}
+                disabled={isPending}
                 aria-label={t('products.increaseQuantity')}
               >
-                <Plus className="h-4 w-4" />
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="h-9 w-10 text-xs font-semibold"
                 onClick={handleIncreaseBy5}
-                disabled={updateQuantity.isPending}
+                disabled={isPending}
                 aria-label={t('cart.incrementBy5')}
               >
-                +5
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '+5'}
               </Button>
             </div>
 

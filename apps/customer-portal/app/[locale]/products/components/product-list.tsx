@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn } from '@joho-erp/ui';
-import { Package, AlertCircle, Clock, XCircle } from 'lucide-react';
+import { Package, AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
@@ -37,6 +37,7 @@ export function ProductList() {
   const [selectedCategory, setSelectedCategory] = React.useState<ProductCategory | undefined>();
   const [selectedProduct, setSelectedProduct] = React.useState<(Product & ProductWithPricing) | null>(null);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [pendingProductId, setPendingProductId] = React.useState<string | null>(null);
 
   const { data: products, isLoading, error } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
@@ -72,6 +73,9 @@ export function ProductList() {
         variant: 'destructive',
       });
     },
+    onSettled: () => {
+      setPendingProductId(null);
+    },
   });
 
   const updateQuantity = api.cart.updateQuantity.useMutation({
@@ -84,6 +88,9 @@ export function ProductList() {
         description: error.message,
         variant: 'destructive',
       });
+    },
+    onSettled: () => {
+      setPendingProductId(null);
     },
   });
 
@@ -101,6 +108,9 @@ export function ProductList() {
         variant: 'destructive',
       });
     },
+    onSettled: () => {
+      setPendingProductId(null);
+    },
   });
 
   // Helper to get cart quantity for a product
@@ -114,6 +124,7 @@ export function ProductList() {
   // Server validates stock availability - no client-side stock cap
   const handleIncrementBy5 = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation();
+    setPendingProductId(productId);
     const currentQty = getCartQuantity(productId);
     const newQty = currentQty + 5;
     if (currentQty === 0) {
@@ -128,6 +139,7 @@ export function ProductList() {
   // Handler for decrementing quantity by 5
   const handleDecrementBy5 = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation();
+    setPendingProductId(productId);
     const currentQty = getCartQuantity(productId);
     const newQty = currentQty - 5;
     if (newQty <= 0) {
@@ -381,10 +393,10 @@ export function ProductList() {
                         variant="outline"
                         className="h-10 w-12 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
                         onClick={(e) => handleDecrementBy5(e, product.id)}
-                        disabled={updateQuantity.isPending || removeItem.isPending}
+                        disabled={pendingProductId === product.id}
                         aria-label={t('products.decrementBy5')}
                       >
-                        -5
+                        {pendingProductId === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : '-5'}
                       </Button>
                     )}
                     <button
@@ -406,10 +418,10 @@ export function ProductList() {
                       variant="outline"
                       className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
                       onClick={(e) => handleIncrementBy5(e, product.id)}
-                      disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending}
+                      disabled={!canAddToCart || pendingProductId === product.id}
                       aria-label={t('products.incrementBy5')}
                     >
-                      +5
+                      {pendingProductId === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : '+5'}
                     </Button>
                   </div>
                 </div>
@@ -475,10 +487,10 @@ export function ProductList() {
                           variant="outline"
                           className="h-10 w-11 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
                           onClick={(e) => handleDecrementBy5(e, product.id)}
-                          disabled={updateQuantity.isPending || removeItem.isPending}
+                          disabled={pendingProductId === product.id}
                           aria-label={t('products.decrementBy5')}
                         >
-                          -5
+                          {pendingProductId === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '-5'}
                         </Button>
                       )}
                       <button
@@ -500,10 +512,10 @@ export function ProductList() {
                         variant="outline"
                         className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
                         onClick={(e) => handleIncrementBy5(e, product.id)}
-                        disabled={!canAddToCart || addToCart.isPending || updateQuantity.isPending}
+                        disabled={!canAddToCart || pendingProductId === product.id}
                         aria-label={t('products.incrementBy5')}
                       >
-                        +5
+                        {pendingProductId === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '+5'}
                       </Button>
                     </div>
                   </div>
