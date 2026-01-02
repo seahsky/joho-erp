@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Skeleton, Card, CardContent, useToast, EmptyState } from '@joho-erp/ui';
-import { ShoppingCart, Trash2 } from 'lucide-react';
+import { ShoppingCart, Trash2, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';
 import { CartSummary } from './components/cart-summary';
@@ -90,14 +90,17 @@ export default function CartPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
+        <PageHeader title={t('cart.title')} subtitle={t('cart.subtitle')} />
         <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col items-center justify-center py-12">
-            <ShoppingCart className="h-16 w-16 text-destructive mb-4" />
-            <p className="text-lg font-medium text-destructive mb-2">
-              {t('cart.messages.errorLoadingCart')}
-            </p>
-            <p className="text-sm text-muted-foreground">{error.message}</p>
-          </div>
+          <EmptyState
+            icon={AlertTriangle}
+            title={t('cart.messages.errorLoadingCart')}
+            description={error.message}
+            action={{
+              label: t('common.retry'),
+              onClick: () => window.location.reload(),
+            }}
+          />
         </div>
       </div>
     );
@@ -129,6 +132,7 @@ export default function CartPage() {
           <EmptyState
             icon={ShoppingCart}
             title={t('cart.emptyCart')}
+            description={t('cart.emptyCartDescription')}
             action={{
               label: t('cart.continueShopping'),
               onClick: handleContinueShopping,

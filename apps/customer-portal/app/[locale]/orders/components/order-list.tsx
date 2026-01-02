@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, EmptyState, type StatusType } from '@joho-erp/ui';
-import { ShoppingCart, Loader2, Search, Calendar, X } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, Calendar, X, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -129,11 +129,15 @@ export function OrderList() {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <ShoppingCart className="h-16 w-16 text-destructive mb-4" />
-        <p className="text-lg font-medium text-destructive mb-2">{t('errorLoading')}</p>
-        <p className="text-sm text-muted-foreground">{error.message}</p>
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title={t('errorLoading')}
+        description={error.message}
+        action={{
+          label: _tCommon('retry'),
+          onClick: () => window.location.reload(),
+        }}
+      />
     );
   }
 

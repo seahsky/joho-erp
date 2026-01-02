@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, EmptyState } from '@joho-erp/ui';
-import { Package, AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
+import { Package, AlertCircle, Clock, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
@@ -217,11 +217,15 @@ export function ProductList() {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Package className="h-16 w-16 text-destructive mb-4" />
-        <p className="text-lg font-medium text-destructive mb-2">{t('products.errorLoading')}</p>
-        <p className="text-sm text-muted-foreground">{error.message}</p>
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title={t('products.errorLoading')}
+        description={error.message}
+        action={{
+          label: t('common.retry'),
+          onClick: () => window.location.reload(),
+        }}
+      />
     );
   }
 

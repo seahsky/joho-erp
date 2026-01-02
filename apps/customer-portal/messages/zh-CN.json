@@ -42,7 +42,9 @@
     "checkout": "结账",
     "placeOrder": "下订单",
     "close": "关闭",
-    "signUp": "注册"
+    "signUp": "注册",
+    "retry": "重试",
+    "errorOccurred": "出了点问题"
   },
   "statusBadges": {
     "awaiting_approval": "待审批",
@@ -295,6 +297,7 @@
     "total": "总计",
     "remove": "移除",
     "emptyCart": "您的购物车是空的",
+    "emptyCartDescription": "浏览我们的产品并添加到购物车",
     "continueShopping": "继续购物",
     "orderSummary": "订单摘要",
     "subtotal": "小计",

@@ -42,7 +42,9 @@
     "checkout": "結帳",
     "placeOrder": "下訂單",
     "close": "關閉",
-    "signUp": "註冊"
+    "signUp": "註冊",
+    "retry": "重試",
+    "errorOccurred": "出了點問題"
   },
   "statusBadges": {
     "awaiting_approval": "待審批",
@@ -295,6 +297,7 @@
     "total": "總計",
     "remove": "移除",
     "emptyCart": "您的購物車是空的",
+    "emptyCartDescription": "瀏覽我們的產品並添加到購物車",
     "continueShopping": "繼續購物",
     "orderSummary": "訂單摘要",
     "subtotal": "小計",

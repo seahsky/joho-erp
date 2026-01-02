@@ -28,6 +28,7 @@ export type StatusType =
   | 'confirmed'
   | 'packing'
   | 'ready_for_delivery'
+  | 'out_for_delivery'
   | 'delivered'
   | 'cancelled'
   // Generic approval/status
@@ -87,6 +88,10 @@ const statusConfig: Record<StatusType, StatusConfig> = {
   },
   ready_for_delivery: {
     variant: 'teal',
+    icon: Truck,
+  },
+  out_for_delivery: {
+    variant: 'info',
     icon: Truck,
   },
   delivered: {

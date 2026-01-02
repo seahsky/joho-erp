@@ -42,7 +42,9 @@
     "checkout": "Checkout",
     "placeOrder": "Place Order",
     "close": "Close",
-    "signUp": "Sign Up"
+    "signUp": "Sign Up",
+    "retry": "Try Again",
+    "errorOccurred": "Something went wrong"
   },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
@@ -295,6 +297,7 @@
     "total": "Total",
     "remove": "Remove",
     "emptyCart": "Your cart is empty",
+    "emptyCartDescription": "Browse our products and add items to your cart",
     "continueShopping": "Continue Shopping",
     "orderSummary": "Order Summary",
     "subtotal": "Subtotal",
