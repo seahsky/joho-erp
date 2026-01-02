@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@joho-erp/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, type StatusType } from '@joho-erp/ui';
 import {
   CheckCircle2,
   Clock,
@@ -267,17 +267,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{formatAUD(order.totalAmount)}</p>
-                      <p
-                        className={`text-sm ${
-                          order.status === 'delivered'
-                            ? 'text-green-600'
-                            : order.status === 'cancelled'
-                            ? 'text-red-600'
-                            : 'text-amber-600'
-                        }`}
-                      >
-                        {order.status}
-                      </p>
+                      <StatusBadge status={order.status as StatusType} />
                     </div>
                   </div>
                 ))}

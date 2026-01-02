@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, Input, TableSkeleton } from '@joho-erp/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, TableSkeleton, StatusBadge, type StatusType } from '@joho-erp/ui';
 import { MapPin, Navigation, CheckCircle, Package, Search, FileText, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -97,17 +97,6 @@ export default function DeliveriesPage() {
     }
   }, [deliveries, selectedDelivery]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ready_for_delivery':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
@@ -200,9 +189,7 @@ export default function DeliveriesPage() {
                       <p className="font-semibold text-sm">{delivery.customer}</p>
                       <p className="text-xs text-muted-foreground">{delivery.orderId}</p>
                     </div>
-                    <Badge className={getStatusColor(delivery.status)}>
-                      {delivery.status.replace(/_/g, ' ')}
-                    </Badge>
+                    <StatusBadge status={delivery.status as StatusType} />
                   </div>
 
                   <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
