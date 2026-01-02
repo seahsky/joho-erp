@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
@@ -55,40 +55,36 @@ export default async function Home({
 
   return (
     <main className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Joho Foods"
-              width={40}
-              height={40}
-              className="rounded-lg"
-            />
-            <h1 className="text-2xl font-bold">Joho Foods</h1>
+      {/* Header - only show for unauthenticated users (signed-in users see CustomerDesktopNav) */}
+      {!user && (
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="Joho Foods"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              <h1 className="text-2xl font-bold">Joho Foods</h1>
+            </div>
+            <div className="flex gap-4 items-center">
+              <LanguageSwitcher />
+              <SignInButton mode="modal">
+                <Button variant="outline">
+                  {t('common.signIn')}
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button>
+                  {t('common.signUp', { default: 'Sign Up' })}
+                </Button>
+              </SignUpButton>
+            </div>
           </div>
-          <div className="flex gap-4 items-center">
-            <LanguageSwitcher />
-            {user ? (
-              <UserButton />
-            ) : (
-              <>
-                <SignInButton mode="modal">
-                  <Button variant="outline">
-                    {t('common.signIn')}
-                  </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button>
-                    {t('common.signUp', { default: 'Sign Up' })}
-                  </Button>
-                </SignUpButton>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 md:py-20">
