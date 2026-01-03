@@ -126,7 +126,7 @@ export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
               size="icon"
               onClick={onClose}
               className={cn(
-                'h-8 w-8 rounded-full',
+                'h-11 w-11 rounded-full',
                 'bg-neutral-100/80 backdrop-blur-sm',
                 'border border-neutral-200/60',
                 'hover:bg-white hover:border-neutral-300',
@@ -136,7 +136,7 @@ export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
               )}
               aria-label={t('common.close')}
             >
-              <X className="h-4 w-4 text-neutral-500 group-hover:text-neutral-700 transition-colors" />
+              <X className="h-5 w-5 text-neutral-500 group-hover:text-neutral-700 transition-colors" />
             </Button>
           </div>
 
