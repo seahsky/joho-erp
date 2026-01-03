@@ -420,7 +420,6 @@ export default function CreateOrderOnBehalfPage() {
                   <Input
                     id="quantity"
                     type="number"
-                    min="1"
                     value={quantity}
                     onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                     className="mt-1"

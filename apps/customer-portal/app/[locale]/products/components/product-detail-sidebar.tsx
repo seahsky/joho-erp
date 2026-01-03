@@ -240,7 +240,6 @@ export function ProductDetailSidebar({
                 </Button>
                 <input
                   type="number"
-                  min="1"
                   max={MAX_QUANTITY}
                   value={quantity}
                   onChange={handleQuantityChange}

@@ -183,7 +183,6 @@ export function CartItem({ item }: CartItemProps) {
                   onBlur={handleQuantityBlur}
                   onKeyDown={handleQuantityKeyDown}
                   className="h-10 w-14 text-center font-medium p-1"
-                  min={1}
                 />
               ) : (
                 <button
