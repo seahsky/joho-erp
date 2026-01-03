@@ -4,8 +4,8 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, EmptyState } from '@joho-erp/ui';
-import { Package, AlertCircle, Clock, XCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, IllustratedEmptyState } from '@joho-erp/ui';
+import { AlertCircle, Clock, XCircle, Loader2, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
@@ -31,6 +31,7 @@ type ApiProduct = Product & ProductWithPricing;
 
 export function ProductList() {
   const t = useTranslations();
+  const tIllustrated = useTranslations('illustratedEmptyState');
   const locale = useLocale();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -217,12 +218,13 @@ export function ProductList() {
   // Error state
   if (error) {
     return (
-      <EmptyState
-        icon={AlertTriangle}
-        title={t('products.errorLoading')}
-        description={error.message}
-        action={{
-          label: t('common.retry'),
+      <IllustratedEmptyState
+        variant="error"
+        title={tIllustrated('error.title')}
+        description={tIllustrated('error.description')}
+        secondaryDescription={error.message}
+        primaryAction={{
+          label: tIllustrated('error.primaryAction'),
           onClick: () => window.location.reload(),
         }}
       />
@@ -532,14 +534,14 @@ export function ProductList() {
 
       {/* Empty State */}
       {inStockProducts.length === 0 && (
-        <EmptyState
-          icon={Package}
-          title={t('products.noProductsFound')}
-          description={selectedCategory ? t('products.emptyWithCategory') : t('products.emptyWithSearch')}
-          action={selectedCategory ? {
-            label: t('products.clearFilters'),
-            onClick: () => setSelectedCategory(undefined),
-          } : undefined}
+        <IllustratedEmptyState
+          variant="no-products"
+          title={tIllustrated('noProducts.title')}
+          description={tIllustrated('noProducts.description')}
+          primaryAction={{
+            label: selectedCategory ? tIllustrated('noProducts.primaryAction') : tIllustrated('noProducts.secondaryAction'),
+            onClick: selectedCategory ? () => setSelectedCategory(undefined) : () => window.location.reload(),
+          }}
           className="border border-dashed border-border rounded-2xl"
         />
       )}

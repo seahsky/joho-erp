@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Skeleton, Card, CardContent, useToast, EmptyState } from '@joho-erp/ui';
-import { ShoppingCart, Trash2, AlertTriangle } from 'lucide-react';
+import { Button, Skeleton, Card, CardContent, useToast, IllustratedEmptyState } from '@joho-erp/ui';
+import { Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';
 import { CartSummary } from './components/cart-summary';
@@ -92,12 +92,13 @@ export default function CartPage() {
       <div className="min-h-screen bg-background">
         <PageHeader title={t('cart.title')} subtitle={t('cart.subtitle')} />
         <div className="container mx-auto px-4 py-6">
-          <EmptyState
-            icon={AlertTriangle}
-            title={t('cart.messages.errorLoadingCart')}
-            description={error.message}
-            action={{
-              label: t('common.retry'),
+          <IllustratedEmptyState
+            variant="error"
+            title={t('illustratedEmptyState.error.title')}
+            description={t('illustratedEmptyState.error.description')}
+            secondaryDescription={error.message}
+            primaryAction={{
+              label: t('illustratedEmptyState.error.primaryAction'),
               onClick: () => window.location.reload(),
             }}
           />
@@ -129,12 +130,13 @@ export default function CartPage() {
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
         {isEmpty ? (
-          <EmptyState
-            icon={ShoppingCart}
-            title={t('cart.emptyCart')}
-            description={t('cart.emptyCartDescription')}
-            action={{
-              label: t('cart.continueShopping'),
+          <IllustratedEmptyState
+            variant="empty-cart"
+            title={t('illustratedEmptyState.emptyCart.title')}
+            description={t('illustratedEmptyState.emptyCart.description')}
+            secondaryDescription={t('illustratedEmptyState.emptyCart.secondaryDescription')}
+            primaryAction={{
+              label: t('illustratedEmptyState.emptyCart.primaryAction'),
               onClick: handleContinueShopping,
             }}
           />

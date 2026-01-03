@@ -776,5 +776,31 @@
     "nextAvailable": "Next available delivery: {date}",
     "compactBeforeCutoff": "Order by {time} for next-day delivery",
     "compactAfterCutoff": "Next delivery: {date}"
+  },
+  "illustratedEmptyState": {
+    "emptyCart": {
+      "title": "Your cart is waiting",
+      "description": "Browse our products and add items to get started",
+      "secondaryDescription": "We have great products ready for you",
+      "primaryAction": "Browse Products"
+    },
+    "noProducts": {
+      "title": "No products match your search",
+      "description": "Try adjusting your filters or search terms",
+      "primaryAction": "Clear Filters",
+      "secondaryAction": "Browse All"
+    },
+    "noOrders": {
+      "title": "No orders yet",
+      "description": "Once you place an order, it will appear here",
+      "secondaryDescription": "Ready to explore our catalog?",
+      "primaryAction": "Start Shopping"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "description": "We couldn't load this content right now",
+      "secondaryDescription": "Please try again or contact support",
+      "primaryAction": "Try Again"
+    }
   }
 }

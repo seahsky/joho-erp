@@ -198,4 +198,82 @@
     filter: blur(1.5rem);
     animation: subtle-pulse 3s ease-in-out infinite;
   }
+
+  /* Floating animations for illustrated empty states */
+  @keyframes float-gentle {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(2deg);
+    }
+  }
+
+  @keyframes float-secondary {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-5px) rotate(-2deg);
+    }
+  }
+
+  @keyframes drift-horizontal {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(5px);
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
+  }
+
+  .animate-float-secondary {
+    animation: float-secondary 5s ease-in-out infinite 0.5s;
+  }
+
+  .animate-drift {
+    animation: drift-horizontal 6s ease-in-out infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  /* Animation intensity modifiers */
+  .animation-subtle .animate-float-gentle,
+  .animation-subtle .animate-float-secondary,
+  .animation-subtle .animate-drift {
+    animation-duration: 6s;
+  }
+
+  .animation-vibrant .animate-float-gentle,
+  .animation-vibrant .animate-float-secondary,
+  .animation-vibrant .animate-drift {
+    animation-duration: 2.5s;
+  }
+
+  /* Reduced motion support for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-float-gentle,
+    .animate-float-secondary,
+    .animate-drift,
+    .animate-subtle-pulse {
+      animation: none;
+    }
+  }
 }

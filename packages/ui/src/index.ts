@@ -16,6 +16,8 @@ export * from './components/skeleton';
 export * from './components/table-skeleton';
 export * from './components/count-up';
 export * from './components/empty-state';
+export * from './components/illustrated-empty-state';
+export * from './components/empty-state-illustrations';
 export * from './components/dialog';
 export * from './components/alert-dialog';
 export * from './components/toast';

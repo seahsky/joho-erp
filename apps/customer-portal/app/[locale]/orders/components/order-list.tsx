@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, EmptyState, type StatusType } from '@joho-erp/ui';
-import { ShoppingCart, Loader2, Search, Calendar, X, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, IllustratedEmptyState, type StatusType } from '@joho-erp/ui';
+import { Loader2, Search, Calendar, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -14,6 +14,7 @@ import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatu
 export function OrderList() {
   const t = useTranslations('orders');
   const _tCommon = useTranslations('common');
+  const tIllustrated = useTranslations('illustratedEmptyState');
   const router = useRouter();
   const { toast } = useToast();
   const [filter, setFilter] = React.useState<'all' | StatusType>('all');
@@ -129,12 +130,13 @@ export function OrderList() {
   // Error state
   if (error) {
     return (
-      <EmptyState
-        icon={AlertTriangle}
-        title={t('errorLoading')}
-        description={error.message}
-        action={{
-          label: _tCommon('retry'),
+      <IllustratedEmptyState
+        variant="error"
+        title={tIllustrated('error.title')}
+        description={tIllustrated('error.description')}
+        secondaryDescription={error.message}
+        primaryAction={{
+          label: tIllustrated('error.primaryAction'),
           onClick: () => window.location.reload(),
         }}
       />
@@ -295,11 +297,13 @@ export function OrderList() {
 
       {/* Empty State */}
       {orders.length === 0 && (
-        <EmptyState
-          icon={ShoppingCart}
-          title={t('noOrders')}
-          action={{
-            label: t('startShopping'),
+        <IllustratedEmptyState
+          variant="no-orders"
+          title={tIllustrated('noOrders.title')}
+          description={tIllustrated('noOrders.description')}
+          secondaryDescription={tIllustrated('noOrders.secondaryDescription')}
+          primaryAction={{
+            label: tIllustrated('noOrders.primaryAction'),
             onClick: () => router.push('/products'),
           }}
         />

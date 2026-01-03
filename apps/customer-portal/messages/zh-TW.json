@@ -776,5 +776,31 @@
     "nextAvailable": "最早可配送日期：{date}",
     "compactBeforeCutoff": "在 {time} 前下單，可於次日送達",
     "compactAfterCutoff": "下次配送：{date}"
+  },
+  "illustratedEmptyState": {
+    "emptyCart": {
+      "title": "您的購物車在等您",
+      "description": "瀏覽我們的產品，將商品添加到購物車",
+      "secondaryDescription": "我們有優質產品等您選購",
+      "primaryAction": "瀏覽產品"
+    },
+    "noProducts": {
+      "title": "沒有匹配的產品",
+      "description": "請嘗試調整篩選條件或搜尋詞",
+      "primaryAction": "清除篩選",
+      "secondaryAction": "瀏覽全部"
+    },
+    "noOrders": {
+      "title": "暫無訂單",
+      "description": "下單後，您的訂單將顯示在這裡",
+      "secondaryDescription": "準備好探索我們的產品了嗎？",
+      "primaryAction": "開始購物"
+    },
+    "error": {
+      "title": "出錯了",
+      "description": "我們暫時無法載入此內容",
+      "secondaryDescription": "請重試或聯繫客服",
+      "primaryAction": "重試"
+    }
   }
 }
