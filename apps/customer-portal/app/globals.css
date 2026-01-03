@@ -317,6 +317,21 @@
     box-shadow: var(--shadow-md);
   }
 
+  /* Animated focus ring for enhanced interaction feedback */
+  @keyframes focus-ring-grow {
+    from {
+      box-shadow: 0 0 0 0px hsl(var(--ring) / 0.5);
+    }
+    to {
+      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.3);
+    }
+  }
+
+  .animate-focus-ring:focus-visible {
+    animation: focus-ring-grow 0.2s ease-out forwards;
+    outline: none;
+  }
+
   /* Reduced motion support for accessibility */
   @media (prefers-reduced-motion: reduce) {
     .animate-float-gentle,
@@ -326,6 +341,20 @@
     .animate-page-enter,
     .animate-content-ready {
       animation: none;
+    }
+
+    .animate-shimmer {
+      animation: none;
+      background: hsl(30 15% 96%);
+    }
+
+    .dark .animate-shimmer {
+      background: hsl(0 0% 15%);
+    }
+
+    .animate-focus-ring:focus-visible {
+      animation: none;
+      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.3);
     }
 
     .hover-lift:hover {

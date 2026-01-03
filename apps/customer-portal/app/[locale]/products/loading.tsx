@@ -2,7 +2,7 @@ import { Skeleton, Card, CardContent } from "@joho-erp/ui";
 
 export default function ProductsLoading() {
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6" aria-busy="true" role="status" aria-label="Loading products">
       {/* Header skeleton */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-8 w-48" />

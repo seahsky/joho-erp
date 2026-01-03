@@ -19,6 +19,7 @@ import {
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 import Link from 'next/link';
+import { StaggeredList } from '@/components/staggered-list';
 
 type UserDisplayData = { firstName: string | null; lastName: string | null } | null;
 
@@ -255,7 +256,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : recentOrders?.orders && recentOrders.orders.length > 0 ? (
-              <div className="space-y-3">
+              <StaggeredList className="space-y-3">
                 {recentOrders.orders.map((order) => (
                   <div
                     key={order.id}
@@ -273,7 +274,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
                     </div>
                   </div>
                 ))}
-              </div>
+              </StaggeredList>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />

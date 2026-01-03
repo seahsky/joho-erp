@@ -2,7 +2,7 @@ import { Skeleton, Card, CardContent, CardHeader } from "@joho-erp/ui";
 
 export default function OnboardingLoading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" aria-busy="true" role="status" aria-label="Loading onboarding">
       {/* Header skeleton */}
       <div className="border-b bg-card">
         <div className="container py-4 flex items-center justify-between">

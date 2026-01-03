@@ -2,7 +2,7 @@ import { Skeleton, Card, CardContent, CardHeader } from "@joho-erp/ui";
 
 export default function ProfileLoading() {
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6" aria-busy="true" role="status" aria-label="Loading profile">
       {/* Header skeleton */}
       <Skeleton className="h-8 w-32" />
 

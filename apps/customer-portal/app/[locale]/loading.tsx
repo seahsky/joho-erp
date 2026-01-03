@@ -2,7 +2,7 @@ import { Skeleton } from "@joho-erp/ui";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" aria-busy="true" role="status" aria-label="Loading page">
       {/* Navigation skeleton */}
       <div className="hidden md:block">
         <div className="h-16 border-b bg-card">

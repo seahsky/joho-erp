@@ -12,6 +12,7 @@ import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { OrderDetailsModal } from './order-details-modal';
 import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
+import { StaggeredList } from '@/components/staggered-list';
 
 export function OrderList() {
   const t = useTranslations('orders');
@@ -258,7 +259,7 @@ export function OrderList() {
       </div>
 
       {/* Order Cards */}
-      <div className="space-y-3">
+      <StaggeredList className="space-y-3">
         {orders.map((order) => (
           <Card key={order.id} className="overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-200 bg-gradient-to-br from-background to-muted/10">
             <CardContent className="p-4 md:p-6 space-y-3">
@@ -327,7 +328,7 @@ export function OrderList() {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </StaggeredList>
 
       {/* Empty State */}
       {orders.length === 0 && (

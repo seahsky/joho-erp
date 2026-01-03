@@ -11,6 +11,7 @@ import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp
 import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategoryFilter } from './category-filter';
+import { StaggeredList } from '@/components/staggered-list';
 
 // Product type for customer portal (receives stockStatus/hasStock from API)
 interface Product {
@@ -313,7 +314,7 @@ export function ProductList() {
       )}
 
       {/* Product List - Clean Minimalist Rows */}
-      <div className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
+      <StaggeredList className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
         {inStockProducts.map((product) => {
           return (
             <div
@@ -530,7 +531,7 @@ export function ProductList() {
             </div>
           );
         })}
-      </div>
+      </StaggeredList>
 
       {/* Empty State */}
       {inStockProducts.length === 0 && (

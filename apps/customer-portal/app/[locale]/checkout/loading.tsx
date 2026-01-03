@@ -2,7 +2,7 @@ import { Skeleton, Card, CardContent, CardHeader } from "@joho-erp/ui";
 
 export default function CheckoutLoading() {
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6" aria-busy="true" role="status" aria-label="Loading checkout">
       {/* Header skeleton */}
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-10 rounded-full" />

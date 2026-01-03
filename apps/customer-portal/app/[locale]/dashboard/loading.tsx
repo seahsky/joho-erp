@@ -2,7 +2,7 @@ import { Skeleton, Card, CardContent, CardHeader } from "@joho-erp/ui";
 
 export default function DashboardLoading() {
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6" aria-busy="true" role="status" aria-label="Loading dashboard">
       {/* Welcome section skeleton */}
       <div className="space-y-2">
         <Skeleton className="h-8 w-64" />
