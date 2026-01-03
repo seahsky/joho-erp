@@ -320,7 +320,7 @@ export function ProductList() {
               key={product.id}
               onClick={() => handleProductClick(product)}
               className={cn(
-                'group relative bg-background hover:bg-muted/50 transition-all duration-200 cursor-pointer',
+                'group relative bg-background hover:bg-muted/50 hover:shadow-sm transition-all duration-200 cursor-pointer',
                 'active:scale-[0.99]'
               )}
             >
@@ -397,7 +397,7 @@ export function ProductList() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-10 w-12 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
+                        className="h-11 w-12 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
                         onClick={(e) => handleDecrementBy5(e, product.id)}
                         disabled={pendingProductId === product.id}
                         aria-label={t('products.decrementBy5')}
@@ -409,7 +409,7 @@ export function ProductList() {
                       type="button"
                       onClick={() => handleProductClick(product)}
                       className={cn(
-                        'h-10 w-14 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-lg',
+                        'h-11 w-14 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-lg',
                         (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
                         canAddToCart && 'hover:bg-muted/50',
                         !canAddToCart && 'opacity-50 cursor-not-allowed'
@@ -422,7 +422,7 @@ export function ProductList() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-10 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
+                      className="h-11 w-12 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold"
                       onClick={(e) => handleIncrementBy5(e, product.id)}
                       disabled={!canAddToCart || pendingProductId === product.id}
                       aria-label={t('products.incrementBy5')}
@@ -491,7 +491,7 @@ export function ProductList() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-10 w-11 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
+                          className="h-11 w-11 rounded-l-xl rounded-r-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
                           onClick={(e) => handleDecrementBy5(e, product.id)}
                           disabled={pendingProductId === product.id}
                           aria-label={t('products.decrementBy5')}
@@ -503,7 +503,7 @@ export function ProductList() {
                         type="button"
                         onClick={() => handleProductClick(product)}
                         className={cn(
-                          'h-10 w-12 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-base',
+                          'h-11 w-12 border-y-2 border-border bg-background transition-colors flex items-center justify-center font-bold text-base',
                           (!canAddToCart || getCartQuantity(product.id) === 0) && 'border-l-2 rounded-l-xl',
                           canAddToCart && 'hover:bg-muted/50',
                           !canAddToCart && 'opacity-50 cursor-not-allowed'
@@ -516,7 +516,7 @@ export function ProductList() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-10 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
+                        className="h-11 w-11 rounded-r-xl rounded-l-none border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 font-semibold text-sm"
                         onClick={(e) => handleIncrementBy5(e, product.id)}
                         disabled={!canAddToCart || pendingProductId === product.id}
                         aria-label={t('products.incrementBy5')}

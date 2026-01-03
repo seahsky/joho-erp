@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { FileText } from 'lucide-react';
 import { useToast } from '@joho-erp/ui';
 import { api } from '@/trpc/client';
+import { Stepper, type Step } from '@/components/stepper';
 import { BusinessInfoStep } from './components/business-info-step';
 import { DirectorsStep } from './components/directors-step';
 import { FinancialStep } from './components/financial-step';
@@ -14,7 +15,12 @@ import { TradeReferencesStep } from './components/trade-references-step';
 import { ReviewStep } from './components/review-step';
 import { SignatureStep, type SignatureData } from './components/signature-step';
 
+const STORAGE_KEY = 'onboarding-form-data';
+
 type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'signatures';
+
+// Step IDs defined outside component to avoid React hook dependency issues
+const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'signatures'];
 
 export interface BusinessInfo {
   accountType: 'sole_trader' | 'partnership' | 'company' | 'other';
@@ -83,6 +89,14 @@ export interface TradeReferenceInfo {
   email: string;
 }
 
+interface SavedFormData {
+  currentStep: OnboardingStep;
+  businessInfo: Partial<BusinessInfo>;
+  directors: DirectorInfo[];
+  financialInfo: Partial<FinancialInfo>;
+  tradeReferences: TradeReferenceInfo[];
+}
+
 export default function OnboardingPage() {
   const t = useTranslations('onboarding');
   const router = useRouter();
@@ -94,9 +108,57 @@ export default function OnboardingPage() {
   const [directors, setDirectors] = useState<DirectorInfo[]>([]);
   const [financialInfo, setFinancialInfo] = useState<Partial<FinancialInfo>>({});
   const [tradeReferences, setTradeReferences] = useState<TradeReferenceInfo[]>([]);
+  const [isRestored, setIsRestored] = useState(false);
+
+  // Restore form data from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: SavedFormData = JSON.parse(saved);
+        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+        if (parsed.businessInfo) setBusinessInfo(parsed.businessInfo);
+        if (parsed.directors) setDirectors(parsed.directors);
+        if (parsed.financialInfo) setFinancialInfo(parsed.financialInfo);
+        if (parsed.tradeReferences) setTradeReferences(parsed.tradeReferences);
+      }
+    } catch (e) {
+      // Ignore parsing errors
+      console.warn('Failed to restore onboarding data:', e);
+    }
+    setIsRestored(true);
+  }, []);
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (!isRestored) return; // Don't save until initial restore is complete
+
+    const formData: SavedFormData = {
+      currentStep,
+      businessInfo,
+      directors,
+      financialInfo,
+      tradeReferences,
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    } catch (e) {
+      console.warn('Failed to save onboarding data:', e);
+    }
+  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, isRestored]);
+
+  // Clear localStorage on successful submission
+  const clearSavedData = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      console.warn('Failed to clear onboarding data:', e);
+    }
+  }, []);
 
   const registerMutation = api.customer.register.useMutation({
     onSuccess: () => {
+      clearSavedData();
       toast({
         title: t('messages.success'),
       });
@@ -134,24 +196,36 @@ export default function OnboardingPage() {
     });
   };
 
-  const steps: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'signatures'];
-  const currentStepIndex = steps.indexOf(currentStep);
-  const progress = ((currentStepIndex + 1) / steps.length) * 100;
+  const currentStepIndex = STEP_IDS.indexOf(currentStep);
+
+  // Build steps array with translated labels
+  const steps: Step[] = useMemo(
+    () =>
+      STEP_IDS.map((id) => ({
+        id,
+        label: t(`steps.${id}`),
+        shortLabel: t(`steps.${id}Short`),
+      })),
+    [t]
+  );
+
+  // Handle step click for navigation
+  const handleStepClick = useCallback(
+    (stepIndex: number) => {
+      setCurrentStep(STEP_IDS[stepIndex]!);
+    },
+    []
+  );
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      {/* Progress Bar */}
+      {/* Step Navigation */}
       <div className="mb-8">
-        <div className="mb-2 flex justify-between text-sm text-gray-600">
-          <span>{t('progress.step', { current: currentStepIndex + 1, total: steps.length })}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 w-full rounded-full bg-gray-200">
-          <div
-            className="h-2 rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <Stepper
+          steps={steps}
+          currentStepIndex={currentStepIndex}
+          onStepClick={handleStepClick}
+        />
       </div>
 
       {/* Application PDF Link */}
@@ -215,6 +289,12 @@ export default function OnboardingPage() {
             tradeReferences={tradeReferences}
             onNext={() => setCurrentStep('signatures')}
             onBack={() => setCurrentStep('references')}
+            onStepClick={(stepIndex) => {
+              const stepMap: OnboardingStep[] = ['business', 'directors', 'financial', 'references'];
+              if (stepIndex >= 0 && stepIndex < stepMap.length) {
+                setCurrentStep(stepMap[stepIndex]!);
+              }
+            }}
           />
         )}
 

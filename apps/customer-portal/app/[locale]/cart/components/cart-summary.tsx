@@ -40,7 +40,7 @@ export function CartSummary({
   };
 
   return (
-    <Card className="sticky top-24">
+    <Card className="sticky top-24 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-background to-muted/20">
       <CardHeader>
         <H3 className="text-xl">{t('cart.orderSummary')}</H3>
       </CardHeader>

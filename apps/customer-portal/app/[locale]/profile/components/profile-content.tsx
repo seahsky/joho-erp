@@ -138,7 +138,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
   return (
     <div className="space-y-4">
       {/* Profile Header */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-br from-primary/5 via-background to-background">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
@@ -159,7 +159,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Business Information */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -179,7 +179,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Contact Information */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -250,7 +250,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Delivery Address */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
@@ -327,7 +327,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Credit Information */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
@@ -392,7 +392,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Settings & Actions */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />

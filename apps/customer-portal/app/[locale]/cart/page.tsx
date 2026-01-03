@@ -4,7 +4,8 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Skeleton, Card, CardContent, useToast, IllustratedEmptyState } from '@joho-erp/ui';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Check, ShoppingCart as CartIcon, ClipboardCheck, CheckCircle } from 'lucide-react';
+import { cn } from '@joho-erp/ui';
 import { api } from '@/trpc/client';
 import { CartItem } from './components/cart-item';
 import { CartSummary } from './components/cart-summary';
@@ -109,6 +110,14 @@ export default function CartPage() {
 
   const isEmpty = !cart || cart.items.length === 0;
 
+  // Checkout progress steps
+  const checkoutSteps = [
+    { key: 'cart', icon: CartIcon, label: t('cart.checkoutProgress.step1') },
+    { key: 'review', icon: ClipboardCheck, label: t('cart.checkoutProgress.step2') },
+    { key: 'complete', icon: CheckCircle, label: t('cart.checkoutProgress.step3') },
+  ];
+  const currentStepIndex = 0; // Cart page is always step 0
+
   return (
     <>
       <ConfirmDialog
@@ -126,6 +135,48 @@ export default function CartPage() {
         title={t('cart.title')}
         subtitle={t('cart.subtitle')}
       />
+
+      {/* Checkout Progress Indicator */}
+      {!isEmpty && (
+        <div className="container mx-auto px-4 pt-4">
+          <div className="flex items-center justify-center gap-0 sm:gap-2 mb-2">
+            {checkoutSteps.map((step, idx) => {
+              const StepIcon = step.icon;
+              const isActive = idx === currentStepIndex;
+              const isCompleted = idx < currentStepIndex;
+
+              return (
+                <React.Fragment key={step.key}>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : isCompleted
+                          ? "bg-green-500 text-white"
+                          : "bg-muted text-muted-foreground"
+                    )}>
+                      {isCompleted ? <Check className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
+                    </div>
+                    <span className={cn(
+                      "text-xs font-medium hidden sm:block",
+                      isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-muted-foreground"
+                    )}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {idx < checkoutSteps.length - 1 && (
+                    <div className={cn(
+                      "h-0.5 w-8 sm:w-12 mx-1 sm:mx-2 transition-colors duration-200",
+                      idx < currentStepIndex ? "bg-green-500" : "bg-muted"
+                    )} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">

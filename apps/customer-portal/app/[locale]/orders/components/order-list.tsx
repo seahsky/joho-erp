@@ -3,8 +3,10 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, IllustratedEmptyState, type StatusType } from '@joho-erp/ui';
-import { Loader2, Search, Calendar, X } from 'lucide-react';
+import { Card, CardContent, Button, StatusBadge, Skeleton, H3, Muted, Input, IllustratedEmptyState, type StatusType, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@joho-erp/ui';
+import { Loader2, Search, Calendar, X, ArrowUpDown } from 'lucide-react';
+
+type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -23,6 +25,7 @@ export function OrderList() {
   const [dateTo, setDateTo] = React.useState<Date | undefined>(undefined);
   const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState<SortOption>('date-desc');
 
   // Debounced search value
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
@@ -40,6 +43,24 @@ export function OrderList() {
     dateTo: dateTo,
     limit: 50,
   });
+
+  // Sort orders based on selected sort option - must be called before early returns
+  const orders = React.useMemo(() => {
+    const rawOrders = data?.orders ?? [];
+    const sorted = [...rawOrders];
+    switch (sortBy) {
+      case 'date-desc':
+        return sorted.sort((a, b) => new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime());
+      case 'date-asc':
+        return sorted.sort((a, b) => new Date(a.orderedAt).getTime() - new Date(b.orderedAt).getTime());
+      case 'amount-desc':
+        return sorted.sort((a, b) => b.totalAmount - a.totalAmount);
+      case 'amount-asc':
+        return sorted.sort((a, b) => a.totalAmount - b.totalAmount);
+      default:
+        return sorted;
+    }
+  }, [data?.orders, sortBy]);
 
   const hasActiveFilters = debouncedSearch || dateFrom || dateTo;
 
@@ -143,9 +164,6 @@ export function OrderList() {
     );
   }
 
-  // Use orders from data - tRPC infers the correct types from Prisma
-  const orders = data?.orders ?? [];
-
   return (
     <div className="space-y-4">
       {/* Search and Date Filters */}
@@ -204,11 +222,27 @@ export function OrderList() {
             </Button>
           )}
         </div>
+
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={t('sortBy')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">{t('sortDateDesc')}</SelectItem>
+              <SelectItem value="date-asc">{t('sortDateAsc')}</SelectItem>
+              <SelectItem value="amount-desc">{t('sortAmountDesc')}</SelectItem>
+              <SelectItem value="amount-asc">{t('sortAmountAsc')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Filter Pills */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {(['all', 'confirmed', 'delivered'] as const).map((status) => (
+        {(['all', 'awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery', 'delivered', 'cancelled'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -226,7 +260,7 @@ export function OrderList() {
       {/* Order Cards */}
       <div className="space-y-3">
         {orders.map((order) => (
-          <Card key={order.id} className="overflow-hidden">
+          <Card key={order.id} className="overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-200 bg-gradient-to-br from-background to-muted/10">
             <CardContent className="p-4 md:p-6 space-y-3">
               {/* Order Header */}
               <div className="flex items-start justify-between">

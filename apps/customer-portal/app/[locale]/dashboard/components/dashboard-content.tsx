@@ -88,10 +88,12 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
-      <Card>
-        <CardContent className="p-6">
+      <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background shadow-md hover:shadow-lg transition-all duration-200">
+        {/* Subtle noise texture overlay */}
+        <div className="absolute inset-0 bg-noise opacity-[0.015] pointer-events-none" aria-hidden="true" />
+        <CardContent className="relative p-6">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
+            <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-md">
               {user?.firstName?.[0] || 'U'}
               {user?.lastName?.[0] || ''}
             </div>
@@ -108,7 +110,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Onboarding Status */}
-        <Card className={isOnboardingComplete ? 'border-green-200' : 'border-amber-200'}>
+        <Card className={`shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 ${isOnboardingComplete ? 'border-green-200' : 'border-amber-200'}`}>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
@@ -140,13 +142,13 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
 
         {/* Credit Application Status */}
         <Card
-          className={
+          className={`shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 ${
             creditStatus === 'approved'
               ? 'border-green-200'
               : creditStatus === 'pending'
               ? 'border-amber-200'
               : 'border-red-200'
-          }
+          }`}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -184,13 +186,13 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader>
           <CardTitle className="text-lg">{t('quickActions.title')}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link href={`/${locale}/products`}>
-            <Button variant="outline" className="w-full justify-start h-auto py-4">
+            <Button variant="outline" className="w-full justify-start h-auto py-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 border-2 hover:border-primary/50">
               <ShoppingCart className="h-5 w-5 mr-3" />
               <div className="text-left">
                 <div className="font-medium">{t('quickActions.browseProducts')}</div>
@@ -201,7 +203,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
             </Button>
           </Link>
           <Link href={`/${locale}/orders`}>
-            <Button variant="outline" className="w-full justify-start h-auto py-4">
+            <Button variant="outline" className="w-full justify-start h-auto py-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 border-2 hover:border-primary/50">
               <Package className="h-5 w-5 mr-3" />
               <div className="text-left">
                 <div className="font-medium">{t('quickActions.viewOrders')}</div>
@@ -237,7 +239,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
 
       {/* Recent Orders (only show if onboarding complete and credit approved) */}
       {isOnboardingComplete && creditStatus === 'approved' && (
-        <Card>
+        <Card className="shadow-sm hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{t('recentOrders.title')}</CardTitle>
             <Link href={`/${locale}/orders`}>
@@ -257,7 +259,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
                 {recentOrders.orders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-between p-3 border rounded-lg shadow-sm hover:shadow-md hover:bg-accent/30 transition-all duration-200"
                   >
                     <div>
                       <p className="font-medium">{order.orderNumber}</p>

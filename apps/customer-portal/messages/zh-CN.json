@@ -228,6 +228,11 @@
     "dateFrom": "开始日期",
     "dateTo": "结束日期",
     "clearFilters": "清除",
+    "sortBy": "排序方式",
+    "sortDateDesc": "最新优先",
+    "sortDateAsc": "最早优先",
+    "sortAmountDesc": "金额从高到低",
+    "sortAmountAsc": "金额从低到高",
     "backorder": {
       "pending_approval": "等待审批",
       "approved": "已批准缺货订单",
@@ -335,6 +340,11 @@
       "clearCartTitle": "清空购物车",
       "clearCartDescription": "确定要清空购物车中的所有商品吗？此操作无法撤销。",
       "clearCartConfirm": "清空购物车"
+    },
+    "checkoutProgress": {
+      "step1": "购物车",
+      "step2": "确认订单",
+      "step3": "完成"
     }
   },
   "miniCart": {
@@ -469,6 +479,20 @@
     "progress": {
       "step": "第 {current} 步，共 {total} 步"
     },
+    "steps": {
+      "business": "企业信息",
+      "businessShort": "企业",
+      "directors": "董事信息",
+      "directorsShort": "董事",
+      "financial": "财务信息",
+      "financialShort": "财务",
+      "references": "贸易推荐",
+      "referencesShort": "推荐",
+      "review": "审核",
+      "reviewShort": "审核",
+      "signatures": "签名",
+      "signaturesShort": "签名"
+    },
     "messages": {
       "success": "信用申请已成功提交！",
       "error": "提交申请失败，请重试。",
@@ -505,6 +529,7 @@
         "forecastPurchase": "预计采购额（未来3个月）"
       },
       "sections": {
+        "businessDetails": "企业信息",
         "contactPerson": "联系人",
         "deliveryAddress": "配送地址",
         "creditRequest": "信用申请"
@@ -615,6 +640,7 @@
     "review": {
       "title": "审核并提交",
       "description": "请在提交前审核您的申请",
+      "edit": "编辑",
       "sections": {
         "businessInfo": "企业信息",
         "directors": "董事/业主",

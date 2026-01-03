@@ -228,6 +228,11 @@
     "dateFrom": "From date",
     "dateTo": "To date",
     "clearFilters": "Clear",
+    "sortBy": "Sort by",
+    "sortDateDesc": "Newest first",
+    "sortDateAsc": "Oldest first",
+    "sortAmountDesc": "Highest amount",
+    "sortAmountAsc": "Lowest amount",
     "backorder": {
       "pending_approval": "Awaiting Approval",
       "approved": "Approved Backorder",
@@ -335,6 +340,11 @@
       "clearCartTitle": "Clear Shopping Cart",
       "clearCartDescription": "Are you sure you want to remove all items from your cart? This action cannot be undone.",
       "clearCartConfirm": "Clear Cart"
+    },
+    "checkoutProgress": {
+      "step1": "Cart",
+      "step2": "Review",
+      "step3": "Complete"
     }
   },
   "miniCart": {
@@ -353,6 +363,20 @@
   "onboarding": {
     "progress": {
       "step": "Step {current} of {total}"
+    },
+    "steps": {
+      "business": "Business Info",
+      "businessShort": "Business",
+      "directors": "Directors",
+      "directorsShort": "Directors",
+      "financial": "Financial",
+      "financialShort": "Financial",
+      "references": "References",
+      "referencesShort": "Refs",
+      "review": "Review",
+      "reviewShort": "Review",
+      "signatures": "Signature",
+      "signaturesShort": "Sign"
     },
     "messages": {
       "success": "Credit application submitted successfully!",
@@ -390,6 +414,7 @@
         "forecastPurchase": "Forecast Purchase (next 3 months)"
       },
       "sections": {
+        "businessDetails": "Business Details",
         "contactPerson": "Contact Person",
         "deliveryAddress": "Delivery Address",
         "creditRequest": "Credit Request"
@@ -500,6 +525,7 @@
     "review": {
       "title": "Review & Submit",
       "description": "Please review your application before submitting",
+      "edit": "Edit",
       "sections": {
         "businessInfo": "Business Information",
         "directors": "Directors/Proprietors",
