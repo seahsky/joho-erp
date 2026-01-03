@@ -224,7 +224,7 @@ export function OrderList() {
               type="date"
               value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
               onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : undefined)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               placeholder={t('dateFrom')}
             />
           </div>
@@ -234,7 +234,7 @@ export function OrderList() {
               type="date"
               value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
               onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : undefined)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               placeholder={t('dateTo')}
             />
           </div>

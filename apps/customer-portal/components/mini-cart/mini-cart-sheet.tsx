@@ -146,7 +146,7 @@ export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
           </div>
 
           {/* Safe area padding for devices with home indicator */}
-          <div className="h-safe-area-inset-bottom" />
+          <div className="h-[env(safe-area-inset-bottom)]" />
         </div>
       </div>
     </>
