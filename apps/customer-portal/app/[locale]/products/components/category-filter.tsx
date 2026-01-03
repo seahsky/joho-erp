@@ -47,9 +47,9 @@ export function CategoryFilter({
               variant="ghost"
               size="sm"
               onClick={() => onSelectCategory(undefined)}
-              className="h-8 text-xs"
+              className="h-11 text-xs"
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className="h-3.5 w-3.5 mr-1" />
               {t('products.clearFilters')}
             </Button>
           )}
@@ -64,7 +64,7 @@ export function CategoryFilter({
           <button
             onClick={() => onSelectCategory(undefined)}
             className={cn(
-              'px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
+              'px-4 min-h-11 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
               'border-2 hover:scale-105 active:scale-95',
               !selectedCategory
                 ? 'bg-primary text-primary-foreground border-primary shadow-md'
@@ -81,7 +81,7 @@ export function CategoryFilter({
               key={category}
               onClick={() => onSelectCategory(category)}
               className={cn(
-                'px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
+                'px-4 min-h-11 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
                 'border-2 hover:scale-105 active:scale-95',
                 selectedCategory === category
                   ? 'bg-primary text-primary-foreground border-primary shadow-md'
@@ -129,7 +129,7 @@ export function CategoryFilter({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCategorySelect(undefined)}
-                  className="h-9 text-sm"
+                  className="h-11 text-sm"
                 >
                   {t('products.clearFilters')}
                 </Button>

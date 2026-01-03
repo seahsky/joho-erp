@@ -113,14 +113,14 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
       {/* Quantity Controls */}
       <div className="flex items-center">
         <div className={cn(
-          'flex items-center gap-0.5 p-0.5 rounded-lg',
+          'flex items-center gap-1 p-1 rounded-xl',
           'bg-neutral-100/80 border border-neutral-200/60'
         )}>
           <Button
             variant="ghost"
             size="icon"
             className={cn(
-              'h-7 w-7 rounded-md',
+              'h-11 w-11 rounded-lg',
               'hover:bg-white hover:shadow-sm',
               'transition-all duration-150',
               'disabled:opacity-40'
@@ -129,11 +129,11 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
             disabled={item.quantity <= 1 || isPending}
             aria-label={t('products.decreaseQuantity')}
           >
-            <Minus className="h-3 w-3 text-neutral-600" />
+            <Minus className="h-4 w-4 text-neutral-600" />
           </Button>
 
           <span className={cn(
-            'w-8 text-center text-sm font-semibold text-neutral-800',
+            'w-10 text-center text-sm font-semibold text-neutral-800',
             'tabular-nums'
           )}>
             {item.quantity}
@@ -143,7 +143,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              'h-7 w-7 rounded-md',
+              'h-11 w-11 rounded-lg',
               'hover:bg-white hover:shadow-sm',
               'transition-all duration-150',
               'disabled:opacity-40'
@@ -152,7 +152,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
             disabled={isPending}
             aria-label={t('products.increaseQuantity')}
           >
-            <Plus className="h-3 w-3 text-neutral-600" />
+            <Plus className="h-4 w-4 text-neutral-600" />
           </Button>
         </div>
       </div>
@@ -167,7 +167,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
           variant="ghost"
           size="sm"
           className={cn(
-            'h-6 px-2 -mr-2',
+            'h-11 px-3 -mr-2',
             'text-neutral-400 hover:text-destructive',
             'hover:bg-destructive/10',
             'transition-all duration-200',
@@ -178,7 +178,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
           disabled={isPending}
           aria-label={t('miniCart.removeItem')}
         >
-          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          <Trash2 className="h-4 w-4 mr-1.5" />
           <span className="text-xs font-medium">{t('miniCart.removeItem')}</span>
         </Button>
       </div>

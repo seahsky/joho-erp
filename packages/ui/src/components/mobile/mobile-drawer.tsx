@@ -29,6 +29,53 @@ export function MobileDrawer({
 }: MobileDrawerProps) {
   useLockBodyScroll(open);
 
+  // Swipe gesture state
+  const [dragDistance, setDragDistance] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const startX = React.useRef(0);
+  const startY = React.useRef(0);
+  const drawerRef = React.useRef<HTMLDivElement>(null);
+
+  // Threshold for swipe to close (in pixels)
+  const SWIPE_THRESHOLD = 80;
+
+  const handleTouchStart = React.useCallback((e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  }, []);
+
+  const handleTouchMove = React.useCallback((e: React.TouchEvent) => {
+    if (!isDragging) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startX.current;
+    const diffY = currentY - startY.current;
+
+    // Only handle horizontal swipes (ignore if vertical movement is greater)
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
+
+    // For left drawer, swipe left to close (negative diff)
+    // For right drawer, swipe right to close (positive diff)
+    const isClosingSwipe = side === 'left' ? diffX < 0 : diffX > 0;
+
+    if (isClosingSwipe) {
+      const distance = Math.abs(diffX);
+      setDragDistance(Math.min(distance, 280)); // Cap at drawer width
+    }
+  }, [isDragging, side]);
+
+  const handleTouchEnd = React.useCallback(() => {
+    setIsDragging(false);
+
+    if (dragDistance >= SWIPE_THRESHOLD) {
+      onClose();
+    }
+
+    setDragDistance(0);
+  }, [dragDistance, onClose]);
+
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && open) {
@@ -42,17 +89,30 @@ export function MobileDrawer({
 
   if (!open) return null;
 
+  // Calculate transform based on drag
+  const getTransformStyle = () => {
+    if (dragDistance === 0) return {};
+
+    const translateX = side === 'left' ? -dragDistance : dragDistance;
+    return {
+      transform: `translateX(${translateX}px)`,
+      transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+    };
+  };
+
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        style={{ opacity: 1 - (dragDistance / 280) * 0.5 }}
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Drawer */}
       <div
+        ref={drawerRef}
         className={cn(
           'fixed top-0 bottom-0 z-50',
           'w-[280px] max-w-[80vw]',
@@ -63,8 +123,12 @@ export function MobileDrawer({
           side === 'left' ? 'left-0' : 'right-0',
           className
         )}
+        style={getTransformStyle()}
         role="dialog"
         aria-modal="true"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Close button */}
         <div className="sticky top-0 z-10 bg-background border-b border-border p-4 flex items-center justify-between">

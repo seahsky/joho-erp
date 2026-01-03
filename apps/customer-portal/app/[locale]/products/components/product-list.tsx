@@ -12,6 +12,7 @@ import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategoryFilter } from './category-filter';
 import { StaggeredList } from '@/components/staggered-list';
+import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
 
 // Product type for customer portal (receives stockStatus/hasStock from API)
 interface Product {
@@ -41,12 +42,26 @@ export function ProductList() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [pendingProductId, setPendingProductId] = React.useState<string | null>(null);
 
-  const { data: products, isLoading, error } = api.product.getAll.useQuery({
+  const { data: products, isLoading, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
     category: selectedCategory,
   });
 
   const utils = api.useUtils();
+
+  // Pull-to-refresh for mobile
+  const {
+    containerRef,
+    pullDistance,
+    isPulling: _isPulling,
+    isRefreshing,
+    touchHandlers,
+  } = usePullToRefresh({
+    onRefresh: async () => {
+      await refetch();
+    },
+    threshold: 80,
+  });
 
   // Check onboarding and credit status
   const { data: onboardingStatus } = api.customer.getOnboardingStatus.useQuery();
@@ -282,7 +297,20 @@ export function ProductList() {
   };
 
   return (
-    <div className="space-y-6">
+    <div
+      ref={containerRef}
+      className="space-y-6"
+      {...touchHandlers}
+    >
+      {/* Pull-to-refresh indicator (mobile only) */}
+      <div className="md:hidden">
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          threshold={80}
+          isRefreshing={isRefreshing}
+        />
+      </div>
+
       {/* Status Banner */}
       {renderStatusBanner()}
 

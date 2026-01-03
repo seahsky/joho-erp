@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,6 +23,8 @@ import {
   StatusBadge,
   Button,
   Label,
+  BottomSheet,
+  useIsMobile,
   type StatusType,
 } from '@joho-erp/ui';
 import { MapPin, Package, Info, XCircle, Loader2, Camera, CheckCircle, X } from 'lucide-react';
@@ -81,6 +82,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
   const tCommon = useTranslations('common');
   const { toast } = useToast();
   const utils = api.useUtils();
+  const isMobile = useIsMobile();
 
   // Cancel order state
   const [showCancelDialog, setShowCancelDialog] = React.useState(false);
@@ -152,31 +154,27 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
     });
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-        </DialogHeader>
+  // Shared content for both Dialog and BottomSheet
+  const renderContent = () => (
+    <>
+      {isLoading && (
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      )}
 
-        {isLoading && (
-          <div className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        )}
+      {error && (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Package className="h-16 w-16 text-destructive mb-4" />
+          <p className="text-lg font-medium text-destructive">{t('errorLoading')}</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      )}
 
-        {error && (
-          <div className="flex flex-col items-center justify-center py-8">
-            <Package className="h-16 w-16 text-destructive mb-4" />
-            <p className="text-lg font-medium text-destructive">{t('errorLoading')}</p>
-            <p className="text-sm text-muted-foreground">{error.message}</p>
-          </div>
-        )}
-
-        {order && (
-          <div className="space-y-4">
+      {order && (
+        <div className="space-y-4">
             {/* Order Header */}
             <Card>
               <CardContent className="p-4 space-y-3">
@@ -362,7 +360,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
 
             {/* Cancel Order Button - Available before packing starts */}
             {(order.status === 'confirmed' || order.status === 'awaiting_approval') && (
-              <DialogFooter className="mt-4">
+              <div className="mt-4">
                 <Button
                   variant="destructive"
                   onClick={() => setShowCancelDialog(true)}
@@ -371,11 +369,39 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                   <XCircle className="h-4 w-4 mr-2" />
                   {tOrders('cancel.title')}
                 </Button>
-              </DialogFooter>
+              </div>
             )}
           </div>
         )}
-      </DialogContent>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: BottomSheet */}
+      {isMobile ? (
+        <BottomSheet
+          open={open}
+          onClose={() => onOpenChange(false)}
+          snapPoints={[0.9]}
+          defaultSnap={0}
+        >
+          <div className="px-4 pb-4">
+            <H3 className="text-lg font-semibold mb-4">{t('title')}</H3>
+            {renderContent()}
+          </div>
+        </BottomSheet>
+      ) : (
+        /* Desktop: Dialog */
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('title')}</DialogTitle>
+            </DialogHeader>
+            {renderContent()}
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
@@ -454,6 +480,6 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
           </div>
         </div>
       )}
-    </Dialog>
+    </>
   );
 }

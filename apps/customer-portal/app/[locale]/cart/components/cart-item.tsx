@@ -157,7 +157,7 @@ export function CartItem({ item }: CartItemProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 w-11 text-sm font-semibold"
+                className="h-11 w-11 text-sm font-semibold"
                 onClick={handleDecreaseBy5}
                 disabled={isPending}
                 aria-label={t('cart.decrementBy5')}
@@ -167,7 +167,7 @@ export function CartItem({ item }: CartItemProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10"
+                className="h-11 w-11"
                 onClick={handleDecrease}
                 disabled={item.quantity <= 1 || isPending}
                 aria-label={t('products.decreaseQuantity')}
@@ -182,13 +182,13 @@ export function CartItem({ item }: CartItemProps) {
                   onChange={(e) => setEditQuantity(e.target.value)}
                   onBlur={handleQuantityBlur}
                   onKeyDown={handleQuantityKeyDown}
-                  className="h-10 w-14 text-center font-medium p-1"
+                  className="h-11 w-14 text-center font-medium p-1"
                 />
               ) : (
                 <button
                   type="button"
                   onClick={handleQuantityClick}
-                  className="h-10 w-14 border border-input rounded-md bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-medium"
+                  className="h-11 w-14 border border-input rounded-md bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-medium"
                   title={t('cart.tapToEditQuantity')}
                 >
                   {item.quantity}
@@ -197,7 +197,7 @@ export function CartItem({ item }: CartItemProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10"
+                className="h-11 w-11"
                 onClick={handleIncrease}
                 disabled={isPending}
                 aria-label={t('products.increaseQuantity')}
@@ -207,7 +207,7 @@ export function CartItem({ item }: CartItemProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 w-11 text-sm font-semibold"
+                className="h-11 w-11 text-sm font-semibold"
                 onClick={handleIncreaseBy5}
                 disabled={isPending}
                 aria-label={t('cart.incrementBy5')}
@@ -228,7 +228,7 @@ export function CartItem({ item }: CartItemProps) {
               size="sm"
               onClick={handleRemove}
               disabled={removeItem.isPending}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4 mr-1" />
               {t('cart.buttons.removeItem')}

@@ -41,17 +41,19 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
       <CartButtonStyles />
 
       {/* Custom bottom navigation with cart button */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 shadow-lg md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 px-2">
           {/* Home */}
           <Link
             href={`/${locale}`}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
-              isActive(`/${locale}`) ? 'text-primary' : 'text-neutral-500'
+              'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
+              isActive(`/${locale}`)
+                ? 'text-primary scale-105 font-medium'
+                : 'text-neutral-500 hover:text-neutral-700'
             )}
           >
-            <Home className="h-5 w-5" />
+            <Home className="h-6 w-6" />
             <span className="text-xs mt-1">{t('home')}</span>
           </Link>
 
@@ -59,11 +61,13 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           <Link
             href={`/${locale}/products`}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
-              isActive(`/${locale}/products`) ? 'text-primary' : 'text-neutral-500'
+              'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
+              isActive(`/${locale}/products`)
+                ? 'text-primary scale-105 font-medium'
+                : 'text-neutral-500 hover:text-neutral-700'
             )}
           >
-            <Package className="h-5 w-5" />
+            <Package className="h-6 w-6" />
             <span className="text-xs mt-1">{t('products')}</span>
           </Link>
 
@@ -71,21 +75,21 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           <button
             onClick={() => setIsCartOpen(true)}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
-              'text-neutral-500 hover:text-primary'
+              'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
+              'text-neutral-500 hover:text-primary active:scale-95'
             )}
           >
             <div className={cn(
               'relative',
               isAnimating && 'animate-cart-bounce'
             )}>
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-6 w-6" />
               {cartItemCount > 0 && (
                 <Badge
                   variant="destructive"
                   className={cn(
                     'absolute -top-2 -right-2 h-4 min-w-4 flex items-center justify-center px-1 text-[10px]',
-                    isAnimating && 'animate-badge-bump'
+                    isAnimating && 'animate-badge-pop'
                   )}
                 >
                   {cartItemCount}
@@ -99,11 +103,13 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           <Link
             href={`/${locale}/orders`}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
-              isActive(`/${locale}/orders`) ? 'text-primary' : 'text-neutral-500'
+              'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
+              isActive(`/${locale}/orders`)
+                ? 'text-primary scale-105 font-medium'
+                : 'text-neutral-500 hover:text-neutral-700'
             )}
           >
-            <ShoppingCart className="h-5 w-5" />
+            <ShoppingCart className="h-6 w-6" />
             <span className="text-xs mt-1">{t('myOrders')}</span>
           </Link>
 
@@ -111,18 +117,20 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           <Link
             href={`/${locale}/profile`}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 py-2 transition-colors',
-              isActive(`/${locale}/profile`) ? 'text-primary' : 'text-neutral-500'
+              'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
+              isActive(`/${locale}/profile`)
+                ? 'text-primary scale-105 font-medium'
+                : 'text-neutral-500 hover:text-neutral-700'
             )}
           >
-            <User className="h-5 w-5" />
+            <User className="h-6 w-6" />
             <span className="text-xs mt-1">{t('profile')}</span>
           </Link>
         </div>
       </nav>
 
-      {/* Spacer for bottom nav */}
-      <div className="h-16 md:hidden" />
+      {/* Spacer for bottom nav including safe area */}
+      <div className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" />
 
       {/* Mini Cart Bottom Sheet */}
       <MiniCartSheet

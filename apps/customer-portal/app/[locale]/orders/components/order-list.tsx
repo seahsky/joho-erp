@@ -13,6 +13,7 @@ import { useToast } from '@joho-erp/ui';
 import { OrderDetailsModal } from './order-details-modal';
 import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
 import { StaggeredList } from '@/components/staggered-list';
+import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
 
 export function OrderList() {
   const t = useTranslations('orders');
@@ -37,12 +38,25 @@ export function OrderList() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading, error } = api.order.getMyOrders.useQuery({
+  const { data, isLoading, error, refetch } = api.order.getMyOrders.useQuery({
     status: filter === 'all' ? undefined : filter,
     search: debouncedSearch || undefined,
     dateFrom: dateFrom,
     dateTo: dateTo,
     limit: 50,
+  });
+
+  // Pull-to-refresh for mobile
+  const {
+    containerRef,
+    pullDistance,
+    isRefreshing,
+    touchHandlers,
+  } = usePullToRefresh({
+    onRefresh: async () => {
+      await refetch();
+    },
+    threshold: 80,
   });
 
   // Sort orders based on selected sort option - must be called before early returns
@@ -166,7 +180,20 @@ export function OrderList() {
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      ref={containerRef}
+      className="space-y-4"
+      {...touchHandlers}
+    >
+      {/* Pull-to-refresh indicator (mobile only) */}
+      <div className="md:hidden">
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          threshold={80}
+          isRefreshing={isRefreshing}
+        />
+      </div>
+
       {/* Search and Date Filters */}
       <div className="space-y-3">
         {/* Search Input */}

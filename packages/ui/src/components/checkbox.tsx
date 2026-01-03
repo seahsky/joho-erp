@@ -17,24 +17,26 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     };
 
     return (
-      <div className="relative inline-flex items-center">
-        <input
-          type="checkbox"
-          ref={ref}
-          checked={checked}
-          onChange={handleChange}
-          className={cn(
-            'peer h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 checked:bg-primary checked:border-primary',
-            className
-          )}
-          {...props}
-        />
-        <Check
-          className={cn(
-            'pointer-events-none absolute left-0 h-4 w-4 text-primary-foreground opacity-0 peer-checked:opacity-100'
-          )}
-        />
-      </div>
+      <label className="relative inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer -m-3.5">
+        <div className="relative inline-flex items-center">
+          <input
+            type="checkbox"
+            ref={ref}
+            checked={checked}
+            onChange={handleChange}
+            className={cn(
+              'peer h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 checked:bg-primary checked:border-primary',
+              className
+            )}
+            {...props}
+          />
+          <Check
+            className={cn(
+              'pointer-events-none absolute left-0 h-4 w-4 text-primary-foreground opacity-0 peer-checked:opacity-100'
+            )}
+          />
+        </div>
+      </label>
     );
   }
 );
