@@ -10,7 +10,7 @@ import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
 import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
-import { CategoryFilter } from './category-filter';
+import { CategorySidebar } from './category-sidebar';
 import { StaggeredList } from '@/components/staggered-list';
 import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
 
@@ -167,15 +167,27 @@ export function ProductList() {
     }
   };
 
-  // Extract unique categories
-  const categories = React.useMemo(() => {
-    if (!products?.items) return [];
-    const uniqueCategories = new Set<ProductCategory>();
-    products.items.forEach(p => {
-      if (p.category) uniqueCategories.add(p.category);
-    });
-    return Array.from(uniqueCategories).sort();
+  // Extract unique categories with counts (from ALL in-stock products, not filtered)
+  const allInStockProducts = React.useMemo(() => {
+    const items = (products?.items || []) as ApiProduct[];
+    return items.filter(p => p.hasStock);
   }, [products]);
+
+  const categoriesWithCounts = React.useMemo(() => {
+    const counts = new Map<ProductCategory, number>();
+    allInStockProducts.forEach(p => {
+      if (p.category) {
+        counts.set(p.category, (counts.get(p.category) || 0) + 1);
+      }
+    });
+    return Array.from(counts.entries())
+      .map(([id, count]) => ({
+        id,
+        name: t(`categories.${id.toLowerCase()}`),
+        count,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allInStockProducts, t]);
 
   const getCategoryTranslation = (category: ProductCategory) => {
     const categoryKey = category.toLowerCase();
@@ -194,12 +206,11 @@ export function ProductList() {
     }
   };
 
-  // Filter products to only show in-stock items
-  // Cast to ApiProduct since customer portal always receives transformed data with stockStatus/hasStock
+  // Filter products by selected category (from pre-computed in-stock products)
   const inStockProducts = React.useMemo(() => {
-    const items = (products?.items || []) as ApiProduct[];
-    return items.filter(p => p.hasStock);
-  }, [products]);
+    if (!selectedCategory) return allInStockProducts;
+    return allInStockProducts.filter(p => p.category === selectedCategory);
+  }, [allInStockProducts, selectedCategory]);
 
   const handleProductClick = (product: Product & ProductWithPricing) => {
     setSelectedProduct(product);
@@ -247,7 +258,7 @@ export function ProductList() {
     );
   }
 
-  const totalProducts = inStockProducts.length;
+  const totalProducts = allInStockProducts.length;
 
   // Render warning banner based on onboarding/credit status
   const renderStatusBanner = () => {
@@ -299,50 +310,52 @@ export function ProductList() {
   return (
     <div
       ref={containerRef}
-      className="space-y-6"
+      className="flex gap-4 md:gap-6"
       {...touchHandlers}
     >
-      {/* Pull-to-refresh indicator (mobile only) */}
-      <div className="md:hidden">
-        <PullToRefreshIndicator
-          pullDistance={pullDistance}
-          threshold={80}
-          isRefreshing={isRefreshing}
-        />
-      </div>
-
-      {/* Status Banner */}
-      {renderStatusBanner()}
-
-      {/* Search */}
-      <MobileSearch
-        placeholder={t('products.searchPlaceholder')}
-        value={searchQuery}
-        onChange={setSearchQuery}
-        showFilter={false}
-      />
-
-      {/* Category Filter */}
-      {categories.length > 0 && (
-        <CategoryFilter
-          categories={categories}
+      {/* Category Sidebar */}
+      {categoriesWithCounts.length > 0 && (
+        <CategorySidebar
+          categories={categoriesWithCounts}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
-          productCount={totalProducts}
+          totalProductCount={totalProducts}
         />
       )}
 
-      {/* Product Count */}
-      {inStockProducts.length > 0 && (
-        <div className="flex items-center justify-between">
-          <Muted className="text-sm">
-            {t('products.showing', { count: inStockProducts.length })}
-          </Muted>
+      {/* Main Content */}
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* Pull-to-refresh indicator (mobile only) */}
+        <div className="md:hidden">
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            threshold={80}
+            isRefreshing={isRefreshing}
+          />
         </div>
-      )}
 
-      {/* Product List - Clean Minimalist Rows */}
-      <StaggeredList className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
+        {/* Status Banner */}
+        {renderStatusBanner()}
+
+        {/* Search */}
+        <MobileSearch
+          placeholder={t('products.searchPlaceholder')}
+          value={searchQuery}
+          onChange={setSearchQuery}
+          showFilter={false}
+        />
+
+        {/* Product Count */}
+        {inStockProducts.length > 0 && (
+          <div className="flex items-center justify-between">
+            <Muted className="text-sm">
+              {t('products.showing', { count: inStockProducts.length })}
+            </Muted>
+          </div>
+        )}
+
+        {/* Product List - Clean Minimalist Rows */}
+        <StaggeredList className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
         {inStockProducts.map((product) => {
           return (
             <div
@@ -559,21 +572,22 @@ export function ProductList() {
             </div>
           );
         })}
-      </StaggeredList>
+        </StaggeredList>
 
-      {/* Empty State */}
-      {inStockProducts.length === 0 && (
-        <IllustratedEmptyState
-          variant="no-products"
-          title={tIllustrated('noProducts.title')}
-          description={tIllustrated('noProducts.description')}
-          primaryAction={{
-            label: selectedCategory ? tIllustrated('noProducts.primaryAction') : tIllustrated('noProducts.secondaryAction'),
-            onClick: selectedCategory ? () => setSelectedCategory(undefined) : () => window.location.reload(),
-          }}
-          className="border border-dashed border-border rounded-2xl"
-        />
-      )}
+        {/* Empty State */}
+        {inStockProducts.length === 0 && (
+          <IllustratedEmptyState
+            variant="no-products"
+            title={tIllustrated('noProducts.title')}
+            description={tIllustrated('noProducts.description')}
+            primaryAction={{
+              label: selectedCategory ? tIllustrated('noProducts.primaryAction') : tIllustrated('noProducts.secondaryAction'),
+              onClick: selectedCategory ? () => setSelectedCategory(undefined) : () => window.location.reload(),
+            }}
+            className="border border-dashed border-border rounded-2xl"
+          />
+        )}
+      </div>
 
       {/* Product Detail Sidebar */}
       <ProductDetailSidebar

@@ -298,3 +298,10 @@ Prefer using Serena MCP tools over native Read tools for code and document conte
 - Semantic understanding: Navigate by symbols, not line numbers
 - Intelligent search: Pattern-based searching across codebase
 - Memory integration: Stores context about codebase for future reference
+
+## Git Workflow
+
+### Session Isolation
+- Use a new git worktree for every new session
+- This ensures clean separation between concurrent work streams
+- Prevents conflicts and maintains isolated development environments

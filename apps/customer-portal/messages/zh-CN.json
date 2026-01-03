@@ -186,7 +186,13 @@
     "onboardingRequired": "请完成注册流程以开始订购",
     "creditPending": "您的信用申请正在审核中",
     "creditRejected": "您的信用申请未获批准，请联系我们",
-    "completeOnboarding": "完成注册"
+    "completeOnboarding": "完成注册",
+    "sidebar": {
+      "categories": "产品分类",
+      "allProducts": "全部产品",
+      "expandCategories": "展开分类",
+      "collapseCategories": "收起分类"
+    }
   },
   "categories": {
     "beef": "牛肉",

@@ -186,7 +186,13 @@
     "onboardingRequired": "Complete your onboarding to start ordering",
     "creditPending": "Your credit application is pending approval",
     "creditRejected": "Your credit application was not approved. Please contact us.",
-    "completeOnboarding": "Complete Onboarding"
+    "completeOnboarding": "Complete Onboarding",
+    "sidebar": {
+      "categories": "Categories",
+      "allProducts": "All Products",
+      "expandCategories": "Show categories",
+      "collapseCategories": "Hide categories"
+    }
   },
   "categories": {
     "beef": "Beef",
