@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { CustomerBottomNav } from './customer-bottom-nav';
 import { CustomerDesktopNav } from './customer-desktop-nav';
+import { MotionProvider } from './motion-provider';
 import { useIsMobileOrTablet } from '@joho-erp/ui';
 
 export function CustomerLayoutWrapper({
@@ -20,7 +21,7 @@ export function CustomerLayoutWrapper({
     <>
       {isSignedIn && !isMobileOrTablet && <CustomerDesktopNav locale={locale} />}
       <main className={isSignedIn && isMobileOrTablet ? 'pb-16' : ''}>
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </main>
       {isSignedIn && isMobileOrTablet && <CustomerBottomNav locale={locale} />}
     </>
