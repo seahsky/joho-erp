@@ -27,7 +27,7 @@ interface RouteManifestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date;
-  selectedArea?: 'north' | 'south' | 'east' | 'west';
+  selectedArea?: string; // Area ID or 'all'
 }
 
 type LayoutOption = 'one-per-page' | 'compact';
@@ -76,10 +76,13 @@ export function RouteManifestDialog({
   const [areaFilter, setAreaFilter] = useState<string>(selectedArea || 'all');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Fetch areas dynamically
+  const { data: areas } = api.area.list.useQuery();
+
   const { data: manifestData, isLoading } = api.delivery.getManifestData.useQuery(
     {
       deliveryDate: selectedDate.toISOString(),
-      areaTag: areaFilter !== 'all' ? (areaFilter as 'north' | 'south' | 'east' | 'west') : undefined,
+      areaId: areaFilter !== 'all' ? areaFilter : undefined,
     },
     {
       enabled: open,
@@ -220,7 +223,7 @@ export function RouteManifestDialog({
             <p className="font-medium">{formatDate(selectedDate)}</p>
           </div>
 
-          {/* Area Filter */}
+          {/* Area Filter - Dynamic areas from API */}
           <div className="space-y-2">
             <Label htmlFor="area-select">{t('areaLabel')}</Label>
             <Select value={areaFilter} onValueChange={setAreaFilter}>
@@ -229,10 +232,11 @@ export function RouteManifestDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('allAreas')}</SelectItem>
-                <SelectItem value="north">{tCommon('area.north')}</SelectItem>
-                <SelectItem value="south">{tCommon('area.south')}</SelectItem>
-                <SelectItem value="east">{tCommon('area.east')}</SelectItem>
-                <SelectItem value="west">{tCommon('area.west')}</SelectItem>
+                {areas?.map((area) => (
+                  <SelectItem key={area.id} value={area.id}>
+                    {area.displayName}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

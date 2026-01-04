@@ -10,6 +10,7 @@ import {
   Button,
   Input,
   Label,
+  AreaBadge,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -55,8 +56,11 @@ export default function CreateOrderOnBehalfPage() {
   const [customSuburb, setCustomSuburb] = useState('');
   const [customState, setCustomState] = useState('');
   const [customPostcode, setCustomPostcode] = useState('');
-  const [customAreaTag, setCustomAreaTag] = useState<'north' | 'south' | 'east' | 'west'>('north');
+  const [customAreaId, setCustomAreaId] = useState<string>('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
+
+  // Fetch areas dynamically
+  const { data: areas } = api.area.list.useQuery();
 
   // Bypass options
   const [bypassCreditLimit, setBypassCreditLimit] = useState(false);
@@ -236,7 +240,7 @@ export default function CreateOrderOnBehalfPage() {
             suburb: customSuburb,
             state: customState,
             postcode: customPostcode,
-            areaTag: customAreaTag,
+            areaId: customAreaId || undefined,
             deliveryInstructions: deliveryInstructions || undefined,
           }
         : undefined,
@@ -380,9 +384,11 @@ export default function CreateOrderOnBehalfPage() {
                 )}
 
                 {/* Delivery Area */}
-                <p className="text-sm text-muted-foreground pt-2 border-t border-border">
-                  {t('info.deliveryArea')}: {selectedCustomer.deliveryAddress.areaTag.toUpperCase()}
-                </p>
+                {selectedCustomer.deliveryAddress.areaTag && (
+                  <p className="text-sm text-muted-foreground pt-2 border-t border-border">
+                    {t('info.deliveryArea')}: {selectedCustomer.deliveryAddress.areaTag.toUpperCase()}
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
@@ -553,19 +559,33 @@ export default function CreateOrderOnBehalfPage() {
                         />
                       </div>
                       <div>
-                        <Label>{t('fields.areaTag')}</Label>
+                        <Label>{t('fields.area')}</Label>
                         <select
                           className="w-full px-3 py-2 border rounded-md"
-                          value={customAreaTag}
-                          onChange={(e) =>
-                            setCustomAreaTag(e.target.value as 'north' | 'south' | 'east' | 'west')
-                          }
+                          value={customAreaId}
+                          onChange={(e) => setCustomAreaId(e.target.value)}
                         >
-                          <option value="north">{t('areas.north')}</option>
-                          <option value="south">{t('areas.south')}</option>
-                          <option value="east">{t('areas.east')}</option>
-                          <option value="west">{t('areas.west')}</option>
+                          <option value="">{t('fields.selectArea')}</option>
+                          {areas?.map((area) => (
+                            <option key={area.id} value={area.id}>
+                              {area.displayName}
+                            </option>
+                          ))}
                         </select>
+                        {customAreaId && areas && (
+                          <div className="mt-1">
+                            <AreaBadge
+                              area={
+                                areas.find((a) => a.id === customAreaId) ?? {
+                                  name: 'unknown',
+                                  displayName: 'Unknown',
+                                  colorVariant: 'default',
+                                }
+                              }
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div>

@@ -29,6 +29,7 @@ export * from './components/tabs';
 export * from './components/status-badge';
 export * from './components/stock-level-badge';
 export * from './components/area-badge';
+export * from './components/area-selector';
 export * from './components/days-on-hand-badge';
 
 // Mobile Components

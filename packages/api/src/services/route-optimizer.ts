@@ -138,7 +138,8 @@ export async function optimizeDeliveryRoute(
   >();
 
   for (const order of orders) {
-    const areaTag = order.deliveryAddress.areaTag;
+    // Use 'unassigned' as fallback for orders without area
+    const areaTag = order.deliveryAddress.areaTag ?? 'unassigned';
     if (!ordersByArea.has(areaTag)) {
       ordersByArea.set(areaTag, []);
     }
@@ -606,7 +607,8 @@ export async function optimizeDeliveryOnlyRoute(
   >();
 
   for (const order of orders) {
-    const areaTag = order.deliveryAddress.areaTag;
+    // Use 'unassigned' as fallback for orders without area
+    const areaTag = order.deliveryAddress.areaTag ?? 'unassigned';
     if (!ordersByArea.has(areaTag)) {
       ordersByArea.set(areaTag, []);
     }

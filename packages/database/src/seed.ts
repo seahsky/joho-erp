@@ -1253,7 +1253,7 @@ async function seed() {
     await prisma.customerPricing.deleteMany({});
     console.log('      ✓ Customer pricing deleted');
 
-    console.log('   Step 2: Deleting parent entities (Customers, Products, Categories, Company, Suburbs)...');
+    console.log('   Step 2: Deleting parent entities (Customers, Products, Categories, Company, Suburbs, Areas)...');
     await prisma.customer.deleteMany({});
     console.log('      ✓ Customers deleted');
     await prisma.product.deleteMany({});
@@ -1264,6 +1264,10 @@ async function seed() {
     console.log('      ✓ Company deleted');
     await prisma.suburbAreaMapping.deleteMany({});
     console.log('      ✓ Suburb mappings deleted');
+    await prisma.driverAreaAssignment.deleteMany({});
+    console.log('      ✓ Driver area assignments deleted');
+    await prisma.area.deleteMany({});
+    console.log('      ✓ Areas deleted');
 
     console.log('✅ All existing data cleared\n');
 
@@ -1332,6 +1336,24 @@ async function seed() {
     });
     console.log(`✅ Company created: ${company.businessName}\n`);
 
+    // Seed Areas (configurable delivery areas)
+    console.log('📍 Creating delivery areas...');
+    const areaConfigs = [
+      { name: 'north', displayName: 'North', colorVariant: 'info', sortOrder: 1 },
+      { name: 'south', displayName: 'South', colorVariant: 'success', sortOrder: 2 },
+      { name: 'east', displayName: 'East', colorVariant: 'warning', sortOrder: 3 },
+      { name: 'west', displayName: 'West', colorVariant: 'default', sortOrder: 4 },
+    ];
+    const createdAreas = await Promise.all(
+      areaConfigs.map((a) =>
+        prisma.area.create({
+          data: a,
+        })
+      )
+    );
+    const areaMap = new Map(createdAreas.map((a) => [a.name, a.id]));
+    console.log(`✅ Created ${createdAreas.length} delivery areas: ${areaConfigs.map(a => a.displayName).join(', ')}\n`);
+
     // Seed Suburb Mappings
     console.log('📍 Creating suburb area mappings...');
     const suburbMappings = await Promise.all(
@@ -1341,7 +1363,10 @@ async function seed() {
             suburb: s.suburb,
             postcode: s.postcode,
             state: 'VIC',
-            areaTag: s.areaTag,
+            areaId: areaMap.get(s.areaTag),
+            areaTag: s.areaTag, // Keep for backward compatibility
+            latitude: s.latitude,
+            longitude: s.longitude,
           },
         })
       )
@@ -1477,7 +1502,21 @@ async function seed() {
     // Seed Customers
     console.log('👥 Creating customers...');
     const createdCustomers = await Promise.all(
-      customers.map((c) => prisma.customer.create({ data: c }))
+      customers.map((c) => {
+        // Add areaId and areaName to deliveryAddress based on areaTag
+        const areaId = c.deliveryAddress?.areaTag ? areaMap.get(c.deliveryAddress.areaTag) : undefined;
+        const areaName = c.deliveryAddress?.areaTag || undefined;
+        return prisma.customer.create({
+          data: {
+            ...c,
+            deliveryAddress: {
+              ...c.deliveryAddress,
+              areaId,
+              areaName,
+            },
+          },
+        });
+      })
     );
 
     // Validate all customers have IDs
@@ -1686,11 +1725,12 @@ async function seed() {
     console.log('🚚 Creating driver area assignments...');
     await prisma.driverAreaAssignment.deleteMany({});
 
-    const driverAreaAssignments: { driverId: string; areaTag: AreaTag; isActive: boolean }[] = [];
+    const driverAreaAssignments: { driverId: string; areaId?: string; areaTag: AreaTag; isActive: boolean }[] = [];
     for (const driver of drivers) {
       for (const area of driver.areas) {
         driverAreaAssignments.push({
           driverId: driver.driverId,
+          areaId: areaMap.get(area),
           areaTag: area,
           isActive: true,
         });
@@ -1883,6 +1923,8 @@ async function seed() {
             postcode: '3056',
             country: 'Australia',
             areaTag: 'north' as AreaTag,
+            areaId: areaMap.get('north'),
+            areaName: 'north',
             latitude: -37.7680,
             longitude: 144.9610,
             deliveryInstructions: 'Temporary location - food festival venue, Gate 2 entrance',
@@ -2079,7 +2121,8 @@ async function seed() {
 
       routeOptimizations.push({
         deliveryDate,
-        areaTag: areaTag as any,
+        areaId: areaMap.get(areaTag),
+        areaTag: areaTag as any, // Deprecated - kept for backward compatibility
         orderCount: ordersInRoute.length,
         totalDistance,
         totalDuration,

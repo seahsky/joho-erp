@@ -40,7 +40,7 @@ export interface BusinessInfo {
     suburb: string;
     state: string;
     postcode: string;
-    areaTag: 'north' | 'south' | 'east' | 'west';
+    // areaTag removed - area is auto-assigned by backend based on suburb
     deliveryInstructions?: string;
   };
   billingAddress?: {

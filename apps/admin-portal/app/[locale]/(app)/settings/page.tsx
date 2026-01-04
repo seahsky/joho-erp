@@ -19,6 +19,7 @@ import {
   Package,
   FileText,
   MapPin,
+  Map,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -52,6 +53,14 @@ export default function SettingsPage() {
       titleKey: 'categories.delivery',
       descriptionKey: 'categories.deliveryDescription',
       href: `/${locale}/settings/delivery`,
+      available: true,
+    },
+    {
+      id: 'areas',
+      icon: Map,
+      titleKey: 'categories.areas',
+      descriptionKey: 'categories.areasDescription',
+      href: `/${locale}/settings/areas`,
       available: true,
     },
     {

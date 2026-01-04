@@ -1,4 +1,5 @@
 import { router } from './trpc';
+import { areaRouter } from './routers/area';
 import { auditRouter } from './routers/audit';
 import { categoryRouter } from './routers/category';
 import { customerRouter } from './routers/customer';
@@ -19,6 +20,7 @@ import { smsRouter } from './routers/sms';
 import { inventoryStatsRouter } from './routers/inventory-stats';
 
 export const appRouter = router({
+  area: areaRouter,
   audit: auditRouter,
   category: categoryRouter,
   customer: customerRouter,

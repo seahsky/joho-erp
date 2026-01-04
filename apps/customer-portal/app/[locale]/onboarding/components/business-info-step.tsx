@@ -57,9 +57,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
     if (!formData.deliveryAddress?.postcode || !/^\d{4}$/.test(formData.deliveryAddress.postcode)) {
       newErrors.deliveryPostcode = t('validation.postcodeInvalid');
     }
-    if (!formData.deliveryAddress?.areaTag) {
-      newErrors.areaTag = t('validation.areaTagRequired');
-    }
+    // areaTag validation removed - area is auto-assigned by backend based on suburb
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -336,30 +334,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               )}
             </div>
           </div>
-          <div>
-            <Label htmlFor="areaTag">{t('fields.areaTag')}</Label>
-            <select
-              id="areaTag"
-              className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2"
-              value={formData.deliveryAddress?.areaTag || ''}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  deliveryAddress: {
-                    ...formData.deliveryAddress!,
-                    areaTag: e.target.value as BusinessInfo['deliveryAddress']['areaTag'],
-                  },
-                })
-              }
-            >
-              <option value="">{t('fields.areaTagPlaceholder')}</option>
-              <option value="north">{t('areaTags.north')}</option>
-              <option value="south">{t('areaTags.south')}</option>
-              <option value="east">{t('areaTags.east')}</option>
-              <option value="west">{t('areaTags.west')}</option>
-            </select>
-            {errors.areaTag && <p className="mt-1 text-sm text-destructive">{errors.areaTag}</p>}
-          </div>
+          {/* Area selection removed - area is auto-assigned by backend based on suburb */}
           <div>
             <Label htmlFor="deliveryInstructions">{t('fields.deliveryInstructions')}</Label>
             <textarea

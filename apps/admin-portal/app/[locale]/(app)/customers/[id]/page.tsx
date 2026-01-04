@@ -13,6 +13,7 @@ import {
   CardTitle,
   Badge,
   StatusBadge,
+  AreaBadge,
   Skeleton,
   ResponsiveTable,
   type TableColumn,
@@ -881,9 +882,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     {customer.deliveryAddress.suburb}, {customer.deliveryAddress.state}{' '}
                     {customer.deliveryAddress.postcode}
                   </p>
-                  <Badge variant="outline" className="mt-2">
-                    {tCommon('area')}: {customer.deliveryAddress.areaTag}
-                  </Badge>
+                  {customer.deliveryAddress.areaTag && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">{tCommon('area')}:</span>
+                      <AreaBadge area={customer.deliveryAddress.areaTag} />
+                    </div>
+                  )}
                   {customer.deliveryAddress.deliveryInstructions && (
                     <div className="mt-4">
                       <p className="text-sm text-muted-foreground">{t('address.deliveryInstructions')}</p>

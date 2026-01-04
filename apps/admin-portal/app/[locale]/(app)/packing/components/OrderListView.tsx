@@ -11,7 +11,7 @@ interface OrderListViewProps {
     orderId: string;
     orderNumber: string;
     customerName: string;
-    areaTag: string;
+    areaTag: string | null; // Can be null if area unassigned
     packingSequence: number | null;
     deliverySequence: number | null;
     status: string;
@@ -105,8 +105,8 @@ export function OrderListView({
     };
   }, [focusedOrderNumber, orders, areaFilter, stableClearFocus]);
 
-  // Get unique area tags
-  const areaTags = Array.from(new Set(orders.map((o) => o.areaTag))).sort();
+  // Get unique area tags (filter out null values)
+  const areaTags = Array.from(new Set(orders.map((o) => o.areaTag).filter((tag): tag is string => tag !== null))).sort();
 
   // Filter orders by area
   const filteredByArea = areaFilter === 'all'

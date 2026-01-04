@@ -31,7 +31,8 @@ export const deliveryRouter = router({
       z
         .object({
           status: z.enum(['ready_for_delivery', 'delivered']).optional(),
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+          areaId: z.string().optional(), // New: filter by areaId
+          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: keep for backward compatibility
           dateFrom: z.date().optional(),
           dateTo: z.date().optional(),
           search: z.string().optional(),
@@ -48,7 +49,12 @@ export const deliveryRouter = router({
         },
       };
 
-      if (filters.areaTag) {
+      // Support both areaId (new) and areaTag (deprecated) filters
+      if (filters.areaId) {
+        where.deliveryAddress = {
+          is: { areaId: filters.areaId },
+        };
+      } else if (filters.areaTag) {
         where.deliveryAddress = {
           is: { areaTag: filters.areaTag },
         };
@@ -133,6 +139,7 @@ export const deliveryRouter = router({
         latitude: order.customer?.deliveryAddress?.latitude ?? null,
         longitude: order.customer?.deliveryAddress?.longitude ?? null,
         areaTag: order.deliveryAddress.areaTag,
+        areaName: order.deliveryAddress.areaName,
         status: order.status,
         estimatedTime:
           order.status === 'delivered'
@@ -444,7 +451,8 @@ export const deliveryRouter = router({
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+        areaId: z.string().optional(), // New: filter by areaId
+        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: keep for backward compatibility
       })
     )
     .query(async ({ input }) => {
@@ -463,8 +471,12 @@ export const deliveryRouter = router({
         status: 'ready_for_delivery',
       };
 
-      // Filter by area if specified
-      if (input.areaTag) {
+      // Filter by area if specified (support both areaId and areaTag)
+      if (input.areaId) {
+        where.deliveryAddress = {
+          is: { areaId: input.areaId },
+        };
+      } else if (input.areaTag) {
         where.deliveryAddress = {
           is: { areaTag: input.areaTag },
         };
@@ -1202,44 +1214,71 @@ export const deliveryRouter = router({
         },
       });
 
-      // Map assignments to drivers
-      const assignmentMap = new Map<string, AreaTag[]>();
+      // Map assignments to drivers - now returns areaIds instead of areaTags
+      const assignmentMap = new Map<string, string[]>();
       for (const assignment of areaAssignments) {
-        const areas = assignmentMap.get(assignment.driverId) || [];
-        areas.push(assignment.areaTag);
-        assignmentMap.set(assignment.driverId, areas);
+        if (assignment.areaId) {
+          const areaIds = assignmentMap.get(assignment.driverId) || [];
+          areaIds.push(assignment.areaId);
+          assignmentMap.set(assignment.driverId, areaIds);
+        } else if (assignment.areaTag) {
+          // Fallback for legacy data without areaId
+          const areaIds = assignmentMap.get(assignment.driverId) || [];
+          areaIds.push(assignment.areaTag); // Use areaTag as fallback identifier
+          assignmentMap.set(assignment.driverId, areaIds);
+        }
       }
 
       return drivers.map((driver) => ({
         ...driver,
-        areas: assignmentMap.get(driver.id) || [],
+        areaIds: assignmentMap.get(driver.id) || [],
       }));
     }),
 
   // Set driver's assigned areas (replaces all existing)
+  // Updated to support dynamic areaIds instead of hardcoded areaTags
   setDriverAreas: requirePermission('deliveries:manage')
     .input(
       z.object({
         driverId: z.string(),
-        areas: z.array(z.enum(['north', 'south', 'east', 'west'])),
+        areaIds: z.array(z.string()), // Dynamic area IDs
       })
     )
     .mutation(async ({ input }) => {
-      const { driverId, areas } = input;
+      const { driverId, areaIds } = input;
 
       // Delete existing assignments
       await prisma.driverAreaAssignment.deleteMany({
         where: { driverId },
       });
 
-      // Create new assignments
-      if (areas.length > 0) {
+      // Create new assignments with areaId references
+      if (areaIds.length > 0) {
+        // Fetch area details to populate areaTag for backward compatibility
+        const areas = await prisma.area.findMany({
+          where: { id: { in: areaIds } },
+        });
+        const areaMap = new Map(areas.map((a) => [a.id, a.name]));
+
+        // Valid legacy area tags for backward compatibility
+        const validAreaTags = ['north', 'south', 'east', 'west'] as const;
+        type AreaTagType = (typeof validAreaTags)[number];
+
         await prisma.driverAreaAssignment.createMany({
-          data: areas.map((areaTag) => ({
-            driverId,
-            areaTag,
-            isActive: true,
-          })),
+          data: areaIds.map((areaId) => {
+            const areaName = areaMap.get(areaId);
+            // Only set areaTag if it matches a legacy enum value
+            const areaTag = areaName && validAreaTags.includes(areaName as AreaTagType)
+              ? (areaName as AreaTagType)
+              : null;
+
+            return {
+              driverId,
+              areaId,
+              areaTag,
+              isActive: true,
+            };
+          }),
         });
       }
 
@@ -1251,7 +1290,8 @@ export const deliveryRouter = router({
     .input(
       z.object({
         date: z.string().optional(),
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+        areaId: z.string().optional(), // New: filter by areaId
+        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: keep for backward compatibility
       })
     )
     .query(async ({ input }) => {
@@ -1281,9 +1321,11 @@ export const deliveryRouter = router({
 
       const assignmentMap = new Map<string, AreaTag[]>();
       for (const assignment of areaAssignments) {
-        const areas = assignmentMap.get(assignment.driverId) || [];
-        areas.push(assignment.areaTag);
-        assignmentMap.set(assignment.driverId, areas);
+        if (assignment.areaTag) {
+          const areas = assignmentMap.get(assignment.driverId) || [];
+          areas.push(assignment.areaTag);
+          assignmentMap.set(assignment.driverId, areas);
+        }
       }
 
       // Get order counts for today if date provided
@@ -1311,9 +1353,16 @@ export const deliveryRouter = router({
         }
       }
 
-      // Filter by area if specified
+      // Filter by area if specified (support both areaId and areaTag)
       let filteredDrivers = drivers;
-      if (input.areaTag) {
+      if (input.areaId) {
+        const driversForArea = new Set(
+          areaAssignments
+            .filter((a) => a.areaId === input.areaId)
+            .map((a) => a.driverId)
+        );
+        filteredDrivers = drivers.filter((d) => driversForArea.has(d.id));
+      } else if (input.areaTag) {
         const driversForArea = new Set(
           areaAssignments
             .filter((a) => a.areaTag === input.areaTag)
@@ -1380,12 +1429,14 @@ export const deliveryRouter = router({
         where: { isActive: true },
       });
 
-      // Group drivers by area
+      // Group drivers by area (filter out assignments without areaTag)
       const driversByArea = new Map<AreaTag, string[]>();
       for (const assignment of areaAssignments) {
-        const drivers = driversByArea.get(assignment.areaTag) || [];
-        drivers.push(assignment.driverId);
-        driversByArea.set(assignment.areaTag, drivers);
+        if (assignment.areaTag) {
+          const drivers = driversByArea.get(assignment.areaTag) || [];
+          drivers.push(assignment.driverId);
+          driversByArea.set(assignment.areaTag, drivers);
+        }
       }
 
       // Get driver names from Clerk

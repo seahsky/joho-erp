@@ -522,8 +522,6 @@
         "suburb": "市郊",
         "state": "州",
         "postcode": "郵遞區號",
-        "areaTag": "配送區域",
-        "areaTagPlaceholder": "選擇配送區域",
         "deliveryInstructions": "配送說明",
         "requestedCreditLimit": "申請信用額度 ($)",
         "forecastPurchase": "預計採購額（未來3個月）"
@@ -540,12 +538,6 @@
         "company": "公司",
         "other": "其他"
       },
-      "areaTags": {
-        "north": "北區",
-        "south": "南區",
-        "east": "東區",
-        "west": "西區"
-      },
       "validation": {
         "accountTypeRequired": "帳戶類型為必填項",
         "businessNameRequired": "企業名稱為必填項",
@@ -558,8 +550,7 @@
         "streetRequired": "街道地址為必填項",
         "suburbRequired": "市郊為必填項",
         "stateRequired": "州為必填項",
-        "postcodeInvalid": "郵遞區號必須為 4 位數字",
-        "areaTagRequired": "配送區域為必填項"
+        "postcodeInvalid": "郵遞區號必須為 4 位數字"
       },
       "buttons": {
         "next": "下一步"

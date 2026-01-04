@@ -315,8 +315,9 @@ export const orderRouter = router({
       const orderNumber = generateOrderNumber();
 
       // Get delivery address and area tag for validation
+      // Convert null to undefined since validation functions expect optional AreaTag
       const deliveryAddress = input.deliveryAddress || customer.deliveryAddress;
-      const areaTag = deliveryAddress.areaTag;
+      const areaTag = deliveryAddress.areaTag ?? undefined;
 
       // Set delivery date (defaults to next available date)
       const minDeliveryDate = await getMinDeliveryDate(areaTag);
@@ -530,7 +531,8 @@ export const orderRouter = router({
             suburb: z.string().min(1),
             state: z.string(),
             postcode: z.string(),
-            areaTag: z.enum(['north', 'south', 'east', 'west']),
+            areaId: z.string().optional(), // Dynamic area ID
+            areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: backward compat
             deliveryInstructions: z.string().optional(),
           })
           .optional(),

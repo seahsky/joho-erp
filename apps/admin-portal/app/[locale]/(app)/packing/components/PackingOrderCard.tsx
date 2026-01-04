@@ -13,7 +13,7 @@ interface PackingOrderCardProps {
     orderId: string;
     orderNumber: string;
     customerName: string;
-    areaTag: string;
+    areaTag: string | null; // Can be null if area unassigned
     packingSequence: number | null;
     deliverySequence: number | null;
     driverPackingSequence?: number | null;

@@ -1,8 +1,29 @@
 // User Roles
 export type UserRole = 'customer' | 'admin' | 'sales' | 'packer' | 'driver' | 'manager';
 
-// Area Tags
+// Area Tags (deprecated - use Area model instead)
+/** @deprecated Use Area interface instead */
 export type AreaTag = 'north' | 'south' | 'east' | 'west';
+
+// Area Model Interface (configurable delivery areas)
+export interface Area {
+  id: string;
+  name: string;           // Lowercase identifier: "north", "east-1"
+  displayName: string;    // Human-readable: "North", "East 1"
+  colorVariant: string;   // Badge color: "info", "success", "warning", "default", "secondary"
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Area with usage counts (for admin management)
+export interface AreaWithCounts extends Area {
+  _count: {
+    suburbMappings: number;
+    driverAssignments: number;
+  };
+}
 
 // Order Status
 export type OrderStatus =
@@ -48,7 +69,11 @@ export interface CustomerMetadata {
   customerId: string;
   approvalStatus: CreditApplicationStatus;
   creditLimit: number;
-  areaTag: AreaTag;
+  // NEW: Area reference
+  areaId?: string | null;
+  areaName?: string | null;
+  /** @deprecated Use areaId/areaName instead */
+  areaTag?: AreaTag | null;
 }
 
 // Clerk Metadata for Admin
@@ -101,9 +126,15 @@ export interface Address {
   deliveryInstructions?: string;
 }
 
-// Delivery Address with Area Tag
+// Delivery Address with Area
 export interface DeliveryAddress extends Address {
-  areaTag: AreaTag;
+  // NEW: Area reference (areaId stored, areaName denormalized for display)
+  areaId?: string | null;    // Reference to Area model (null = unassigned)
+  areaName?: string | null;  // Denormalized area name for display (e.g., "north", "east-1")
+
+  /** @deprecated Use areaId/areaName instead */
+  areaTag?: AreaTag | null;
+
   latitude?: number;
   longitude?: number;
 }

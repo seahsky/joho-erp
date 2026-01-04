@@ -13,7 +13,7 @@ export interface PackingOrder {
   orderId: string;
   orderNumber: string;
   customerName: string;
-  areaTag: string;
+  areaTag: string | null; // Can be null if area is unassigned
 }
 
 /**
@@ -51,7 +51,7 @@ export interface PackingOrderCard {
   orderNumber: string;
   customerName: string;
   deliveryAddress: string;
-  areaTag: string;
+  areaTag: string | null; // Can be null if area is unassigned
   items: PackingOrderItem[];
   status: 'confirmed' | 'packing' | 'ready_for_delivery';
   allItemsPacked: boolean;

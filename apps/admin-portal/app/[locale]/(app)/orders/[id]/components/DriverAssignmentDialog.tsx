@@ -60,11 +60,12 @@ export function DriverAssignmentDialog({
   }, [open, currentDriverId]);
 
   // Fetch available drivers
+  // Note: areaTag prop is now an areaId (or may still be a legacy areaTag string)
   const { data: drivers, isLoading: driversLoading } =
     api.delivery.getDriversForAssignment.useQuery(
       {
         date: new Date().toISOString(),
-        areaTag: showAllDrivers ? undefined : (areaTag as 'north' | 'south' | 'east' | 'west' | undefined),
+        areaId: showAllDrivers ? undefined : (areaTag ?? undefined),
       },
       { enabled: open }
     );

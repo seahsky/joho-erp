@@ -105,10 +105,24 @@ export const AUSTRALIAN_STATES = [
   { value: 'ACT', label: 'Australian Capital Territory' },
 ] as const;
 
-// Area Tags
+// Area Color Variants - available colors for area badges
+export const AREA_COLOR_VARIANTS = ['info', 'success', 'warning', 'default', 'secondary'] as const;
+export type AreaColorVariant = (typeof AREA_COLOR_VARIANTS)[number];
+
+// Default area configs (for seeding/migration)
+export const DEFAULT_AREA_CONFIGS = [
+  { name: 'north', displayName: 'North', colorVariant: 'info' as AreaColorVariant },
+  { name: 'south', displayName: 'South', colorVariant: 'success' as AreaColorVariant },
+  { name: 'east', displayName: 'East', colorVariant: 'warning' as AreaColorVariant },
+  { name: 'west', displayName: 'West', colorVariant: 'default' as AreaColorVariant },
+] as const;
+
+// Area Tags - @deprecated Use Area model instead
+/** @deprecated Use Area model and AREA_COLOR_VARIANTS instead */
 export const AREA_TAGS = ['north', 'south', 'east', 'west'] as const;
 
 // Area Tag Translation Keys - use with t('areaTags.{key}')
+// Note: For new areas, translations are stored in the Area.displayName field
 export const AREA_TAG_KEYS = {
   north: 'areaTags.north',
   south: 'areaTags.south',
@@ -116,7 +130,7 @@ export const AREA_TAG_KEYS = {
   west: 'areaTags.west',
 } as const;
 
-// @deprecated Use AREA_TAG_KEYS with translations instead
+// @deprecated Use Area.displayName instead
 export const AREA_TAG_LABELS = {
   north: 'North',
   south: 'South',
