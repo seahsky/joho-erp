@@ -45,8 +45,7 @@ type Customer = {
     creditLimit: number;
   };
   deliveryAddress: {
-    areaTag?: string;  // deprecated
-    areaName?: string; // new
+    areaName?: string;
   };
   orders?: number;
 };
@@ -120,7 +119,7 @@ export default function CustomersPage() {
       key: 'area',
       label: t('area'),
       render: (customer) => {
-        const areaDisplay = customer.deliveryAddress.areaName || customer.deliveryAddress.areaTag;
+        const areaDisplay = customer.deliveryAddress.areaName;
         return areaDisplay ? <AreaBadge area={areaDisplay} /> : null;
       },
     },
@@ -202,8 +201,8 @@ export default function CustomersPage() {
           <MapPin className="h-4 w-4" />
           <span className="flex items-center gap-1">
             {t('area')}:{' '}
-            {(customer.deliveryAddress.areaName || customer.deliveryAddress.areaTag) ? (
-              <AreaBadge area={customer.deliveryAddress.areaName || customer.deliveryAddress.areaTag || ''} />
+            {customer.deliveryAddress.areaName ? (
+              <AreaBadge area={customer.deliveryAddress.areaName} />
             ) : (
               '-'
             )}

@@ -165,7 +165,7 @@ export function RouteManifestDialog({
       const doc = (
         <RouteManifestDocument
           manifestDate={formatDate(new Date(manifestData.manifestDate))}
-          areaTag={manifestData.areaTag}
+          areaName={manifestData.areaName}
           warehouseAddress={manifestData.warehouseAddress}
           routeSummary={manifestData.routeSummary}
           stops={formattedStops}

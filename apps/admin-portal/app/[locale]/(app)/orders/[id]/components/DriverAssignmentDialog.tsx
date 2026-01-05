@@ -25,7 +25,7 @@ import { api } from '@/trpc/client';
 interface DriverAssignmentDialogProps {
   orderId: string;
   orderNumber: string;
-  areaTag?: string | null;
+  areaId?: string | null;
   currentDriverId?: string | null;
   currentDriverName?: string | null;
   open: boolean;
@@ -36,7 +36,7 @@ interface DriverAssignmentDialogProps {
 export function DriverAssignmentDialog({
   orderId,
   orderNumber,
-  areaTag,
+  areaId,
   currentDriverId,
   currentDriverName,
   open,
@@ -60,12 +60,11 @@ export function DriverAssignmentDialog({
   }, [open, currentDriverId]);
 
   // Fetch available drivers
-  // Note: areaTag prop is now an areaId (or may still be a legacy areaTag string)
   const { data: drivers, isLoading: driversLoading } =
     api.delivery.getDriversForAssignment.useQuery(
       {
         date: new Date().toISOString(),
-        areaId: showAllDrivers ? undefined : (areaTag ?? undefined),
+        areaId: showAllDrivers ? undefined : (areaId ?? undefined),
       },
       { enabled: open }
     );
@@ -104,7 +103,7 @@ export function DriverAssignmentDialog({
 
   // Check if area-specific drivers are available
   const hasAreaDrivers = drivers && drivers.length > 0;
-  const needsAllDrivers = !hasAreaDrivers && areaTag && !showAllDrivers;
+  const needsAllDrivers = !hasAreaDrivers && areaId && !showAllDrivers;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,13 +128,13 @@ export function DriverAssignmentDialog({
             </div>
           )}
 
-          {areaTag && (
+          {areaId && (
             <div>
               <Label className="text-sm text-muted-foreground">
                 {t('deliveryArea')}
               </Label>
               <Badge variant="secondary" className="capitalize">
-                {areaTag}
+                {areaId}
               </Badge>
             </div>
           )}
@@ -162,7 +161,7 @@ export function DriverAssignmentDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="driver-select">{t('selectDriver')}</Label>
-              {areaTag && !showAllDrivers && hasAreaDrivers && (
+              {areaId && !showAllDrivers && hasAreaDrivers && (
                 <Button
                   variant="ghost"
                   size="sm"

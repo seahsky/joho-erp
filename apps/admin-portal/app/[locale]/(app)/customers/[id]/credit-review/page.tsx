@@ -319,7 +319,7 @@ export default function CreditReviewPage({ params }: PageProps) {
                   {customer.deliveryAddress.state} {customer.deliveryAddress.postcode}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Area: {customer.deliveryAddress.areaTag}
+                  Area: {customer.deliveryAddress.areaName}
                 </p>
               </div>
               {customer.billingAddress && (

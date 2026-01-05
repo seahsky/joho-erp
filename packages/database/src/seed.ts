@@ -1,30 +1,30 @@
 import { prisma } from './prisma';
-import type { AreaTag, ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState, InventoryReferenceType } from './generated/prisma';
+import type { ProductUnit, ProductStatus, ProductCategory, CustomerStatus, CreditApplicationStatus, InventoryTransactionType, AdjustmentType, AuditAction, SystemLogLevel, ProofOfDeliveryType, OrderStatus, AustralianState, InventoryReferenceType } from './generated/prisma';
 import { createMoney, multiplyMoney, addMoney, toCents } from '@joho-erp/shared';
 import { validateSeedData, printValidationResults, checkExistingData } from './seed-validation';
 
-// Melbourne suburbs with coordinates and area tags
+// Melbourne suburbs with coordinates and area names
 const melbourneSuburbs = [
   // North
-  { suburb: 'Preston', postcode: '3072', areaTag: 'north' as AreaTag, latitude: -37.7465, longitude: 145.0034 },
-  { suburb: 'Coburg', postcode: '3058', areaTag: 'north' as AreaTag, latitude: -37.7489, longitude: 144.9631 },
-  { suburb: 'Brunswick', postcode: '3056', areaTag: 'north' as AreaTag, latitude: -37.7672, longitude: 144.9597 },
-  { suburb: 'Northcote', postcode: '3070', areaTag: 'north' as AreaTag, latitude: -37.7706, longitude: 144.9996 },
+  { suburb: 'Preston', postcode: '3072', areaName: 'north', latitude: -37.7465, longitude: 145.0034 },
+  { suburb: 'Coburg', postcode: '3058', areaName: 'north', latitude: -37.7489, longitude: 144.9631 },
+  { suburb: 'Brunswick', postcode: '3056', areaName: 'north', latitude: -37.7672, longitude: 144.9597 },
+  { suburb: 'Northcote', postcode: '3070', areaName: 'north', latitude: -37.7706, longitude: 144.9996 },
 
   // South
-  { suburb: 'St Kilda', postcode: '3182', areaTag: 'south' as AreaTag, latitude: -37.8683, longitude: 144.9808 },
-  { suburb: 'Brighton', postcode: '3186', areaTag: 'south' as AreaTag, latitude: -37.9121, longitude: 144.9968 },
-  { suburb: 'Elwood', postcode: '3184', areaTag: 'south' as AreaTag, latitude: -37.8824, longitude: 144.9868 },
+  { suburb: 'St Kilda', postcode: '3182', areaName: 'south', latitude: -37.8683, longitude: 144.9808 },
+  { suburb: 'Brighton', postcode: '3186', areaName: 'south', latitude: -37.9121, longitude: 144.9968 },
+  { suburb: 'Elwood', postcode: '3184', areaName: 'south', latitude: -37.8824, longitude: 144.9868 },
 
   // East
-  { suburb: 'Richmond', postcode: '3121', areaTag: 'east' as AreaTag, latitude: -37.8197, longitude: 144.9983 },
-  { suburb: 'Camberwell', postcode: '3124', areaTag: 'east' as AreaTag, latitude: -37.8365, longitude: 145.0737 },
-  { suburb: 'Hawthorn', postcode: '3122', areaTag: 'east' as AreaTag, latitude: -37.8226, longitude: 145.0353 },
+  { suburb: 'Richmond', postcode: '3121', areaName: 'east', latitude: -37.8197, longitude: 144.9983 },
+  { suburb: 'Camberwell', postcode: '3124', areaName: 'east', latitude: -37.8365, longitude: 145.0737 },
+  { suburb: 'Hawthorn', postcode: '3122', areaName: 'east', latitude: -37.8226, longitude: 145.0353 },
 
   // West
-  { suburb: 'Footscray', postcode: '3011', areaTag: 'west' as AreaTag, latitude: -37.8004, longitude: 144.9006 },
-  { suburb: 'Williamstown', postcode: '3016', areaTag: 'west' as AreaTag, latitude: -37.8648, longitude: 144.8997 },
-  { suburb: 'Yarraville', postcode: '3013', areaTag: 'west' as AreaTag, latitude: -37.8153, longitude: 144.8902 },
+  { suburb: 'Footscray', postcode: '3011', areaName: 'west', latitude: -37.8004, longitude: 144.9006 },
+  { suburb: 'Williamstown', postcode: '3016', areaName: 'west', latitude: -37.8648, longitude: 144.8997 },
+  { suburb: 'Yarraville', postcode: '3013', areaName: 'west', latitude: -37.8153, longitude: 144.8902 },
 ];
 
 // Beef and Pork products
@@ -378,7 +378,7 @@ const customers = [
       state: 'VIC',
       postcode: '3121',
       country: 'Australia',
-      areaTag: 'east' as AreaTag,
+      areaName: 'east',
       latitude: -37.8197,
       longitude: 144.9983,
       deliveryInstructions: 'Rear entrance via back alley',
@@ -482,7 +482,7 @@ const customers = [
       state: 'VIC',
       postcode: '3056',
       country: 'Australia',
-      areaTag: 'north' as AreaTag,
+      areaName: 'north',
       latitude: -37.7672,
       longitude: 144.9597,
       deliveryInstructions: 'Please deliver before 7 AM',
@@ -561,7 +561,7 @@ const customers = [
       state: 'VIC',
       postcode: '3011',
       country: 'Australia',
-      areaTag: 'west' as AreaTag,
+      areaName: 'west',
       latitude: -37.8004,
       longitude: 144.9006,
       deliveryInstructions: 'Loading dock at rear',
@@ -593,7 +593,7 @@ const customers = [
       state: 'VIC',
       postcode: '3186',
       country: 'Australia',
-      areaTag: 'south' as AreaTag,
+      areaName: 'south',
       latitude: -37.9121,
       longitude: 144.9968,
       deliveryInstructions: 'Ring doorbell, someone always available',
@@ -695,7 +695,7 @@ const customers = [
       state: 'VIC',
       postcode: '3124',
       country: 'Australia',
-      areaTag: 'east' as AreaTag,
+      areaName: 'east',
       latitude: -37.8365,
       longitude: 145.0737,
       deliveryInstructions: 'Shop front delivery, 6-8 AM preferred',
@@ -725,7 +725,7 @@ const customers = [
       state: 'VIC',
       postcode: '3182',
       country: 'Australia',
-      areaTag: 'south' as AreaTag,
+      areaName: 'south',
       latitude: -37.8683,
       longitude: 144.9808,
       deliveryInstructions: 'Side entrance, call on arrival',
@@ -760,7 +760,7 @@ const customers = [
       state: 'VIC',
       postcode: '3070',
       country: 'Australia',
-      areaTag: 'north' as AreaTag,
+      areaName: 'north',
       latitude: -37.7706,
       longitude: 144.9996,
       deliveryInstructions: 'Early morning delivery essential',
@@ -796,7 +796,7 @@ const customers = [
       state: 'VIC',
       postcode: '3013',
       country: 'Australia',
-      areaTag: 'west' as AreaTag,
+      areaName: 'west',
       latitude: -37.8153,
       longitude: 144.8902,
       deliveryInstructions: 'Back entrance via car park',
@@ -829,7 +829,7 @@ const customers = [
       state: 'VIC',
       postcode: '3072',
       country: 'Australia',
-      areaTag: 'north' as AreaTag,
+      areaName: 'north',
       latitude: -37.7465,
       longitude: 145.0034,
       deliveryInstructions: 'Delivery during business hours only',
@@ -863,7 +863,7 @@ const customers = [
       state: 'VIC',
       postcode: '3058',
       country: 'Australia',
-      areaTag: 'north' as AreaTag,
+      areaName: 'north',
       latitude: -37.7489,
       longitude: 144.9631,
     },
@@ -896,7 +896,7 @@ const customers = [
       state: 'VIC',
       postcode: '3122',
       country: 'Australia',
-      areaTag: 'east' as AreaTag,
+      areaName: 'east',
       latitude: -37.8226,
       longitude: 145.0353,
     },
@@ -928,7 +928,7 @@ const customers = [
       state: 'VIC',
       postcode: '3184',
       country: 'Australia',
-      areaTag: 'south' as AreaTag,
+      areaName: 'south',
       latitude: -37.8824,
       longitude: 144.9868,
       // No delivery instructions
@@ -1363,8 +1363,7 @@ async function seed() {
             suburb: s.suburb,
             postcode: s.postcode,
             state: 'VIC',
-            areaId: areaMap.get(s.areaTag),
-            areaTag: s.areaTag, // Keep for backward compatibility
+            areaId: areaMap.get(s.areaName),
             latitude: s.latitude,
             longitude: s.longitude,
           },
@@ -1503,16 +1502,14 @@ async function seed() {
     console.log('👥 Creating customers...');
     const createdCustomers = await Promise.all(
       customers.map((c) => {
-        // Add areaId and areaName to deliveryAddress based on areaTag
-        const areaId = c.deliveryAddress?.areaTag ? areaMap.get(c.deliveryAddress.areaTag) : undefined;
-        const areaName = c.deliveryAddress?.areaTag || undefined;
+        // Add areaId to deliveryAddress based on areaName
+        const areaId = c.deliveryAddress?.areaName ? areaMap.get(c.deliveryAddress.areaName) : undefined;
         return prisma.customer.create({
           data: {
             ...c,
             deliveryAddress: {
               ...c.deliveryAddress,
               areaId,
-              areaName,
             },
           },
         });
@@ -1528,7 +1525,7 @@ async function seed() {
     console.log(`✅ Created ${createdCustomers.length} customers (all with valid IDs):`);
     createdCustomers.forEach((c) => {
       console.log(
-        `   - ${c.businessName} (${c.deliveryAddress.suburb}, ${c.deliveryAddress.areaTag}) - ${c.creditApplication.status} [ID: ${c.id.substring(0, 8)}...]`
+        `   - ${c.businessName} (${c.deliveryAddress.suburb}, ${c.deliveryAddress.areaName}) - ${c.creditApplication.status} [ID: ${c.id.substring(0, 8)}...]`
       );
     });
     console.log('');
@@ -1725,15 +1722,17 @@ async function seed() {
     console.log('🚚 Creating driver area assignments...');
     await prisma.driverAreaAssignment.deleteMany({});
 
-    const driverAreaAssignments: { driverId: string; areaId?: string; areaTag: AreaTag; isActive: boolean }[] = [];
+    const driverAreaAssignments: { driverId: string; areaId: string; isActive: boolean }[] = [];
     for (const driver of drivers) {
       for (const area of driver.areas) {
-        driverAreaAssignments.push({
-          driverId: driver.driverId,
-          areaId: areaMap.get(area),
-          areaTag: area,
-          isActive: true,
-        });
+        const areaId = areaMap.get(area);
+        if (areaId) {
+          driverAreaAssignments.push({
+            driverId: driver.driverId,
+            areaId,
+            isActive: true,
+          });
+        }
       }
     }
 
@@ -1922,9 +1921,8 @@ async function seed() {
             state: 'VIC',
             postcode: '3056',
             country: 'Australia',
-            areaTag: 'north' as AreaTag,
-            areaId: areaMap.get('north'),
             areaName: 'north',
+            areaId: areaMap.get('north'),
             latitude: -37.7680,
             longitude: 144.9610,
             deliveryInstructions: 'Temporary location - food festival venue, Gate 2 entrance',
@@ -2074,8 +2072,8 @@ async function seed() {
     for (const order of allCreatedOrders) {
       if (order.status === 'ready_for_delivery' || order.status === 'delivered') {
         const dateKey = order.requestedDeliveryDate.toISOString().split('T')[0];
-        const areaTag = order.deliveryAddress.areaTag;
-        const key = `${dateKey}|${areaTag}`;
+        const areaName = order.deliveryAddress.areaName;
+        const key = `${dateKey}|${areaName}`;
 
         if (!ordersByDateAndArea.has(key)) {
           ordersByDateAndArea.set(key, []);
@@ -2086,7 +2084,7 @@ async function seed() {
 
     // Create route optimizations for each date/area combination
     for (const [key, ordersInRoute] of ordersByDateAndArea.entries()) {
-      const [dateStr, areaTag] = key.split('|');
+      const [dateStr, areaName] = key.split('|');
       const deliveryDate = new Date(dateStr);
 
       // Skip if no orders
@@ -2121,8 +2119,7 @@ async function seed() {
 
       routeOptimizations.push({
         deliveryDate,
-        areaId: areaMap.get(areaTag),
-        areaTag: areaTag as any, // Deprecated - kept for backward compatibility
+        areaId: areaMap.get(areaName),
         orderCount: ordersInRoute.length,
         totalDistance,
         totalDuration,
@@ -2166,7 +2163,8 @@ async function seed() {
     );
     console.log(`✅ Created ${createdRouteOptimizations.length} route optimizations:`);
     for (const route of createdRouteOptimizations) {
-      console.log(`   - ${route.deliveryDate.toISOString().split('T')[0]} ${route.areaTag}: ${route.orderCount} orders, ${route.totalDistance.toFixed(1)}km, ${Math.round(route.totalDuration / 60)} minutes`);
+      const routeAreaName = createdAreas.find(a => a.id === route.areaId)?.name || 'unknown';
+      console.log(`   - ${route.deliveryDate.toISOString().split('T')[0]} ${routeAreaName}: ${route.orderCount} orders, ${route.totalDistance.toFixed(1)}km, ${Math.round(route.totalDuration / 60)} minutes`);
     }
     console.log('');
 

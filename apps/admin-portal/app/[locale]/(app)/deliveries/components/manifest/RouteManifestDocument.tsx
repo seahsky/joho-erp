@@ -99,7 +99,7 @@ export interface ManifestTranslations {
 
 export interface RouteManifestDocumentProps {
   manifestDate: string;
-  areaTag: string | null;
+  areaName: string | null;
   warehouseAddress: {
     street: string;
     suburb: string;
@@ -119,7 +119,7 @@ export interface RouteManifestDocumentProps {
 
 export function RouteManifestDocument({
   manifestDate,
-  areaTag,
+  areaName,
   warehouseAddress,
   routeSummary,
   stops,
@@ -134,7 +134,7 @@ export function RouteManifestDocument({
       {/* Summary Page */}
       <ManifestSummaryPage
         manifestDate={manifestDate}
-        areaTag={areaTag}
+        areaName={areaName}
         warehouseAddress={warehouseAddress}
         routeSummary={routeSummary}
         stops={stops.map((s) => ({

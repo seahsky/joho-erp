@@ -53,14 +53,6 @@ enum SignatureType {
   GUARANTOR
 }
 
-// @deprecated Use Area model instead - kept for backward compatibility during migration
-enum AreaTag {
-  north
-  south
-  east
-  west
-}
-
 enum AccountType {
   sole_trader
   partnership
@@ -268,7 +260,6 @@ model Customer {
   // Indexes
   @@index([contactPerson.email])
   @@index([deliveryAddress.areaId])
-  @@index([deliveryAddress.areaTag])
   @@index([creditApplication.status])
   @@index([status])
   @@index([businessName])
@@ -327,7 +318,6 @@ model Order {
   @@index([customerId, orderedAt(sort: Desc)])
   @@index([status, requestedDeliveryDate])
   @@index([deliveryAddress.areaId, requestedDeliveryDate])
-  @@index([deliveryAddress.areaTag, requestedDeliveryDate])
   @@index([requestedDeliveryDate, status])
   @@index([delivery.driverId, status])
   @@index([orderedAt(sort: Desc)])
@@ -501,12 +491,9 @@ model SuburbAreaMapping {
   state               String
   postcode            String
 
-  // NEW: Reference to Area model
+  // Reference to Area model
   areaId              String?             @db.ObjectId
   area                Area?               @relation(fields: [areaId], references: [id])
-
-  // @deprecated Use areaId instead - kept for backward compatibility during migration
-  areaTag             AreaTag?
 
   latitude            Float?              // Suburb center latitude for route optimization
   longitude           Float?              // Suburb center longitude for route optimization
@@ -518,7 +505,6 @@ model SuburbAreaMapping {
   @@unique([suburb, state])
   @@index([postcode])
   @@index([areaId])
-  @@index([areaTag])
   @@index([isActive])
   @@map("suburbareamappings")
 }
@@ -529,12 +515,9 @@ model DriverAreaAssignment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   driverId  String   // Clerk user ID
 
-  // NEW: Reference to Area model
+  // Reference to Area model
   areaId    String?  @db.ObjectId
   area      Area?    @relation(fields: [areaId], references: [id])
-
-  // @deprecated Use areaId instead - kept for backward compatibility during migration
-  areaTag   AreaTag?
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -542,7 +525,6 @@ model DriverAreaAssignment {
 
   @@unique([driverId, areaId])
   @@index([areaId])
-  @@index([areaTag])
   @@index([driverId])
   @@map("driverareaassignments")
 }
@@ -578,11 +560,9 @@ model RouteOptimization {
   routeType           RouteType           @default(packing) // packing = all planned orders, delivery = ready_for_delivery only
   driverId            String?             // For per-driver delivery routes (null for global routes)
 
-  // NEW: Area reference
+  // Area reference
   areaId              String?             @db.ObjectId // Null if multi-area route
 
-  // @deprecated Use areaId instead - kept for backward compatibility during migration
-  areaTag             AreaTag?            // Null if multi-area route
   orderCount          Int
   totalDistance       Float               // In kilometers
   totalDuration       Int                 // In seconds
@@ -598,7 +578,6 @@ model RouteOptimization {
 
   // Indexes
   @@index([deliveryDate, areaId])
-  @@index([deliveryDate, areaTag])
   @@index([deliveryDate, routeType])
   @@index([deliveryDate, routeType, driverId])
   @@index([optimizedAt(sort: Desc)])
@@ -661,12 +640,9 @@ type DeliveryAddress {
   postcode            String
   country             String              @default("Australia")
 
-  // NEW: Area reference (areaId stored, areaName denormalized for display)
+  // Area reference (areaId stored, areaName denormalized for display)
   areaId              String?             // Reference to Area model (null = unassigned)
   areaName            String?             // Denormalized area name for display (e.g., "north", "east-1")
-
-  // @deprecated Use areaId/areaName instead - kept for backward compatibility during migration
-  areaTag             AreaTag?
 
   latitude            Float?
   longitude           Float?

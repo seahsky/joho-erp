@@ -4,7 +4,6 @@
  */
 
 import { prisma } from "@joho-erp/database";
-import type { AreaTag } from "@joho-erp/database";
 import {
   optimizeRoutesByArea,
   calculateArrivalTimes,
@@ -19,14 +18,14 @@ interface RouteOptimizationResult {
     packingSequence: number;
     deliverySequence: number;
     estimatedArrival: Date;
-    areaTag: AreaTag;
+    areaName: string;
   }>;
   routeSummary: {
     totalOrders: number;
     totalDistance: number;
     totalDuration: number;
     areaBreakdown: Array<{
-      areaTag: AreaTag;
+      areaName: string;
       orderCount: number;
       distance: number;
       duration: number;
@@ -139,11 +138,11 @@ export async function optimizeDeliveryRoute(
 
   for (const order of orders) {
     // Use 'unassigned' as fallback for orders without area
-    const areaTag = order.deliveryAddress.areaTag ?? 'unassigned';
-    if (!ordersByArea.has(areaTag)) {
-      ordersByArea.set(areaTag, []);
+    const areaName = order.deliveryAddress.areaName ?? 'unassigned';
+    if (!ordersByArea.has(areaName)) {
+      ordersByArea.set(areaName, []);
     }
-    ordersByArea.get(areaTag)!.push({
+    ordersByArea.get(areaName)!.push({
       id: order.id,
       orderNumber: order.orderNumber,
       longitude: order.deliveryAddress.longitude!,
@@ -170,14 +169,14 @@ export async function optimizeDeliveryRoute(
     [];
 
   // Order of areas for packing (matches typical route order)
-  const areaOrder: AreaTag[] = ["north", "east", "south", "west"];
+  const areaOrder: string[] = ["north", "east", "south", "west"];
 
   // Process areas in order
-  for (const areaTag of areaOrder) {
-    const areaRoute = areaRoutes.get(areaTag);
+  for (const areaName of areaOrder) {
+    const areaRoute = areaRoutes.get(areaName);
     if (!areaRoute) continue;
 
-    const areaOrders = ordersByArea.get(areaTag)!;
+    const areaOrders = ordersByArea.get(areaName)!;
     const { coordinateIds, totalDistance, totalDuration, segments } = areaRoute;
 
     // Calculate arrival times (start at 9:00 AM, 5 min per stop)
@@ -203,12 +202,12 @@ export async function optimizeDeliveryRoute(
         deliverySequence,
         packingSequence,
         estimatedArrival: arrivalTimes[index],
-        areaTag,
+        areaName,
       });
     });
 
     areaBreakdown.push({
-      areaTag,
+      areaName,
       orderCount: areaOrderCount,
       distance: totalDistance,
       duration: totalDuration,
@@ -220,8 +219,8 @@ export async function optimizeDeliveryRoute(
   let globalPackingSequence = 1;
   const areaOrderReversed = [...areaOrder].reverse(); // Pack south last (delivered first)
 
-  for (const areaTag of areaOrderReversed) {
-    const areaOrderUpdates = orderUpdates.filter((u) => u.areaTag === areaTag);
+  for (const areaName of areaOrderReversed) {
+    const areaOrderUpdates = orderUpdates.filter((u) => u.areaName === areaName);
 
     // Sort by delivery sequence ascending, then reverse for packing
     areaOrderUpdates.sort((a, b) => b.deliverySequence - a.deliverySequence);
@@ -254,8 +253,8 @@ export async function optimizeDeliveryRoute(
     durationFromPrevious?: number;
   }> = [];
 
-  for (const [areaTag, areaRoute] of areaRoutes.entries()) {
-    const areaOrders = ordersByArea.get(areaTag)!;
+  for (const [areaName, areaRoute] of areaRoutes.entries()) {
+    const areaOrders = ordersByArea.get(areaName)!;
     const { coordinateIds, segments } = areaRoute;
 
     coordinateIds.forEach((orderId, index) => {
@@ -290,7 +289,7 @@ export async function optimizeDeliveryRoute(
   const routeOptimization = await prisma.routeOptimization.create({
     data: {
       deliveryDate: startOfDay,
-      areaTag: null, // Multi-area route
+      areaId: null, // Multi-area route
       orderCount: orders.length,
       totalDistance: totalDistance / 1000, // Convert meters to km
       totalDuration,
@@ -487,14 +486,14 @@ interface DeliveryRouteResult {
     orderNumber: string;
     deliverySequence: number;
     estimatedArrival: Date;
-    areaTag: AreaTag;
+    areaName: string;
   }>;
   routeSummary: {
     totalOrders: number;
     totalDistance: number;
     totalDuration: number;
     areaBreakdown: Array<{
-      areaTag: AreaTag;
+      areaName: string;
       orderCount: number;
       distance: number;
       duration: number;
@@ -608,11 +607,11 @@ export async function optimizeDeliveryOnlyRoute(
 
   for (const order of orders) {
     // Use 'unassigned' as fallback for orders without area
-    const areaTag = order.deliveryAddress.areaTag ?? 'unassigned';
-    if (!ordersByArea.has(areaTag)) {
-      ordersByArea.set(areaTag, []);
+    const areaName = order.deliveryAddress.areaName ?? 'unassigned';
+    if (!ordersByArea.has(areaName)) {
+      ordersByArea.set(areaName, []);
     }
-    ordersByArea.get(areaTag)!.push({
+    ordersByArea.get(areaName)!.push({
       id: order.id,
       orderNumber: order.orderNumber,
       longitude: order.deliveryAddress.longitude!,
@@ -636,13 +635,13 @@ export async function optimizeDeliveryOnlyRoute(
   const orderUpdates: DeliveryRouteResult["orderUpdates"] = [];
   let globalDeliverySequence = 1;
   const areaBreakdown: DeliveryRouteResult["routeSummary"]["areaBreakdown"] = [];
-  const areaOrder: AreaTag[] = ["north", "east", "south", "west"];
+  const areaOrder: string[] = ["north", "east", "south", "west"];
 
-  for (const areaTag of areaOrder) {
-    const areaRoute = areaRoutes.get(areaTag);
+  for (const areaName of areaOrder) {
+    const areaRoute = areaRoutes.get(areaName);
     if (!areaRoute) continue;
 
-    const areaOrders = ordersByArea.get(areaTag)!;
+    const areaOrders = ordersByArea.get(areaName)!;
     const { coordinateIds, totalDistance, totalDuration, segments } = areaRoute;
 
     const routeStartTime = new Date(deliveryDate);
@@ -658,12 +657,12 @@ export async function optimizeDeliveryOnlyRoute(
         orderNumber: order.orderNumber,
         deliverySequence,
         estimatedArrival: arrivalTimes[index],
-        areaTag,
+        areaName,
       });
     });
 
     areaBreakdown.push({
-      areaTag,
+      areaName,
       orderCount: coordinateIds.length,
       distance: totalDistance,
       duration: totalDuration,
@@ -693,8 +692,8 @@ export async function optimizeDeliveryOnlyRoute(
     durationFromPrevious?: number;
   }> = [];
 
-  for (const [areaTag, areaRoute] of areaRoutes.entries()) {
-    const areaOrders = ordersByArea.get(areaTag)!;
+  for (const [areaName, areaRoute] of areaRoutes.entries()) {
+    const areaOrders = ordersByArea.get(areaName)!;
     const { coordinateIds, segments } = areaRoute;
 
     coordinateIds.forEach((orderId, index) => {
@@ -728,7 +727,7 @@ export async function optimizeDeliveryOnlyRoute(
       deliveryDate: startOfDay,
       routeType: "delivery", // Mark as delivery route
       driverId: null, // Global delivery route (not per-driver)
-      areaTag: null,
+      areaId: null,
       orderCount: orders.length,
       totalDistance: totalDistance / 1000,
       totalDuration,

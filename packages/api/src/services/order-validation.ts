@@ -8,7 +8,6 @@
  */
 
 import { prisma } from '@joho-erp/database';
-import type { AreaTag } from '@joho-erp/database';
 
 // ============================================================================
 // TYPES
@@ -31,7 +30,7 @@ export interface CutoffInfo {
 }
 
 interface CutoffByArea {
-  [areaTag: string]: string; // areaTag -> "HH:mm" format
+  [areaName: string]: string; // areaName -> "HH:mm" format
 }
 
 // ============================================================================
@@ -129,13 +128,13 @@ export async function getCompanyCutoffSettings(): Promise<{
  * Get the cutoff time for a specific area (or default if not area-specific)
  */
 export async function getCutoffTimeForArea(
-  areaTag?: AreaTag
+  areaName?: string
 ): Promise<string> {
   const { orderCutoffTime, cutoffByArea } = await getCompanyCutoffSettings();
 
   // Check for area-specific cutoff time
-  if (areaTag && cutoffByArea && cutoffByArea[areaTag]) {
-    return cutoffByArea[areaTag];
+  if (areaName && cutoffByArea && cutoffByArea[areaName]) {
+    return cutoffByArea[areaName];
   }
 
   return orderCutoffTime;
@@ -145,15 +144,15 @@ export async function getCutoffTimeForArea(
  * Validate if an order can be placed for next-day delivery based on cutoff time
  *
  * @param requestedDeliveryDate - The date customer wants the order delivered
- * @param areaTag - Optional area tag for area-specific cutoff times
+ * @param areaName - Optional area name for area-specific cutoff times
  * @returns CutoffValidationResult with validation status and next available date
  */
 export async function validateOrderCutoffTime(
   requestedDeliveryDate: Date,
-  areaTag?: AreaTag
+  areaName?: string
 ): Promise<CutoffValidationResult> {
   const now = getCurrentTimeInSydney();
-  const cutoffTime = await getCutoffTimeForArea(areaTag);
+  const cutoffTime = await getCutoffTimeForArea(areaName);
   const { hours: cutoffHours, minutes: cutoffMinutes } = parseTime(cutoffTime);
 
   // Calculate cutoff datetime for the day before requested delivery
@@ -193,9 +192,9 @@ export async function validateOrderCutoffTime(
  * Get current cutoff information for display in the UI
  * This is used by customers to see if they're before/after cutoff
  */
-export async function getCutoffInfo(areaTag?: AreaTag): Promise<CutoffInfo> {
+export async function getCutoffInfo(areaName?: string): Promise<CutoffInfo> {
   const now = getCurrentTimeInSydney();
-  const cutoffTime = await getCutoffTimeForArea(areaTag);
+  const cutoffTime = await getCutoffTimeForArea(areaName);
   const { hours: cutoffHours, minutes: cutoffMinutes } = parseTime(cutoffTime);
 
   // Create cutoff datetime for today
@@ -222,8 +221,8 @@ export async function getCutoffInfo(areaTag?: AreaTag): Promise<CutoffInfo> {
  * Get the minimum allowed delivery date for a new order
  * This is always tomorrow (or day after if after cutoff)
  */
-export async function getMinDeliveryDate(areaTag?: AreaTag): Promise<Date> {
-  const { isAfterCutoff } = await getCutoffInfo(areaTag);
+export async function getMinDeliveryDate(areaName?: string): Promise<Date> {
+  const { isAfterCutoff } = await getCutoffInfo(areaName);
 
   return isAfterCutoff ? getDayAfterTomorrowDate() : getTomorrowDate();
 }
@@ -234,9 +233,9 @@ export async function getMinDeliveryDate(areaTag?: AreaTag): Promise<Date> {
  */
 export async function isValidDeliveryDate(
   requestedDate: Date,
-  areaTag?: AreaTag
+  areaName?: string
 ): Promise<boolean> {
-  const minDate = await getMinDeliveryDate(areaTag);
+  const minDate = await getMinDeliveryDate(areaName);
 
   // Reset time component for comparison
   const requestedDateOnly = new Date(requestedDate);

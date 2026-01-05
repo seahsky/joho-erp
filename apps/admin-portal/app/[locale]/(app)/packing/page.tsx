@@ -26,6 +26,7 @@ export default function PackingPage() {
   const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
   const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('');
 
   // Handlers for order badge focus functionality
   const handleFocusOrder = (orderNumber: string) => {
@@ -38,6 +39,7 @@ export default function PackingPage() {
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
+    areaId: areaFilter || undefined,
   }, {
     refetchInterval: 30000, // Auto-refresh every 30 seconds to reflect order changes
   });
@@ -251,7 +253,7 @@ export default function PackingPage() {
           </CardHeader>
         </Card>
 
-        {/* Category Filter */}
+        {/* Category and Area Filters */}
         <FilterBar
           showCategoryFilter={categories.length > 1}
           category={categoryFilter}
@@ -259,6 +261,9 @@ export default function PackingPage() {
           categories={categories}
           categoryLabels={categoryLabels}
           allCategoriesLabel={t('allCategories')}
+          showAreaFilter={true}
+          areaId={areaFilter}
+          onAreaChange={setAreaFilter}
         />
 
         {/* Stats Bar */}

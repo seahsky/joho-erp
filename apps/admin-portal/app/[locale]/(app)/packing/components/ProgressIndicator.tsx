@@ -9,7 +9,7 @@ interface ProgressIndicatorProps {
     orderId: string;
     orderNumber: string;
     customerName: string;
-    areaTag: string | null; // Can be null if area unassigned
+    areaName: string | null;
     status?: string;
   }>;
   completedCount: number;

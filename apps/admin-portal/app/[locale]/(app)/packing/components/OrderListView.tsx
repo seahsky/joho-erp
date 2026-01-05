@@ -11,7 +11,7 @@ interface OrderListViewProps {
     orderId: string;
     orderNumber: string;
     customerName: string;
-    areaTag: string | null; // Can be null if area unassigned
+    areaName: string | null;
     packingSequence: number | null;
     deliverySequence: number | null;
     status: string;
@@ -63,7 +63,7 @@ export function OrderListView({
     const orderInOrders = orders.some(o => o.orderNumber === focusedOrderNumber);
     const orderInFiltered = areaFilter === 'all'
       ? orderInOrders
-      : orders.some(o => o.orderNumber === focusedOrderNumber && o.areaTag === areaFilter);
+      : orders.some(o => o.orderNumber === focusedOrderNumber && o.areaName === areaFilter);
 
     if (orderInOrders && !orderInFiltered) {
       setAreaFilter('all');
@@ -105,13 +105,13 @@ export function OrderListView({
     };
   }, [focusedOrderNumber, orders, areaFilter, stableClearFocus]);
 
-  // Get unique area tags (filter out null values)
-  const areaTags = Array.from(new Set(orders.map((o) => o.areaTag).filter((tag): tag is string => tag !== null))).sort();
+  // Get unique area names (filter out null values)
+  const areaNames = Array.from(new Set(orders.map((o) => o.areaName).filter((name): name is string => name !== null))).sort();
 
   // Filter orders by area
   const filteredByArea = areaFilter === 'all'
     ? orders
-    : orders.filter((o) => o.areaTag === areaFilter);
+    : orders.filter((o) => o.areaName === areaFilter);
 
   // Sort orders: move ready_for_delivery orders to the bottom
   const filteredOrders = [...filteredByArea].sort((a, b) => {
@@ -152,8 +152,8 @@ export function OrderListView({
   // Check if we have multiple drivers (need to show grouping)
   const hasMultipleDrivers = driverGroups.length > 1 || (driverGroups.length === 1 && driverGroups[0].driverId !== null);
 
-  const getAreaBadgeColor = (areaTag: string) => {
-    switch (areaTag.toLowerCase()) {
+  const getAreaBadgeColor = (areaName: string) => {
+    switch (areaName.toLowerCase()) {
       case 'north':
         return 'bg-info text-info-foreground hover:bg-info/90';
       case 'south':
@@ -181,7 +181,7 @@ export function OrderListView({
   return (
     <div className="space-y-4">
       {/* Area Filter - Only show if there are multiple areas */}
-      {areaTags.length > 1 && (
+      {areaNames.length > 1 && (
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3 flex-wrap">
@@ -200,7 +200,7 @@ export function OrderListView({
               >
                 {t('allAreas')}
               </button>
-              {areaTags.map((area) => (
+              {areaNames.map((area) => (
                 <button
                   key={area}
                   onClick={() => setAreaFilter(area)}

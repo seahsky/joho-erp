@@ -142,12 +142,6 @@
     "signInDescription": "登入以訪問管理控制台",
     "signUpDescription": "建立帳戶以訪問管理控制台"
   },
-  "areaTags": {
-    "north": "北區",
-    "south": "南區",
-    "east": "東區",
-    "west": "西區"
-  },
   "days": {
     "monday": "星期一",
     "tuesday": "星期二",

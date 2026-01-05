@@ -142,12 +142,6 @@
     "signInDescription": "Sign in to access the administrative dashboard",
     "signUpDescription": "Create an account to access the administrative dashboard"
   },
-  "areaTags": {
-    "north": "North",
-    "south": "South",
-    "east": "East",
-    "west": "West"
-  },
   "days": {
     "monday": "Monday",
     "tuesday": "Tuesday",
@@ -1153,13 +1147,7 @@
       "deliveryInstructions": "Delivery Instructions (Optional)",
       "deliveryInstructionsPlaceholder": "Enter any special delivery instructions",
       "sameAsDelivery": "Same as delivery address",
-      "sameAsBilling": "Same as billing address",
-      "areaTags": {
-        "north": "North",
-        "south": "South",
-        "east": "East",
-        "west": "West"
-      }
+      "sameAsBilling": "Same as billing address"
     },
     "creditApplication": {
       "title": "Credit Terms & Application",

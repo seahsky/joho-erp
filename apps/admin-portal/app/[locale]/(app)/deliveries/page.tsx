@@ -218,7 +218,7 @@ export default function DeliveriesPage() {
 
                   <div className="mt-3 pt-3 border-t flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {(delivery.areaName || delivery.areaTag) && `${t('area')}: ${delivery.areaName || delivery.areaTag}`}
+                      {delivery.areaName && `${t('area')}: ${delivery.areaName}`}
                       {delivery.deliverySequence && ` • ${t('sequence')}: #${delivery.deliverySequence}`}
                     </span>
                     {delivery.status === 'ready_for_delivery' && (

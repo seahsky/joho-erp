@@ -882,10 +882,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     {customer.deliveryAddress.suburb}, {customer.deliveryAddress.state}{' '}
                     {customer.deliveryAddress.postcode}
                   </p>
-                  {customer.deliveryAddress.areaTag && (
+                  {customer.deliveryAddress.areaName && (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">{tCommon('area')}:</span>
-                      <AreaBadge area={customer.deliveryAddress.areaTag} />
+                      <AreaBadge area={customer.deliveryAddress.areaName} />
                     </div>
                   )}
                   {customer.deliveryAddress.deliveryInstructions && (

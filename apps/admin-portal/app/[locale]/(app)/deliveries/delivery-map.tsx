@@ -26,7 +26,7 @@ interface Delivery {
   latitude: number | null;
   longitude: number | null;
   status: string;
-  areaTag: string | null; // Can be null if area unassigned
+  areaName: string | null; // Can be null if area unassigned
   estimatedTime: string;
   deliverySequence?: number | null;
   driverId?: string | null;
@@ -302,7 +302,7 @@ export default function DeliveryMap({
               <p className="text-xs text-gray-500 mb-2">{popupInfo.address}</p>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-600">
-                  {popupInfo.areaTag && t('map.popup.area', { areaTag: popupInfo.areaTag.toUpperCase() })}
+                  {popupInfo.areaName && t('map.popup.area', { areaName: popupInfo.areaName.toUpperCase() })}
                   {popupInfo.deliverySequence && ` • ${t('map.popup.sequence', { sequence: popupInfo.deliverySequence })}`}
                 </span>
                 <span

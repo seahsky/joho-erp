@@ -162,7 +162,7 @@ export const orderRouter = router({
             suburb: z.string(),
             state: z.string(),
             postcode: z.string(),
-            areaTag: z.enum(['north', 'south', 'east', 'west']),
+            areaId: z.string().optional(),
             deliveryInstructions: z.string().optional(),
           })
           .optional(),
@@ -314,17 +314,19 @@ export const orderRouter = router({
       // Generate order number
       const orderNumber = generateOrderNumber();
 
-      // Get delivery address and area tag for validation
-      // Convert null to undefined since validation functions expect optional AreaTag
+      // Get delivery address and area name for validation
       const deliveryAddress = input.deliveryAddress || customer.deliveryAddress;
-      const areaTag = deliveryAddress.areaTag ?? undefined;
+      // areaName may not be in input.deliveryAddress, so use customer's if not provided
+      const areaName = 'areaName' in deliveryAddress
+        ? (deliveryAddress.areaName ?? undefined)
+        : (customer.deliveryAddress.areaName ?? undefined);
 
       // Set delivery date (defaults to next available date)
-      const minDeliveryDate = await getMinDeliveryDate(areaTag);
+      const minDeliveryDate = await getMinDeliveryDate(areaName);
       const deliveryDate = input.requestedDeliveryDate || minDeliveryDate;
 
       // Validate delivery date is not in the past and is at or after minimum date
-      const isValidDate = await isValidDeliveryDate(deliveryDate, areaTag);
+      const isValidDate = await isValidDeliveryDate(deliveryDate, areaName);
       if (!isValidDate) {
         const minDateStr = minDeliveryDate.toLocaleDateString('en-AU');
         throw new TRPCError({
@@ -334,7 +336,7 @@ export const orderRouter = router({
       }
 
       // Validate cutoff time for next-day delivery
-      const cutoffValidation = await validateOrderCutoffTime(deliveryDate, areaTag);
+      const cutoffValidation = await validateOrderCutoffTime(deliveryDate, areaName);
       if (cutoffValidation.isAfterCutoff) {
         // Cutoff has passed for the requested delivery date
         const nextDateStr = cutoffValidation.nextAvailableDeliveryDate.toLocaleDateString('en-AU');
@@ -531,8 +533,7 @@ export const orderRouter = router({
             suburb: z.string().min(1),
             state: z.string(),
             postcode: z.string(),
-            areaId: z.string().optional(), // Dynamic area ID
-            areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: backward compat
+            areaId: z.string().optional(),
             deliveryInstructions: z.string().optional(),
           })
           .optional(),
@@ -672,7 +673,7 @@ export const orderRouter = router({
               state: input.customDeliveryAddress.state,
               postcode: input.customDeliveryAddress.postcode,
               country: 'Australia',
-              areaTag: input.customDeliveryAddress.areaTag,
+              areaId: input.customDeliveryAddress.areaId,
               deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
             }
           : customer.deliveryAddress;
@@ -726,7 +727,7 @@ export const orderRouter = router({
               state: input.customDeliveryAddress.state,
               postcode: input.customDeliveryAddress.postcode,
               country: 'Australia',
-              areaTag: input.customDeliveryAddress.areaTag,
+              areaId: input.customDeliveryAddress.areaId,
               deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
             } : undefined,
             adminNotes: input.adminNotes,
@@ -901,7 +902,7 @@ export const orderRouter = router({
           customerId: z.string().optional(),
           dateFrom: z.date().optional(),
           dateTo: z.date().optional(),
-          areaTag: z.string().optional(),
+          areaId: z.string().optional(),
           search: z.string().optional(),
           page: z.number().default(1),
           limit: z.number().default(20),
@@ -915,9 +916,9 @@ export const orderRouter = router({
       if (filters.status) where.status = filters.status;
       if (filters.customerId) where.customerId = filters.customerId;
 
-      if (filters.areaTag) {
+      if (filters.areaId) {
         where.deliveryAddress = {
-          is: { areaTag: filters.areaTag },
+          is: { areaId: filters.areaId },
         };
       }
 
@@ -2013,11 +2014,11 @@ export const orderRouter = router({
   getCutoffInfo: protectedProcedure
     .input(
       z.object({
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+        areaName: z.string().optional(),
       }).optional()
     )
     .query(async ({ input }) => {
-      const cutoffInfo = await getCutoffInfoService(input?.areaTag);
+      const cutoffInfo = await getCutoffInfoService(input?.areaName);
       return cutoffInfo;
     }),
 

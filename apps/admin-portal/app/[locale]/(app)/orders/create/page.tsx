@@ -384,9 +384,9 @@ export default function CreateOrderOnBehalfPage() {
                 )}
 
                 {/* Delivery Area */}
-                {selectedCustomer.deliveryAddress.areaTag && (
+                {selectedCustomer.deliveryAddress.areaName && (
                   <p className="text-sm text-muted-foreground pt-2 border-t border-border">
-                    {t('info.deliveryArea')}: {selectedCustomer.deliveryAddress.areaTag.toUpperCase()}
+                    {t('info.deliveryArea')}: {selectedCustomer.deliveryAddress.areaName.toUpperCase()}
                   </p>
                 )}
               </div>

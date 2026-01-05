@@ -114,7 +114,6 @@ export const customerRouter = router({
           state: z.string(),
           postcode: z.string(),
           areaId: z.string().optional(), // Manual area override
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated - area auto-assigned
           deliveryInstructions: z.string().optional(),
         }),
         billingAddress: z
@@ -210,7 +209,6 @@ export const customerRouter = router({
             country: 'Australia',
             areaId,
             areaName,
-            areaTag: (areaName ?? input.deliveryAddress.areaTag) as 'north' | 'south' | 'east' | 'west' | undefined, // Keep for backward compatibility
             deliveryInstructions: input.deliveryAddress.deliveryInstructions,
           },
           billingAddress: input.billingAddress
@@ -447,8 +445,7 @@ export const customerRouter = router({
         .object({
           status: z.enum(['active', 'suspended', 'closed']).optional(),
           approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
-          areaId: z.string().optional(), // New: filter by areaId
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated: keep for backward compatibility
+          areaId: z.string().optional(),
           search: z.string().optional(),
           page: z.number().default(1),
           limit: z.number().default(20),
@@ -469,14 +466,9 @@ export const customerRouter = router({
         };
       }
 
-      // Support both areaId (new) and areaTag (deprecated) filters
       if (filters.areaId) {
         where.deliveryAddress = {
           is: { areaId: filters.areaId },
-        };
-      } else if (filters.areaTag) {
-        where.deliveryAddress = {
-          is: { areaTag: filters.areaTag },
         };
       }
 
@@ -495,7 +487,6 @@ export const customerRouter = router({
         status: 'status',
         creditLimit: 'creditApplication.creditLimit',
         creditStatus: 'creditApplication.status',
-        areaTag: 'deliveryAddress.areaTag',
       };
 
       const orderBy =
@@ -564,7 +555,6 @@ export const customerRouter = router({
           state: z.string(),
           postcode: z.string(),
           areaId: z.string().optional(), // Manual area override
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(), // Deprecated - area auto-assigned
           deliveryInstructions: z.string().optional(),
         }),
         billingAddress: z
@@ -676,7 +666,6 @@ export const customerRouter = router({
             country: 'Australia',
             areaId,
             areaName,
-            areaTag: (areaName ?? input.deliveryAddress.areaTag) as 'north' | 'south' | 'east' | 'west' | undefined, // Keep for backward compatibility
             deliveryInstructions: input.deliveryAddress.deliveryInstructions,
           },
           billingAddress: input.billingAddress
@@ -1151,13 +1140,11 @@ export const customerRouter = router({
             if (area) {
               newAddress.areaId = area.id;
               newAddress.areaName = area.name;
-              newAddress.areaTag = area.name; // Backward compatibility
             }
           } else {
             // Explicitly set to null (unassign)
             newAddress.areaId = null;
             newAddress.areaName = null;
-            newAddress.areaTag = null;
           }
         } else if (suburbChanged) {
           // Auto-assign area based on new suburb
@@ -1174,7 +1161,6 @@ export const customerRouter = router({
           if (suburbMapping?.area) {
             newAddress.areaId = suburbMapping.areaId;
             newAddress.areaName = suburbMapping.area.name;
-            newAddress.areaTag = suburbMapping.area.name; // Backward compatibility
           }
         }
 

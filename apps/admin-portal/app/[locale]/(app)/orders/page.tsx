@@ -59,7 +59,7 @@ type Order = {
     unitPrice: number;
   }>;
   deliveryAddress: {
-    areaTag: string;
+    areaName: string | null;
   };
 };
 
@@ -85,7 +85,7 @@ export default function OrdersPage() {
 
   const { data, isLoading, error } = api.order.getAll.useQuery({
     status: statusFilter || undefined,
-    areaTag: areaFilter || undefined,
+    areaId: areaFilter || undefined,
     search: searchQuery || undefined,
     sortBy,
     sortOrder,
@@ -272,7 +272,7 @@ export default function OrdersPage() {
     {
       key: 'area',
       label: t('area'),
-      render: (order) => order.deliveryAddress.areaTag.toUpperCase(),
+      render: (order) => order.deliveryAddress.areaName?.toUpperCase() || '-',
     },
     {
       key: 'totalAmount',
@@ -360,7 +360,7 @@ export default function OrdersPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('area')}</p>
-          <p className="font-medium">{order.deliveryAddress.areaTag.toUpperCase()}</p>
+          <p className="font-medium">{order.deliveryAddress.areaName?.toUpperCase() || '-'}</p>
         </div>
         <div>
           <p className="text-muted-foreground">{t('total')}</p>

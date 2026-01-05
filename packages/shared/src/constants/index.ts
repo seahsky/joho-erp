@@ -117,27 +117,6 @@ export const DEFAULT_AREA_CONFIGS = [
   { name: 'west', displayName: 'West', colorVariant: 'default' as AreaColorVariant },
 ] as const;
 
-// Area Tags - @deprecated Use Area model instead
-/** @deprecated Use Area model and AREA_COLOR_VARIANTS instead */
-export const AREA_TAGS = ['north', 'south', 'east', 'west'] as const;
-
-// Area Tag Translation Keys - use with t('areaTags.{key}')
-// Note: For new areas, translations are stored in the Area.displayName field
-export const AREA_TAG_KEYS = {
-  north: 'areaTags.north',
-  south: 'areaTags.south',
-  east: 'areaTags.east',
-  west: 'areaTags.west',
-} as const;
-
-// @deprecated Use Area.displayName instead
-export const AREA_TAG_LABELS = {
-  north: 'North',
-  south: 'South',
-  east: 'East',
-  west: 'West',
-} as const;
-
 // Default Company Settings
 export const DEFAULT_COMPANY_SETTINGS = {
   defaultCurrency: 'AUD',

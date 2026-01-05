@@ -142,12 +142,6 @@
     "signInDescription": "登录以访问管理控制台",
     "signUpDescription": "创建账户以访问管理控制台"
   },
-  "areaTags": {
-    "north": "北区",
-    "south": "南区",
-    "east": "东区",
-    "west": "西区"
-  },
   "days": {
     "monday": "星期一",
     "tuesday": "星期二",
@@ -1153,13 +1147,7 @@
       "deliveryInstructions": "配送说明（可选）",
       "deliveryInstructionsPlaceholder": "输入任何特殊配送说明",
       "sameAsDelivery": "与送货地址相同",
-      "sameAsBilling": "与账单地址相同",
-      "areaTags": {
-        "north": "北部",
-        "south": "南部",
-        "east": "东部",
-        "west": "西部"
-      }
+      "sameAsBilling": "与账单地址相同"
     },
     "creditApplication": {
       "title": "信用条款与申请",
