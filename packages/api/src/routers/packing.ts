@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, requirePermission } from "../trpc";
-import { prisma } from "@joho-erp/database";
+import { prisma, Prisma } from "@joho-erp/database";
 import { TRPCError } from "@trpc/server";
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
 import {
@@ -141,14 +141,32 @@ export const packingRouter = router({
         await startPackingSession(ctx.userId, deliveryDate, orderIds);
       }
 
+      // Get area info for orders
+      const areaIds = [...new Set(orders.map((o) => o.deliveryAddress.areaId).filter(Boolean))];
+      const areasData = areaIds.length > 0
+        ? await prisma.area.findMany({ where: { id: { in: areaIds as string[] } } })
+        : [];
+      const areaMap = new Map(areasData.map((a) => [a.id, a]));
+
       return {
         deliveryDate,
-        orders: orders.map((order) => ({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customer?.businessName ?? 'Unknown Customer',
-          areaTag: order.deliveryAddress.areaTag,
-        })),
+        orders: orders.map((order) => {
+          const areaId = order.deliveryAddress.areaId;
+          const areaInfo = areaId ? areaMap.get(areaId) : null;
+          return {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerName: order.customer?.businessName ?? 'Unknown Customer',
+            area: areaInfo
+              ? {
+                  id: areaInfo.id,
+                  name: areaInfo.name,
+                  displayName: areaInfo.displayName,
+                  colorVariant: areaInfo.colorVariant,
+                }
+              : null,
+          };
+        }),
         productSummary,
       };
     }),
@@ -205,6 +223,12 @@ export const packingRouter = router({
         products.map((p) => [p.id, { currentStock: p.currentStock, lowStockThreshold: p.lowStockThreshold }])
       );
 
+      // Get area info
+      const areaId = order.deliveryAddress.areaId;
+      const areaInfo = areaId
+        ? await prisma.area.findUnique({ where: { id: areaId } })
+        : null;
+
       const items = order.items.map((item) => {
         const stockInfo = productStockMap.get(item.productId) ?? { currentStock: 0, lowStockThreshold: undefined };
         return {
@@ -227,7 +251,14 @@ export const packingRouter = router({
         orderNumber: order.orderNumber,
         customerName: order.customer?.businessName ?? 'Unknown Customer',
         deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
-        areaTag: order.deliveryAddress.areaTag,
+        area: areaInfo
+          ? {
+              id: areaInfo.id,
+              name: areaInfo.name,
+              displayName: areaInfo.displayName,
+              colorVariant: areaInfo.colorVariant,
+            }
+          : null,
         items,
         status: order.status as 'confirmed' | 'packing' | 'ready_for_delivery',
         allItemsPacked,
@@ -916,6 +947,7 @@ export const packingRouter = router({
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
+        areaId: z.string().optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -927,16 +959,25 @@ export const packingRouter = router({
       const endOfDay = new Date(deliveryDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
 
-      const orders = await prisma.order.findMany({
-        where: {
-          requestedDeliveryDate: {
-            gte: startOfDay,
-            lt: endOfDay,
-          },
-          status: {
-            in: ["confirmed", "packing", "ready_for_delivery"],
-          },
+      // Build base where clause
+      const where: Prisma.OrderWhereInput = {
+        requestedDeliveryDate: {
+          gte: startOfDay,
+          lt: endOfDay,
         },
+        status: {
+          in: ["confirmed", "packing", "ready_for_delivery"],
+        },
+      };
+
+      if (input.areaId) {
+        where.deliveryAddress = {
+          is: { areaId: input.areaId },
+        };
+      }
+
+      const orders = await prisma.order.findMany({
+        where,
         include: {
           customer: {
             select: {
@@ -1081,7 +1122,7 @@ export const packingRouter = router({
               orderId: order.id,
               orderNumber: order.orderNumber,
               customerName: order.customer?.businessName ?? "Unknown Customer",
-              areaTag: order.deliveryAddress.areaTag,
+              areaName: order.deliveryAddress.areaName,
               packingSequence: order.packing?.packingSequence ?? null,
               deliverySequence: order.delivery?.deliverySequence ?? null,
               // Per-driver fields for multi-driver grouping
@@ -1134,7 +1175,7 @@ export const packingRouter = router({
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerName: order.customer?.businessName ?? "Unknown Customer",
-          areaTag: order.deliveryAddress.areaTag,
+          areaName: order.deliveryAddress.areaName,
           packingSequence: order.packing?.packingSequence ?? null,
           deliverySequence: order.delivery?.deliverySequence ?? null,
           // Per-driver fields for multi-driver grouping

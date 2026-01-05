@@ -61,13 +61,24 @@
       "all": "All",
       "allStatuses": "All Statuses",
       "allCategories": "All Categories",
+      "allDrivers": "All Drivers",
+      "filterByCategory": "Filter by Category",
       "clearFilters": "Clear filters",
-      "applyFilters": "Apply filters"
+      "applyFilters": "Apply filters",
+      "area": "Area",
+      "allAreas": "All Areas"
+    },
+    "operations": {
+      "expand": "Expand",
+      "collapse": "Collapse"
     },
     "table": {
       "noResults": "No results found",
       "noResultsWithFilters": "No results match your filters. Try adjusting your search or filter criteria."
-    }
+    },
+    "selectArea": "Select area",
+    "unassigned": "Unassigned",
+    "back": "Back"
   },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
@@ -130,12 +141,6 @@
     "title": "Admin Portal",
     "signInDescription": "Sign in to access the administrative dashboard",
     "signUpDescription": "Create an account to access the administrative dashboard"
-  },
-  "areaTags": {
-    "north": "North",
-    "south": "South",
-    "east": "East",
-    "west": "West"
   },
   "days": {
     "monday": "Monday",
@@ -223,6 +228,12 @@
   "deliveries": {
     "title": "Delivery Management",
     "subtitle": "Track and manage deliveries in real-time",
+    "stats": {
+      "totalDeliveries": "Total Deliveries",
+      "readyForDelivery": "Ready for Delivery",
+      "delivered": "Delivered",
+      "assignedDrivers": "Assigned Drivers"
+    },
     "activeDeliveries": "Active Deliveries",
     "orderId": "Order ID",
     "customer": "Customer",
@@ -502,6 +513,8 @@
       "state": "State",
       "postcode": "Postcode",
       "areaTag": "Delivery Area",
+      "area": "Delivery Area",
+      "selectArea": "Select delivery area",
       "deliveryInstructions": "Delivery Instructions",
       "deliveryDate": "Requested Delivery Date (Optional)",
       "bypassCreditLimit": "Bypass credit limit check",
@@ -1127,16 +1140,14 @@
       "postcodePlaceholder": "2000",
       "areaTag": "Delivery Area",
       "areaTagPlaceholder": "Select delivery area",
+      "area": "Delivery Area",
+      "areaAutoDetect": "Auto-detect from suburb",
+      "assignedTo": "Assigned to",
+      "willAutoAssignTo": "Will be auto-assigned to {area}",
       "deliveryInstructions": "Delivery Instructions (Optional)",
       "deliveryInstructionsPlaceholder": "Enter any special delivery instructions",
       "sameAsDelivery": "Same as delivery address",
-      "sameAsBilling": "Same as billing address",
-      "areaTags": {
-        "north": "North",
-        "south": "South",
-        "east": "East",
-        "west": "West"
-      }
+      "sameAsBilling": "Same as billing address"
     },
     "creditApplication": {
       "title": "Credit Terms & Application",
@@ -1401,7 +1412,9 @@
       "packing": "Packing",
       "packingDescription": "Configure packing workflow and security options",
       "auditLogs": "Audit Logs",
-      "auditLogsDescription": "View system activity and export audit trail"
+      "auditLogsDescription": "View system activity and export audit trail",
+      "areas": "Delivery Areas",
+      "areasDescription": "Manage configurable delivery areas and zones"
     },
     "packing": {
       "title": "Packing Settings",
@@ -1439,6 +1452,7 @@
       },
       "actions": "Actions",
       "noDrivers": "No drivers found. Add users with the driver role to assign areas.",
+      "noAreas": "No delivery areas configured. Create areas in Settings → Delivery Areas first.",
       "summary": "Area Summary",
       "driverSingular": "driver",
       "driverPlural": "drivers",
@@ -2593,5 +2607,64 @@
     "minutesAgo": "{count} min ago",
     "hoursAgo": "{count} hr ago",
     "daysAgo": "{count} days ago"
+  },
+  "areas": {
+    "title": "Delivery Areas",
+    "subtitle": "Configure delivery zones used for driver assignment and route optimization",
+    "createArea": "Create Area",
+    "editArea": "Edit Area",
+    "deleteArea": "Delete Area",
+    "noAreas": "No areas configured yet",
+    "noAreasDescription": "Create your first delivery area to get started",
+    "fields": {
+      "name": "Area ID",
+      "namePlaceholder": "e.g., east-1, north-central",
+      "nameHelp": "Lowercase letters, numbers, and hyphens only",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "e.g., East 1, North Central",
+      "colorVariant": "Badge Color",
+      "isActive": "Active",
+      "sortOrder": "Sort Order"
+    },
+    "colors": {
+      "info": "Blue",
+      "success": "Green",
+      "warning": "Yellow",
+      "default": "Gray",
+      "secondary": "Purple"
+    },
+    "usage": {
+      "suburbs": "{count} suburbs",
+      "drivers": "{count} drivers"
+    },
+    "table": {
+      "area": "Area",
+      "displayName": "Display Name",
+      "color": "Color",
+      "suburbs": "Suburbs",
+      "drivers": "Drivers",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "deleteConfirm": {
+      "title": "Delete Area?",
+      "description": "This will deactivate the area. Existing customers and orders will retain their area assignment.",
+      "cannotDelete": "Cannot delete this area because it has active suburb mappings or driver assignments.",
+      "confirm": "Delete Area"
+    },
+    "errors": {
+      "nameExists": "An area with this name already exists",
+      "hasDependencies": "Cannot delete area with active suburb mappings or driver assignments",
+      "createFailed": "Failed to create area",
+      "updateFailed": "Failed to update area",
+      "deleteFailed": "Failed to delete area"
+    },
+    "success": {
+      "created": "Area created successfully",
+      "updated": "Area updated successfully",
+      "deleted": "Area deleted successfully",
+      "reordered": "Areas reordered successfully"
+    },
+    "dragToReorder": "Drag to reorder"
   }
 }

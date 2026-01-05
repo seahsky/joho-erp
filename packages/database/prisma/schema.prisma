@@ -53,13 +53,6 @@ enum SignatureType {
   GUARANTOR
 }
 
-enum AreaTag {
-  north
-  south
-  east
-  west
-}
-
 enum AccountType {
   sole_trader
   partnership
@@ -181,6 +174,25 @@ model Category {
   @@map("categories")
 }
 
+// Area Model - Configurable delivery areas (replaces AreaTag enum)
+model Area {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String   @unique  // Lowercase identifier: "north", "east-1", "east-2"
+  displayName   String            // Human-readable: "North", "East 1", "East 2"
+  colorVariant  String   @default("default")  // Badge color: "info", "success", "warning", "default", "secondary"
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)  // For display ordering
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  suburbMappings    SuburbAreaMapping[]
+  driverAssignments DriverAreaAssignment[]
+
+  @@index([isActive, sortOrder])
+  @@map("areas")
+}
+
 // Product Model
 model Product {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
@@ -247,7 +259,7 @@ model Customer {
 
   // Indexes
   @@index([contactPerson.email])
-  @@index([deliveryAddress.areaTag])
+  @@index([deliveryAddress.areaId])
   @@index([creditApplication.status])
   @@index([status])
   @@index([businessName])
@@ -305,7 +317,7 @@ model Order {
   // Indexes
   @@index([customerId, orderedAt(sort: Desc)])
   @@index([status, requestedDeliveryDate])
-  @@index([deliveryAddress.areaTag, requestedDeliveryDate])
+  @@index([deliveryAddress.areaId, requestedDeliveryDate])
   @@index([requestedDeliveryDate, status])
   @@index([delivery.driverId, status])
   @@index([orderedAt(sort: Desc)])
@@ -478,7 +490,11 @@ model SuburbAreaMapping {
   suburb              String
   state               String
   postcode            String
-  areaTag             AreaTag
+
+  // Reference to Area model
+  areaId              String?             @db.ObjectId
+  area                Area?               @relation(fields: [areaId], references: [id])
+
   latitude            Float?              // Suburb center latitude for route optimization
   longitude           Float?              // Suburb center longitude for route optimization
   isActive            Boolean             @default(true) // Whether this suburb is actively serviced
@@ -488,7 +504,7 @@ model SuburbAreaMapping {
   // Indexes
   @@unique([suburb, state])
   @@index([postcode])
-  @@index([areaTag])
+  @@index([areaId])
   @@index([isActive])
   @@map("suburbareamappings")
 }
@@ -498,13 +514,17 @@ model SuburbAreaMapping {
 model DriverAreaAssignment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   driverId  String   // Clerk user ID
-  areaTag   AreaTag
+
+  // Reference to Area model
+  areaId    String?  @db.ObjectId
+  area      Area?    @relation(fields: [areaId], references: [id])
+
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([driverId, areaTag])
-  @@index([areaTag])
+  @@unique([driverId, areaId])
+  @@index([areaId])
   @@index([driverId])
   @@map("driverareaassignments")
 }
@@ -539,7 +559,10 @@ model RouteOptimization {
   deliveryDate        DateTime
   routeType           RouteType           @default(packing) // packing = all planned orders, delivery = ready_for_delivery only
   driverId            String?             // For per-driver delivery routes (null for global routes)
-  areaTag             AreaTag?            // Null if multi-area route
+
+  // Area reference
+  areaId              String?             @db.ObjectId // Null if multi-area route
+
   orderCount          Int
   totalDistance       Float               // In kilometers
   totalDuration       Int                 // In seconds
@@ -554,7 +577,7 @@ model RouteOptimization {
   updatedAt           DateTime            @updatedAt
 
   // Indexes
-  @@index([deliveryDate, areaTag])
+  @@index([deliveryDate, areaId])
   @@index([deliveryDate, routeType])
   @@index([deliveryDate, routeType, driverId])
   @@index([optimizedAt(sort: Desc)])
@@ -616,7 +639,11 @@ type DeliveryAddress {
   state               String
   postcode            String
   country             String              @default("Australia")
-  areaTag             AreaTag
+
+  // Area reference (areaId stored, areaName denormalized for display)
+  areaId              String?             // Reference to Area model (null = unassigned)
+  areaName            String?             // Denormalized area name for display (e.g., "north", "east-1")
+
   latitude            Float?
   longitude           Float?
   deliveryInstructions String?

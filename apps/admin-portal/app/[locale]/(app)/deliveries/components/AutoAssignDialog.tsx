@@ -100,7 +100,7 @@ export function AutoAssignDialog({
               <div className="space-y-3">
                 {preview?.preview.map((area) => (
                   <div
-                    key={area.area}
+                    key={area.areaId}
                     className={`flex items-center justify-between p-3 rounded-lg border ${
                       area.orderCount > 0 && !area.hasDrivers
                         ? 'border-destructive/50 bg-destructive/5'
@@ -110,7 +110,7 @@ export function AutoAssignDialog({
                     <div className="flex items-center gap-3">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <div className="font-medium capitalize">{area.area}</div>
+                        <div className="font-medium capitalize">{area.areaName}</div>
                         <div className="text-sm text-muted-foreground">
                           {area.orderCount} {t('orders')}
                         </div>

@@ -1,38 +1,50 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { cn } from '../lib/utils';
 import { Badge, type BadgeProps } from './badge';
 
-export type AreaType = 'north' | 'south' | 'east' | 'west';
-
-export interface AreaBadgeProps extends Omit<BadgeProps, 'variant'> {
-  /** Geographic area identifier */
-  area: AreaType | string;
+// Area object structure
+export interface AreaInput {
+  id?: string;
+  name: string;
+  displayName: string;
+  colorVariant: string;
 }
 
-const areaConfig: Record<string, BadgeProps['variant']> = {
-  north: 'info',
-  south: 'success',
-  east: 'warning',
-  west: 'default',
-};
+export interface AreaBadgeProps extends Omit<BadgeProps, 'variant'> {
+  /** Area object with display properties, or simple string name for backwards compatibility */
+  area: AreaInput | string | null | undefined;
+}
 
 /**
  * Displays geographic area with color coding
- * - North: Blue (info)
- * - South: Green (success)
- * - East: Yellow (warning)
- * - West: Gray (default)
+ * Uses the colorVariant property from the Area object
  */
 export function AreaBadge({ area, className, ...props }: AreaBadgeProps) {
-  const t = useTranslations('areaTags');
-  const normalizedArea = area.toLowerCase();
-  const variant = areaConfig[normalizedArea] || 'secondary';
+  if (!area) {
+    return (
+      <Badge variant="secondary" className={cn(className)} {...props}>
+        Unassigned
+      </Badge>
+    );
+  }
+
+  // Handle simple string case (just the area name)
+  if (typeof area === 'string') {
+    return (
+      <Badge variant="secondary" className={cn('capitalize', className)} {...props}>
+        {area}
+      </Badge>
+    );
+  }
 
   return (
-    <Badge variant={variant} className={cn(className)} {...props}>
-      {t(normalizedArea)}
+    <Badge
+      variant={area.colorVariant as BadgeProps['variant']}
+      className={cn(className)}
+      {...props}
+    >
+      {area.displayName}
     </Badge>
   );
 }

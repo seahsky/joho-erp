@@ -22,7 +22,7 @@ interface ProductAggregation {
 
 interface ManifestSummaryPageProps {
   manifestDate: string;
-  areaTag: string | null;
+  areaName: string | null;
   warehouseAddress: {
     street: string;
     suburb: string;
@@ -78,7 +78,7 @@ function formatDistance(km: number): string {
 
 export function ManifestSummaryPage({
   manifestDate,
-  areaTag,
+  areaName,
   warehouseAddress,
   routeSummary,
   stops,
@@ -95,7 +95,7 @@ export function ManifestSummaryPage({
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.headerInfo}>
-            {translations.area}: {areaTag ? areaTag.charAt(0).toUpperCase() + areaTag.slice(1) : translations.allAreas}
+            {translations.area}: {areaName ? areaName.charAt(0).toUpperCase() + areaName.slice(1) : translations.allAreas}
           </Text>
           <Text style={styles.headerInfoBold}>
             {routeSummary.totalStops} {translations.totalStops}

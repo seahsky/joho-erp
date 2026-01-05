@@ -107,7 +107,8 @@ export default function OrderDetailPage({ params }: PageProps) {
     suburb: string;
     state: string;
     postcode: string;
-    areaTag: string;
+    areaId?: string | null;
+    areaName?: string | null;
     deliveryInstructions?: string | null;
   };
 

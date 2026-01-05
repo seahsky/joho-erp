@@ -113,7 +113,7 @@ export const customerRouter = router({
           suburb: z.string().min(1),
           state: z.string(),
           postcode: z.string(),
-          areaTag: z.enum(['north', 'south', 'east', 'west']),
+          areaId: z.string().optional(), // Manual area override
           deliveryInstructions: z.string().optional(),
         }),
         billingAddress: z
@@ -166,6 +166,31 @@ export const customerRouter = router({
         });
       }
 
+      // Auto-assign area based on suburb lookup (if not manually specified)
+      let areaId = input.deliveryAddress.areaId ?? null;
+      let areaName: string | null = null;
+
+      if (!areaId) {
+        // Lookup area by suburb
+        const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+          where: {
+            suburb: { equals: input.deliveryAddress.suburb, mode: 'insensitive' },
+            state: input.deliveryAddress.state,
+            isActive: true,
+          },
+          include: { area: true },
+        });
+
+        if (suburbMapping?.area) {
+          areaId = suburbMapping.areaId;
+          areaName = suburbMapping.area.name;
+        }
+      } else {
+        // Manual override - get area name for display
+        const area = await prisma.area.findUnique({ where: { id: areaId } });
+        areaName = area?.name ?? null;
+      }
+
       // Create customer
       const customer = await prisma.customer.create({
         data: {
@@ -177,8 +202,14 @@ export const customerRouter = router({
           acn: input.acn,
           contactPerson: input.contactPerson,
           deliveryAddress: {
-            ...input.deliveryAddress,
+            street: input.deliveryAddress.street,
+            suburb: input.deliveryAddress.suburb,
+            state: input.deliveryAddress.state,
+            postcode: input.deliveryAddress.postcode,
             country: 'Australia',
+            areaId,
+            areaName,
+            deliveryInstructions: input.deliveryAddress.deliveryInstructions,
           },
           billingAddress: input.billingAddress
             ? { ...input.billingAddress, country: 'Australia' }
@@ -414,7 +445,7 @@ export const customerRouter = router({
         .object({
           status: z.enum(['active', 'suspended', 'closed']).optional(),
           approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+          areaId: z.string().optional(),
           search: z.string().optional(),
           page: z.number().default(1),
           limit: z.number().default(20),
@@ -435,9 +466,9 @@ export const customerRouter = router({
         };
       }
 
-      if (filters.areaTag) {
+      if (filters.areaId) {
         where.deliveryAddress = {
-          is: { areaTag: filters.areaTag },
+          is: { areaId: filters.areaId },
         };
       }
 
@@ -456,7 +487,6 @@ export const customerRouter = router({
         status: 'status',
         creditLimit: 'creditApplication.creditLimit',
         creditStatus: 'creditApplication.status',
-        areaTag: 'deliveryAddress.areaTag',
       };
 
       const orderBy =
@@ -524,7 +554,7 @@ export const customerRouter = router({
           suburb: z.string().min(1),
           state: z.string(),
           postcode: z.string(),
-          areaTag: z.enum(['north', 'south', 'east', 'west']),
+          areaId: z.string().optional(), // Manual area override
           deliveryInstructions: z.string().optional(),
         }),
         billingAddress: z
@@ -593,6 +623,31 @@ export const customerRouter = router({
       // Generate a dummy Clerk user ID for admin-created customers
       const dummyClerkId = `admin_created_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
+      // Auto-assign area based on suburb lookup (if not manually specified)
+      let areaId = input.deliveryAddress.areaId ?? null;
+      let areaName: string | null = null;
+
+      if (!areaId) {
+        // Lookup area by suburb
+        const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+          where: {
+            suburb: { equals: input.deliveryAddress.suburb, mode: 'insensitive' },
+            state: input.deliveryAddress.state,
+            isActive: true,
+          },
+          include: { area: true },
+        });
+
+        if (suburbMapping?.area) {
+          areaId = suburbMapping.areaId;
+          areaName = suburbMapping.area.name;
+        }
+      } else {
+        // Manual override - get area name for display
+        const area = await prisma.area.findUnique({ where: { id: areaId } });
+        areaName = area?.name ?? null;
+      }
+
       // Create customer
       const customer = await prisma.customer.create({
         data: {
@@ -604,8 +659,14 @@ export const customerRouter = router({
           acn: input.acn,
           contactPerson: input.contactPerson,
           deliveryAddress: {
-            ...input.deliveryAddress,
+            street: input.deliveryAddress.street,
+            suburb: input.deliveryAddress.suburb,
+            state: input.deliveryAddress.state,
+            postcode: input.deliveryAddress.postcode,
             country: 'Australia',
+            areaId,
+            areaName,
+            deliveryInstructions: input.deliveryAddress.deliveryInstructions,
           },
           billingAddress: input.billingAddress
             ? { ...input.billingAddress, country: 'Australia' }
@@ -929,6 +990,8 @@ export const customerRouter = router({
             state: z.string().optional(),
             postcode: z.string().optional(),
             deliveryInstructions: z.string().optional(),
+            // Area assignment (optional - if not provided, auto-assigns based on suburb)
+            areaId: z.string().nullable().optional(),
           })
           .optional(),
         // Business information
@@ -1054,13 +1117,53 @@ export const customerRouter = router({
         });
       }
 
-      // Handle delivery address
+      // Handle delivery address with area assignment logic
       if (input.deliveryAddress) {
         const currentAddress = currentCustomer.deliveryAddress as Record<string, unknown>;
-        const newAddress = {
+        const newAddress: Record<string, unknown> = {
           ...currentAddress,
           ...input.deliveryAddress,
         };
+
+        // Handle area assignment
+        const suburbChanged =
+          input.deliveryAddress.suburb !== undefined &&
+          input.deliveryAddress.suburb !== currentAddress?.suburb;
+        const areaIdExplicitlyProvided = 'areaId' in input.deliveryAddress;
+
+        if (areaIdExplicitlyProvided) {
+          // Explicit area assignment (including null for unassigning)
+          if (input.deliveryAddress.areaId) {
+            const area = await prisma.area.findUnique({
+              where: { id: input.deliveryAddress.areaId },
+            });
+            if (area) {
+              newAddress.areaId = area.id;
+              newAddress.areaName = area.name;
+            }
+          } else {
+            // Explicitly set to null (unassign)
+            newAddress.areaId = null;
+            newAddress.areaName = null;
+          }
+        } else if (suburbChanged) {
+          // Auto-assign area based on new suburb
+          const suburb = input.deliveryAddress.suburb!;
+          const state = input.deliveryAddress.state ?? (currentAddress?.state as string);
+          const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+            where: {
+              suburb: { equals: suburb, mode: 'insensitive' },
+              state: state,
+              isActive: true,
+            },
+            include: { area: true },
+          });
+          if (suburbMapping?.area) {
+            newAddress.areaId = suburbMapping.areaId;
+            newAddress.areaName = suburbMapping.area.name;
+          }
+        }
+
         updateData.deliveryAddress = newAddress;
         changes.push({
           field: 'deliveryAddress',

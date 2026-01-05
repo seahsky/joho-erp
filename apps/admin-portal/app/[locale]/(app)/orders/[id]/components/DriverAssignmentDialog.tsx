@@ -25,7 +25,7 @@ import { api } from '@/trpc/client';
 interface DriverAssignmentDialogProps {
   orderId: string;
   orderNumber: string;
-  areaTag?: string | null;
+  areaId?: string | null;
   currentDriverId?: string | null;
   currentDriverName?: string | null;
   open: boolean;
@@ -36,7 +36,7 @@ interface DriverAssignmentDialogProps {
 export function DriverAssignmentDialog({
   orderId,
   orderNumber,
-  areaTag,
+  areaId,
   currentDriverId,
   currentDriverName,
   open,
@@ -64,7 +64,7 @@ export function DriverAssignmentDialog({
     api.delivery.getDriversForAssignment.useQuery(
       {
         date: new Date().toISOString(),
-        areaTag: showAllDrivers ? undefined : (areaTag as 'north' | 'south' | 'east' | 'west' | undefined),
+        areaId: showAllDrivers ? undefined : (areaId ?? undefined),
       },
       { enabled: open }
     );
@@ -103,7 +103,7 @@ export function DriverAssignmentDialog({
 
   // Check if area-specific drivers are available
   const hasAreaDrivers = drivers && drivers.length > 0;
-  const needsAllDrivers = !hasAreaDrivers && areaTag && !showAllDrivers;
+  const needsAllDrivers = !hasAreaDrivers && areaId && !showAllDrivers;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,13 +128,13 @@ export function DriverAssignmentDialog({
             </div>
           )}
 
-          {areaTag && (
+          {areaId && (
             <div>
               <Label className="text-sm text-muted-foreground">
                 {t('deliveryArea')}
               </Label>
               <Badge variant="secondary" className="capitalize">
-                {areaTag}
+                {areaId}
               </Badge>
             </div>
           )}
@@ -161,7 +161,7 @@ export function DriverAssignmentDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="driver-select">{t('selectDriver')}</Label>
-              {areaTag && !showAllDrivers && hasAreaDrivers && (
+              {areaId && !showAllDrivers && hasAreaDrivers && (
                 <Button
                   variant="ghost"
                   size="sm"

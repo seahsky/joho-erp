@@ -172,7 +172,7 @@ export async function optimizeRoutesByArea(
 > {
   const results = new Map();
 
-  for (const [areaTag, coords] of coordinatesByArea.entries()) {
+  for (const [areaName, coords] of coordinatesByArea.entries()) {
     if (coords.length === 0) continue;
 
     // Prepend warehouse as the starting point
@@ -192,7 +192,7 @@ export async function optimizeRoutesByArea(
       .slice(1) // Remove warehouse from sequence
       .map((index) => coords[index - 1].id); // Adjust for warehouse offset
 
-    results.set(areaTag, {
+    results.set(areaName, {
       ...result,
       coordinateIds,
     });

@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, TableSkeleton, StatusBadge, type StatusType } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, Search, FileText, Users } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType } from '@joho-erp/ui';
+import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { RouteManifestDialog, DriverFilter, AutoAssignDialog } from './components';
+import { StatsBar, FilterBar, type StatItem } from '@/components/operations';
 
 // Dynamically import Map component to avoid SSR issues
 const DeliveryMap = dynamic(() => import('./delivery-map'), {
@@ -22,7 +23,7 @@ export default function DeliveriesPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'delivered' | ''>('');
-  const [areaFilter, setAreaFilter] = useState<'north' | 'south' | 'east' | 'west' | ''>('');
+  const [areaFilter, setAreaFilter] = useState<string>(''); // Now uses areaId
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function DeliveriesPage() {
   const { data, isLoading } = api.delivery.getAll.useQuery({
     search: searchQuery || undefined,
     status: statusFilter || undefined,
-    areaTag: areaFilter || undefined,
+    areaId: areaFilter || undefined, // Now uses areaId instead of areaTag
     sortBy,
     sortOrder,
   });
@@ -79,6 +80,19 @@ export default function DeliveriesPage() {
     if (!selectedDriverId) return deliveries;
     return deliveries.filter((d) => d.driverId === selectedDriverId);
   }, [deliveries, selectedDriverId]);
+
+  // Calculate stats for StatsBar
+  const stats = useMemo<StatItem[]>(() => {
+    const total = filteredDeliveries.length;
+    const pending = filteredDeliveries.filter((d) => d.status === 'ready_for_delivery').length;
+    const delivered = filteredDeliveries.filter((d) => d.status === 'delivered').length;
+
+    return [
+      { label: t('stats.totalDeliveries'), value: total, icon: Package },
+      { label: t('stats.readyForDelivery'), value: pending, icon: Clock, variant: 'warning' as const },
+      { label: t('stats.delivered'), value: delivered, icon: CheckCircle, variant: 'success' as const },
+    ];
+  }, [filteredDeliveries, t]);
 
   // Transform route data for the map component
   const mapRouteData = useMemo(() => {
@@ -128,6 +142,34 @@ export default function DeliveriesPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <FilterBar
+        showSearchFilter
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder={t('searchPlaceholder')}
+        showStatusFilter
+        status={statusFilter}
+        onStatusChange={(s) => setStatusFilter(s as 'ready_for_delivery' | 'delivered' | '')}
+        statusOptions={[
+          { value: 'ready_for_delivery', label: t('filters.readyForDelivery') },
+          { value: 'delivered', label: t('filters.delivered') },
+        ]}
+        showAreaFilter
+        areaId={areaFilter}
+        onAreaChange={setAreaFilter}
+        showDriverFilter
+        driverId={selectedDriverId ?? ''}
+        onDriverChange={(id) => setSelectedDriverId(id || null)}
+        drivers={driversWithRoutes}
+        className="mb-4"
+      />
+
+      {/* Stats Bar */}
+      {filteredDeliveries.length > 0 && (
+        <StatsBar stats={stats} className="mb-6" />
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Delivery List */}
         <div className="lg:col-span-1 space-y-4">
@@ -135,40 +177,6 @@ export default function DeliveriesPage() {
             <CardHeader className="pb-3">
               <CardTitle>{t('activeDeliveries')}</CardTitle>
               <CardDescription>{filteredDeliveries.length} {t('deliveriesInProgress')}</CardDescription>
-              {/* Search and Filters */}
-              <div className="pt-3 space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder={t('searchPlaceholder')}
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as 'ready_for_delivery' | 'delivered' | '')}
-                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="">{t('filters.allStatuses')}</option>
-                    <option value="ready_for_delivery">{t('filters.readyForDelivery')}</option>
-                    <option value="delivered">{t('filters.delivered')}</option>
-                  </select>
-                  <select
-                    value={areaFilter}
-                    onChange={(e) => setAreaFilter(e.target.value as 'north' | 'south' | 'east' | 'west' | '')}
-                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="">{t('filters.allAreas')}</option>
-                    <option value="north">{t('filters.north')}</option>
-                    <option value="south">{t('filters.south')}</option>
-                    <option value="east">{t('filters.east')}</option>
-                    <option value="west">{t('filters.west')}</option>
-                  </select>
-                </div>
-              </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6 space-y-4">
               {isLoading ? (
@@ -210,7 +218,7 @@ export default function DeliveriesPage() {
 
                   <div className="mt-3 pt-3 border-t flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {t('area')}: {delivery.areaTag.toUpperCase()}
+                      {delivery.areaName && `${t('area')}: ${delivery.areaName}`}
                       {delivery.deliverySequence && ` • ${t('sequence')}: #${delivery.deliverySequence}`}
                     </span>
                     {delivery.status === 'ready_for_delivery' && (

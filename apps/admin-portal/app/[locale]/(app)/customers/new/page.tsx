@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -12,8 +12,9 @@ import {
   Button,
   Input,
   Label,
+  AreaBadge,
 } from '@joho-erp/ui';
-import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, X, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { parseToCents } from '@joho-erp/shared';
@@ -77,7 +78,7 @@ export default function NewCustomerPage() {
       suburb: '',
       state: 'NSW',
       postcode: '',
-      areaTag: 'north' as 'north' | 'south' | 'east' | 'west',
+      areaId: undefined as string | undefined, // Dynamic area ID from API
       deliveryInstructions: '',
     },
     billingAddress: {
@@ -110,6 +111,37 @@ export default function NewCustomerPage() {
   const [sameAsDelivery, setSameAsDelivery] = useState(true);
   const [postalSameAsBilling, setPostalSameAsBilling] = useState(true);
   const [includeFinancial, setIncludeFinancial] = useState(false);
+
+  // Fetch areas dynamically
+  const { data: areas } = api.area.list.useQuery();
+
+  // Auto-lookup area by suburb
+  const { data: autoArea, isLoading: isLookingUpArea } = api.area.lookupBySuburb.useQuery(
+    {
+      suburb: formData.deliveryAddress.suburb,
+      state: formData.deliveryAddress.state,
+      postcode: formData.deliveryAddress.postcode,
+    },
+    {
+      enabled:
+        !!formData.deliveryAddress.suburb &&
+        formData.deliveryAddress.suburb.length > 2 &&
+        !formData.deliveryAddress.areaId, // Only lookup if no manual selection
+    }
+  );
+
+  // Auto-select area when lookup returns a result
+  useEffect(() => {
+    if (autoArea && !formData.deliveryAddress.areaId) {
+      setFormData((prev) => ({
+        ...prev,
+        deliveryAddress: {
+          ...prev.deliveryAddress,
+          areaId: autoArea.id,
+        },
+      }));
+    }
+  }, [autoArea, formData.deliveryAddress.areaId]);
 
   // Helper functions for directors
   const addDirector = () => {
@@ -510,27 +542,54 @@ export default function NewCustomerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="areaTag">{t('addresses.areaTag')} *</Label>
-                  <select
-                    id="areaTag"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={formData.deliveryAddress.areaTag}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        deliveryAddress: {
-                          ...formData.deliveryAddress,
-                          areaTag: e.target.value as 'north' | 'south' | 'east' | 'west',
-                        },
-                      })
-                    }
-                    required
-                  >
-                    <option value="north">{t('addresses.areaTags.north')}</option>
-                    <option value="south">{t('addresses.areaTags.south')}</option>
-                    <option value="east">{t('addresses.areaTags.east')}</option>
-                    <option value="west">{t('addresses.areaTags.west')}</option>
-                  </select>
+                  <Label htmlFor="areaId">{t('addresses.area')}</Label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      id="areaId"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.deliveryAddress.areaId ?? ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          deliveryAddress: {
+                            ...formData.deliveryAddress,
+                            areaId: e.target.value || undefined,
+                          },
+                        })
+                      }
+                    >
+                      <option value="">{t('addresses.areaAutoDetect')}</option>
+                      {areas?.map((area) => (
+                        <option key={area.id} value={area.id}>
+                          {area.displayName}
+                        </option>
+                      ))}
+                    </select>
+                    {isLookingUpArea && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {formData.deliveryAddress.areaId && areas && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      <span>{t('addresses.assignedTo')}:</span>
+                      <AreaBadge
+                        area={
+                          areas.find((a) => a.id === formData.deliveryAddress.areaId) ?? {
+                            name: 'unknown',
+                            displayName: 'Unknown',
+                            colorVariant: 'default',
+                          }
+                        }
+                        className="text-xs"
+                      />
+                    </div>
+                  )}
+                  {!formData.deliveryAddress.areaId && autoArea && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('addresses.willAutoAssignTo', { area: autoArea.displayName })}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

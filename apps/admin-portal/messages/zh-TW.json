@@ -61,13 +61,24 @@
       "all": "全部",
       "allStatuses": "所有狀態",
       "allCategories": "所有類別",
+      "allDrivers": "所有司機",
+      "filterByCategory": "依類別篩選",
       "clearFilters": "清除篩選",
-      "applyFilters": "套用篩選"
+      "applyFilters": "套用篩選",
+      "area": "區域",
+      "allAreas": "所有區域"
+    },
+    "operations": {
+      "expand": "展開",
+      "collapse": "收合"
     },
     "table": {
       "noResults": "未找到結果",
       "noResultsWithFilters": "沒有符合篩選條件的結果。請嘗試調整搜尋或篩選條件。"
-    }
+    },
+    "selectArea": "選擇區域",
+    "unassigned": "未分配",
+    "back": "返回"
   },
   "statusBadges": {
     "awaiting_approval": "待審批",
@@ -130,12 +141,6 @@
     "title": "管理入口",
     "signInDescription": "登入以訪問管理控制台",
     "signUpDescription": "建立帳戶以訪問管理控制台"
-  },
-  "areaTags": {
-    "north": "北區",
-    "south": "南區",
-    "east": "東區",
-    "west": "西區"
   },
   "days": {
     "monday": "星期一",
@@ -223,6 +228,12 @@
   "deliveries": {
     "title": "配送管理",
     "subtitle": "即時追蹤和管理配送",
+    "stats": {
+      "totalDeliveries": "總配送數",
+      "readyForDelivery": "待配送",
+      "delivered": "已送達",
+      "assignedDrivers": "已分配司機"
+    },
     "activeDeliveries": "進行中配送",
     "orderId": "訂單編號",
     "customer": "客戶",
@@ -502,6 +513,8 @@
       "state": "州",
       "postcode": "郵遞區號",
       "areaTag": "配送區域",
+      "area": "配送區域",
+      "selectArea": "選擇配送區域",
       "deliveryInstructions": "配送說明",
       "deliveryDate": "要求配送日期（可選）",
       "bypassCreditLimit": "繞過信用額度檢查",
@@ -1127,6 +1140,10 @@
       "postcodePlaceholder": "2000",
       "areaTag": "配送區域",
       "areaTagPlaceholder": "選擇配送區域",
+      "area": "配送區域",
+      "areaAutoDetect": "根據郊區自動偵測",
+      "assignedTo": "已分配至",
+      "willAutoAssignTo": "將自動分配至 {area}",
       "deliveryInstructions": "配送說明（可選）",
       "deliveryInstructionsPlaceholder": "輸入任何特殊配送說明",
       "sameAsDelivery": "與送貨地址相同",
@@ -1401,7 +1418,9 @@
       "permissions": "權限管理",
       "permissionsDescription": "為每個使用者角色配置基於角色的存取控制",
       "auditLogs": "稽核日誌",
-      "auditLogsDescription": "檢視系統活動並匯出稽核追蹤"
+      "auditLogsDescription": "檢視系統活動並匯出稽核追蹤",
+      "areas": "配送區域",
+      "areasDescription": "管理可配置的配送區域和分區"
     },
     "packing": {
       "title": "包裝設定",
@@ -1439,6 +1458,7 @@
       },
       "actions": "操作",
       "noDrivers": "未找到司機。請新增具有司機角色的使用者以分配區域。",
+      "noAreas": "未設定配送區域。請先在設定 → 配送區域中建立區域。",
       "summary": "區域概覽",
       "driverSingular": "位司機",
       "driverPlural": "位司機",
@@ -2593,5 +2613,64 @@
     "minutesAgo": "{count} 分鐘前",
     "hoursAgo": "{count} 小時前",
     "daysAgo": "{count} 天前"
+  },
+  "areas": {
+    "title": "配送區域",
+    "subtitle": "配置用於司機分配和路線優化的配送區域",
+    "createArea": "建立區域",
+    "editArea": "編輯區域",
+    "deleteArea": "刪除區域",
+    "noAreas": "尚未配置區域",
+    "noAreasDescription": "建立您的第一個配送區域以開始使用",
+    "fields": {
+      "name": "區域ID",
+      "namePlaceholder": "例如：east-1, north-central",
+      "nameHelp": "僅限小寫字母、數字和連字符",
+      "displayName": "顯示名稱",
+      "displayNamePlaceholder": "例如：東區1、北中心",
+      "colorVariant": "標籤顏色",
+      "isActive": "啟用",
+      "sortOrder": "排序"
+    },
+    "colors": {
+      "info": "藍色",
+      "success": "綠色",
+      "warning": "黃色",
+      "default": "灰色",
+      "secondary": "紫色"
+    },
+    "usage": {
+      "suburbs": "{count} 個區域",
+      "drivers": "{count} 位司機"
+    },
+    "table": {
+      "area": "區域",
+      "displayName": "顯示名稱",
+      "color": "顏色",
+      "suburbs": "區域數",
+      "drivers": "司機數",
+      "status": "狀態",
+      "actions": "操作"
+    },
+    "deleteConfirm": {
+      "title": "刪除區域？",
+      "description": "這將停用該區域。現有客戶和訂單將保留其區域分配。",
+      "cannotDelete": "無法刪除此區域，因為它有活躍的區域映射或司機分配。",
+      "confirm": "刪除區域"
+    },
+    "errors": {
+      "nameExists": "此名稱的區域已存在",
+      "hasDependencies": "無法刪除有活躍區域映射或司機分配的區域",
+      "createFailed": "建立區域失敗",
+      "updateFailed": "更新區域失敗",
+      "deleteFailed": "刪除區域失敗"
+    },
+    "success": {
+      "created": "區域建立成功",
+      "updated": "區域更新成功",
+      "deleted": "區域刪除成功",
+      "reordered": "區域排序成功"
+    },
+    "dragToReorder": "拖曳以重新排序"
   }
 }

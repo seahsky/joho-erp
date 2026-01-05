@@ -19,6 +19,7 @@ import {
   CountUp,
   EmptyState,
   TableSkeleton,
+  AreaBadge,
 } from '@joho-erp/ui';
 import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -44,7 +45,7 @@ type Customer = {
     creditLimit: number;
   };
   deliveryAddress: {
-    areaTag: string;
+    areaName?: string;
   };
   orders?: number;
 };
@@ -59,6 +60,9 @@ export default function CustomersPage() {
   const [creditStatusFilter, setCreditStatusFilter] = useState<string>('');
   const [areaFilter, setAreaFilter] = useState<string>('');
 
+  // Fetch areas dynamically for filter dropdown
+  const { data: areas } = api.area.list.useQuery();
+
   // Sorting state (server-side)
   const { sortBy, sortOrder, handleSort } = useTableSort('businessName', 'asc');
 
@@ -66,7 +70,7 @@ export default function CustomersPage() {
     search: searchQuery || undefined,
     status: statusFilter as 'active' | 'suspended' | 'closed' || undefined,
     approvalStatus: creditStatusFilter as 'pending' | 'approved' | 'rejected' || undefined,
-    areaTag: areaFilter as 'north' | 'south' | 'east' | 'west' || undefined,
+    areaId: areaFilter || undefined, // Use areaId instead of areaTag
     sortBy,
     sortOrder,
     limit: 100,
@@ -114,7 +118,10 @@ export default function CustomersPage() {
     {
       key: 'area',
       label: t('area'),
-      render: (customer) => customer.deliveryAddress.areaTag,
+      render: (customer) => {
+        const areaDisplay = customer.deliveryAddress.areaName;
+        return areaDisplay ? <AreaBadge area={areaDisplay} /> : null;
+      },
     },
     {
       key: 'status',
@@ -192,7 +199,14 @@ export default function CustomersPage() {
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <MapPin className="h-4 w-4" />
-          <span>{t('area')}: {customer.deliveryAddress.areaTag}</span>
+          <span className="flex items-center gap-1">
+            {t('area')}:{' '}
+            {customer.deliveryAddress.areaName ? (
+              <AreaBadge area={customer.deliveryAddress.areaName} />
+            ) : (
+              '-'
+            )}
+          </span>
         </div>
       </div>
 
@@ -334,17 +348,18 @@ export default function CustomersPage() {
                 <option value="rejected">{t('rejected')}</option>
               </select>
 
-              {/* Area Filter */}
+              {/* Area Filter - Dynamic areas from API */}
               <select
-                className="flex h-10 w-full md:w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-10 w-full md:w-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={areaFilter}
                 onChange={(e) => setAreaFilter(e.target.value)}
               >
                 <option value="">{t('filters.allAreas')}</option>
-                <option value="north">{t('filters.north')}</option>
-                <option value="south">{t('filters.south')}</option>
-                <option value="east">{t('filters.east')}</option>
-                <option value="west">{t('filters.west')}</option>
+                {areas?.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.displayName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

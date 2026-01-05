@@ -413,8 +413,6 @@
         "suburb": "Suburb",
         "state": "State",
         "postcode": "Postcode",
-        "areaTag": "Delivery Area",
-        "areaTagPlaceholder": "Select delivery area",
         "deliveryInstructions": "Delivery Instructions",
         "requestedCreditLimit": "Requested Credit Limit ($)",
         "forecastPurchase": "Forecast Purchase (next 3 months)"
@@ -431,12 +429,6 @@
         "company": "Company",
         "other": "Other"
       },
-      "areaTags": {
-        "north": "North",
-        "south": "South",
-        "east": "East",
-        "west": "West"
-      },
       "validation": {
         "accountTypeRequired": "Account type is required",
         "businessNameRequired": "Business name is required",
@@ -449,8 +441,7 @@
         "streetRequired": "Street address is required",
         "suburbRequired": "Suburb is required",
         "stateRequired": "State is required",
-        "postcodeInvalid": "Postcode must be 4 digits",
-        "areaTagRequired": "Delivery area is required"
+        "postcodeInvalid": "Postcode must be 4 digits"
       },
       "buttons": {
         "next": "Next"

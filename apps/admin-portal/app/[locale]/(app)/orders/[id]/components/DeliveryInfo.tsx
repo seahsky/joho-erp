@@ -25,7 +25,8 @@ interface DeliveryAddress {
   suburb: string;
   state: string;
   postcode: string;
-  areaTag: string;
+  areaId?: string | null;
+  areaName?: string | null;
   deliveryInstructions?: string | null;
 }
 
@@ -97,9 +98,11 @@ export function DeliveryInfo({
               <br />
               {deliveryAddress.suburb}, {deliveryAddress.state} {deliveryAddress.postcode}
             </p>
-            <Badge variant="outline" className="mt-2">
-              {tCommon('area')}: {deliveryAddress.areaTag.toUpperCase()}
-            </Badge>
+            {deliveryAddress.areaName && (
+              <Badge variant="outline" className="mt-2">
+                {tCommon('area')}: {deliveryAddress.areaName.toUpperCase()}
+              </Badge>
+            )}
           </div>
 
           {deliveryAddress.deliveryInstructions && (
@@ -227,7 +230,7 @@ export function DeliveryInfo({
       <DriverAssignmentDialog
         orderId={orderId}
         orderNumber={orderNumber}
-        areaTag={deliveryAddress.areaTag}
+        areaId={deliveryAddress.areaId}
         currentDriverId={delivery?.driverId}
         currentDriverName={delivery?.driverName}
         open={isDriverDialogOpen}

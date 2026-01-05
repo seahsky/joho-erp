@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
-import { prisma, AreaTag } from '@joho-erp/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import {
@@ -31,7 +31,7 @@ export const deliveryRouter = router({
       z
         .object({
           status: z.enum(['ready_for_delivery', 'delivered']).optional(),
-          areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+          areaId: z.string().optional(),
           dateFrom: z.date().optional(),
           dateTo: z.date().optional(),
           search: z.string().optional(),
@@ -48,9 +48,9 @@ export const deliveryRouter = router({
         },
       };
 
-      if (filters.areaTag) {
+      if (filters.areaId) {
         where.deliveryAddress = {
-          is: { areaTag: filters.areaTag },
+          is: { areaId: filters.areaId },
         };
       }
 
@@ -83,8 +83,8 @@ export const deliveryRouter = router({
           case 'requestedDeliveryDate':
             orderBy = [{ requestedDeliveryDate: direction }];
             break;
-          case 'areaTag':
-            orderBy = [{ deliveryAddress: { areaTag: direction } }];
+          case 'areaName':
+            orderBy = [{ deliveryAddress: { areaName: direction } }];
             break;
           case 'deliverySequence':
             orderBy = [{ delivery: { deliverySequence: direction } }];
@@ -132,7 +132,7 @@ export const deliveryRouter = router({
         address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
         latitude: order.customer?.deliveryAddress?.latitude ?? null,
         longitude: order.customer?.deliveryAddress?.longitude ?? null,
-        areaTag: order.deliveryAddress.areaTag,
+        areaName: order.deliveryAddress.areaName,
         status: order.status,
         estimatedTime:
           order.status === 'delivered'
@@ -425,7 +425,7 @@ export const deliveryRouter = router({
         address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
         latitude: order.deliveryAddress.latitude,
         longitude: order.deliveryAddress.longitude,
-        areaTag: order.deliveryAddress.areaTag,
+        areaName: order.deliveryAddress.areaName,
         status: order.status,
         deliverySequence: order.delivery?.deliverySequence || null,
         estimatedArrival: order.delivery?.estimatedArrival || null,
@@ -444,7 +444,7 @@ export const deliveryRouter = router({
     .input(
       z.object({
         deliveryDate: z.string().datetime(),
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+        areaId: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
@@ -463,10 +463,9 @@ export const deliveryRouter = router({
         status: 'ready_for_delivery',
       };
 
-      // Filter by area if specified
-      if (input.areaTag) {
+      if (input.areaId) {
         where.deliveryAddress = {
-          is: { areaTag: input.areaTag },
+          is: { areaId: input.areaId },
         };
       }
 
@@ -487,10 +486,21 @@ export const deliveryRouter = router({
         },
       });
 
+      // Get area name if areaId is provided
+      let areaName: string | null = null;
+      if (input.areaId) {
+        const area = await prisma.area.findUnique({
+          where: { id: input.areaId },
+          select: { name: true },
+        });
+        areaName = area?.name || null;
+      }
+
       if (orders.length === 0) {
         return {
           manifestDate: deliveryDate,
-          areaTag: input.areaTag || null,
+          areaId: input.areaId || null,
+          areaName,
           warehouseAddress: null,
           routeSummary: {
             totalStops: 0,
@@ -510,7 +520,7 @@ export const deliveryRouter = router({
             gte: startOfDay,
             lte: endOfDay,
           },
-          ...(input.areaTag ? { areaTag: input.areaTag } : {}),
+          ...(input.areaId ? { areaId: input.areaId } : {}),
         },
         orderBy: {
           optimizedAt: 'desc',
@@ -581,7 +591,8 @@ export const deliveryRouter = router({
 
       return {
         manifestDate: deliveryDate,
-        areaTag: input.areaTag || null,
+        areaId: input.areaId || null,
+        areaName,
         warehouseAddress: warehouseAddress
           ? {
               street: warehouseAddress.street,
@@ -673,7 +684,7 @@ export const deliveryRouter = router({
         deliveryInstructions: order.deliveryAddress.deliveryInstructions,
         latitude: order.deliveryAddress.latitude,
         longitude: order.deliveryAddress.longitude,
-        areaTag: order.deliveryAddress.areaTag,
+        areaName: order.deliveryAddress.areaName,
         status: order.status,
         // Use per-driver sequence for contiguous ordering (1, 2, 3...) or fall back to global
         deliverySequence: order.delivery?.driverDeliverySequence || order.delivery?.deliverySequence || null,
@@ -1202,42 +1213,44 @@ export const deliveryRouter = router({
         },
       });
 
-      // Map assignments to drivers
-      const assignmentMap = new Map<string, AreaTag[]>();
+      const assignmentMap = new Map<string, string[]>();
       for (const assignment of areaAssignments) {
-        const areas = assignmentMap.get(assignment.driverId) || [];
-        areas.push(assignment.areaTag);
-        assignmentMap.set(assignment.driverId, areas);
+        if (assignment.areaId) {
+          const areaIds = assignmentMap.get(assignment.driverId) || [];
+          areaIds.push(assignment.areaId);
+          assignmentMap.set(assignment.driverId, areaIds);
+        }
       }
 
       return drivers.map((driver) => ({
         ...driver,
-        areas: assignmentMap.get(driver.id) || [],
+        areaIds: assignmentMap.get(driver.id) || [],
       }));
     }),
 
   // Set driver's assigned areas (replaces all existing)
+  // Updated to support dynamic areaIds instead of hardcoded areaTags
   setDriverAreas: requirePermission('deliveries:manage')
     .input(
       z.object({
         driverId: z.string(),
-        areas: z.array(z.enum(['north', 'south', 'east', 'west'])),
+        areaIds: z.array(z.string()), // Dynamic area IDs
       })
     )
     .mutation(async ({ input }) => {
-      const { driverId, areas } = input;
+      const { driverId, areaIds } = input;
 
       // Delete existing assignments
       await prisma.driverAreaAssignment.deleteMany({
         where: { driverId },
       });
 
-      // Create new assignments
-      if (areas.length > 0) {
+      // Create new assignments with areaId references
+      if (areaIds.length > 0) {
         await prisma.driverAreaAssignment.createMany({
-          data: areas.map((areaTag) => ({
+          data: areaIds.map((areaId) => ({
             driverId,
-            areaTag,
+            areaId,
             isActive: true,
           })),
         });
@@ -1251,7 +1264,7 @@ export const deliveryRouter = router({
     .input(
       z.object({
         date: z.string().optional(),
-        areaTag: z.enum(['north', 'south', 'east', 'west']).optional(),
+        areaId: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
@@ -1279,11 +1292,13 @@ export const deliveryRouter = router({
         },
       });
 
-      const assignmentMap = new Map<string, AreaTag[]>();
+      const assignmentMap = new Map<string, string[]>();
       for (const assignment of areaAssignments) {
-        const areas = assignmentMap.get(assignment.driverId) || [];
-        areas.push(assignment.areaTag);
-        assignmentMap.set(assignment.driverId, areas);
+        if (assignment.areaId) {
+          const areas = assignmentMap.get(assignment.driverId) || [];
+          areas.push(assignment.areaId);
+          assignmentMap.set(assignment.driverId, areas);
+        }
       }
 
       // Get order counts for today if date provided
@@ -1311,12 +1326,11 @@ export const deliveryRouter = router({
         }
       }
 
-      // Filter by area if specified
       let filteredDrivers = drivers;
-      if (input.areaTag) {
+      if (input.areaId) {
         const driversForArea = new Set(
           areaAssignments
-            .filter((a) => a.areaTag === input.areaTag)
+            .filter((a) => a.areaId === input.areaId)
             .map((a) => a.driverId)
         );
         filteredDrivers = drivers.filter((d) => driversForArea.has(d.id));
@@ -1364,14 +1378,14 @@ export const deliveryRouter = router({
         };
       }
 
-      // Group orders by area
-      const ordersByArea = new Map<AreaTag, typeof orders>();
+      // Group orders by area (using areaId)
+      const ordersByArea = new Map<string, typeof orders>();
       for (const order of orders) {
-        const area = order.deliveryAddress?.areaTag;
-        if (area) {
-          const areaOrders = ordersByArea.get(area) || [];
+        const areaId = order.deliveryAddress?.areaId;
+        if (areaId) {
+          const areaOrders = ordersByArea.get(areaId) || [];
           areaOrders.push(order);
-          ordersByArea.set(area, areaOrders);
+          ordersByArea.set(areaId, areaOrders);
         }
       }
 
@@ -1380,12 +1394,14 @@ export const deliveryRouter = router({
         where: { isActive: true },
       });
 
-      // Group drivers by area
-      const driversByArea = new Map<AreaTag, string[]>();
+      // Group drivers by area (using areaId)
+      const driversByArea = new Map<string, string[]>();
       for (const assignment of areaAssignments) {
-        const drivers = driversByArea.get(assignment.areaTag) || [];
-        drivers.push(assignment.driverId);
-        driversByArea.set(assignment.areaTag, drivers);
+        if (assignment.areaId) {
+          const drivers = driversByArea.get(assignment.areaId) || [];
+          drivers.push(assignment.driverId);
+          driversByArea.set(assignment.areaId, drivers);
+        }
       }
 
       // Get driver names from Clerk
@@ -1404,18 +1420,18 @@ export const deliveryRouter = router({
       }
 
       // Assign drivers (round-robin per area)
-      const results: { area: AreaTag; assigned: number; skipped: number }[] = [];
-      const driverCounters = new Map<AreaTag, number>();
+      const results: { areaId: string; assigned: number; skipped: number }[] = [];
+      const driverCounters = new Map<string, number>();
 
-      for (const [area, areaOrders] of ordersByArea) {
-        const areaDrivers = driversByArea.get(area) || [];
+      for (const [areaId, areaOrders] of ordersByArea) {
+        const areaDrivers = driversByArea.get(areaId) || [];
 
         if (areaDrivers.length === 0) {
-          results.push({ area, assigned: 0, skipped: areaOrders.length });
+          results.push({ areaId, assigned: 0, skipped: areaOrders.length });
           continue;
         }
 
-        let counter = driverCounters.get(area) || 0;
+        let counter = driverCounters.get(areaId) || 0;
         let assigned = 0;
 
         for (const order of areaOrders) {
@@ -1447,15 +1463,15 @@ export const deliveryRouter = router({
           assigned++;
         }
 
-        driverCounters.set(area, counter);
-        results.push({ area, assigned, skipped: 0 });
+        driverCounters.set(areaId, counter);
+        results.push({ areaId, assigned, skipped: 0 });
       }
 
       // Recalculate per-driver sequences
       await calculatePerDriverSequences(targetDate);
 
       const byArea = Object.fromEntries(
-        results.map((r) => [r.area, { assigned: r.assigned, skipped: r.skipped }])
+        results.map((r) => [r.areaId, { assigned: r.assigned, skipped: r.skipped }])
       );
 
       return {
@@ -1496,14 +1512,20 @@ export const deliveryRouter = router({
         },
       });
 
-      // Group by area
-      const ordersByArea = new Map<AreaTag, number>();
+      // Group by area (using areaId)
+      const ordersByArea = new Map<string, number>();
       for (const order of orders) {
-        const area = order.deliveryAddress?.areaTag;
-        if (area) {
-          ordersByArea.set(area, (ordersByArea.get(area) || 0) + 1);
+        const areaId = order.deliveryAddress?.areaId;
+        if (areaId) {
+          ordersByArea.set(areaId, (ordersByArea.get(areaId) || 0) + 1);
         }
       }
+
+      // Get all active areas
+      const areas = await prisma.area.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
 
       // Get driver assignments
       const areaAssignments = await prisma.driverAreaAssignment.findMany({
@@ -1526,16 +1548,17 @@ export const deliveryRouter = router({
       }
 
       // Build preview by area
-      const areas: AreaTag[] = ['north', 'south', 'east', 'west'];
       const preview = areas.map((area) => {
         const drivers = areaAssignments
-          .filter((a) => a.areaTag === area)
+          .filter((a) => a.areaId === area.id)
           .map((a) => driverInfo.get(a.driverId))
           .filter((d): d is { id: string; name: string } => d !== undefined);
 
         return {
-          area,
-          orderCount: ordersByArea.get(area) || 0,
+          areaId: area.id,
+          areaName: area.name,
+          displayName: area.displayName,
+          orderCount: ordersByArea.get(area.id) || 0,
           drivers,
           hasDrivers: drivers.length > 0,
         };

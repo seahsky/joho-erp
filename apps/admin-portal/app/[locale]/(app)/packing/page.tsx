@@ -3,13 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Input, EmptyState, CountUp, Card, CardHeader, CardContent, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
-import { Package, Calendar, PlayCircle, PauseCircle, Loader2, Filter } from 'lucide-react';
+import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
+import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
 import { OrderListView } from './components/OrderListView';
-import { PackingLayout } from './components/PackingLayout';
+import { StatsBar, FilterBar, OperationsLayout, type StatItem } from '@/components/operations';
 import type { ProductCategory } from '@joho-erp/shared';
 
 export default function PackingPage() {
@@ -26,6 +26,7 @@ export default function PackingPage() {
   const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
   const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('');
 
   // Handlers for order badge focus functionality
   const handleFocusOrder = (orderNumber: string) => {
@@ -38,6 +39,7 @@ export default function PackingPage() {
 
   const { data: session, isLoading, error, refetch } = api.packing.getOptimizedSession.useQuery({
     deliveryDate: deliveryDate.toISOString(),
+    areaId: areaFilter || undefined,
   }, {
     refetchInterval: 30000, // Auto-refresh every 30 seconds to reflect order changes
   });
@@ -165,6 +167,22 @@ export default function PackingPage() {
   const totalProducts = filteredProductSummary.length;
   const totalItems = filteredProductSummary.reduce((sum, p) => sum + p.totalQuantity, 0);
 
+  // Stats for StatsBar component
+  const stats = useMemo<StatItem[]>(() => [
+    { label: t('totalOrders'), value: totalOrders },
+    { label: t('uniqueProducts'), value: totalProducts, variant: 'success' as const },
+    { label: t('totalItems'), value: totalItems, variant: 'info' as const },
+  ], [totalOrders, totalProducts, totalItems, t]);
+
+  // Category labels for FilterBar
+  const categoryLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    categories.forEach((cat) => {
+      labels[cat] = t(`categories.${cat.toLowerCase()}`);
+    });
+    return labels;
+  }, [categories, t]);
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -235,78 +253,22 @@ export default function PackingPage() {
           </CardHeader>
         </Card>
 
-        {/* Category Filter - Only show if there are multiple categories */}
-        {categories.length > 1 && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <Filter className="h-4 w-4" />
-                  <span>{t('filterByCategory')}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setCategoryFilter('all')}
-                    className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                      categoryFilter === 'all'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {t('allCategories')}
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setCategoryFilter(category)}
-                      className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                        categoryFilter === category
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      {t(`categories.${category.toLowerCase()}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Category and Area Filters */}
+        <FilterBar
+          showCategoryFilter={categories.length > 1}
+          category={categoryFilter}
+          onCategoryChange={(cat) => setCategoryFilter(cat as ProductCategory | 'all')}
+          categories={categories}
+          categoryLabels={categoryLabels}
+          allCategoriesLabel={t('allCategories')}
+          showAreaFilter={true}
+          areaId={areaFilter}
+          onAreaChange={setAreaFilter}
+        />
 
         {/* Stats Bar */}
         {totalOrders > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6 md:mb-8">
-            <Card className="stat-card animate-fade-in-up">
-              <div className="stat-card-gradient" />
-              <CardHeader className="pb-3 relative">
-                <CardDescription>{t('totalOrders')}</CardDescription>
-                <div className="stat-value tabular-nums">
-                  <CountUp end={totalOrders} />
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="stat-card animate-fade-in-up">
-              <div className="stat-card-gradient" />
-              <CardHeader className="pb-3 relative">
-                <CardDescription>{t('uniqueProducts')}</CardDescription>
-                <div className="stat-value tabular-nums text-success">
-                  <CountUp end={totalProducts} />
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="stat-card animate-fade-in-up">
-              <div className="stat-card-gradient" />
-              <CardHeader className="pb-3 relative">
-                <CardDescription>{t('totalItems')}</CardDescription>
-                <div className="stat-value tabular-nums text-info">
-                  <CountUp end={totalItems} />
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
+          <StatsBar stats={stats} />
         )}
 
         {/* Main Packing Interface */}
@@ -330,15 +292,18 @@ export default function PackingPage() {
             </Card>
           </div>
         ) : orders.length > 0 ? (
-          <PackingLayout
-            summaryPanel={
+          <OperationsLayout
+            sidebar={
               <ProductSummaryView
                 productSummary={filteredProductSummary}
                 deliveryDate={deliveryDate}
                 onOrderBadgeClick={handleFocusOrder}
               />
             }
-            ordersPanel={
+            sidebarTitle={t('summaryPanel')}
+            sidebarIcon={Package}
+            sidebarDescription={`0/${totalProducts} ${t('gathered')}`}
+            main={
               <OrderListView
                 orders={filteredOrders}
                 deliveryDate={deliveryDate}
@@ -347,11 +312,10 @@ export default function PackingPage() {
                 onClearFocus={handleClearFocus}
               />
             }
-            gatheredCount={0} // TODO: Track gathered state
-            totalProducts={totalProducts}
-            packedCount={packedOrdersCount}
-            totalOrders={totalOrders}
-            focusedOrderNumber={focusedOrderNumber}
+            mainTitle={t('ordersPanel')}
+            mainIcon={ClipboardList}
+            mainDescription={`${packedOrdersCount}/${totalOrders} ${t('ordersPacked')}`}
+            focusKey={focusedOrderNumber}
           />
         ) : (
           <div className="py-12">

@@ -61,13 +61,24 @@
       "all": "全部",
       "allStatuses": "所有状态",
       "allCategories": "所有类别",
+      "allDrivers": "所有司机",
+      "filterByCategory": "按类别筛选",
       "clearFilters": "清除筛选",
-      "applyFilters": "应用筛选"
+      "applyFilters": "应用筛选",
+      "area": "区域",
+      "allAreas": "所有区域"
+    },
+    "operations": {
+      "expand": "展开",
+      "collapse": "收起"
     },
     "table": {
       "noResults": "未找到结果",
       "noResultsWithFilters": "没有符合筛选条件的结果。请尝试调整搜索或筛选条件。"
-    }
+    },
+    "selectArea": "选择区域",
+    "unassigned": "未分配",
+    "back": "返回"
   },
   "statusBadges": {
     "awaiting_approval": "待审批",
@@ -130,12 +141,6 @@
     "title": "管理门户",
     "signInDescription": "登录以访问管理控制台",
     "signUpDescription": "创建账户以访问管理控制台"
-  },
-  "areaTags": {
-    "north": "北区",
-    "south": "南区",
-    "east": "东区",
-    "west": "西区"
   },
   "days": {
     "monday": "星期一",
@@ -223,6 +228,12 @@
   "deliveries": {
     "title": "配送管理",
     "subtitle": "实时追踪和管理配送",
+    "stats": {
+      "totalDeliveries": "总配送数",
+      "readyForDelivery": "待配送",
+      "delivered": "已送达",
+      "assignedDrivers": "已分配司机"
+    },
     "activeDeliveries": "进行中配送",
     "orderId": "订单编号",
     "customer": "客户",
@@ -502,6 +513,8 @@
       "state": "州",
       "postcode": "邮政编码",
       "areaTag": "配送区域",
+      "area": "配送区域",
+      "selectArea": "选择配送区域",
       "deliveryInstructions": "配送说明",
       "deliveryDate": "要求配送日期（可选）",
       "bypassCreditLimit": "绕过信用额度检查",
@@ -1127,16 +1140,14 @@
       "postcodePlaceholder": "2000",
       "areaTag": "配送区域",
       "areaTagPlaceholder": "选择配送区域",
+      "area": "配送区域",
+      "areaAutoDetect": "根据郊区自动检测",
+      "assignedTo": "已分配至",
+      "willAutoAssignTo": "将自动分配至 {area}",
       "deliveryInstructions": "配送说明（可选）",
       "deliveryInstructionsPlaceholder": "输入任何特殊配送说明",
       "sameAsDelivery": "与送货地址相同",
-      "sameAsBilling": "与账单地址相同",
-      "areaTags": {
-        "north": "北部",
-        "south": "南部",
-        "east": "东部",
-        "west": "西部"
-      }
+      "sameAsBilling": "与账单地址相同"
     },
     "creditApplication": {
       "title": "信用条款与申请",
@@ -1401,7 +1412,9 @@
       "permissions": "权限管理",
       "permissionsDescription": "为每个用户角色配置基于角色的访问控制",
       "auditLogs": "审计日志",
-      "auditLogsDescription": "查看系统活动并导出审计跟踪"
+      "auditLogsDescription": "查看系统活动并导出审计跟踪",
+      "areas": "配送区域",
+      "areasDescription": "管理可配置的配送区域和分区"
     },
     "packing": {
       "title": "包装设置",
@@ -1439,6 +1452,7 @@
       },
       "actions": "操作",
       "noDrivers": "未找到司机。请添加具有司机角色的用户以分配区域。",
+      "noAreas": "未配置配送区域。请先在设置 → 配送区域中创建区域。",
       "summary": "区域概览",
       "driverSingular": "位司机",
       "driverPlural": "位司机",
@@ -2593,5 +2607,64 @@
     "minutesAgo": "{count} 分钟前",
     "hoursAgo": "{count} 小时前",
     "daysAgo": "{count} 天前"
+  },
+  "areas": {
+    "title": "配送区域",
+    "subtitle": "配置用于司机分配和路线优化的配送区域",
+    "createArea": "创建区域",
+    "editArea": "编辑区域",
+    "deleteArea": "删除区域",
+    "noAreas": "尚未配置区域",
+    "noAreasDescription": "创建您的第一个配送区域以开始使用",
+    "fields": {
+      "name": "区域ID",
+      "namePlaceholder": "例如：east-1, north-central",
+      "nameHelp": "仅限小写字母、数字和连字符",
+      "displayName": "显示名称",
+      "displayNamePlaceholder": "例如：东区1、北中心",
+      "colorVariant": "标签颜色",
+      "isActive": "启用",
+      "sortOrder": "排序"
+    },
+    "colors": {
+      "info": "蓝色",
+      "success": "绿色",
+      "warning": "黄色",
+      "default": "灰色",
+      "secondary": "紫色"
+    },
+    "usage": {
+      "suburbs": "{count} 个区域",
+      "drivers": "{count} 位司机"
+    },
+    "table": {
+      "area": "区域",
+      "displayName": "显示名称",
+      "color": "颜色",
+      "suburbs": "区域数",
+      "drivers": "司机数",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "deleteConfirm": {
+      "title": "删除区域？",
+      "description": "这将停用该区域。现有客户和订单将保留其区域分配。",
+      "cannotDelete": "无法删除此区域，因为它有活跃的区域映射或司机分配。",
+      "confirm": "删除区域"
+    },
+    "errors": {
+      "nameExists": "此名称的区域已存在",
+      "hasDependencies": "无法删除有活跃区域映射或司机分配的区域",
+      "createFailed": "创建区域失败",
+      "updateFailed": "更新区域失败",
+      "deleteFailed": "删除区域失败"
+    },
+    "success": {
+      "created": "区域创建成功",
+      "updated": "区域更新成功",
+      "deleted": "区域删除成功",
+      "reordered": "区域排序成功"
+    },
+    "dragToReorder": "拖动以重新排序"
   }
 }
