@@ -37,14 +37,14 @@ async function validateOrderCustomers(): Promise<{ errors: string[]; warnings: s
   const customers = await prisma.customer.findMany({
     select: { id: true },
   });
-  const customerIds = new Set(customers.map(c => c.id));
+  const customerIds = new Set(customers.map((c: { id: string }) => c.id));
 
   // Find orphaned orders
-  const orphanedOrders = orders.filter(order => !customerIds.has(order.customerId));
+  const orphanedOrders = orders.filter((order: { customerId: string }) => !customerIds.has(order.customerId));
 
   if (orphanedOrders.length > 0) {
     errors.push(`Found ${orphanedOrders.length} orders with non-existent customers:`);
-    orphanedOrders.forEach(order => {
+    orphanedOrders.forEach((order: { id: string; orderNumber: string; customerId: string }) => {
       errors.push(`  - Order ${order.orderNumber} (${order.id}) references customer ${order.customerId}`);
     });
   }
@@ -68,7 +68,7 @@ async function validateOrderItems(): Promise<{ errors: string[]; warnings: strin
   const products = await prisma.product.findMany({
     select: { id: true },
   });
-  const productIds = new Set(products.map(p => p.id));
+  const productIds = new Set(products.map((p: { id: string }) => p.id));
 
   // Find orphaned order items
   let orphanCount = 0;
@@ -103,8 +103,8 @@ async function validateCustomerPricing(): Promise<{ errors: string[]; warnings: 
   // Get all customer and product IDs
   const customers = await prisma.customer.findMany({ select: { id: true } });
   const products = await prisma.product.findMany({ select: { id: true } });
-  const customerIds = new Set(customers.map(c => c.id));
-  const productIds = new Set(products.map(p => p.id));
+  const customerIds = new Set(customers.map((c: { id: string }) => c.id));
+  const productIds = new Set(products.map((p: { id: string }) => p.id));
 
   // Find orphaned pricing records
   let orphanCount = 0;
@@ -140,7 +140,7 @@ async function validateInventoryTransactions(): Promise<{ errors: string[]; warn
 
   // Get all product IDs
   const products = await prisma.product.findMany({ select: { id: true } });
-  const productIds = new Set(products.map(p => p.id));
+  const productIds = new Set(products.map((p: { id: string }) => p.id));
 
   // Find orphaned transactions
   let orphanCount = 0;
@@ -157,9 +157,9 @@ async function validateInventoryTransactions(): Promise<{ errors: string[]; warn
 
   // Warning: Check for sale transactions with invalid order references
   const orders = await prisma.order.findMany({ select: { id: true } });
-  const orderIds = new Set(orders.map(o => o.id));
+  const orderIds = new Set(orders.map((o: { id: string }) => o.id));
 
-  const saleTransactions = transactions.filter(t => t.type === 'sale' && t.referenceId);
+  const saleTransactions = transactions.filter((t: { type: string; referenceId: string | null }) => t.type === 'sale' && t.referenceId);
   let invalidOrderReferences = 0;
   for (const transaction of saleTransactions) {
     if (transaction.referenceId && !orderIds.has(transaction.referenceId)) {

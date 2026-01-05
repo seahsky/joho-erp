@@ -336,11 +336,11 @@ export const deliveryRouter = router({
       // Build waypoints from route optimization data
       // Filter to only include ready_for_delivery orders (not orders still in packing)
       const waypoints = routeOptimization.waypoints
-        .filter((wp) => {
+        .filter((wp: { orderId: string }) => {
           const order = orders.find((o) => o.id === wp.orderId);
           return order; // Only include if order is in ready_for_delivery or delivered
         })
-        .map((wp) => {
+        .map((wp: { orderId: string; orderNumber: string; sequence: number; address: string; latitude: number; longitude: number; estimatedArrival: Date; distanceFromPrevious: number; durationFromPrevious: number }) => {
           const order = orders.find((o) => o.id === wp.orderId);
           return {
             orderId: wp.orderId,
@@ -547,7 +547,7 @@ export const deliveryRouter = router({
           postcode: order.deliveryAddress.postcode,
           deliveryInstructions: order.deliveryAddress.deliveryInstructions || null,
         },
-        items: order.items.map((item) => ({
+        items: order.items.map((item: { sku: string; productName: string; quantity: number; unit: string; unitPrice: number; subtotal: number }) => ({
           sku: item.sku,
           productName: item.productName,
           quantity: item.quantity,
@@ -569,7 +569,7 @@ export const deliveryRouter = router({
       }>();
 
       orders.forEach((order) => {
-        order.items.forEach((item) => {
+        order.items.forEach((item: { sku: string; productName: string; quantity: number; unit: string }) => {
           const existing = productMap.get(item.sku);
           if (existing) {
             existing.totalQuantity += item.quantity;

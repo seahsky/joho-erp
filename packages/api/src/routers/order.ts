@@ -1331,13 +1331,13 @@ export const orderRouter = router({
       }
 
       // Extract product IDs and quantities from original order items
-      const orderItems = originalOrder.items.map((item) => ({
+      const orderItems = originalOrder.items.map((item: { productId: string; quantity: number }) => ({
         productId: item.productId,
         quantity: item.quantity,
       }));
 
       // Get products and validate they still exist and are available
-      const productIds = orderItems.map((item) => item.productId);
+      const productIds = orderItems.map((item: { productId: string }) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
       });
@@ -1361,7 +1361,7 @@ export const orderRouter = router({
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
       // Build new order items with CURRENT pricing and stock validation
-      const newOrderItems = orderItems.map((item) => {
+      const newOrderItems = orderItems.map((item: { productId: string; quantity: number }) => {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
           throw new TRPCError({
@@ -1497,7 +1497,7 @@ export const orderRouter = router({
         orderNumber: newOrder.orderNumber,
         orderDate: newOrder.orderedAt,
         requestedDeliveryDate: deliveryDate,
-        items: newOrderItems.map((item) => ({
+        items: newOrderItems.map((item: { productName: string; sku: string; quantity: number; unit: string; unitPrice: number; subtotal: number }) => ({
           productName: item.productName,
           sku: item.sku,
           quantity: item.quantity,
@@ -1758,11 +1758,11 @@ export const orderRouter = router({
         // Create inventory transactions and update product stocks in a transaction
         await prisma.$transaction([
           // Create all inventory transactions
-          ...inventoryTransactions.map((tx) =>
+          ...inventoryTransactions.map((tx: { productId: string; newStock: number; [key: string]: any }) =>
             prisma.inventoryTransaction.create({ data: tx })
           ),
           // Update all product stocks
-          ...inventoryTransactions.map((tx) =>
+          ...inventoryTransactions.map((tx: { productId: string; newStock: number }) =>
             prisma.product.update({
               where: { id: tx.productId },
               data: { currentStock: tx.newStock },

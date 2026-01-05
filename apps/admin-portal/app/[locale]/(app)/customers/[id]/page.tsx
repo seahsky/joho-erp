@@ -260,7 +260,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     if (!customer) return;
 
     // Map directors to form data
-    const directorsData: DirectorFormData[] = (customer.directors || []).map((d) => ({
+    const directorsData: DirectorFormData[] = (customer.directors || []).map((d: { familyName: string; givenNames: string; residentialAddress?: { street?: string; suburb?: string; state?: string; postcode?: string }; dateOfBirth?: string; driverLicenseNumber?: string; licenseState?: string; licenseExpiry?: string; position?: string }) => ({
       familyName: d.familyName,
       givenNames: d.givenNames,
       residentialAddress: {
@@ -277,7 +277,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     }));
 
     // Map trade references to form data
-    const tradeRefsData: TradeReferenceFormData[] = (customer.tradeReferences || []).map((r) => ({
+    const tradeRefsData: TradeReferenceFormData[] = (customer.tradeReferences || []).map((r: { companyName: string; contactPerson: string; phone: string; email: string }) => ({
       companyName: r.companyName,
       contactPerson: r.contactPerson,
       phone: r.phone,
@@ -1264,7 +1264,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 </div>
               ) : customer.directors && customer.directors.length > 0 ? (
                 <div className="space-y-4">
-                  {customer.directors.map((director, index) => (
+                  {customer.directors.map((director: { givenNames: string; familyName: string; position?: string }, index: number) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div>
@@ -1353,7 +1353,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 </div>
               ) : customer.tradeReferences && customer.tradeReferences.length > 0 ? (
                 <div className="space-y-4">
-                  {customer.tradeReferences.map((ref, index) => (
+                  {customer.tradeReferences.map((ref: { companyName: string; contactPerson: string; phone: string; email: string; verified: boolean }, index: number) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div>
@@ -1536,7 +1536,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                       <span className="text-sm text-muted-foreground">{t('smsReminder.reminderDays')}</span>
                       <span className="font-medium text-right">
                         {customer.smsReminderPreferences.reminderDays
-                          .map((day) => tDays(day as DayOfWeek))
+                          .map((day: string) => tDays(day as DayOfWeek))
                           .join(', ')}
                       </span>
                     </div>

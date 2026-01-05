@@ -302,7 +302,7 @@ export default function AuditLogsSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.byAction?.find((a) => a.action === 'create')?.count?.toLocaleString() || 0}
+              {stats?.byAction?.find((a: { action: string; count: number }) => a.action === 'create')?.count?.toLocaleString() || 0}
             </div>
           </CardContent>
         </Card>
@@ -315,7 +315,7 @@ export default function AuditLogsSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.byAction?.find((a) => a.action === 'update')?.count?.toLocaleString() || 0}
+              {stats?.byAction?.find((a: { action: string; count: number }) => a.action === 'update')?.count?.toLocaleString() || 0}
             </div>
           </CardContent>
         </Card>
@@ -328,7 +328,7 @@ export default function AuditLogsSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.byAction?.find((a) => a.action === 'delete')?.count?.toLocaleString() || 0}
+              {stats?.byAction?.find((a: { action: string; count: number }) => a.action === 'delete')?.count?.toLocaleString() || 0}
             </div>
           </CardContent>
         </Card>

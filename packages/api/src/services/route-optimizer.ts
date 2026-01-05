@@ -985,7 +985,7 @@ export async function checkIfDeliveryRouteNeedsRecalculation(
   });
 
   const waypointOrderIds = deliveryRoute.waypoints
-    .map((wp) => wp.orderId)
+    .map((wp: { orderId: string }) => wp.orderId)
     .sort();
   const currentIds = currentOrderIds.map((o) => o.id).sort();
 

@@ -348,7 +348,7 @@ export default function CreditReviewPage({ params }: PageProps) {
             <Card className="p-6">
               <h2 className="mb-4 text-xl font-semibold">{t('directors')}</h2>
               <div className="space-y-4">
-                {customer.directors.map((director, index) => (
+                {customer.directors.map((director: { givenNames: string; familyName: string; position?: string; dateOfBirth: string; driverLicenseNumber: string; licenseState: string; licenseExpiry: string; residentialAddress: { street: string; suburb: string; state: string; postcode: string } }, index: number) => (
                   <div key={index} className="rounded-lg border p-4">
                     <h3 className="mb-2 font-medium">
                       {director.givenNames} {director.familyName}
@@ -420,7 +420,7 @@ export default function CreditReviewPage({ params }: PageProps) {
             <Card className="p-6">
               <h2 className="mb-4 text-xl font-semibold">{t('tradeReferences')}</h2>
               <div className="space-y-3">
-                {customer.tradeReferences.map((ref, index) => (
+                {customer.tradeReferences.map((ref: { companyName: string; contactPerson: string; email: string; phone: string; verified: boolean }, index: number) => (
                   <div key={index} className="rounded border p-3">
                     <h3 className="font-medium">{ref.companyName}</h3>
                     <p className="text-sm">

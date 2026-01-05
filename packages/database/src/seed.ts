@@ -1351,7 +1351,7 @@ async function seed() {
         })
       )
     );
-    const areaMap = new Map(createdAreas.map((a) => [a.name, a.id]));
+    const areaMap = new Map(createdAreas.map((a: { name: string; id: string }) => [a.name, a.id]));
     console.log(`✅ Created ${createdAreas.length} delivery areas: ${areaConfigs.map(a => a.displayName).join(', ')}\n`);
 
     // Seed Suburb Mappings
@@ -1383,7 +1383,7 @@ async function seed() {
       )
     );
     // Create a map for quick lookup
-    const categoryMap = new Map(createdCategories.map((c) => [c.name, c.id]));
+    const categoryMap = new Map(createdCategories.map((c: { name: string; id: string }) => [c.name, c.id]));
     console.log(`✅ Created ${createdCategories.length} categories: ${categoryNames.join(', ')}\n`);
 
     // Seed Products
@@ -1401,13 +1401,13 @@ async function seed() {
     );
 
     // Validate all products have IDs
-    const productsWithoutIds = createdProducts.filter(p => !p.id);
+    const productsWithoutIds = createdProducts.filter((p: { id: string }) => !p.id);
     if (productsWithoutIds.length > 0) {
       throw new Error(`❌ ${productsWithoutIds.length} products were created without IDs! This should never happen.`);
     }
 
     console.log(`✅ Created ${createdProducts.length} products (all with valid IDs):`);
-    createdProducts.forEach((p) => {
+    createdProducts.forEach((p: { id: string; sku: string; name: string; basePrice: number; unit: string }) => {
       console.log(`   - ${p.sku}: ${p.name} ($${(p.basePrice / 100).toFixed(2)}/${p.unit}) [ID: ${p.id.substring(0, 8)}...]`);
     });
     console.log('');
@@ -1437,7 +1437,7 @@ async function seed() {
     }
 
     // Create some adjustment transactions for discontinued products (damaged goods write-off)
-    const discontinuedProducts = createdProducts.filter(p => p.status === 'discontinued');
+    const discontinuedProducts = createdProducts.filter((p: { status: string }) => p.status === 'discontinued');
     for (const product of discontinuedProducts) {
       inventoryTransactions.push({
         productId: product.id,
@@ -1454,7 +1454,7 @@ async function seed() {
     }
 
     // Create return transaction example
-    const beefRump = createdProducts.find(p => p.sku === 'BEEF-RUMP-5KG');
+    const beefRump = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-RUMP-5KG');
     if (beefRump) {
       inventoryTransactions.push({
         productId: beefRump.id,
@@ -1469,7 +1469,7 @@ async function seed() {
     }
 
     // Create stock count correction example
-    const porkBelly = createdProducts.find(p => p.sku === 'PORK-BELLY-10KG');
+    const porkBelly = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-BELLY-10KG');
     if (porkBelly) {
       inventoryTransactions.push({
         productId: porkBelly.id,
@@ -1489,7 +1489,7 @@ async function seed() {
       inventoryTransactions.map((t) => prisma.inventoryTransaction.create({ data: t }))
     );
     console.log(`✅ Created ${createdInventoryTransactions.length} inventory transactions:`);
-    const transactionsByType = createdInventoryTransactions.reduce((acc, t) => {
+    const transactionsByType = createdInventoryTransactions.reduce((acc: Record<string, number>, t: { type: string }) => {
       acc[t.type] = (acc[t.type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -1517,13 +1517,13 @@ async function seed() {
     );
 
     // Validate all customers have IDs
-    const customersWithoutIds = createdCustomers.filter(c => !c.id);
+    const customersWithoutIds = createdCustomers.filter((c: { id: string }) => !c.id);
     if (customersWithoutIds.length > 0) {
       throw new Error(`❌ ${customersWithoutIds.length} customers were created without IDs! This should never happen.`);
     }
 
     console.log(`✅ Created ${createdCustomers.length} customers (all with valid IDs):`);
-    createdCustomers.forEach((c) => {
+    createdCustomers.forEach((c: { id: string; businessName: string; deliveryAddress: { suburb: string; areaName: string }; creditApplication: { status: string } }) => {
       console.log(
         `   - ${c.businessName} (${c.deliveryAddress.suburb}, ${c.deliveryAddress.areaName}) - ${c.creditApplication.status} [ID: ${c.id.substring(0, 8)}...]`
       );
@@ -1535,13 +1535,13 @@ async function seed() {
     const customerPricingData = [];
 
     // The Steakhouse Melbourne - Premium customer with discounts on premium beef
-    const steakhouse = createdCustomers.find((c) => c.businessName === 'The Steakhouse Melbourne');
+    const steakhouse = createdCustomers.find((c: { businessName: string }) => c.businessName === 'The Steakhouse Melbourne');
     if (steakhouse) {
       // Premium cuts at discounted rates
-      const beefRump = createdProducts.find((p) => p.sku === 'BEEF-RUMP-5KG');
-      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
-      const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
-      const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
+      const beefRump = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-RUMP-5KG');
+      const scotchFillet = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SCOTCH-5KG');
+      const tenderloin = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-TENDER-3KG');
+      const tbone = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-TBONE-10KG');
 
       if (beefRump) customerPricingData.push({ customerId: steakhouse.id, productId: beefRump.id, customPrice: 1650 }); // $16.50 ($2 off) in cents
       if (scotchFillet) customerPricingData.push({ customerId: steakhouse.id, productId: scotchFillet.id, customPrice: 2150 }); // $21.50 ($2.50 off) in cents
@@ -1550,13 +1550,13 @@ async function seed() {
     }
 
     // Brunswick Butcher Shop - High volume customer with discounts on bulk items
-    const brunswickButcher = createdCustomers.find((c) => c.businessName === 'Brunswick Butcher Shop');
+    const brunswickButcher = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Brunswick Butcher Shop');
     if (brunswickButcher) {
-      const brisket = createdProducts.find((p) => p.sku === 'BEEF-BRISKET-10KG');
-      const chuck = createdProducts.find((p) => p.sku === 'BEEF-CHUCK-15KG');
-      const mince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-10KG');
-      const porkShoulder = createdProducts.find((p) => p.sku === 'PORK-SHOULDER-10KG');
-      const porkBelly = createdProducts.find((p) => p.sku === 'PORK-BELLY-10KG');
+      const brisket = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-BRISKET-10KG');
+      const chuck = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-CHUCK-15KG');
+      const mince = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-MINCE-10KG');
+      const porkShoulder = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-SHOULDER-10KG');
+      const porkBelly = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-BELLY-10KG');
 
       if (brisket) customerPricingData.push({ customerId: brunswickButcher.id, productId: brisket.id, customPrice: 1100 }); // $11.00 ($1.50 off) in cents
       if (chuck) customerPricingData.push({ customerId: brunswickButcher.id, productId: chuck.id, customPrice: 850 }); // $8.50 ($1.50 off) in cents
@@ -1566,11 +1566,11 @@ async function seed() {
     }
 
     // Footscray Grill House - Mixed pricing with some discounts
-    const footscrayGrill = createdCustomers.find((c) => c.businessName === 'Footscray Grill House');
+    const footscrayGrill = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Footscray Grill House');
     if (footscrayGrill) {
-      const sirloin = createdProducts.find((p) => p.sku === 'BEEF-SIRLOIN-8KG');
-      // const ribs = createdProducts.find((p) => p.sku === 'BEEF-RIBS-12KG'); // Product doesn't exist - commented out
-      const sausages = createdProducts.find((p) => p.sku === 'SAUSAGE-BEEF-5KG');
+      const sirloin = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SIRLOIN-8KG');
+      // const ribs = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-RIBS-12KG'); // Product doesn't exist - commented out
+      const sausages = createdProducts.find((p: { sku: string }) => p.sku === 'SAUSAGE-BEEF-5KG');
 
       if (sirloin) customerPricingData.push({ customerId: footscrayGrill.id, productId: sirloin.id, customPrice: 1800 }); // $18.00 ($1.50 off) in cents
       // if (ribs) customerPricingData.push({ customerId: footscrayGrill.id, productId: ribs.id, customPrice: 1250 }); // $12.50 ($1.50 off) in cents
@@ -1578,11 +1578,11 @@ async function seed() {
     }
 
     // Brighton Beach Bistro - Premium customer with special pricing
-    const brightonBistro = createdCustomers.find((c) => c.businessName === 'Brighton Beach Bistro');
+    const brightonBistro = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Brighton Beach Bistro');
     if (brightonBistro) {
-      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
-      const tenderloin = createdProducts.find((p) => p.sku === 'BEEF-TENDER-3KG');
-      const porkLoin = createdProducts.find((p) => p.sku === 'PORK-LOIN-8KG');
+      const scotchFillet = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SCOTCH-5KG');
+      const tenderloin = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-TENDER-3KG');
+      const porkLoin = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-LOIN-8KG');
 
       if (scotchFillet) customerPricingData.push({ customerId: brightonBistro.id, productId: scotchFillet.id, customPrice: 2200 }); // $22.00 ($2 off) in cents
       if (tenderloin) customerPricingData.push({ customerId: brightonBistro.id, productId: tenderloin.id, customPrice: 3000 }); // $30.00 ($2 off) in cents
@@ -1590,11 +1590,11 @@ async function seed() {
     }
 
     // Camberwell Fine Meats - Specialty pricing with time-limited offers
-    const camberwellMeats = createdCustomers.find((c) => c.businessName === 'Camberwell Fine Meats');
+    const camberwellMeats = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Camberwell Fine Meats');
     if (camberwellMeats) {
-      const beefRump = createdProducts.find((p) => p.sku === 'BEEF-RUMP-5KG');
-      const tbone = createdProducts.find((p) => p.sku === 'BEEF-TBONE-10KG');
-      const porkChops = createdProducts.find((p) => p.sku === 'PORK-CHOPS-8KG');
+      const beefRump = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-RUMP-5KG');
+      const tbone = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-TBONE-10KG');
+      const porkChops = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-CHOPS-8KG');
 
       // Some with expiration dates (expires in 30 days)
       const futureExpiry = new Date();
@@ -1612,10 +1612,10 @@ async function seed() {
     }
 
     // St Kilda Seafood & Grill - Expired pricing (already expired)
-    const stkildaGrill = createdCustomers.find((c) => c.businessName === 'St Kilda Seafood & Grill');
+    const stkildaGrill = createdCustomers.find((c: { businessName: string }) => c.businessName === 'St Kilda Seafood & Grill');
     if (stkildaGrill) {
-      const beefMince = createdProducts.find((p) => p.sku === 'BEEF-MINCE-10KG');
-      const porkMince = createdProducts.find((p) => p.sku === 'PORK-MINCE-10KG');
+      const beefMince = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-MINCE-10KG');
+      const porkMince = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-MINCE-10KG');
 
       const pastExpiry = new Date();
       pastExpiry.setDate(pastExpiry.getDate() - 15); // Expired 15 days ago
@@ -1637,10 +1637,10 @@ async function seed() {
     }
 
     // Northcote Community Butcher - Future-dated pricing (not yet effective)
-    const northcoteButcher = createdCustomers.find((c) => c.businessName === 'Northcote Community Butcher');
+    const northcoteButcher = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Northcote Community Butcher');
     if (northcoteButcher) {
-      const scotchFillet = createdProducts.find((p) => p.sku === 'BEEF-SCOTCH-5KG');
-      const sirloin = createdProducts.find((p) => p.sku === 'BEEF-SIRLOIN-8KG');
+      const scotchFillet = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SCOTCH-5KG');
+      const sirloin = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SIRLOIN-8KG');
 
       const futureStart = new Date();
       futureStart.setDate(futureStart.getDate() + 7); // Starts in 7 days
@@ -1662,8 +1662,8 @@ async function seed() {
 
     // Validate all references before creating pricing
     console.log(`   Validating ${customerPricingData.length} pricing records before creation...`);
-    const customerIdSet = new Set(createdCustomers.map(c => c.id));
-    const productIdSet = new Set(createdProducts.map(p => p.id));
+    const customerIdSet = new Set(createdCustomers.map((c: { id: string }) => c.id));
+    const productIdSet = new Set(createdProducts.map((p: { id: string }) => p.id));
 
     for (const pricing of customerPricingData) {
       if (!customerIdSet.has(pricing.customerId)) {
@@ -1680,8 +1680,8 @@ async function seed() {
     );
     console.log(`✅ Created ${createdPricing.length} custom pricing records:`);
     for (const pricing of createdPricing) {
-      const customer = createdCustomers.find((c) => c.id === pricing.customerId);
-      const product = createdProducts.find((p) => p.id === pricing.productId);
+      const customer = createdCustomers.find((c: { id: string }) => c.id === pricing.customerId);
+      const product = createdProducts.find((p: { id: string }) => p.id === pricing.productId);
       if (customer && product) {
         const savings = product.basePrice - pricing.customPrice;
         const savingsPercent = ((savings / product.basePrice) * 100).toFixed(1);
@@ -1729,7 +1729,7 @@ async function seed() {
         if (areaId) {
           driverAreaAssignments.push({
             driverId: driver.driverId,
-            areaId,
+            areaId: areaId as string,
             isActive: true,
           });
         }
@@ -1777,8 +1777,8 @@ async function seed() {
 
     // Validate all order references before creation
     console.log(`   Validating ${allOrders.length} orders before creation...`);
-    const validCustomerIds = new Set(createdCustomers.map(c => c.id));
-    const validProductIds = new Set(createdProducts.map(p => p.id));
+    const validCustomerIds = new Set(createdCustomers.map((c: { id: string }) => c.id));
+    const validProductIds = new Set(createdProducts.map((p: { id: string }) => p.id));
 
     for (const order of allOrders) {
       // Validate customer ID
@@ -1805,10 +1805,10 @@ async function seed() {
     const adminOrders = [];
 
     // Admin Order 1: Credit limit bypass for urgent order
-    const steakhouseCustomer = createdCustomers.find(c => c.businessName === 'The Steakhouse Melbourne');
+    const steakhouseCustomer = createdCustomers.find((c: { businessName: string }) => c.businessName === 'The Steakhouse Melbourne');
     if (steakhouseCustomer) {
-      const beefTenderloin = createdProducts.find(p => p.sku === 'BEEF-TENDER-3KG');
-      const scotchFillet = createdProducts.find(p => p.sku === 'BEEF-SCOTCH-5KG');
+      const beefTenderloin = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-TENDER-3KG');
+      const scotchFillet = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-SCOTCH-5KG');
 
       if (beefTenderloin && scotchFillet) {
         const items = [
@@ -1876,10 +1876,10 @@ async function seed() {
     }
 
     // Admin Order 2: Cutoff time bypass with custom delivery address
-    const brunswickButcherForAdmin = createdCustomers.find(c => c.businessName === 'Brunswick Butcher Shop');
+    const brunswickButcherForAdmin = createdCustomers.find((c: { businessName: string }) => c.businessName === 'Brunswick Butcher Shop');
     if (brunswickButcherForAdmin) {
-      const brisket = createdProducts.find(p => p.sku === 'BEEF-BRISKET-10KG');
-      const porkBelly = createdProducts.find(p => p.sku === 'PORK-BELLY-10KG');
+      const brisket = createdProducts.find((p: { sku: string }) => p.sku === 'BEEF-BRISKET-10KG');
+      const porkBelly = createdProducts.find((p: { sku: string }) => p.sku === 'PORK-BELLY-10KG');
 
       if (brisket && porkBelly) {
         const items = [
@@ -2038,7 +2038,7 @@ async function seed() {
       // Only create sale transactions for delivered orders
       if (order.status === 'delivered') {
         for (const item of order.items) {
-          const product = createdProducts.find(p => p.id === item.productId);
+          const product = createdProducts.find((p: { id: string }) => p.id === item.productId);
           if (product) {
             saleTransactions.push({
               productId: item.productId,
@@ -2163,7 +2163,7 @@ async function seed() {
     );
     console.log(`✅ Created ${createdRouteOptimizations.length} route optimizations:`);
     for (const route of createdRouteOptimizations) {
-      const routeAreaName = createdAreas.find(a => a.id === route.areaId)?.name || 'unknown';
+      const routeAreaName = createdAreas.find((a: { id: string; name: string }) => a.id === route.areaId)?.name || 'unknown';
       console.log(`   - ${route.deliveryDate.toISOString().split('T')[0]} ${routeAreaName}: ${route.orderCount} orders, ${route.totalDistance.toFixed(1)}km, ${Math.round(route.totalDuration / 60)} minutes`);
     }
     console.log('');
@@ -2308,8 +2308,8 @@ async function seed() {
 
     // CustomerPricing creation logs
     for (const pricing of createdPricing) {
-      const customer = createdCustomers.find(c => c.id === pricing.customerId);
-      const product = createdProducts.find(p => p.id === pricing.productId);
+      const customer = createdCustomers.find((c: { id: string }) => c.id === pricing.customerId);
+      const product = createdProducts.find((p: { id: string }) => p.id === pricing.productId);
 
       auditLogs.push({
         userId: customer?.clerkUserId || 'admin_user',
@@ -2360,7 +2360,7 @@ async function seed() {
     }
 
     // Add delete audit log example for discontinued product
-    const discontinuedProduct = createdProducts.find(p => p.status === 'discontinued');
+    const discontinuedProduct = createdProducts.find((p: { status: string }) => p.status === 'discontinued');
     if (discontinuedProduct) {
       auditLogs.push({
         userId: 'admin_user',
@@ -2503,13 +2503,13 @@ async function seed() {
     console.log('📝 Seeding Summary:');
     console.log(`   - Company: ${company.businessName} (with full settings)`);
     console.log(`   - Suburb Mappings: ${suburbMappings.length}`);
-    console.log(`   - Products: ${createdProducts.length} (active: ${createdProducts.filter(p => p.status === 'active').length}, discontinued: ${createdProducts.filter(p => p.status === 'discontinued').length}, out_of_stock: ${createdProducts.filter(p => p.status === 'out_of_stock').length})`);
-    console.log(`   - Customers: ${createdCustomers.length} (active: ${createdCustomers.filter(c => c.status === 'active').length}, suspended: ${createdCustomers.filter(c => c.status === 'suspended').length}, closed: ${createdCustomers.filter(c => c.status === 'closed').length})`);
+    console.log(`   - Products: ${createdProducts.length} (active: ${createdProducts.filter((p: { status: string }) => p.status === 'active').length}, discontinued: ${createdProducts.filter((p: { status: string }) => p.status === 'discontinued').length}, out_of_stock: ${createdProducts.filter((p: { status: string }) => p.status === 'out_of_stock').length})`);
+    console.log(`   - Customers: ${createdCustomers.length} (active: ${createdCustomers.filter((c: { status: string }) => c.status === 'active').length}, suspended: ${createdCustomers.filter((c: { status: string }) => c.status === 'suspended').length}, closed: ${createdCustomers.filter((c: { status: string }) => c.status === 'closed').length})`);
     console.log(`   - Customer Pricing: ${createdPricing.length}`);
     console.log(`   - Orders: ${allCreatedOrders.length} (${createdOrders.length} regular + ${createdAdminOrders.length} admin override)`);
-    console.log(`   - Packing Sessions: ${createdPackingSessions.length} (active: ${createdPackingSessions.filter(ps => ps.status === 'active').length}, completed: ${createdPackingSessions.filter(ps => ps.status === 'completed').length}, timed_out: ${createdPackingSessions.filter(ps => ps.status === 'timed_out').length})`);
+    console.log(`   - Packing Sessions: ${createdPackingSessions.length} (active: ${createdPackingSessions.filter((ps: { status: string }) => ps.status === 'active').length}, completed: ${createdPackingSessions.filter((ps: { status: string }) => ps.status === 'completed').length}, timed_out: ${createdPackingSessions.filter((ps: { status: string }) => ps.status === 'timed_out').length})`);
     console.log(`   - Route Optimizations: ${createdRouteOptimizations.length}`);
-    console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter(t => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter(t => t.type === 'return').length})`);
+    console.log(`   - Inventory Transactions: ${createdInventoryTransactions.length + createdSaleTransactions.length} (sale: ${createdSaleTransactions.length}, adjustment: ${createdInventoryTransactions.filter((t: { type: string }) => t.type === 'adjustment').length}, return: ${createdInventoryTransactions.filter((t: { type: string }) => t.type === 'return').length})`);
     console.log(`   - Audit Logs: ${createdAuditLogs.length} (including approve/reject/delete actions)`);
     console.log(`   - System Logs: ${createdSystemLogs.length}\n`);
 

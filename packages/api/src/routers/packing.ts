@@ -206,7 +206,7 @@ export const packingRouter = router({
       const packedSkus = new Set(order.packing?.packedItems ?? []);
 
       // Fetch current stock levels for all products in the order
-      const productIds = order.items.map((item) => item.productId).filter(Boolean);
+      const productIds = order.items.map((item: { productId: string }) => item.productId).filter(Boolean);
       const products = await prisma.product.findMany({
         where: {
           id: { in: productIds },
@@ -229,7 +229,7 @@ export const packingRouter = router({
         ? await prisma.area.findUnique({ where: { id: areaId } })
         : null;
 
-      const items = order.items.map((item) => {
+      const items = order.items.map((item: { productId: string; sku: string; productName: string; quantity: number; unit: string; unitPrice: number }) => {
         const stockInfo = productStockMap.get(item.productId) ?? { currentStock: 0, lowStockThreshold: undefined };
         return {
           productId: item.productId,
@@ -244,7 +244,7 @@ export const packingRouter = router({
         };
       });
 
-      const allItemsPacked = items.length > 0 && items.every((item) => item.packed);
+      const allItemsPacked = items.length > 0 && items.every((item: { packed: boolean }) => item.packed);
 
       return {
         orderId: order.id,
@@ -338,7 +338,7 @@ export const packingRouter = router({
       }
 
       // Find the item in the order
-      const itemIndex = order.items.findIndex((item) => item.productId === productId);
+      const itemIndex = order.items.findIndex((item: { productId: string }) => item.productId === productId);
       if (itemIndex === -1) {
         throw new TRPCError({
           code: 'NOT_FOUND',
@@ -381,7 +381,7 @@ export const packingRouter = router({
       const newSubtotal = toCents(newSubtotalMoney);
 
       // Update items array with new quantity and subtotal
-      const updatedItems = order.items.map((orderItem, idx) => {
+      const updatedItems = order.items.map((orderItem: any, idx: number) => {
         if (idx === itemIndex) {
           return {
             ...orderItem,
@@ -394,7 +394,7 @@ export const packingRouter = router({
 
       // Recalculate order totals using updated items
       const newTotals = calculateOrderTotals(
-        updatedItems.map((i) => ({ quantity: i.quantity, unitPrice: i.unitPrice })),
+        updatedItems.map((i: { quantity: number; unitPrice: number }) => ({ quantity: i.quantity, unitPrice: i.unitPrice })),
         0.1 // 10% GST
       );
 
@@ -497,7 +497,7 @@ export const packingRouter = router({
       // Update packed items array
       const updatedPackedItems = input.packed
         ? [...new Set([...packedItems, input.itemSku])] // Add SKU (deduplicate)
-        : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
+        : packedItems.filter((sku: string) => sku !== input.itemSku); // Remove SKU
 
       // Update order with packed items and move to packing status if confirmed
       // Also update lastPackedAt/lastPackedBy and clear pausedAt (active packing)

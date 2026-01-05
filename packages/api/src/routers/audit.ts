@@ -233,11 +233,11 @@ export const auditRouter = router({
 
       return {
         total,
-        byAction: byAction.map((item) => ({
+        byAction: byAction.map((item: { action: string; _count: { _all: number } }) => ({
           action: item.action,
           count: item._count._all,
         })),
-        byEntity: byEntity.map((item) => ({
+        byEntity: byEntity.map((item: { entity: string; _count: { _all: number } }) => ({
           entity: item.entity,
           count: item._count._all,
         })),
