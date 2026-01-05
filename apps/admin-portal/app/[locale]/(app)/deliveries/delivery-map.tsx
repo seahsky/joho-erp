@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef } from 'react-map-gl/mapbox';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef, type MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin, Warehouse } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -74,6 +74,7 @@ export default function DeliveryMap({
 }: DeliveryMapProps) {
   const t = useTranslations('deliveries');
   const [popupInfo, setPopupInfo] = useState<Delivery | null>(null);
+  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
   const mapRef = useRef<MapRef | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const hasDeliveries = deliveries.length > 0;
@@ -141,6 +142,40 @@ export default function DeliveryMap({
   // In production, this should be in environment variables
   const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjazBjbGtwZ3IwMDAwM25xbXk5Y2swbGE3In0.example';
 
+  // Build interactive layer IDs for route line hover detection
+  const interactiveLayerIds = useMemo(() => {
+    if (!multiRouteData || multiRouteData.length === 0) {
+      // Include fallback single route layer if it exists
+      return routeData?.geometry ? ['route-line'] : [];
+    }
+    return multiRouteData.map((route, index) => {
+      const routeKey = route.driverId || `route-${index}`;
+      return `route-line-${routeKey}`;
+    });
+  }, [multiRouteData, routeData]);
+
+  // Handle mouse enter on route lines
+  const handleRouteMouseEnter = (e: MapMouseEvent) => {
+    const feature = e.features?.[0];
+    if (feature?.layer?.id) {
+      const layerId = feature.layer.id;
+      // Extract route key from layer ID (e.g., "route-line-driver123" -> "driver123")
+      const routeId = layerId.replace('route-line-', '');
+      setHoveredRouteId(routeId);
+      if (mapRef.current) {
+        mapRef.current.getCanvas().style.cursor = 'pointer';
+      }
+    }
+  };
+
+  // Handle mouse leave from route lines
+  const handleRouteMouseLeave = () => {
+    setHoveredRouteId(null);
+    if (mapRef.current) {
+      mapRef.current.getCanvas().style.cursor = '';
+    }
+  };
+
   return (
     <div className="relative w-full h-[600px] rounded-lg overflow-hidden">
       <Map
@@ -148,6 +183,9 @@ export default function DeliveryMap({
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         onLoad={() => setIsMapReady(true)}
+        onMouseEnter={handleRouteMouseEnter}
+        onMouseLeave={handleRouteMouseLeave}
+        interactiveLayerIds={interactiveLayerIds}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
@@ -160,6 +198,7 @@ export default function DeliveryMap({
             const isSelected = selectedDriverId === null || selectedDriverId === route.driverId;
             const color = DRIVER_COLORS[index % DRIVER_COLORS.length];
             const routeKey = route.driverId || `route-${index}`;
+            const isHovered = hoveredRouteId === routeKey;
 
             return (
               <Source
@@ -173,62 +212,71 @@ export default function DeliveryMap({
                   geometry: route.geometry as any,
                 }}
               >
-                <Layer
-                  id={`route-line-${routeKey}`}
-                  type="line"
-                  paint={{
-                    'line-color': color,
-                    'line-width': isSelected ? 4 : 2,
-                    'line-opacity': isSelected ? 0.8 : 0.3,
-                  }}
-                />
-                {isSelected && (
+                {/* Glow layer - rendered first (below main line) when hovered or selected */}
+                {(isSelected || isHovered) && (
                   <Layer
                     id={`route-line-glow-${routeKey}`}
                     type="line"
                     paint={{
                       'line-color': color,
-                      'line-width': 8,
-                      'line-opacity': 0.2,
-                      'line-blur': 4,
+                      'line-width': isHovered ? 12 : 8,
+                      'line-opacity': isHovered ? 0.3 : 0.2,
+                      'line-blur': isHovered ? 6 : 4,
                     }}
                   />
                 )}
+                {/* Main route line */}
+                <Layer
+                  id={`route-line-${routeKey}`}
+                  type="line"
+                  paint={{
+                    'line-color': color,
+                    'line-width': isHovered ? 6 : (isSelected ? 4 : 2),
+                    'line-opacity': isHovered ? 1.0 : (isSelected ? 0.8 : 0.3),
+                  }}
+                />
               </Source>
             );
           })
         ) : routeData && routeData.geometry ? (
           /* Fallback: Single route for backward compatibility */
-          <Source
-            id="route"
-            type="geojson"
-            data={{
-              type: 'Feature' as const,
-              properties: {},
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              geometry: routeData.geometry as any,
-            }}
-          >
-            <Layer
-              id="route-line"
-              type="line"
-              paint={{
-                'line-color': '#FF6B35',
-                'line-width': 4,
-                'line-opacity': 0.8,
-              }}
-            />
-            <Layer
-              id="route-line-glow"
-              type="line"
-              paint={{
-                'line-color': '#FF6B35',
-                'line-width': 8,
-                'line-opacity': 0.2,
-                'line-blur': 4,
-              }}
-            />
-          </Source>
+          (() => {
+            const isSingleRouteHovered = hoveredRouteId === '';
+            return (
+              <Source
+                id="route"
+                type="geojson"
+                data={{
+                  type: 'Feature' as const,
+                  properties: {},
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  geometry: routeData.geometry as any,
+                }}
+              >
+                {/* Glow layer */}
+                <Layer
+                  id="route-line-glow"
+                  type="line"
+                  paint={{
+                    'line-color': '#FF6B35',
+                    'line-width': isSingleRouteHovered ? 12 : 8,
+                    'line-opacity': isSingleRouteHovered ? 0.3 : 0.2,
+                    'line-blur': isSingleRouteHovered ? 6 : 4,
+                  }}
+                />
+                {/* Main route line */}
+                <Layer
+                  id="route-line"
+                  type="line"
+                  paint={{
+                    'line-color': '#FF6B35',
+                    'line-width': isSingleRouteHovered ? 6 : 4,
+                    'line-opacity': isSingleRouteHovered ? 1.0 : 0.8,
+                  }}
+                />
+              </Source>
+            );
+          })()
         ) : null}
 
         {/* Warehouse Origin Marker */}
