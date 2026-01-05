@@ -94,15 +94,40 @@ export default function DeliveriesPage() {
     ];
   }, [filteredDeliveries, t]);
 
-  // Transform route data for the map component
+  // Transform route data for the map component with filter support
   const mapRouteData = useMemo(() => {
     if (!routeData?.hasRoute || !routeData.route) return null;
+
+    // Get order IDs from filtered deliveries
+    const filteredOrderIds = new Set(filteredDeliveries.map((d) => d.id));
+
+    // Filter waypoints to only include orders that are in the filtered list
+    const filteredWaypoints = routeData.route.waypoints?.filter(
+      (wp: { orderId: string }) => filteredOrderIds.has(wp.orderId)
+    ) || [];
+
+    // If no waypoints match filters, return null (no route to display)
+    if (filteredWaypoints.length === 0) return null;
+
+    // Sort filtered waypoints by sequence
+    const sortedWaypoints = [...filteredWaypoints].sort(
+      (a: { sequence: number }, b: { sequence: number }) => a.sequence - b.sequence
+    );
+
+    // Generate LineString geometry from filtered waypoint coordinates
+    const filteredGeometry = {
+      type: 'LineString' as const,
+      coordinates: sortedWaypoints.map(
+        (wp: { longitude: number; latitude: number }): [number, number] => [wp.longitude, wp.latitude]
+      ),
+    };
+
     return {
-      geometry: routeData.route.routeGeometry,
+      geometry: filteredGeometry,
       totalDistance: routeData.route.totalDistance,
       totalDuration: routeData.route.totalDuration,
     };
-  }, [routeData]);
+  }, [routeData, filteredDeliveries]);
 
   // Auto-select the first delivery when data loads (already sorted by deliverySequence from API)
   useEffect(() => {
