@@ -112,6 +112,19 @@ export default function DeliveryMap({
     }
   }, [hasDeliveries, hasWarehouse, warehouseLocation, isMapReady]);
 
+  // Build interactive layer IDs for route line hover detection
+  // NOTE: This useMemo must be called before any early returns to follow React's Rules of Hooks
+  const interactiveLayerIds = useMemo(() => {
+    if (!multiRouteData || multiRouteData.length === 0) {
+      // Include fallback single route layer if it exists
+      return routeData?.geometry ? ['route-line'] : [];
+    }
+    return multiRouteData.map((route, index) => {
+      const routeKey = route.driverId || `route-${index}`;
+      return `route-line-${routeKey}`;
+    });
+  }, [multiRouteData, routeData]);
+
   // Empty state when no deliveries AND no warehouse configured
   if (!hasDeliveries && !hasWarehouse) {
     return (
@@ -141,18 +154,6 @@ export default function DeliveryMap({
   // Use a public Mapbox token for demo purposes
   // In production, this should be in environment variables
   const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjazBjbGtwZ3IwMDAwM25xbXk5Y2swbGE3In0.example';
-
-  // Build interactive layer IDs for route line hover detection
-  const interactiveLayerIds = useMemo(() => {
-    if (!multiRouteData || multiRouteData.length === 0) {
-      // Include fallback single route layer if it exists
-      return routeData?.geometry ? ['route-line'] : [];
-    }
-    return multiRouteData.map((route, index) => {
-      const routeKey = route.driverId || `route-${index}`;
-      return `route-line-${routeKey}`;
-    });
-  }, [multiRouteData, routeData]);
 
   // Handle mouse enter on route lines
   const handleRouteMouseEnter = (e: MapMouseEvent) => {
