@@ -59,6 +59,8 @@ export function OrderListView({
   useEffect(() => {
     if (!focusedOrderNumber) return;
 
+    console.log('[OrderListView] Focus effect triggered:', focusedOrderNumber);
+
     // Check if order is in current filter - if not, reset filter
     const orderInOrders = orders.some(o => o.orderNumber === focusedOrderNumber);
     const orderInFiltered = areaFilter === 'all'
@@ -67,7 +69,8 @@ export function OrderListView({
 
     if (orderInOrders && !orderInFiltered) {
       setAreaFilter('all');
-      return;
+      // Don't return - let the retry mechanism handle finding the element
+      // after the filter resets and the DOM updates
     }
 
     let attempts = 0;
@@ -78,6 +81,7 @@ export function OrderListView({
 
     const attemptScroll = () => {
       const element = document.getElementById(`order-card-${focusedOrderNumber}`);
+      console.log('[OrderListView] Attempt scroll, element found:', !!element, 'attempt:', attempts + 1);
 
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });

@@ -195,6 +195,7 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            console.log('[ProductSummaryView] Order badge clicked:', order.orderNumber);
                             onOrderBadgeClick?.(order.orderNumber);
                           }}
                           className="focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full"

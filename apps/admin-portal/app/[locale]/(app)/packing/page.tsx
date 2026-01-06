@@ -30,6 +30,7 @@ export default function PackingPage() {
 
   // Handlers for order badge focus functionality
   const handleFocusOrder = (orderNumber: string) => {
+    console.log('[PackingPage] handleFocusOrder called:', orderNumber);
     setFocusedOrderNumber(orderNumber);
   };
 
