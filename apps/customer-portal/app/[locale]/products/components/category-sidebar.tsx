@@ -10,6 +10,7 @@ interface CategoryWithCount {
   id: ProductCategory;
   name: string;
   count: number;
+  disabled?: boolean;
 }
 
 interface CategorySidebarProps {
@@ -59,19 +60,24 @@ export function CategorySidebar({
             {/* Category List */}
             {categories.map((category) => {
               const isSelected = selectedCategory === category.id;
+              const isDisabled = category.disabled;
               return (
                 <button
                   key={category.id}
-                  onClick={() => onSelectCategory(category.id)}
+                  onClick={() => !isDisabled && onSelectCategory(category.id)}
+                  disabled={isDisabled}
                   className={cn(
                     'relative w-full py-3 px-1 text-center transition-all duration-200',
-                    'hover:opacity-70 active:scale-[0.98]',
-                    isSelected
+                    isDisabled
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:opacity-70 active:scale-[0.98]',
+                    isSelected && !isDisabled
                       ? 'text-foreground after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-5 after:h-0.5 after:bg-amber-500 after:rounded-full'
                       : 'text-muted-foreground'
                   )}
                   aria-label={category.name}
                   aria-current={isSelected ? 'page' : undefined}
+                  aria-disabled={isDisabled}
                 >
                   <span className="block text-xs font-medium leading-tight break-words">
                     {category.name}
@@ -115,19 +121,24 @@ export function CategorySidebar({
           {/* Category List */}
           {categories.map((category) => {
             const isSelected = selectedCategory === category.id;
+            const isDisabled = category.disabled;
             return (
               <button
                 key={category.id}
-                onClick={() => onSelectCategory(category.id)}
+                onClick={() => !isDisabled && onSelectCategory(category.id)}
+                disabled={isDisabled}
                 className={cn(
                   'relative w-full py-3 px-1 text-center transition-all duration-200',
-                  'hover:opacity-70 active:scale-[0.98]',
-                  isSelected
+                  isDisabled
+                    ? 'opacity-40 cursor-not-allowed'
+                    : 'hover:opacity-70 active:scale-[0.98]',
+                  isSelected && !isDisabled
                     ? 'text-foreground after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-5 after:h-0.5 after:bg-amber-500 after:rounded-full'
                     : 'text-muted-foreground'
                 )}
                 aria-label={category.name}
                 aria-current={isSelected ? 'page' : undefined}
+                aria-disabled={isDisabled}
               >
                 <span className="block text-xs font-medium leading-tight break-words">
                   {category.name}

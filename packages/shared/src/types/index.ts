@@ -40,6 +40,7 @@ export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
 
 // Product Category
 export type ProductCategory = 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed';
+export const PRODUCT_CATEGORIES: ProductCategory[] = ['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed'];
 
 // Customer Status
 export type CustomerStatus = 'active' | 'suspended' | 'closed';
