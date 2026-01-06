@@ -8,7 +8,7 @@ import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, 
 import { AlertCircle, Clock, XCircle, Loader2, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, PRODUCT_CATEGORIES } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategorySidebar } from './category-sidebar';
 import { StaggeredList } from '@/components/staggered-list';
@@ -42,7 +42,7 @@ export function ProductList() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [pendingProductId, setPendingProductId] = React.useState<string | null>(null);
 
-  const { data: products, isLoading, error, refetch } = api.product.getAll.useQuery({
+  const { data: products, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
     category: selectedCategory,
   });
@@ -180,13 +180,13 @@ export function ProductList() {
         counts.set(p.category, (counts.get(p.category) || 0) + 1);
       }
     });
-    return Array.from(counts.entries())
-      .map(([id, count]) => ({
-        id,
-        name: t(`categories.${id.toLowerCase()}`),
-        count,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    // Always return all categories, with disabled=true for those with 0 count
+    return PRODUCT_CATEGORIES.map((categoryId) => ({
+      id: categoryId,
+      name: t(`categories.${categoryId.toLowerCase()}`),
+      count: counts.get(categoryId) || 0,
+      disabled: (counts.get(categoryId) || 0) === 0,
+    }));
   }, [allInStockProducts, t]);
 
   const getCategoryTranslation = (category: ProductCategory) => {
@@ -217,30 +217,36 @@ export function ProductList() {
     setSidebarOpen(true);
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-11 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg md:hidden" />
-        <Skeleton className="h-12 w-full rounded-lg hidden md:block" />
-
-        <div className="space-y-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 p-4 border rounded-xl">
-              <Skeleton className="h-16 w-16 rounded-lg flex-shrink-0" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-10 w-10 rounded-lg" />
-            </div>
-          ))}
-        </div>
+  // Skeleton component for sidebar
+  const SidebarSkeleton = () => (
+    <aside className="w-[70px] flex-shrink-0">
+      <div className="sticky top-4 space-y-2">
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-10 w-full rounded" />
+        <Skeleton className="h-10 w-full rounded" />
+        <Skeleton className="h-10 w-full rounded" />
+        <Skeleton className="h-10 w-full rounded" />
+        <Skeleton className="h-10 w-full rounded" />
       </div>
-    );
-  }
+    </aside>
+  );
+
+  // Skeleton component for product list
+  const ProductListSkeleton = () => (
+    <div className="space-y-3 border border-border rounded-xl overflow-hidden divide-y divide-border">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="flex items-center gap-4 p-4 bg-background">
+          <Skeleton className="h-16 w-16 rounded-lg flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-10 w-10 rounded-lg" />
+        </div>
+      ))}
+    </div>
+  );
 
   // Error state
   if (error) {
@@ -313,8 +319,10 @@ export function ProductList() {
       className="flex gap-4 md:gap-6"
       {...touchHandlers}
     >
-      {/* Category Sidebar */}
-      {categoriesWithCounts.length > 0 && (
+      {/* Category Sidebar - skeleton on initial load, visible during refetch */}
+      {isLoading ? (
+        <SidebarSkeleton />
+      ) : (
         <CategorySidebar
           categories={categoriesWithCounts}
           selectedCategory={selectedCategory}
@@ -335,18 +343,22 @@ export function ProductList() {
         </div>
 
         {/* Status Banner */}
-        {renderStatusBanner()}
+        {!isLoading && renderStatusBanner()}
 
-        {/* Search */}
-        <MobileSearch
-          placeholder={t('products.searchPlaceholder')}
-          value={searchQuery}
-          onChange={setSearchQuery}
-          showFilter={false}
-        />
+        {/* Search - skeleton on initial load, visible during refetch */}
+        {isLoading ? (
+          <Skeleton className="h-11 w-full rounded-lg" />
+        ) : (
+          <MobileSearch
+            placeholder={t('products.searchPlaceholder')}
+            value={searchQuery}
+            onChange={setSearchQuery}
+            showFilter={false}
+          />
+        )}
 
         {/* Product Count */}
-        {inStockProducts.length > 0 && (
+        {!isLoading && inStockProducts.length > 0 && (
           <div className="flex items-center justify-between">
             <Muted className="text-sm">
               {t('products.showing', { count: inStockProducts.length })}
@@ -354,8 +366,20 @@ export function ProductList() {
           </div>
         )}
 
-        {/* Product List - Clean Minimalist Rows */}
-        <StaggeredList className="space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border">
+        {/* Product List with loading overlay during refetch */}
+        {isLoading ? (
+          <ProductListSkeleton />
+        ) : (
+          <div className="relative">
+            {/* Loading overlay during refetch */}
+            {isFetching && (
+              <div className="absolute inset-0 bg-background/60 z-10 flex items-center justify-center rounded-xl">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            
+            {/* Product List - Clean Minimalist Rows */}
+            <StaggeredList className={cn("space-y-0 border border-border rounded-xl overflow-hidden divide-y divide-border", isFetching && "opacity-50")}>
         {inStockProducts.map((product) => {
           return (
             <div
@@ -572,20 +596,22 @@ export function ProductList() {
             </div>
           );
         })}
-        </StaggeredList>
+            </StaggeredList>
 
-        {/* Empty State */}
-        {inStockProducts.length === 0 && (
-          <IllustratedEmptyState
-            variant="no-products"
-            title={tIllustrated('noProducts.title')}
-            description={tIllustrated('noProducts.description')}
-            primaryAction={{
-              label: selectedCategory ? tIllustrated('noProducts.primaryAction') : tIllustrated('noProducts.secondaryAction'),
-              onClick: selectedCategory ? () => setSelectedCategory(undefined) : () => window.location.reload(),
-            }}
-            className="border border-dashed border-border rounded-2xl"
-          />
+            {/* Empty State */}
+            {inStockProducts.length === 0 && (
+              <IllustratedEmptyState
+                variant="no-products"
+                title={tIllustrated('noProducts.title')}
+                description={tIllustrated('noProducts.description')}
+                primaryAction={{
+                  label: selectedCategory ? tIllustrated('noProducts.primaryAction') : tIllustrated('noProducts.secondaryAction'),
+                  onClick: selectedCategory ? () => setSelectedCategory(undefined) : () => window.location.reload(),
+                }}
+                className="border border-dashed border-border rounded-2xl"
+              />
+            )}
+          </div>
         )}
       </div>
 
