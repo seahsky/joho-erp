@@ -28,7 +28,9 @@ export function SignaturePadComponent({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
 
-  // Initialize signature pad
+  // Initialize signature pad once on mount.
+  // The initialization creates event listeners that use onSignatureChange via closure,
+  // so re-running this effect is unnecessary and causes signature loss.
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -46,6 +48,11 @@ export function SignaturePadComponent({
       const container = canvas.parentElement;
       if (!container) return;
 
+      // Save existing signature data before resizing
+      const signatureData = signaturePad.isEmpty()
+        ? null
+        : signaturePad.toData();
+
       const width = container.clientWidth;
       const height = 150; // Fixed height
 
@@ -59,8 +66,13 @@ export function SignaturePadComponent({
         ctx.scale(ratio, ratio);
       }
 
-      // Clear and redraw background
-      signaturePad.clear();
+      // Restore signature data after resizing
+      if (signatureData) {
+        signaturePad.fromData(signatureData);
+      } else {
+        // Only clear if there was no signature
+        signaturePad.clear();
+      }
     };
 
     resizeCanvas();
@@ -78,7 +90,12 @@ export function SignaturePadComponent({
       window.removeEventListener('resize', resizeCanvas);
       signaturePad.off();
     };
-  }, [onSignatureChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+  // Note: onSignatureChange is intentionally excluded from dependencies.
+  // It's a stable callback that doesn't need to trigger reinitialization.
+  // Including it causes signatures to clear when parent re-renders with
+  // new inline function references.
 
   // Handle disabled state
   useEffect(() => {
