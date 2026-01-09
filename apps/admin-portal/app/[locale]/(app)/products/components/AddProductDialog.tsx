@@ -201,8 +201,8 @@ export function AddProductDialog({
     // Convert unitCost from dollars to cents (optional field)
     let unitCostInCents: number | undefined;
     if (unitCost) {
-      unitCostInCents = parseToCents(unitCost);
-      if (unitCostInCents === null || unitCostInCents <= 0) {
+      const parsed = parseToCents(unitCost);
+      if (parsed === null || parsed <= 0) {
         toast({
           title: t('productForm.validation.invalidInput'),
           description: t('productForm.validation.unitCostPositive'),
@@ -210,6 +210,7 @@ export function AddProductDialog({
         });
         return;
       }
+      unitCostInCents = parsed;
     }
 
     // Validate GST rate if GST is applied
