@@ -156,6 +156,7 @@
     "errorLoading": "加载产品时出错",
     "yourSpecialPrice": "您的专属价格 每{unit}",
     "perUnit": "每{unit}",
+    "inclGst": "(含消费税)",
     "unitsAvailable": "{count}{unit} 可用",
     "noProductsFound": "未找到产品",
     "emptyWithCategory": "尝试选择其他类别或清除筛选条件。",

@@ -24,6 +24,36 @@ export interface ProductWithPricing {
   hasCustomPricing: boolean;
   discount?: number; // In cents
   discountPercentage?: number;
+  // GST fields for customer-facing price display
+  applyGst?: boolean;
+  gstRate?: number | null; // GST rate as percentage (e.g., 10 for 10%)
+  priceWithGst?: number; // Final price in cents including GST (if applicable)
+}
+
+/**
+ * Default Australian GST rate (10%)
+ */
+export const DEFAULT_GST_RATE = 10;
+
+/**
+ * Calculate price with GST included
+ * @param effectivePrice - The effective price in cents (before GST)
+ * @param applyGst - Whether GST should be applied
+ * @param gstRate - GST rate as percentage (e.g., 10 for 10%), defaults to 10%
+ * @returns Price in cents including GST (if applicable)
+ */
+export function calculatePriceWithGst(
+  effectivePrice: number,
+  applyGst: boolean,
+  gstRate?: number | null
+): number {
+  if (!applyGst) {
+    return effectivePrice;
+  }
+  const rate = gstRate ?? DEFAULT_GST_RATE;
+  // Calculate GST: price * rate / 100, then add to price
+  const gstAmount = Math.round((effectivePrice * rate) / 100);
+  return effectivePrice + gstAmount;
 }
 
 /**
@@ -53,18 +83,27 @@ export function isCustomPriceValid(pricing: CustomerPricing): boolean {
  * Get the effective price for a product considering customer-specific pricing
  * @param basePrice - Base price in cents
  * @param customerPricing - Customer-specific pricing (if any)
+ * @param gstOptions - Optional GST configuration from product
  * @returns Product with pricing information (all amounts in cents)
  */
 export function getEffectivePrice(
   basePrice: number,
-  customerPricing?: CustomerPricing | null
+  customerPricing?: CustomerPricing | null,
+  gstOptions?: { applyGst?: boolean; gstRate?: number | null }
 ): ProductWithPricing {
+  const applyGst = gstOptions?.applyGst ?? false;
+  const gstRate = gstOptions?.gstRate ?? null;
+
   // If no custom pricing or invalid dates, use base price
   if (!customerPricing || !isCustomPriceValid(customerPricing)) {
+    const effectivePrice = basePrice;
     return {
       basePrice,
-      effectivePrice: basePrice,
+      effectivePrice,
       hasCustomPricing: false,
+      applyGst,
+      gstRate,
+      priceWithGst: calculatePriceWithGst(effectivePrice, applyGst, gstRate),
     };
   }
 
@@ -77,13 +116,18 @@ export function getEffectivePrice(
   // Calculate discount percentage
   const discountPercentage = getDiscountPercentage(baseMoney, customMoney);
 
+  const effectivePrice = customerPricing.customPrice;
+
   return {
     basePrice,
     customPrice: customerPricing.customPrice,
-    effectivePrice: customerPricing.customPrice,
+    effectivePrice,
     hasCustomPricing: true,
     discount,
     discountPercentage,
+    applyGst,
+    gstRate,
+    priceWithGst: calculatePriceWithGst(effectivePrice, applyGst, gstRate),
   };
 }
 
