@@ -703,6 +703,12 @@
       "packageSizePlaceholder": "5.0",
       "basePrice": "基础价格 * ($)",
       "basePricePlaceholder": "18.50",
+      "unitCost": "单位成本 ($)",
+      "unitCostPlaceholder": "15.00",
+      "applyGst": "适用GST",
+      "applyGstDescription": "为此产品启用GST",
+      "gstRate": "GST税率 (%)",
+      "gstRatePlaceholder": "10",
       "currentStock": "当前库存",
       "currentStockPlaceholder": "0",
       "lowStockThreshold": "低库存阈值",
@@ -757,6 +763,8 @@
     "validation": {
       "skuNamePriceRequired": "货号、名称和基础价格为必填项",
       "basePricePositive": "基础价格必须为正数",
+      "unitCostPositive": "单位成本必须为正数",
+      "gstRateRange": "GST税率必须在0到100之间",
       "invalidInput": "无效输入",
       "invalidPercentAndPrice": "请输入有效的百分比和基础价格",
       "invalidAmountAndPrice": "请输入有效的金额和基础价格"
