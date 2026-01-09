@@ -26,6 +26,10 @@ interface Product {
   stockStatus: StockStatus;
   hasStock: boolean;
   imageUrl: string | null;
+  // GST fields for displaying final price
+  applyGst?: boolean;
+  gstRate?: number | null;
+  priceWithGst?: number;
 }
 
 // Type for API response items (cast to Product since customers always get transformed data)
@@ -432,7 +436,7 @@ export function ProductList() {
                   {product.hasCustomPricing ? (
                     <div>
                       <Large className="text-2xl font-bold text-green-600 dark:text-green-500">
-                        {formatAUD(product.effectivePrice)}
+                        {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.effectivePrice)}
                       </Large>
                       <div className="flex items-center justify-end gap-2 mt-1">
                         <Muted className="line-through text-xs">
@@ -445,10 +449,13 @@ export function ProductList() {
                     </div>
                   ) : (
                     <Large className="text-2xl font-bold text-primary">
-                      {formatAUD(product.basePrice)}
+                      {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.basePrice)}
                     </Large>
                   )}
-                  <Muted className="text-xs mt-1">{t('products.perUnit', { unit: product.unit })}</Muted>
+                  <Muted className="text-xs mt-1">
+                    {t('products.perUnit', { unit: product.unit })}
+                    {product.applyGst && ` ${t('products.inclGst')}`}
+                  </Muted>
                 </div>
 
                 {/* Stock Badge */}
@@ -532,7 +539,7 @@ export function ProductList() {
                     {product.hasCustomPricing ? (
                       <div>
                         <Large className="text-xl font-bold text-green-600 dark:text-green-500">
-                          {formatAUD(product.effectivePrice)}
+                          {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.effectivePrice)}
                         </Large>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Muted className="line-through text-xs">
@@ -541,12 +548,20 @@ export function ProductList() {
                           <Badge variant="success" className="text-xs px-1.5 py-0">
                             -{product.discountPercentage?.toFixed(0)}%
                           </Badge>
+                          {product.applyGst && (
+                            <Muted className="text-xs">{t('products.inclGst')}</Muted>
+                          )}
                         </div>
                       </div>
                     ) : (
-                      <Large className="text-xl font-bold text-primary">
-                        {formatAUD(product.basePrice)}
-                      </Large>
+                      <div>
+                        <Large className="text-xl font-bold text-primary">
+                          {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.basePrice)}
+                        </Large>
+                        {product.applyGst && (
+                          <Muted className="text-xs">{t('products.inclGst')}</Muted>
+                        )}
+                      </div>
                     )}
                   </div>
 

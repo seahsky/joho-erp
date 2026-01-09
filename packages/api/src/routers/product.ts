@@ -127,7 +127,9 @@ export const productRouter = router({
 
         const items = products.map((product) => {
           const customPricing = pricingMap.get(product.id);
-          const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+          // Pass GST options from product to calculate GST-inclusive price
+          const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
+          const priceInfo = getEffectivePrice(product.basePrice, customPricing, gstOptions);
           const fullProduct = { ...product, ...priceInfo };
 
           return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
@@ -138,7 +140,9 @@ export const productRouter = router({
 
       // No customer pricing, return products with base price as effective price
       const items = products.map((product) => {
-        const fullProduct = { ...product, ...getEffectivePrice(product.basePrice) };
+        // Pass GST options from product to calculate GST-inclusive price
+        const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
+        const fullProduct = { ...product, ...getEffectivePrice(product.basePrice, undefined, gstOptions) };
         return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
       });
 
@@ -188,6 +192,9 @@ export const productRouter = router({
         customerId = customer?.id || null;
       }
 
+      // GST options from product
+      const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
+
       if (customerId) {
         const customPricing = await prisma.customerPricing.findFirst({
           where: {
@@ -196,14 +203,14 @@ export const productRouter = router({
           },
         });
 
-        const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+        const priceInfo = getEffectivePrice(product.basePrice, customPricing, gstOptions);
         const fullProduct = { ...product, ...priceInfo };
 
         return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
       }
 
       // No customer pricing, return product with base price
-      const fullProduct = { ...product, ...getEffectivePrice(product.basePrice) };
+      const fullProduct = { ...product, ...getEffectivePrice(product.basePrice, undefined, gstOptions) };
       return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
     }),
 

@@ -22,6 +22,10 @@ interface Product {
   stockStatus: StockStatus;
   hasStock: boolean;
   imageUrl: string | null;
+  // GST fields for displaying final price
+  applyGst?: boolean;
+  gstRate?: number | null;
+  priceWithGst?: number;
 }
 
 // Reasonable quantity cap without revealing actual stock
@@ -187,7 +191,7 @@ export function ProductDetailSidebar({
             {product.hasCustomPricing ? (
               <div className="space-y-1">
                 <Large className="text-3xl font-bold text-green-600 dark:text-green-500">
-                  {formatAUD(product.effectivePrice)}
+                  {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.effectivePrice)}
                 </Large>
                 <div className="flex items-center gap-3">
                   <Muted className="line-through text-base">
@@ -197,14 +201,20 @@ export function ProductDetailSidebar({
                     {t('products.save', { percentage: product.discountPercentage?.toFixed(0) || '0' })}
                   </Badge>
                 </div>
-                <Muted className="text-sm">{t('products.yourSpecialPrice', { unit: product.unit })}</Muted>
+                <Muted className="text-sm">
+                  {t('products.yourSpecialPrice', { unit: product.unit })}
+                  {product.applyGst && ` ${t('products.inclGst')}`}
+                </Muted>
               </div>
             ) : (
               <div className="space-y-1">
                 <Large className="text-3xl font-bold text-primary">
-                  {formatAUD(product.basePrice)}
+                  {formatAUD(product.applyGst && product.priceWithGst ? product.priceWithGst : product.basePrice)}
                 </Large>
-                <Muted className="text-sm">{t('products.perUnit', { unit: product.unit })}</Muted>
+                <Muted className="text-sm">
+                  {t('products.perUnit', { unit: product.unit })}
+                  {product.applyGst && ` ${t('products.inclGst')}`}
+                </Muted>
               </div>
             )}
           </div>
@@ -318,7 +328,7 @@ export function ProductDetailSidebar({
                   </span>
                 ) : (
                   <>
-                    {t('products.addToCart')} • {formatAUD(product.effectivePrice * quantity)}
+                    {t('products.addToCart')} • {formatAUD((product.applyGst && product.priceWithGst ? product.priceWithGst : product.effectivePrice) * quantity)}
                   </>
                 )}
               </Button>

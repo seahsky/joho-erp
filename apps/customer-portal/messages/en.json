@@ -156,6 +156,7 @@
     "errorLoading": "Error loading products",
     "yourSpecialPrice": "Your special price per {unit}",
     "perUnit": "per {unit}",
+    "inclGst": "(incl. GST)",
     "unitsAvailable": "{count}{unit} available",
     "noProductsFound": "No products found",
     "emptyWithCategory": "Try selecting a different category or clear your filters.",

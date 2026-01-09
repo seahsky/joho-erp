@@ -156,6 +156,7 @@
     "errorLoading": "載入產品時出錯",
     "yourSpecialPrice": "您的專屬價格 每{unit}",
     "perUnit": "每{unit}",
+    "inclGst": "(含消費稅)",
     "unitsAvailable": "{count}{unit} 可用",
     "noProductsFound": "未找到產品",
     "emptyWithCategory": "嘗試選擇其他類別或清除篩選條件。",
