@@ -703,6 +703,12 @@
       "packageSizePlaceholder": "5.0",
       "basePrice": "基礎價格 * ($)",
       "basePricePlaceholder": "18.50",
+      "unitCost": "單位成本 ($)",
+      "unitCostPlaceholder": "15.00",
+      "applyGst": "適用GST",
+      "applyGstDescription": "為此產品啟用GST",
+      "gstRate": "GST稅率 (%)",
+      "gstRatePlaceholder": "10",
       "currentStock": "當前庫存",
       "currentStockPlaceholder": "0",
       "lowStockThreshold": "低庫存閾值",
@@ -757,6 +763,8 @@
     "validation": {
       "skuNamePriceRequired": "貨號、名稱和基礎價格為必填項",
       "basePricePositive": "基礎價格必須為正數",
+      "unitCostPositive": "單位成本必須為正數",
+      "gstRateRange": "GST稅率必須在0到100之間",
       "invalidInput": "無效輸入",
       "invalidPercentAndPrice": "請輸入有效的百分比和基礎價格",
       "invalidAmountAndPrice": "請輸入有效的金額和基礎價格"

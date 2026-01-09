@@ -703,6 +703,12 @@
       "packageSizePlaceholder": "5.0",
       "basePrice": "Base Price * ($)",
       "basePricePlaceholder": "18.50",
+      "unitCost": "Unit Cost ($)",
+      "unitCostPlaceholder": "15.00",
+      "applyGst": "Apply GST",
+      "applyGstDescription": "Enable GST for this product",
+      "gstRate": "GST Rate (%)",
+      "gstRatePlaceholder": "10",
       "currentStock": "Current Stock",
       "currentStockPlaceholder": "0",
       "lowStockThreshold": "Low Stock Threshold",
@@ -757,6 +763,8 @@
     "validation": {
       "skuNamePriceRequired": "SKU, name, and base price are required",
       "basePricePositive": "Base price must be a positive number",
+      "unitCostPositive": "Unit cost must be a positive number",
+      "gstRateRange": "GST rate must be between 0 and 100",
       "invalidInput": "Invalid input",
       "invalidPercentAndPrice": "Please enter a valid percentage and base price",
       "invalidAmountAndPrice": "Please enter a valid amount and base price"

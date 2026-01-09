@@ -220,6 +220,9 @@ export const productRouter = router({
         unit: z.enum(['kg', 'piece', 'box', 'carton']),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive(), // In cents (e.g., 2550 = $25.50)
+        unitCost: z.number().int().positive().optional(), // In cents (e.g., 1500 = $15.00)
+        applyGst: z.boolean().default(false),
+        gstRate: z.number().min(0).max(100).optional(), // GST rate as percentage (e.g., 10 for 10%)
         currentStock: z.number().min(0).default(0),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).default('active'),
@@ -306,6 +309,9 @@ export const productRouter = router({
         unit: z.enum(['kg', 'piece', 'box', 'carton']).optional(),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive().optional(), // In cents
+        unitCost: z.number().int().positive().nullish(), // In cents (null to remove)
+        applyGst: z.boolean().optional(),
+        gstRate: z.number().min(0).max(100).nullish(), // GST rate as percentage (null to remove)
         currentStock: z.number().min(0).optional(),
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),

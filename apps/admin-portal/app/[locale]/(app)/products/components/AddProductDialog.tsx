@@ -11,6 +11,7 @@ import {
   Input,
   Label,
   ProductImageUpload,
+  Checkbox,
 } from '@joho-erp/ui';
 import { Loader2, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -51,6 +52,9 @@ export function AddProductDialog({
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
+  const [unitCost, setUnitCost] = useState('');
+  const [applyGst, setApplyGst] = useState(false);
+  const [gstRate, setGstRate] = useState('10'); // Default 10% (Australian GST)
   const [currentStock, setCurrentStock] = useState('0');
   const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
@@ -194,6 +198,34 @@ export function AddProductDialog({
       return;
     }
 
+    // Convert unitCost from dollars to cents (optional field)
+    let unitCostInCents: number | undefined;
+    if (unitCost) {
+      unitCostInCents = parseToCents(unitCost);
+      if (unitCostInCents === null || unitCostInCents <= 0) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.unitCostPositive'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Validate GST rate if GST is applied
+    let gstRateValue: number | undefined;
+    if (applyGst) {
+      gstRateValue = parseFloat(gstRate);
+      if (isNaN(gstRateValue) || gstRateValue < 0 || gstRateValue > 100) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.gstRateRange'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
       .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
@@ -217,6 +249,9 @@ export function AddProductDialog({
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
       basePrice: basePriceInCents, // Send cents to API
+      unitCost: unitCostInCents, // Send cents to API (optional)
+      applyGst,
+      gstRate: gstRateValue, // Only set if applyGst is true
       currentStock: parseInt(currentStock) || 0,
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
@@ -233,6 +268,9 @@ export function AddProductDialog({
     setUnit('kg');
     setPackageSize('');
     setBasePrice('');
+    setUnitCost('');
+    setApplyGst(false);
+    setGstRate('10');
     setCurrentStock('0');
     setLowStockThreshold('');
     setStatus('active');
@@ -383,6 +421,53 @@ export function AddProductDialog({
               </div>
 
               <div>
+                <Label htmlFor="unitCost">{t('productForm.fields.unitCost')}</Label>
+                <Input
+                  id="unitCost"
+                  type="number"
+                  step="0.01"
+                  value={unitCost}
+                  onChange={(e) => setUnitCost(e.target.value)}
+                  placeholder={t('productForm.fields.unitCostPlaceholder')}
+                />
+              </div>
+            </div>
+
+            {/* GST Settings */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="applyGst"
+                  checked={applyGst}
+                  onCheckedChange={(checked: boolean) => setApplyGst(checked)}
+                />
+                <Label htmlFor="applyGst" className="cursor-pointer">
+                  {t('productForm.fields.applyGst')}
+                </Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-6">
+                {t('productForm.fields.applyGstDescription')}
+              </p>
+
+              {applyGst && (
+                <div className="ml-6 w-1/2">
+                  <Label htmlFor="gstRate">{t('productForm.fields.gstRate')}</Label>
+                  <Input
+                    id="gstRate"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={gstRate}
+                    onChange={(e) => setGstRate(e.target.value)}
+                    placeholder={t('productForm.fields.gstRatePlaceholder')}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="currentStock">{t('productForm.fields.currentStock')}</Label>
                 <Input
                   id="currentStock"
@@ -392,9 +477,7 @@ export function AddProductDialog({
                   placeholder={t('productForm.fields.currentStockPlaceholder')}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="lowStockThreshold">{t('productForm.fields.lowStockThreshold')}</Label>
                 <Input
@@ -405,7 +488,9 @@ export function AddProductDialog({
                   placeholder={t('productForm.fields.lowStockThresholdPlaceholder')}
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="status">{t('productForm.fields.status')}</Label>
                 <select

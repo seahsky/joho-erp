@@ -11,6 +11,7 @@ import {
   Input,
   Label,
   ProductImageUpload,
+  Checkbox,
 } from '@joho-erp/ui';
 import { Loader2, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -39,6 +40,9 @@ type Product = {
   unit: string;
   packageSize?: number | null;
   basePrice: number;
+  unitCost?: number | null;
+  applyGst?: boolean;
+  gstRate?: number | null;
   currentStock: number;
   lowStockThreshold?: number | null;
   status: 'active' | 'discontinued' | 'out_of_stock';
@@ -69,6 +73,9 @@ export function EditProductDialog({
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
+  const [unitCost, setUnitCost] = useState('');
+  const [applyGst, setApplyGst] = useState(false);
+  const [gstRate, setGstRate] = useState('10');
   const [currentStock, setCurrentStock] = useState('0');
   const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
@@ -133,6 +140,10 @@ export function EditProductDialog({
       setPackageSize(product.packageSize?.toString() || '');
       // basePrice is stored in cents, convert to dollars for display
       setBasePrice(formatCentsForInput(product.basePrice));
+      // unitCost is stored in cents, convert to dollars for display
+      setUnitCost(product.unitCost ? formatCentsForInput(product.unitCost) : '');
+      setApplyGst(product.applyGst || false);
+      setGstRate(product.gstRate?.toString() || '10');
       setCurrentStock(product.currentStock.toString());
       setLowStockThreshold(product.lowStockThreshold?.toString() || '');
       setStatus(product.status);
@@ -267,6 +278,38 @@ export function EditProductDialog({
       return;
     }
 
+    // Convert unitCost from dollars to cents (optional field)
+    let unitCostInCents: number | null | undefined;
+    if (unitCost) {
+      unitCostInCents = parseToCents(unitCost);
+      if (unitCostInCents === null || unitCostInCents <= 0) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.unitCostPositive'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      unitCostInCents = null; // Clear the value if empty
+    }
+
+    // Validate GST rate if GST is applied
+    let gstRateValue: number | null | undefined;
+    if (applyGst) {
+      gstRateValue = parseFloat(gstRate);
+      if (isNaN(gstRateValue) || gstRateValue < 0 || gstRateValue > 100) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.gstRateRange'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      gstRateValue = null; // Clear GST rate if GST is not applied
+    }
+
     // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
       .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
@@ -290,6 +333,9 @@ export function EditProductDialog({
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
       basePrice: basePriceInCents,
+      unitCost: unitCostInCents,
+      applyGst,
+      gstRate: gstRateValue,
       currentStock: parseInt(currentStock) || 0,
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
@@ -443,6 +489,53 @@ export function EditProductDialog({
               </div>
 
               <div>
+                <Label htmlFor="unitCost">{t('productForm.fields.unitCost')}</Label>
+                <Input
+                  id="unitCost"
+                  type="number"
+                  step="0.01"
+                  value={unitCost}
+                  onChange={(e) => setUnitCost(e.target.value)}
+                  placeholder={t('productForm.fields.unitCostPlaceholder')}
+                />
+              </div>
+            </div>
+
+            {/* GST Settings */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="applyGst"
+                  checked={applyGst}
+                  onCheckedChange={(checked: boolean) => setApplyGst(checked)}
+                />
+                <Label htmlFor="applyGst" className="cursor-pointer">
+                  {t('productForm.fields.applyGst')}
+                </Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-6">
+                {t('productForm.fields.applyGstDescription')}
+              </p>
+
+              {applyGst && (
+                <div className="ml-6 w-1/2">
+                  <Label htmlFor="gstRate">{t('productForm.fields.gstRate')}</Label>
+                  <Input
+                    id="gstRate"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={gstRate}
+                    onChange={(e) => setGstRate(e.target.value)}
+                    placeholder={t('productForm.fields.gstRatePlaceholder')}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="currentStock">{t('productForm.fields.currentStock')}</Label>
                 <Input
                   id="currentStock"
@@ -452,9 +545,7 @@ export function EditProductDialog({
                   placeholder={t('productForm.fields.currentStockPlaceholder')}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="lowStockThreshold">{t('productForm.fields.lowStockThreshold')}</Label>
                 <Input
@@ -465,7 +556,9 @@ export function EditProductDialog({
                   placeholder={t('productForm.fields.lowStockThresholdPlaceholder')}
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="status">{t('productForm.fields.status')}</Label>
                 <select

@@ -205,6 +205,9 @@ model Product {
   unit                ProductUnit
   packageSize         Float?
   basePrice           Int                 // Stored in cents (e.g., 2550 = $25.50)
+  unitCost            Int?                // Cost per unit in cents (e.g., 1500 = $15.00)
+  applyGst            Boolean             @default(false)
+  gstRate             Float?              // GST rate as percentage (e.g., 10.0 for 10%)
   currentStock        Float               @default(0)
   lowStockThreshold   Float?
   status              ProductStatus       @default(active)
