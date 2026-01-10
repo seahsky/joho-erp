@@ -382,6 +382,8 @@
       "referencesShort": "Refs",
       "review": "Review",
       "reviewShort": "Review",
+      "termsAgreement": "Terms & Conditions",
+      "termsAgreementShort": "T&C",
       "signatures": "Signature",
       "signaturesShort": "Sign"
     },
@@ -548,6 +550,30 @@
         "next": "Next",
         "submit": "Submit Application",
         "submitting": "Submitting..."
+      }
+    },
+    "termsAgreement": {
+      "title": "Terms & Conditions",
+      "description": "Please review the terms and conditions before proceeding",
+      "pdfViewer": {
+        "loading": "Loading application form...",
+        "loadError": "Failed to load application form",
+        "retry": "Retry",
+        "page": "Page {current} of {total}",
+        "previousPage": "Previous Page",
+        "nextPage": "Next Page",
+        "downloadPdf": "Download PDF"
+      },
+      "agreement": {
+        "label": "I have read and agree to the terms and conditions outlined in the credit application form above",
+        "required": "Required"
+      },
+      "validation": {
+        "mustAgree": "You must agree to the terms and conditions to proceed"
+      },
+      "buttons": {
+        "back": "Back",
+        "next": "Proceed to Signatures"
       }
     },
     "signatures": {

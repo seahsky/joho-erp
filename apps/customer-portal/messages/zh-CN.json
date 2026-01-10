@@ -497,6 +497,8 @@
       "referencesShort": "推荐",
       "review": "审核",
       "reviewShort": "审核",
+      "termsAgreement": "条款和条件",
+      "termsAgreementShort": "条款",
       "signatures": "签名",
       "signaturesShort": "签名"
     },
@@ -663,6 +665,30 @@
         "next": "下一步",
         "submit": "提交申请",
         "submitting": "提交中..."
+      }
+    },
+    "termsAgreement": {
+      "title": "条款和条件",
+      "description": "请在继续之前查看条款和条件",
+      "pdfViewer": {
+        "loading": "正在加载申请表...",
+        "loadError": "无法加载申请表",
+        "retry": "重试",
+        "page": "第 {current} 页，共 {total} 页",
+        "previousPage": "上一页",
+        "nextPage": "下一页",
+        "downloadPdf": "下载PDF"
+      },
+      "agreement": {
+        "label": "我已阅读并同意上述信用申请表中列出的条款和条件",
+        "required": "必填"
+      },
+      "validation": {
+        "mustAgree": "您必须同意条款和条件才能继续"
+      },
+      "buttons": {
+        "back": "返回",
+        "next": "继续签名"
       }
     },
     "signatures": {

@@ -13,14 +13,15 @@ import { DirectorsStep } from './components/directors-step';
 import { FinancialStep } from './components/financial-step';
 import { TradeReferencesStep } from './components/trade-references-step';
 import { ReviewStep } from './components/review-step';
+import { TermsAgreementStep } from './components/terms-agreement-step';
 import { SignatureStep, type SignatureData } from './components/signature-step';
 
 const STORAGE_KEY = 'onboarding-form-data';
 
-type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'signatures';
+type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'terms-agreement' | 'signatures';
 
 // Step IDs defined outside component to avoid React hook dependency issues
-const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'signatures'];
+const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'terms-agreement', 'signatures'];
 
 export interface BusinessInfo {
   accountType: 'sole_trader' | 'partnership' | 'company' | 'other';
@@ -95,6 +96,7 @@ interface SavedFormData {
   directors: DirectorInfo[];
   financialInfo: Partial<FinancialInfo>;
   tradeReferences: TradeReferenceInfo[];
+  termsAgreement: { hasAgreed: boolean };
 }
 
 export default function OnboardingPage() {
@@ -108,6 +110,9 @@ export default function OnboardingPage() {
   const [directors, setDirectors] = useState<DirectorInfo[]>([]);
   const [financialInfo, setFinancialInfo] = useState<Partial<FinancialInfo>>({});
   const [tradeReferences, setTradeReferences] = useState<TradeReferenceInfo[]>([]);
+  const [termsAgreement, setTermsAgreement] = useState<{ hasAgreed: boolean }>({
+    hasAgreed: false,
+  });
   const [isRestored, setIsRestored] = useState(false);
 
   // Restore form data from localStorage on mount
@@ -121,6 +126,7 @@ export default function OnboardingPage() {
         if (parsed.directors) setDirectors(parsed.directors);
         if (parsed.financialInfo) setFinancialInfo(parsed.financialInfo);
         if (parsed.tradeReferences) setTradeReferences(parsed.tradeReferences);
+        if (parsed.termsAgreement) setTermsAgreement(parsed.termsAgreement);
       }
     } catch (e) {
       // Ignore parsing errors
@@ -139,13 +145,14 @@ export default function OnboardingPage() {
       directors,
       financialInfo,
       tradeReferences,
+      termsAgreement,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     } catch (e) {
       console.warn('Failed to save onboarding data:', e);
     }
-  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, isRestored]);
+  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsAgreement, isRestored]);
 
   // Clear localStorage on successful submission
   const clearSavedData = useCallback(() => {
@@ -287,7 +294,7 @@ export default function OnboardingPage() {
             directors={directors}
             financialInfo={financialInfo as FinancialInfo}
             tradeReferences={tradeReferences}
-            onNext={() => setCurrentStep('signatures')}
+            onNext={() => setCurrentStep('terms-agreement')}
             onBack={() => setCurrentStep('references')}
             onStepClick={(stepIndex) => {
               const stepMap: OnboardingStep[] = ['business', 'directors', 'financial', 'references'];
@@ -298,12 +305,21 @@ export default function OnboardingPage() {
           />
         )}
 
+        {currentStep === 'terms-agreement' && (
+          <TermsAgreementStep
+            data={termsAgreement}
+            onChange={setTermsAgreement}
+            onNext={() => setCurrentStep('signatures')}
+            onBack={() => setCurrentStep('review')}
+          />
+        )}
+
         {currentStep === 'signatures' && (
           <SignatureStep
             directors={directors}
             businessName={(businessInfo as BusinessInfo).businessName}
             onComplete={handleSignaturesComplete}
-            onBack={() => setCurrentStep('review')}
+            onBack={() => setCurrentStep('terms-agreement')}
             isSubmitting={registerMutation.isPending}
           />
         )}
