@@ -34,6 +34,7 @@ import {
   RefreshCw,
   Layers,
   Search,
+  Download,
 } from 'lucide-react';
 import {
   StockMovementChart,
@@ -41,6 +42,7 @@ import {
   ProductTurnoverTable,
   ComparisonAnalytics,
 } from './components';
+import { ExportDialog } from './components/ExportDialog';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
@@ -53,6 +55,10 @@ export default function InventoryPage() {
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
   const [productSearch, setProductSearch] = useState('');
+
+  // Export dialog state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison'>('overview');
 
   // API calls
   const { data: summary } = api.dashboard.getInventorySummary.useQuery();
@@ -90,6 +96,10 @@ export default function InventoryPage() {
           <H1>{t('inventory.title')}</H1>
           <Muted className="mt-2">{t('inventory.subtitle')}</Muted>
         </div>
+        <Button onClick={() => setExportDialogOpen(true)}>
+          <Download className="h-4 w-4 mr-2" />
+          {t('inventory.export.export')}
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -160,7 +170,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabbed Content */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as any)} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">{t('inventory.tabs.overview')}</TabsTrigger>
           <TabsTrigger value="trends">{t('inventory.tabs.trends')}</TabsTrigger>
@@ -359,6 +369,17 @@ export default function InventoryPage() {
           <ComparisonAnalytics />
         </TabsContent>
       </Tabs>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        currentTab={currentTab}
+        currentFilters={{
+          transactionType,
+          productSearch,
+        }}
+      />
     </div>
   );
 }

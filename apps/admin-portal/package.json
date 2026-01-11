@@ -49,12 +49,14 @@
     "superjson": "^2.2.1",
     "tailwind-merge": "^3.4.0",
     "use-debounce": "^10.0.6",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/xlsx": "^0.0.36",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
     "eslint-config-next": "^15.0.0",

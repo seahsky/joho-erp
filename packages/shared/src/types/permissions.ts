@@ -31,7 +31,7 @@ export const MODULE_ACTIONS = {
   customers: ['view', 'create', 'edit', 'delete', 'approve_credit', 'suspend'] as const,
   orders: ['view', 'create', 'edit', 'confirm', 'cancel', 'approve_backorder'] as const,
   products: ['view', 'create', 'edit', 'delete', 'adjust_stock'] as const,
-  inventory: ['view', 'adjust'] as const,
+  inventory: ['view', 'adjust', 'export'] as const,
   pricing: ['view', 'create', 'edit', 'delete'] as const,
   packing: ['view', 'manage'] as const,
   deliveries: ['view', 'manage'] as const,

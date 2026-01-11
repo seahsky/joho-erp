@@ -18,6 +18,7 @@ import { xeroRouter } from './routers/xero';
 import { permissionRouter } from './routers/permission';
 import { smsRouter } from './routers/sms';
 import { inventoryStatsRouter } from './routers/inventory-stats';
+import { inventoryRouter } from './routers/inventory';
 
 export const appRouter = router({
   area: areaRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   permission: permissionRouter,
   sms: smsRouter,
   inventoryStats: inventoryStatsRouter,
+  inventory: inventoryRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -2217,6 +2217,105 @@
         "lastPeriod": "上期",
         "change": "變化"
       }
+    },
+    "export": {
+      "export": "匯出",
+      "title": "匯出庫存報告",
+      "description": "選擇格式和數據進行匯出",
+      "exportingTab": "匯出",
+      "selectFormat": "選擇匯出格式",
+      "dataScope": "匯出數據範圍",
+      "generating": "生成中...",
+      "success": "匯出成功",
+      "successDescription": "報告已成功下載",
+      "error": "匯出失敗",
+      "errorDescription": "生成報告失敗，請重試。",
+      "formats": {
+        "excel": "Excel (.xlsx)",
+        "excelDescription": "適合數據分析和處理。可在Excel、Google Sheets中打開。",
+        "pdf": "PDF文件",
+        "pdfDescription": "可列印格式。適合分享和存檔。"
+      },
+      "scope": {
+        "current": "當前視圖",
+        "currentDescription": "根據當前篩選、搜尋和時間段設定匯出。",
+        "all": "全部數據",
+        "allDescription": "匯出完整數據集，不應用任何篩選。"
+      },
+      "overview": {
+        "title": "庫存概覽",
+        "summary": "摘要",
+        "summaryTitle": "庫存摘要",
+        "categories": "類別",
+        "categoryBreakdown": "類別明細",
+        "transactions": "交易記錄",
+        "recentTransactions": "最近交易"
+      },
+      "trends": {
+        "title": "庫存趨勢",
+        "stockMovement": "庫存變動",
+        "stockMovementTitle": "庫存變動趨勢",
+        "inventoryValue": "庫存價值",
+        "inventoryValueTitle": "庫存價值歷史"
+      },
+      "turnover": {
+        "title": "產品週轉",
+        "turnoverTitle": "產品週轉指標"
+      },
+      "comparison": {
+        "title": "對比分析",
+        "comparisonTitle": "對比分析",
+        "weekOverWeek": "週環比",
+        "monthOverMonth": "月環比"
+      },
+      "fields": {
+        "category": "類別",
+        "productCount": "產品數量",
+        "totalStock": "總庫存",
+        "totalValue": "總價值",
+        "lowStockCount": "低庫存數量",
+        "lowStock": "低庫存",
+        "totalInventoryValue": "庫存總價值",
+        "totalProducts": "產品總數",
+        "lowStockItems": "低庫存商品",
+        "outOfStock": "缺貨",
+        "date": "日期",
+        "time": "時間",
+        "productSku": "產品SKU",
+        "productName": "產品名稱",
+        "sku": "SKU",
+        "product": "產品",
+        "unit": "單位",
+        "type": "類型",
+        "adjustmentType": "調整類型",
+        "quantity": "數量",
+        "previousStock": "之前庫存",
+        "newStock": "新庫存",
+        "stockChange": "庫存變化",
+        "notes": "備註",
+        "period": "週期",
+        "stockIn": "入庫",
+        "stockOut": "出庫",
+        "netChange": "淨變化",
+        "currentStock": "當前庫存",
+        "totalSold": "銷售總量",
+        "transactionCount": "交易次數",
+        "velocity": "週轉速度（單位/天）",
+        "daysOnHand": "在庫天數",
+        "days": "天",
+        "metric": "指標",
+        "current": "當前",
+        "currentPeriod": "當前週期",
+        "previous": "之前",
+        "previousPeriod": "之前週期",
+        "change": "變化",
+        "changePercent": "變化 %",
+        "netMovement": "淨變動",
+        "exportedAt": "匯出時間",
+        "exportedOn": "匯出於",
+        "page": "頁",
+        "showingFirst": "顯示前"
+      }
     }
   },
   "customerDetail": {

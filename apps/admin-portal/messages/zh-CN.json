@@ -2211,6 +2211,105 @@
         "lastPeriod": "上期",
         "change": "变化"
       }
+    },
+    "export": {
+      "export": "导出",
+      "title": "导出库存报告",
+      "description": "选择格式和数据进行导出",
+      "exportingTab": "导出",
+      "selectFormat": "选择导出格式",
+      "dataScope": "导出数据范围",
+      "generating": "生成中...",
+      "success": "导出成功",
+      "successDescription": "报告已成功下载",
+      "error": "导出失败",
+      "errorDescription": "生成报告失败，请重试。",
+      "formats": {
+        "excel": "Excel (.xlsx)",
+        "excelDescription": "适合数据分析和处理。可在Excel、Google Sheets中打开。",
+        "pdf": "PDF文档",
+        "pdfDescription": "可打印格式。适合分享和存档。"
+      },
+      "scope": {
+        "current": "当前视图",
+        "currentDescription": "根据当前筛选、搜索和时间段设置导出。",
+        "all": "全部数据",
+        "allDescription": "导出完整数据集，不应用任何筛选。"
+      },
+      "overview": {
+        "title": "库存概览",
+        "summary": "摘要",
+        "summaryTitle": "库存摘要",
+        "categories": "类别",
+        "categoryBreakdown": "类别明细",
+        "transactions": "交易记录",
+        "recentTransactions": "最近交易"
+      },
+      "trends": {
+        "title": "库存趋势",
+        "stockMovement": "库存变动",
+        "stockMovementTitle": "库存变动趋势",
+        "inventoryValue": "库存价值",
+        "inventoryValueTitle": "库存价值历史"
+      },
+      "turnover": {
+        "title": "产品周转",
+        "turnoverTitle": "产品周转指标"
+      },
+      "comparison": {
+        "title": "对比分析",
+        "comparisonTitle": "对比分析",
+        "weekOverWeek": "周环比",
+        "monthOverMonth": "月环比"
+      },
+      "fields": {
+        "category": "类别",
+        "productCount": "产品数量",
+        "totalStock": "总库存",
+        "totalValue": "总价值",
+        "lowStockCount": "低库存数量",
+        "lowStock": "低库存",
+        "totalInventoryValue": "库存总价值",
+        "totalProducts": "产品总数",
+        "lowStockItems": "低库存商品",
+        "outOfStock": "缺货",
+        "date": "日期",
+        "time": "时间",
+        "productSku": "产品SKU",
+        "productName": "产品名称",
+        "sku": "SKU",
+        "product": "产品",
+        "unit": "单位",
+        "type": "类型",
+        "adjustmentType": "调整类型",
+        "quantity": "数量",
+        "previousStock": "之前库存",
+        "newStock": "新库存",
+        "stockChange": "库存变化",
+        "notes": "备注",
+        "period": "周期",
+        "stockIn": "入库",
+        "stockOut": "出库",
+        "netChange": "净变化",
+        "currentStock": "当前库存",
+        "totalSold": "销售总量",
+        "transactionCount": "交易次数",
+        "velocity": "周转速度（单位/天）",
+        "daysOnHand": "在库天数",
+        "days": "天",
+        "metric": "指标",
+        "current": "当前",
+        "currentPeriod": "当前周期",
+        "previous": "之前",
+        "previousPeriod": "之前周期",
+        "change": "变化",
+        "changePercent": "变化 %",
+        "netMovement": "净变动",
+        "exportedAt": "导出时间",
+        "exportedOn": "导出于",
+        "page": "页",
+        "showingFirst": "显示前"
+      }
     }
   },
   "customerDetail": {

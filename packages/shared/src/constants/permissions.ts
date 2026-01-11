@@ -105,6 +105,11 @@ export const PERMISSION_DEFINITIONS: Record<
     action: 'adjust',
     description: 'Make inventory adjustments',
   },
+  'inventory:export': {
+    module: 'inventory',
+    action: 'export',
+    description: 'Export inventory reports and analytics',
+  },
 
   // Pricing
   'pricing:view': {
@@ -322,6 +327,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'products:adjust_stock',
     'inventory:view',
     'inventory:adjust',
+    'inventory:export',
     'pricing:view',
     'pricing:edit',
     'packing:view',

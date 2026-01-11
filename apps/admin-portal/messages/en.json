@@ -2211,6 +2211,105 @@
         "lastPeriod": "Last Period",
         "change": "Change"
       }
+    },
+    "export": {
+      "export": "Export",
+      "title": "Export Inventory Report",
+      "description": "Choose format and data to export",
+      "exportingTab": "Exporting",
+      "selectFormat": "Select Export Format",
+      "dataScope": "Data to Export",
+      "generating": "Generating...",
+      "success": "Export Successful",
+      "successDescription": "Report downloaded successfully",
+      "error": "Export Failed",
+      "errorDescription": "Failed to generate report. Please try again.",
+      "formats": {
+        "excel": "Excel (.xlsx)",
+        "excelDescription": "Best for data analysis and manipulation. Opens in Excel, Google Sheets.",
+        "pdf": "PDF Document",
+        "pdfDescription": "Print-ready format. Good for sharing and archiving."
+      },
+      "scope": {
+        "current": "Current View",
+        "currentDescription": "Export with current filters, search, and time period selections.",
+        "all": "All Data",
+        "allDescription": "Export complete dataset without any filters applied."
+      },
+      "overview": {
+        "title": "Inventory Overview",
+        "summary": "Summary",
+        "summaryTitle": "Inventory Summary",
+        "categories": "Categories",
+        "categoryBreakdown": "Category Breakdown",
+        "transactions": "Transactions",
+        "recentTransactions": "Recent Transactions"
+      },
+      "trends": {
+        "title": "Inventory Trends",
+        "stockMovement": "Stock Movement",
+        "stockMovementTitle": "Stock Movement Trends",
+        "inventoryValue": "Inventory Value",
+        "inventoryValueTitle": "Inventory Value History"
+      },
+      "turnover": {
+        "title": "Product Turnover",
+        "turnoverTitle": "Product Turnover Metrics"
+      },
+      "comparison": {
+        "title": "Comparison Analytics",
+        "comparisonTitle": "Comparison Analytics",
+        "weekOverWeek": "Week over Week",
+        "monthOverMonth": "Month over Month"
+      },
+      "fields": {
+        "category": "Category",
+        "productCount": "Product Count",
+        "totalStock": "Total Stock",
+        "totalValue": "Total Value",
+        "lowStockCount": "Low Stock Count",
+        "lowStock": "Low Stock",
+        "totalInventoryValue": "Total Inventory Value",
+        "totalProducts": "Total Products",
+        "lowStockItems": "Low Stock Items",
+        "outOfStock": "Out of Stock",
+        "date": "Date",
+        "time": "Time",
+        "productSku": "Product SKU",
+        "productName": "Product Name",
+        "sku": "SKU",
+        "product": "Product",
+        "unit": "Unit",
+        "type": "Type",
+        "adjustmentType": "Adjustment Type",
+        "quantity": "Quantity",
+        "previousStock": "Previous Stock",
+        "newStock": "New Stock",
+        "stockChange": "Stock Change",
+        "notes": "Notes",
+        "period": "Period",
+        "stockIn": "Stock In",
+        "stockOut": "Stock Out",
+        "netChange": "Net Change",
+        "currentStock": "Current Stock",
+        "totalSold": "Total Sold",
+        "transactionCount": "Transaction Count",
+        "velocity": "Velocity (units/day)",
+        "daysOnHand": "Days on Hand",
+        "days": "days",
+        "metric": "Metric",
+        "current": "Current",
+        "currentPeriod": "Current Period",
+        "previous": "Previous",
+        "previousPeriod": "Previous Period",
+        "change": "Change",
+        "changePercent": "Change %",
+        "netMovement": "Net Movement",
+        "exportedAt": "Exported At",
+        "exportedOn": "Exported on",
+        "page": "Page",
+        "showingFirst": "Showing first"
+      }
     }
   },
   "customerDetail": {
