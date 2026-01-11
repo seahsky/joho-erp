@@ -442,6 +442,11 @@ export const productRouter = router({
         // NEW: Required for stock_received
         costPerUnit: z.number().int().positive().optional(), // In cents
         expiryDate: z.date().optional(),
+        // NEW: Enhanced traceability and compliance fields
+        supplierInvoiceNumber: z.string().max(100).optional(),
+        stockInDate: z.date().optional(),
+        mtvNumber: z.string().max(50).optional(),
+        vehicleTemperature: z.number().optional(),
       })
         .refine(
           (data) => {
@@ -469,9 +474,48 @@ export const productRouter = router({
             path: ['expiryDate'],
           }
         )
+        .refine(
+          (data) => {
+            // If stock_received, stockInDate is REQUIRED
+            if (data.adjustmentType === 'stock_received') {
+              return data.stockInDate !== undefined;
+            }
+            return true;
+          },
+          {
+            message: 'stockInDate is required when adjustmentType is stock_received',
+            path: ['stockInDate'],
+          }
+        )
+        .refine(
+          (data) => {
+            // stockInDate cannot be in the future
+            if (data.stockInDate) {
+              return data.stockInDate <= new Date();
+            }
+            return true;
+          },
+          {
+            message: 'stockInDate cannot be in the future',
+            path: ['stockInDate'],
+          }
+        )
+        .refine(
+          (data) => {
+            // Vehicle temperature must be within valid range
+            if (data.vehicleTemperature !== undefined) {
+              return data.vehicleTemperature >= -30 && data.vehicleTemperature <= 25;
+            }
+            return true;
+          },
+          {
+            message: 'Vehicle temperature must be between -30°C and 25°C',
+            path: ['vehicleTemperature'],
+          }
+        )
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate } = input;
+      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature } = input;
 
       // Get current product
       const product = await prisma.product.findUnique({
@@ -529,6 +573,11 @@ export const productRouter = router({
               expiryDate: expiryDate || null,
               receiveTransactionId: transaction.id,
               notes,
+              // NEW: Traceability and compliance fields
+              supplierInvoiceNumber: supplierInvoiceNumber || null,
+              stockInDate: stockInDate || null,
+              mtvNumber: mtvNumber || null,
+              vehicleTemperature: vehicleTemperature || null,
             },
           });
         }

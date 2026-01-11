@@ -802,7 +802,22 @@
       "notes": "備註",
       "notesPlaceholder": "請輸入調整原因（必填）",
       "currentStock": "目前庫存",
-      "newStock": "調整後庫存"
+      "newStock": "調整後庫存",
+      "stockReceivedDetails": "收貨詳情",
+      "costPerUnit": "單位成本",
+      "costPerUnitHint": "輸入向供應商支付的單位成本（不含稅）",
+      "stockInDate": "入庫日期",
+      "stockInDateHint": "該庫存何時實際收到？",
+      "supplierInvoiceNumber": "供應商發票號",
+      "supplierInvoiceNumberPlaceholder": "例如：INV-2024-001",
+      "supplierInvoiceNumberHint": "可選：用於供應商對賬",
+      "mtvNumber": "MTV編號（PrimeSafe）",
+      "mtvNumberPlaceholder": "例如：MTV-12345",
+      "mtvNumberHint": "可選：肉類運輸車輛許可證號，用於合規",
+      "vehicleTemperature": "車輛溫度",
+      "vehicleTemperatureHint": "可選：交付時的溫度讀數（用於食品安全）",
+      "expiryDate": "到期日期",
+      "expiryDateHint": "可選：用於易腐物品"
     },
     "types": {
       "stock_received": "收到庫存",
@@ -824,7 +839,11 @@
     "validation": {
       "notesRequired": "庫存調整需要填寫備註",
       "quantityRequired": "數量為必填項",
-      "cannotGoNegative": "庫存不能低於零"
+      "cannotGoNegative": "庫存不能低於零",
+      "costRequired": "收貨時需要單位成本",
+      "stockInDateRequired": "收貨時需要入庫日期",
+      "stockInDateFuture": "入庫日期不能是未來日期",
+      "vehicleTemperatureRange": "車輛溫度必須在-30°C到25°C之間"
     },
     "messages": {
       "success": "庫存調整成功",

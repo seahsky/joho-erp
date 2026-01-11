@@ -406,6 +406,12 @@ model InventoryBatch {
   receiveTransactionId String?            @db.ObjectId  // Link to InventoryTransaction that created this batch
   notes               String?             // Admin notes (e.g., "Supplier: ABC Meats, Invoice: #12345")
 
+  // NEW: Enhanced traceability and compliance fields
+  supplierInvoiceNumber String?           // Supplier invoice reference for reconciliation
+  stockInDate           DateTime?         // User-entered actual receipt date (vs auto receivedAt)
+  mtvNumber             String?           // PrimeSafe Meat Transfer Vehicle license number
+  vehicleTemperature    Float?            // Celsius - delivery temperature for food safety
+
   // Soft delete for audit trail
   isConsumed          Boolean             @default(false)  // True when quantityRemaining = 0
   consumedAt          DateTime?           // When fully consumed

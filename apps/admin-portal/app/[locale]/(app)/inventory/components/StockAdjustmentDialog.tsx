@@ -25,6 +25,7 @@ import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
+import { parseToCents } from '@joho-erp/shared';
 
 type AdjustmentType =
   | 'stock_received'
@@ -90,6 +91,14 @@ export function StockAdjustmentDialog({
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
 
+  // NEW: Stock received specific fields
+  const [costPerUnit, setCostPerUnit] = useState('');
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
+  const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState('');
+  const [stockInDate, setStockInDate] = useState<Date | undefined>(new Date());
+  const [mtvNumber, setMtvNumber] = useState('');
+  const [vehicleTemperature, setVehicleTemperature] = useState('');
+
   // Fetch stock history
   const { data: historyData, isLoading: historyLoading } = api.product.getStockHistory.useQuery(
     { productId: selectedProduct?.id || '', limit: 10 },
@@ -154,12 +163,66 @@ export function StockAdjustmentDialog({
       return;
     }
 
-    await adjustStockMutation.mutateAsync({
+    // NEW: Validate stock_received specific fields
+    if (adjustmentType === 'stock_received') {
+      const costInCents = parseToCents(costPerUnit);
+
+      if (!costInCents) {
+        toast({
+          title: t('stockAdjustment.validation.costRequired'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!stockInDate) {
+        toast({
+          title: t('stockAdjustment.validation.stockInDateRequired'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (stockInDate > new Date()) {
+        toast({
+          title: t('stockAdjustment.validation.stockInDateFuture'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const tempNum = parseFloat(vehicleTemperature);
+      if (vehicleTemperature && (isNaN(tempNum) || tempNum < -30 || tempNum > 25)) {
+        toast({
+          title: t('stockAdjustment.validation.vehicleTemperatureRange'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Build mutation input
+    const baseInput = {
       productId: selectedProduct.id,
       adjustmentType,
       quantity: quantityNum,
       notes: notes.trim(),
-    });
+    };
+
+    // Add stock_received specific fields
+    if (adjustmentType === 'stock_received') {
+      await adjustStockMutation.mutateAsync({
+        ...baseInput,
+        costPerUnit: parseToCents(costPerUnit)!,
+        stockInDate: stockInDate!,
+        ...(supplierInvoiceNumber.trim() && { supplierInvoiceNumber: supplierInvoiceNumber.trim() }),
+        ...(mtvNumber.trim() && { mtvNumber: mtvNumber.trim() }),
+        ...(vehicleTemperature && { vehicleTemperature: parseFloat(vehicleTemperature) }),
+        ...(expiryDate && { expiryDate }),
+      });
+    } else {
+      await adjustStockMutation.mutateAsync(baseInput);
+    }
   };
 
   const handleReset = () => {
@@ -167,6 +230,15 @@ export function StockAdjustmentDialog({
     setQuantity('');
     setNotes('');
     setProductSearch('');
+
+    // NEW: Reset stock_received fields
+    setCostPerUnit('');
+    setExpiryDate(undefined);
+    setSupplierInvoiceNumber('');
+    setStockInDate(new Date());
+    setMtvNumber('');
+    setVehicleTemperature('');
+
     // Only reset selectedProduct if it wasn't provided as a prop
     if (!product) {
       setSelectedProduct(null);
@@ -332,6 +404,142 @@ export function StockAdjustmentDialog({
               {adjustmentType === 'expired_stock' && t('typeDescriptions.expired_stock')}
             </p>
           </div>
+
+          {/* Stock Received Specific Fields - Only show for stock_received type */}
+          {adjustmentType === 'stock_received' && (
+            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900">
+                  {t('stockAdjustment.fields.stockReceivedDetails')}
+                </span>
+              </div>
+
+              {/* Cost Per Unit - REQUIRED */}
+              <div>
+                <Label htmlFor="costPerUnit">
+                  {t('stockAdjustment.fields.costPerUnit')} <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-muted-foreground">$</span>
+                  <Input
+                    id="costPerUnit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={costPerUnit}
+                    onChange={(e) => setCostPerUnit(e.target.value)}
+                    placeholder="0.00"
+                    className="flex-1"
+                    required
+                  />
+                  <span className="text-muted-foreground text-sm">per {selectedProduct.unit}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.costPerUnitHint')}
+                </p>
+              </div>
+
+              {/* Stock In Date - REQUIRED */}
+              <div>
+                <Label htmlFor="stockInDate">
+                  {t('stockAdjustment.fields.stockInDate')} <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="stockInDate"
+                  type="date"
+                  value={stockInDate ? format(stockInDate, 'yyyy-MM-dd') : ''}
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setStockInDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  className="mt-1"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.stockInDateHint')}
+                </p>
+              </div>
+
+              {/* Supplier Invoice Number - OPTIONAL */}
+              <div>
+                <Label htmlFor="supplierInvoiceNumber">
+                  {t('stockAdjustment.fields.supplierInvoiceNumber')}
+                </Label>
+                <Input
+                  id="supplierInvoiceNumber"
+                  type="text"
+                  maxLength={100}
+                  value={supplierInvoiceNumber}
+                  onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+                  placeholder={t('stockAdjustment.fields.supplierInvoiceNumberPlaceholder')}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.supplierInvoiceNumberHint')}
+                </p>
+              </div>
+
+              {/* MTV Number - OPTIONAL (PrimeSafe Meat Transfer Vehicle) */}
+              <div>
+                <Label htmlFor="mtvNumber">
+                  {t('stockAdjustment.fields.mtvNumber')}
+                </Label>
+                <Input
+                  id="mtvNumber"
+                  type="text"
+                  maxLength={50}
+                  value={mtvNumber}
+                  onChange={(e) => setMtvNumber(e.target.value)}
+                  placeholder={t('stockAdjustment.fields.mtvNumberPlaceholder')}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.mtvNumberHint')}
+                </p>
+              </div>
+
+              {/* Vehicle Temperature - OPTIONAL */}
+              <div>
+                <Label htmlFor="vehicleTemperature">
+                  {t('stockAdjustment.fields.vehicleTemperature')}
+                </Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    id="vehicleTemperature"
+                    type="number"
+                    step="0.1"
+                    min="-30"
+                    max="25"
+                    value={vehicleTemperature}
+                    onChange={(e) => setVehicleTemperature(e.target.value)}
+                    placeholder="0.0"
+                    className="flex-1"
+                  />
+                  <span className="text-muted-foreground">°C</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.vehicleTemperatureHint')}
+                </p>
+              </div>
+
+              {/* Expiry Date - OPTIONAL */}
+              <div>
+                <Label htmlFor="expiryDate">
+                  {t('stockAdjustment.fields.expiryDate')}
+                </Label>
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  value={expiryDate ? format(expiryDate, 'yyyy-MM-dd') : ''}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setExpiryDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('stockAdjustment.fields.expiryDateHint')}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Quantity */}
           <div>

@@ -802,7 +802,22 @@
       "notes": "备注",
       "notesPlaceholder": "请输入调整原因（必填）",
       "currentStock": "当前库存",
-      "newStock": "调整后库存"
+      "newStock": "调整后库存",
+      "stockReceivedDetails": "收货详情",
+      "costPerUnit": "单位成本",
+      "costPerUnitHint": "输入向供应商支付的单位成本（不含税）",
+      "stockInDate": "入库日期",
+      "stockInDateHint": "该库存何时实际收到？",
+      "supplierInvoiceNumber": "供应商发票号",
+      "supplierInvoiceNumberPlaceholder": "例如：INV-2024-001",
+      "supplierInvoiceNumberHint": "可选：用于供应商对账",
+      "mtvNumber": "MTV编号（PrimeSafe）",
+      "mtvNumberPlaceholder": "例如：MTV-12345",
+      "mtvNumberHint": "可选：肉类运输车辆许可证号，用于合规",
+      "vehicleTemperature": "车辆温度",
+      "vehicleTemperatureHint": "可选：交付时的温度读数（用于食品安全）",
+      "expiryDate": "到期日期",
+      "expiryDateHint": "可选：用于易腐物品"
     },
     "types": {
       "stock_received": "收到库存",
@@ -824,7 +839,11 @@
     "validation": {
       "notesRequired": "库存调整需要填写备注",
       "quantityRequired": "数量为必填项",
-      "cannotGoNegative": "库存不能低于零"
+      "cannotGoNegative": "库存不能低于零",
+      "costRequired": "收货时需要单位成本",
+      "stockInDateRequired": "收货时需要入库日期",
+      "stockInDateFuture": "入库日期不能是未来日期",
+      "vehicleTemperatureRange": "车辆温度必须在-30°C到25°C之间"
     },
     "messages": {
       "success": "库存调整成功",

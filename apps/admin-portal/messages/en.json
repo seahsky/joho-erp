@@ -802,7 +802,22 @@
       "notes": "Notes",
       "notesPlaceholder": "Enter reason for adjustment (required)",
       "currentStock": "Current Stock",
-      "newStock": "New Stock After Adjustment"
+      "newStock": "New Stock After Adjustment",
+      "stockReceivedDetails": "Stock Receiving Details",
+      "costPerUnit": "Cost Per Unit",
+      "costPerUnitHint": "Enter the cost paid to supplier per unit (excluding GST)",
+      "stockInDate": "Stock In Date",
+      "stockInDateHint": "When was this stock physically received?",
+      "supplierInvoiceNumber": "Supplier Invoice Number",
+      "supplierInvoiceNumberPlaceholder": "e.g., INV-2024-001",
+      "supplierInvoiceNumberHint": "Optional: Reference for supplier reconciliation",
+      "mtvNumber": "MTV Number (PrimeSafe)",
+      "mtvNumberPlaceholder": "e.g., MTV-12345",
+      "mtvNumberHint": "Optional: Meat Transfer Vehicle license number for compliance",
+      "vehicleTemperature": "Vehicle Temperature",
+      "vehicleTemperatureHint": "Optional: Temperature reading at delivery (for food safety)",
+      "expiryDate": "Expiry Date",
+      "expiryDateHint": "Optional: For perishable items"
     },
     "types": {
       "stock_received": "Stock Received",
@@ -824,7 +839,11 @@
     "validation": {
       "notesRequired": "Notes are required for stock adjustments",
       "quantityRequired": "Quantity is required",
-      "cannotGoNegative": "Stock cannot go below zero"
+      "cannotGoNegative": "Stock cannot go below zero",
+      "costRequired": "Cost per unit is required when receiving stock",
+      "stockInDateRequired": "Stock in date is required when receiving stock",
+      "stockInDateFuture": "Stock in date cannot be in the future",
+      "vehicleTemperatureRange": "Vehicle temperature must be between -30°C and 25°C"
     },
     "messages": {
       "success": "Stock adjusted successfully",
