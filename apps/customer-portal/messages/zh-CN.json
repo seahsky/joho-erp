@@ -188,6 +188,51 @@
     "creditPending": "您的信用申请正在审核中",
     "creditRejected": "您的信用申请未获批准，请联系我们",
     "completeOnboarding": "完成注册",
+    "customPricing": "专属价格",
+    "gstIncluded": "含消费税",
+    "noImage": "暂无图片",
+    "cartSummary": {
+      "title": "购物车",
+      "items": "{count} 件商品",
+      "total": "总计",
+      "creditAvailable": "可用额度",
+      "viewCart": "查看购物车",
+      "checkout": "结账",
+      "empty": "购物车是空的",
+      "orderBy": "在 {time} 前订购以便 {date} 配送"
+    },
+    "quantity": {
+      "add": "加入购物车",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "当前数量：{count}",
+      "edit": "点击输入确切数量",
+      "save": "保存",
+      "cancel": "取消",
+      "precision": "输入确切数量 (1-999)",
+      "max": "最多 {max} 可用",
+      "min": "最少 1 件",
+      "invalid": "无效数量"
+    },
+    "details": {
+      "expand": "显示详情",
+      "collapse": "隐藏详情",
+      "description": "产品描述",
+      "pricingBreakdown": "价格明细",
+      "basePrice": "基础价格",
+      "yourPrice": "您的专属价格",
+      "discount": "您的折扣",
+      "gstIncluded": "含消费税",
+      "noDescription": "暂无描述",
+      "beforeGst": "消费税前",
+      "gstRate": "消费税"
+    },
+    "categoryBar": {
+      "title": "按类别筛选",
+      "allProducts": "全部产品",
+      "showing": "显示 {count} 个产品",
+      "clearFilter": "清除筛选"
+    },
     "sidebar": {
       "categories": "产品分类",
       "allProducts": "全部产品",

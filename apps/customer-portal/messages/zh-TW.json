@@ -188,6 +188,51 @@
     "creditPending": "您的信用申請正在審核中",
     "creditRejected": "您的信用申請未獲批准，請聯繫我們",
     "completeOnboarding": "完成註冊",
+    "customPricing": "專屬價格",
+    "gstIncluded": "含消費稅",
+    "noImage": "暫無圖片",
+    "cartSummary": {
+      "title": "購物車",
+      "items": "{count} 件商品",
+      "total": "總計",
+      "creditAvailable": "可用額度",
+      "viewCart": "查看購物車",
+      "checkout": "結帳",
+      "empty": "購物車是空的",
+      "orderBy": "在 {time} 前訂購以便 {date} 配送"
+    },
+    "quantity": {
+      "add": "加入購物車",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "當前數量：{count}",
+      "edit": "點擊輸入確切數量",
+      "save": "儲存",
+      "cancel": "取消",
+      "precision": "輸入確切數量 (1-999)",
+      "max": "最多 {max} 可用",
+      "min": "最少 1 件",
+      "invalid": "無效數量"
+    },
+    "details": {
+      "expand": "顯示詳情",
+      "collapse": "隱藏詳情",
+      "description": "產品描述",
+      "pricingBreakdown": "價格明細",
+      "basePrice": "基礎價格",
+      "yourPrice": "您的專屬價格",
+      "discount": "您的折扣",
+      "gstIncluded": "含消費稅",
+      "noDescription": "暫無描述",
+      "beforeGst": "消費稅前",
+      "gstRate": "消費稅"
+    },
+    "categoryBar": {
+      "title": "按類別篩選",
+      "allProducts": "全部產品",
+      "showing": "顯示 {count} 個產品",
+      "clearFilter": "清除篩選"
+    },
     "sidebar": {
       "categories": "產品分類",
       "allProducts": "全部產品",
