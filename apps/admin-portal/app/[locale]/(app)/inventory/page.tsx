@@ -170,7 +170,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabbed Content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as any)} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison')} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">{t('inventory.tabs.overview')}</TabsTrigger>
           <TabsTrigger value="trends">{t('inventory.tabs.trends')}</TabsTrigger>

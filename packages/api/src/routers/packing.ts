@@ -839,11 +839,11 @@ export const packingRouter = router({
         });
       }
 
-      // Only allow resetting orders that are in 'packing' or 'confirmed' status
-      if (!['packing', 'confirmed'].includes(order.status)) {
+      // Only allow resetting orders that are in 'packing', 'confirmed', or 'ready_for_delivery' status
+      if (!['packing', 'confirmed', 'ready_for_delivery'].includes(order.status)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Only orders in packing or confirmed status can be reset',
+          message: 'Only orders in packing, confirmed, or ready_for_delivery status can be reset',
         });
       }
 
@@ -868,7 +868,7 @@ export const packingRouter = router({
               status: 'confirmed',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
-              notes: `Packing reset. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset'}`,
+              notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset'}`,
             },
           },
         },
