@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { MobileDrawer } from '@joho-erp/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@joho-erp/ui';
-import { Package, Minus, Plus, X, AlertCircle, Clock, XCircle } from 'lucide-react';
+import { Package, Minus, Plus, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
@@ -128,20 +128,6 @@ export function ProductDetailSidebar({
       title={t('products.productDetails')}
       closeAriaLabel={t('products.closeDetails')}
     >
-      {/* Custom Header with Close Button */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between -mt-4 -mx-4">
-        <H3 className="text-lg font-bold">{t('products.productDetails')}</H3>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          aria-label={t('products.closeDetails')}
-          className="rounded-full"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
       <div className="space-y-6 pb-6">
         {/* Product Image */}
         <div className="relative bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-2xl overflow-hidden aspect-square flex items-center justify-center group">
