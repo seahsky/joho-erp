@@ -79,7 +79,17 @@ export function SetPriceDialog({
       ? new Date(pricing.effectiveTo).toISOString().split('T')[0]
       : ''
   );
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState(''); // For API/mutation errors
+
+  // Clear individual field error
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
 
   // Reset form when dialog opens/closes or pricing changes
   useEffect(() => {
@@ -98,6 +108,7 @@ export function SetPriceDialog({
           ? new Date(pricing.effectiveTo).toISOString().split('T')[0]
           : ''
       );
+      setFieldErrors({});
       setError('');
     }
   }, [open, pricing]);
@@ -111,26 +122,66 @@ export function SetPriceDialog({
     },
   });
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!customerId) {
+      errors.customerId = t('pricing.validation.customerRequired');
+      isValid = false;
+    }
+
+    if (!productId) {
+      errors.productId = t('pricing.validation.productRequired');
+      isValid = false;
+    }
+
+    if (!customPrice?.trim()) {
+      errors.customPrice = t('pricing.validation.priceRequired');
+      isValid = false;
+    } else {
+      const priceInCents = parseToCents(customPrice);
+      if (priceInCents === null || priceInCents <= 0) {
+        errors.customPrice = t('pricing.validation.pricePositive');
+        isValid = false;
+      }
+    }
+
+    if (!effectiveFrom) {
+      errors.effectiveFrom = t('pricing.validation.effectiveFromRequired');
+      isValid = false;
+    }
+
+    // Date range validation
+    if (effectiveTo && effectiveFrom) {
+      const fromDate = new Date(effectiveFrom);
+      const toDate = new Date(effectiveTo);
+      if (toDate < fromDate) {
+        errors.effectiveTo = t('pricing.validation.effectiveToInvalid');
+        isValid = false;
+      }
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
-    if (!customerId || !productId || !customPrice) {
-      setError(t('pricingDialog.validation.requiredFields'));
+    if (!validateForm()) {
       return;
     }
 
     // Convert dollars to cents for API
     const priceInCents = parseToCents(customPrice);
-    if (priceInCents === null || priceInCents <= 0) {
-      setError(t('pricingDialog.validation.positivePrice'));
-      return;
-    }
 
     await setPriceMutation.mutateAsync({
       customerId,
       productId,
-      customPrice: priceInCents, // Send cents to API
+      customPrice: priceInCents!, // Send cents to API (validated above)
       effectiveFrom: new Date(effectiveFrom),
       effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
     });
@@ -168,7 +219,10 @@ export function SetPriceDialog({
               id="customer"
               className="w-full px-3 py-2 border rounded-md mt-1"
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+              onChange={(e) => {
+                setCustomerId(e.target.value);
+                clearFieldError('customerId');
+              }}
               disabled={!!pricing}
               required
             >
@@ -179,6 +233,9 @@ export function SetPriceDialog({
                 </option>
               ))}
             </select>
+            {fieldErrors.customerId && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.customerId}</p>
+            )}
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
                 {t('pricingDialog.messages.cannotChangeCustomer')}
@@ -193,7 +250,10 @@ export function SetPriceDialog({
               id="product"
               className="w-full px-3 py-2 border rounded-md mt-1"
               value={productId}
-              onChange={(e) => setProductId(e.target.value)}
+              onChange={(e) => {
+                setProductId(e.target.value);
+                clearFieldError('productId');
+              }}
               disabled={!!pricing}
               required
             >
@@ -204,6 +264,9 @@ export function SetPriceDialog({
                 </option>
               ))}
             </select>
+            {fieldErrors.productId && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.productId}</p>
+            )}
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
                 {t('pricingDialog.messages.cannotChangeProduct')}
@@ -235,11 +298,17 @@ export function SetPriceDialog({
                 min="0.01"
                 placeholder="0.00"
                 value={customPrice}
-                onChange={(e) => setCustomPrice(e.target.value)}
+                onChange={(e) => {
+                  setCustomPrice(e.target.value);
+                  clearFieldError('customPrice');
+                }}
                 className="pl-10"
                 required
               />
             </div>
+            {fieldErrors.customPrice && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.customPrice}</p>
+            )}
           </div>
 
           {/* Savings Display */}
@@ -263,11 +332,17 @@ export function SetPriceDialog({
                 id="effectiveFrom"
                 type="date"
                 value={effectiveFrom}
-                onChange={(e) => setEffectiveFrom(e.target.value)}
+                onChange={(e) => {
+                  setEffectiveFrom(e.target.value);
+                  clearFieldError('effectiveFrom');
+                }}
                 className="pl-10"
                 required
               />
             </div>
+            {fieldErrors.effectiveFrom && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.effectiveFrom}</p>
+            )}
           </div>
 
           {/* Effective To Date (Optional) */}
@@ -279,10 +354,16 @@ export function SetPriceDialog({
                 id="effectiveTo"
                 type="date"
                 value={effectiveTo}
-                onChange={(e) => setEffectiveTo(e.target.value)}
+                onChange={(e) => {
+                  setEffectiveTo(e.target.value);
+                  clearFieldError('effectiveTo');
+                }}
                 className="pl-10"
               />
             </div>
+            {fieldErrors.effectiveTo && (
+              <p className="text-sm text-destructive mt-1">{fieldErrors.effectiveTo}</p>
+            )}
             <p className="text-sm text-muted-foreground mt-1">
               {t('pricingDialog.messages.noExpiration')}
             </p>

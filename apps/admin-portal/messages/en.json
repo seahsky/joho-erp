@@ -666,7 +666,8 @@
       "deleteError": "Failed to delete category"
     },
     "validation": {
-      "nameRequired": "Category name is required"
+      "nameRequired": "Category name is required",
+      "nameTooLong": "Category name must be 50 characters or less"
     },
     "info": {
       "hasProducts": "This category has {count} product(s) assigned"
@@ -1021,8 +1022,12 @@
       "same": "Same as standard price"
     },
     "validation": {
-      "pricePositive": "Custom price must be greater than 0",
-      "dateOrder": "Effective From date must be before Effective To date"
+      "customerRequired": "Customer is required",
+      "productRequired": "Product is required",
+      "priceRequired": "Custom price is required",
+      "pricePositive": "Custom price must be a positive amount",
+      "effectiveFromRequired": "Effective from date is required",
+      "effectiveToInvalid": "Effective to date must be on or after effective from date"
     },
     "buttons": {
       "addCustomPrice": "Add Custom Price",
@@ -1334,14 +1339,16 @@
       "accountTypeRequired": "Account type is required",
       "businessNameRequired": "Business name is required",
       "abnRequired": "ABN is required",
-      "abnInvalid": "ABN must be 11 digits",
+      "abnInvalid": "Please enter a valid 11-digit ABN",
       "acnRequired": "ACN is required for companies",
-      "acnInvalid": "ACN must be 9 digits",
+      "acnInvalid": "Please enter a valid 9-digit ACN",
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
       "emailRequired": "Email is required",
       "emailInvalid": "Invalid email address",
       "phoneRequired": "Phone is required",
+      "phoneInvalid": "Please enter a valid Australian phone number",
+      "mobileInvalid": "Please enter a valid Australian mobile number",
       "addressRequired": "Address fields are required",
       "streetRequired": "Street address is required",
       "suburbRequired": "Suburb is required",

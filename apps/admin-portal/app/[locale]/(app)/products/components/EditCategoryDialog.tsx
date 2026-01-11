@@ -45,6 +45,16 @@ export function EditCategoryDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Clear individual field error
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
 
   // Update form when category changes
   useEffect(() => {
@@ -52,6 +62,7 @@ export function EditCategoryDialog({
       setName(category.name);
       setDescription(category.description || '');
       setIsActive(category.isActive);
+      setFieldErrors({});
     }
   }, [category]);
 
@@ -72,14 +83,31 @@ export function EditCategoryDialog({
     },
   });
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!name?.trim()) {
+      errors.name = t('categories.validation.nameRequired');
+      isValid = false;
+    } else if (name.length > 50) {
+      errors.name = t('categories.validation.nameTooLong');
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!category) return;
 
-    if (!name.trim()) {
+    if (!validateForm()) {
       toast({
-        title: t('categories.validation.nameRequired'),
+        title: t('validation.invalidInput'),
+        description: t('validation.fixErrors'),
         variant: 'destructive',
       });
       return;
@@ -111,10 +139,16 @@ export function EditCategoryDialog({
             <Input
               id="edit-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearFieldError('name');
+              }}
               placeholder={t('categories.fields.namePlaceholder')}
               maxLength={50}
             />
+            {fieldErrors.name && (
+              <p className="text-sm text-destructive">{fieldErrors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -33,6 +33,16 @@ export function AddCategoryDialog({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Clear individual field error
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
 
   const createMutation = api.category.create.useMutation({
     onSuccess: () => {
@@ -55,14 +65,32 @@ export function AddCategoryDialog({
   const resetForm = () => {
     setName('');
     setDescription('');
+    setFieldErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!name?.trim()) {
+      errors.name = t('categories.validation.nameRequired');
+      isValid = false;
+    } else if (name.length > 50) {
+      errors.name = t('categories.validation.nameTooLong');
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
+    if (!validateForm()) {
       toast({
-        title: t('categories.validation.nameRequired'),
+        title: t('validation.invalidInput'),
+        description: t('validation.fixErrors'),
         variant: 'destructive',
       });
       return;
@@ -97,11 +125,17 @@ export function AddCategoryDialog({
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearFieldError('name');
+              }}
               placeholder={t('categories.fields.namePlaceholder')}
               maxLength={50}
               autoFocus
             />
+            {fieldErrors.name && (
+              <p className="text-sm text-destructive">{fieldErrors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">

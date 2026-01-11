@@ -17,7 +17,7 @@ import {
 import { ArrowLeft, Loader2, Plus, X, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
-import { parseToCents } from '@joho-erp/shared';
+import { parseToCents, validateABN, validateACN, validateAustralianPhone } from '@joho-erp/shared';
 
 // Type definitions
 type DirectorInfo = {
@@ -111,6 +111,27 @@ export default function NewCustomerPage() {
   const [sameAsDelivery, setSameAsDelivery] = useState(true);
   const [postalSameAsBilling, setPostalSameAsBilling] = useState(true);
   const [includeFinancial, setIncludeFinancial] = useState(false);
+
+  // Validation error states
+  const [businessErrors, setBusinessErrors] = useState<Record<string, string>>({});
+  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+
+  // Clear individual field error
+  const clearBusinessError = (field: string) => {
+    if (businessErrors[field]) {
+      const newErrors = { ...businessErrors };
+      delete newErrors[field];
+      setBusinessErrors(newErrors);
+    }
+  };
+
+  const clearContactError = (field: string) => {
+    if (contactErrors[field]) {
+      const newErrors = { ...contactErrors };
+      delete newErrors[field];
+      setContactErrors(newErrors);
+    }
+  };
 
   // Fetch areas dynamically
   const { data: areas } = api.area.list.useQuery();
@@ -210,6 +231,77 @@ export default function NewCustomerPage() {
     setFormData({ ...formData, tradeReferences: updated });
   };
 
+  // Validation functions
+  const validateBusinessInfo = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!formData.accountType) {
+      errors.accountType = t('validation.accountTypeRequired');
+      isValid = false;
+    }
+
+    if (!formData.businessName?.trim()) {
+      errors.businessName = t('validation.businessNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.abn?.trim()) {
+      errors.abn = t('validation.abnRequired');
+      isValid = false;
+    } else if (!validateABN(formData.abn)) {
+      errors.abn = t('validation.abnInvalid');
+      isValid = false;
+    }
+
+    if (formData.acn && !validateACN(formData.acn)) {
+      errors.acn = t('validation.acnInvalid');
+      isValid = false;
+    }
+
+    setBusinessErrors(errors);
+    return isValid;
+  };
+
+  const validateContactPerson = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!formData.contactPerson.firstName?.trim()) {
+      errors.firstName = t('validation.firstNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.contactPerson.lastName?.trim()) {
+      errors.lastName = t('validation.lastNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.contactPerson.email?.trim()) {
+      errors.email = t('validation.emailRequired');
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactPerson.email)) {
+      errors.email = t('validation.emailInvalid');
+      isValid = false;
+    }
+
+    if (!formData.contactPerson.phone?.trim()) {
+      errors.phone = t('validation.phoneRequired');
+      isValid = false;
+    } else if (!validateAustralianPhone(formData.contactPerson.phone)) {
+      errors.phone = t('validation.phoneInvalid');
+      isValid = false;
+    }
+
+    if (formData.contactPerson.mobile && !validateAustralianPhone(formData.contactPerson.mobile)) {
+      errors.mobile = t('validation.mobileInvalid');
+      isValid = false;
+    }
+
+    setContactErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -298,12 +390,13 @@ export default function NewCustomerPage() {
                     id="accountType"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={formData.accountType}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         accountType: e.target.value as 'sole_trader' | 'partnership' | 'company' | 'other',
-                      })
-                    }
+                      });
+                      clearBusinessError('accountType');
+                    }}
                     required
                   >
                     <option value="sole_trader">{t('businessInfo.accountTypes.soleTrader')}</option>
@@ -311,6 +404,9 @@ export default function NewCustomerPage() {
                     <option value="company">{t('businessInfo.accountTypes.company')}</option>
                     <option value="other">{t('businessInfo.accountTypes.other')}</option>
                   </select>
+                  {businessErrors.accountType && (
+                    <p className="text-sm text-destructive mt-1">{businessErrors.accountType}</p>
+                  )}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -321,8 +417,14 @@ export default function NewCustomerPage() {
                       placeholder={t('businessInfo.businessNamePlaceholder')}
                       required
                       value={formData.businessName}
-                      onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, businessName: e.target.value });
+                        clearBusinessError('businessName');
+                      }}
                     />
+                    {businessErrors.businessName && (
+                      <p className="text-sm text-destructive">{businessErrors.businessName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="tradingName">{t('businessInfo.tradingName')}</Label>
@@ -344,8 +446,14 @@ export default function NewCustomerPage() {
                       required
                       maxLength={11}
                       value={formData.abn}
-                      onChange={(e) => setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') });
+                        clearBusinessError('abn');
+                      }}
                     />
+                    {businessErrors.abn && (
+                      <p className="text-sm text-destructive">{businessErrors.abn}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="acn">{t('businessInfo.acn')}</Label>
@@ -354,8 +462,14 @@ export default function NewCustomerPage() {
                       placeholder={t('businessInfo.acnPlaceholder')}
                       maxLength={9}
                       value={formData.acn}
-                      onChange={(e) => setFormData({ ...formData, acn: e.target.value.replace(/\D/g, '') })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, acn: e.target.value.replace(/\D/g, '') });
+                        clearBusinessError('acn');
+                      }}
                     />
+                    {businessErrors.acn && (
+                      <p className="text-sm text-destructive">{businessErrors.acn}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -380,13 +494,17 @@ export default function NewCustomerPage() {
                       placeholder={t('contactPerson.firstNamePlaceholder')}
                       required
                       value={formData.contactPerson.firstName}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           contactPerson: { ...formData.contactPerson, firstName: e.target.value },
-                        })
-                      }
+                        });
+                        clearContactError('firstName');
+                      }}
                     />
+                    {contactErrors.firstName && (
+                      <p className="text-sm text-destructive">{contactErrors.firstName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">{t('contactPerson.lastName')} *</Label>
@@ -395,13 +513,17 @@ export default function NewCustomerPage() {
                       placeholder={t('contactPerson.lastNamePlaceholder')}
                       required
                       value={formData.contactPerson.lastName}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           contactPerson: { ...formData.contactPerson, lastName: e.target.value },
-                        })
-                      }
+                        });
+                        clearContactError('lastName');
+                      }}
                     />
+                    {contactErrors.lastName && (
+                      <p className="text-sm text-destructive">{contactErrors.lastName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -414,13 +536,17 @@ export default function NewCustomerPage() {
                       placeholder={t('contactPerson.emailPlaceholder')}
                       required
                       value={formData.contactPerson.email}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           contactPerson: { ...formData.contactPerson, email: e.target.value },
-                        })
-                      }
+                        });
+                        clearContactError('email');
+                      }}
                     />
+                    {contactErrors.email && (
+                      <p className="text-sm text-destructive">{contactErrors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">{t('contactPerson.phone')} *</Label>
@@ -429,13 +555,17 @@ export default function NewCustomerPage() {
                       placeholder={t('contactPerson.phonePlaceholder')}
                       required
                       value={formData.contactPerson.phone}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           contactPerson: { ...formData.contactPerson, phone: e.target.value },
-                        })
-                      }
+                        });
+                        clearContactError('phone');
+                      }}
                     />
+                    {contactErrors.phone && (
+                      <p className="text-sm text-destructive">{contactErrors.phone}</p>
+                    )}
                   </div>
                 </div>
 
@@ -445,13 +575,17 @@ export default function NewCustomerPage() {
                     id="mobile"
                     placeholder={t('contactPerson.mobilePlaceholder')}
                     value={formData.contactPerson.mobile}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         contactPerson: { ...formData.contactPerson, mobile: e.target.value },
-                      })
-                    }
+                      });
+                      clearContactError('mobile');
+                    }}
                   />
+                  {contactErrors.mobile && (
+                    <p className="text-sm text-destructive">{contactErrors.mobile}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
