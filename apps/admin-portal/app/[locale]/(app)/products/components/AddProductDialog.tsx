@@ -56,6 +56,7 @@ export function AddProductDialog({
   const [gstRate, setGstRate] = useState('10'); // Default 10% (Australian GST)
   // currentStock is always 0 for new products - must use StockAdjustmentDialog after creation
   const [lowStockThreshold, setLowStockThreshold] = useState('');
+  const [estimatedLossPercentage, setEstimatedLossPercentage] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
 
   // Image state
@@ -211,6 +212,20 @@ export function AddProductDialog({
       }
     }
 
+    // Validate estimated loss percentage if provided
+    let lossPercentage: number | undefined;
+    if (estimatedLossPercentage) {
+      lossPercentage = parseFloat(estimatedLossPercentage);
+      if (isNaN(lossPercentage) || lossPercentage < 0 || lossPercentage > 100) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.lossPercentageRange'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
       .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
@@ -238,6 +253,7 @@ export function AddProductDialog({
       gstRate: gstRateValue, // Only set if applyGst is true
       currentStock: 0, // Always 0 for new products - use StockAdjustmentDialog to add initial stock
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
+      estimatedLossPercentage: lossPercentage,
       status,
       imageUrl: imageUrl || undefined,
       customerPricing: customerPricing.length > 0 ? customerPricing : undefined,
@@ -256,6 +272,7 @@ export function AddProductDialog({
     setGstRate('10');
     // currentStock is always 0, no need to reset
     setLowStockThreshold('');
+    setEstimatedLossPercentage('');
     setStatus('active');
     setImageUrl(null);
     setPricingMap(new Map());
@@ -462,6 +479,25 @@ export function AddProductDialog({
                   placeholder={t('productForm.fields.lowStockThresholdPlaceholder')}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="estimatedLossPercentage">{t('productForm.fields.estimatedLossPercentage')}</Label>
+              <Input
+                id="estimatedLossPercentage"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={estimatedLossPercentage}
+                onChange={(e) => setEstimatedLossPercentage(e.target.value)}
+                placeholder={t('productForm.fields.lossPercentagePlaceholder')}
+              />
+              {estimatedLossPercentage && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('productForm.fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -214,6 +214,7 @@ model Product {
   imageUrl            String?             // R2 public URL for product image
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+  estimatedLossPercentage Float?          // Optional: 0-100, represents processing loss %
 
   // Relations
   inventoryTransactions InventoryTransaction[]

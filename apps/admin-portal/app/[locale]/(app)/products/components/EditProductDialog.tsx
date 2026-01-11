@@ -45,6 +45,7 @@ type Product = {
   gstRate?: number | null;
   currentStock: number;
   lowStockThreshold?: number | null;
+  estimatedLossPercentage?: number | null;
   status: 'active' | 'discontinued' | 'out_of_stock';
   imageUrl?: string | null;
 };
@@ -77,6 +78,7 @@ export function EditProductDialog({
   const [gstRate, setGstRate] = useState('10');
   const [currentStock, setCurrentStock] = useState('0');
   const [lowStockThreshold, setLowStockThreshold] = useState('');
+  const [estimatedLossPercentage, setEstimatedLossPercentage] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
 
   // Image state
@@ -146,6 +148,7 @@ export function EditProductDialog({
       setGstRate(product.gstRate?.toString() || '10');
       setCurrentStock(product.currentStock.toString());
       setLowStockThreshold(product.lowStockThreshold?.toString() || '');
+      setEstimatedLossPercentage(product.estimatedLossPercentage?.toString() || '');
       setStatus(product.status);
       setImageUrl(product.imageUrl || null);
       setOriginalImageUrl(product.imageUrl || null);
@@ -294,6 +297,22 @@ export function EditProductDialog({
       gstRateValue = null; // Clear GST rate if GST is not applied
     }
 
+    // Validate estimated loss percentage if provided
+    let lossPercentage: number | null | undefined;
+    if (estimatedLossPercentage) {
+      lossPercentage = parseFloat(estimatedLossPercentage);
+      if (isNaN(lossPercentage) || lossPercentage < 0 || lossPercentage > 100) {
+        toast({
+          title: t('productForm.validation.invalidInput'),
+          description: t('productForm.validation.lossPercentageRange'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      lossPercentage = null; // Clear loss percentage if not provided
+    }
+
     // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
       .filter(([_, entry]) => entry.enabled && entry.customPrice > 0)
@@ -321,6 +340,7 @@ export function EditProductDialog({
       gstRate: gstRateValue,
       // currentStock is now read-only, managed via StockAdjustmentDialog
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
+      estimatedLossPercentage: lossPercentage,
       status,
       imageUrl: imageUrl || null,
       customerPricing, // Include customer pricing in update
@@ -538,6 +558,25 @@ export function EditProductDialog({
                   placeholder={t('productForm.fields.lowStockThresholdPlaceholder')}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="estimatedLossPercentage">{t('productForm.fields.estimatedLossPercentage')}</Label>
+              <Input
+                id="estimatedLossPercentage"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={estimatedLossPercentage}
+                onChange={(e) => setEstimatedLossPercentage(e.target.value)}
+                placeholder={t('productForm.fields.lossPercentagePlaceholder')}
+              />
+              {estimatedLossPercentage && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('productForm.fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

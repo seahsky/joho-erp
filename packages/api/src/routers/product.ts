@@ -235,6 +235,7 @@ export const productRouter = router({
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).default('active'),
         imageUrl: z.string().url().optional(), // R2 public URL for product image
+        estimatedLossPercentage: z.number().min(0).max(100).optional(), // Processing loss percentage (0-100)
         // Optional customer-specific pricing to be created with the product
         customerPricing: z
           .array(
@@ -323,6 +324,7 @@ export const productRouter = router({
         lowStockThreshold: z.number().min(0).optional(),
         status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
         imageUrl: z.string().url().nullish(), // R2 public URL (null to remove)
+        estimatedLossPercentage: z.number().min(0).max(100).nullish(), // Processing loss percentage (0-100, null to remove)
         // Optional customer-specific pricing to update with the product
         // If provided, all existing pricing will be replaced with the new array
         customerPricing: z
@@ -625,6 +627,199 @@ export const productRouter = router({
       });
 
       return result;
+    }),
+
+  // Admin: Process stock (convert raw materials to processed products)
+  processStock: requireAnyPermission(['products:adjust_stock', 'inventory:adjust'])
+    .input(
+      z.object({
+        sourceProductId: z.string(),
+        targetProductId: z.string(),
+        quantityToProcess: z.number().positive(),
+        costPerUnit: z.number().int().positive(), // In cents - cost for target product
+        expiryDate: z.date().optional(),
+        notes: z.string().optional(),
+      })
+        .refine(
+          (data) => {
+            // Source and target must be different
+            return data.sourceProductId !== data.targetProductId;
+          },
+          {
+            message: 'Source and target products must be different',
+            path: ['targetProductId'],
+          }
+        )
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { sourceProductId, targetProductId, quantityToProcess, costPerUnit, expiryDate, notes } = input;
+
+      // Get both products
+      const [sourceProduct, targetProduct] = await Promise.all([
+        prisma.product.findUnique({ where: { id: sourceProductId } }),
+        prisma.product.findUnique({ where: { id: targetProductId } }),
+      ]);
+
+      if (!sourceProduct) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Source product not found',
+        });
+      }
+
+      if (!targetProduct) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Target product not found',
+        });
+      }
+
+      // Check sufficient source stock
+      if (sourceProduct.currentStock < quantityToProcess) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, requested: ${quantityToProcess}`,
+        });
+      }
+
+      // Calculate output quantity based on target's estimated loss percentage
+      const lossPercentage = targetProduct.estimatedLossPercentage || 0;
+      const outputQty = parseFloat((quantityToProcess * (1 - lossPercentage / 100)).toFixed(2));
+
+      // Validate output is not zero
+      if (outputQty <= 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Output quantity would be zero or negative. Check loss percentage configuration.',
+        });
+      }
+
+      // Use transaction to process stock atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Create source InventoryTransaction (consumption)
+        const sourceTransaction = await tx.inventoryTransaction.create({
+          data: {
+            productId: sourceProductId,
+            type: 'adjustment',
+            adjustmentType: 'damaged_goods', // Using damaged_goods as proxy for processing
+            quantity: -quantityToProcess,
+            previousStock: sourceProduct.currentStock,
+            newStock: sourceProduct.currentStock - quantityToProcess,
+            referenceType: 'manual',
+            notes: `Processed to ${targetProduct.name} (${targetProduct.sku})${notes ? ' - ' + notes : ''}`,
+            createdBy: ctx.userId || 'system',
+          },
+        });
+
+        // 2. Consume from source batches using FIFO
+        const { consumeStock } = await import('../services/inventory-batch');
+        const consumptionResult = await consumeStock(
+          sourceProductId,
+          quantityToProcess,
+          sourceTransaction.id,
+          undefined,
+          undefined,
+          tx
+        );
+
+        // 3. Update source product stock
+        await tx.product.update({
+          where: { id: sourceProductId },
+          data: { currentStock: { decrement: quantityToProcess } },
+        });
+
+        // 4. Create target InventoryTransaction (receipt)
+        const targetTransaction = await tx.inventoryTransaction.create({
+          data: {
+            productId: targetProductId,
+            type: 'adjustment',
+            adjustmentType: 'stock_received',
+            quantity: outputQty,
+            previousStock: targetProduct.currentStock,
+            newStock: targetProduct.currentStock + outputQty,
+            referenceType: 'manual',
+            costPerUnit: costPerUnit,
+            expiryDate: expiryDate || null,
+            notes: `Processed from ${sourceProduct.name} (${sourceProduct.sku})${notes ? ' - ' + notes : ''}`,
+            createdBy: ctx.userId || 'system',
+          },
+        });
+
+        // 5. Create InventoryBatch for target product
+        await tx.inventoryBatch.create({
+          data: {
+            productId: targetProductId,
+            initialQuantity: outputQty,
+            quantityRemaining: outputQty,
+            costPerUnit: costPerUnit,
+            receivedAt: new Date(),
+            expiryDate: expiryDate || null,
+            receiveTransactionId: targetTransaction.id,
+            notes: `Processed from ${sourceProduct.name} - Source COGS: $${(consumptionResult.totalCost / 100).toFixed(2)}`,
+          },
+        });
+
+        // 6. Update target product stock
+        await tx.product.update({
+          where: { id: targetProductId },
+          data: { currentStock: { increment: outputQty } },
+        });
+
+        return {
+          sourceTransaction,
+          targetTransaction,
+          quantityProcessed: quantityToProcess,
+          quantityProduced: outputQty,
+          lossPercentage,
+          sourceCOGS: consumptionResult.totalCost,
+          expiryWarnings: consumptionResult.expiryWarnings,
+        };
+      });
+
+      // Audit logs for both products
+      await Promise.all([
+        logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, sourceProductId, {
+          sku: sourceProduct.sku,
+          adjustmentType: 'damaged_goods',
+          previousStock: sourceProduct.currentStock,
+          newStock: sourceProduct.currentStock - quantityToProcess,
+          quantity: -quantityToProcess,
+          notes: `Processed to ${targetProduct.name}`,
+        }).catch((error) => {
+          console.error('Audit log failed for source product:', error);
+        }),
+        logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, targetProductId, {
+          sku: targetProduct.sku,
+          adjustmentType: 'stock_received',
+          previousStock: targetProduct.currentStock,
+          newStock: targetProduct.currentStock + outputQty,
+          quantity: outputQty,
+          notes: `Processed from ${sourceProduct.name}`,
+        }).catch((error) => {
+          console.error('Audit log failed for target product:', error);
+        }),
+      ]);
+
+      return {
+        success: true,
+        sourceProduct: {
+          id: sourceProduct.id,
+          name: sourceProduct.name,
+          sku: sourceProduct.sku,
+          newStock: sourceProduct.currentStock - quantityToProcess,
+        },
+        targetProduct: {
+          id: targetProduct.id,
+          name: targetProduct.name,
+          sku: targetProduct.sku,
+          newStock: targetProduct.currentStock + outputQty,
+        },
+        quantityProcessed: result.quantityProcessed,
+        quantityProduced: result.quantityProduced,
+        lossPercentage: result.lossPercentage,
+        sourceCOGS: result.sourceCOGS,
+        expiryWarnings: result.expiryWarnings,
+      };
     }),
 
   // Admin: Get stock transaction history for a product
