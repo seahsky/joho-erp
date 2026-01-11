@@ -31,7 +31,7 @@ import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
 import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
-import { formatCurrency, type ProductCategory } from '@joho-erp/shared';
+import { formatCurrency } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 
@@ -50,7 +50,6 @@ type Product = {
   imageUrl?: string | null;
 };
 
-const CATEGORIES: ProductCategory[] = ['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed'];
 const STATUSES = ['active', 'discontinued', 'out_of_stock'] as const;
 
 export default function ProductsPage() {
@@ -59,7 +58,7 @@ export default function ProductsPage() {
   const tProductForm = useTranslations('productForm');
   const tStock = useTranslations('stockAdjustment');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -71,13 +70,16 @@ export default function ProductsPage() {
 
   const { data: productsData, isLoading, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
-    category: categoryFilter || undefined,
+    categoryId: categoryFilter || undefined,
     status: statusFilter ? (statusFilter as 'active' | 'discontinued' | 'out_of_stock') : undefined,
     showAll: true, // Show all statuses for admin
     sortBy,
     sortOrder,
     limit: 1000, // Fetch all products for admin view
   });
+
+  const { data: categoriesData } = api.category.getAll.useQuery();
+  const categories = categoriesData ?? [];
 
   // Data from API with fallbacks for loading state
   const productList = (productsData?.items ?? []) as Product[];
@@ -348,12 +350,12 @@ export default function ProductsPage() {
               <select
                 className="px-3 py-2 border rounded-md text-sm bg-background"
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as ProductCategory | '')}
+                onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="">{tCommon('filters.allCategories')}</option>
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>

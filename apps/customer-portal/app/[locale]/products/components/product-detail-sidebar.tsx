@@ -8,7 +8,7 @@ import { MobileDrawer } from '@joho-erp/ui';
 import { Button, Badge, Large, Muted, H3, H4, useToast } from '@joho-erp/ui';
 import { Package, Minus, Plus, X, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
-import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
+import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 
 interface Product {
@@ -16,7 +16,12 @@ interface Product {
   name: string;
   sku: string;
   description: string | null;
-  category: ProductCategory | null;
+  categoryId: string | null;
+  categoryRelation: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  } | null;
   unit: string;
   basePrice: number;
   stockStatus: StockStatus;
@@ -92,11 +97,6 @@ export function ProductDetailSidebar({
     }
   };
 
-  const getCategoryTranslation = (category: ProductCategory) => {
-    const categoryKey = category.toLowerCase();
-    return t(`categories.${categoryKey}`);
-  };
-
   const handleIncrease = () => {
     if (quantity < MAX_QUANTITY) {
       setQuantity(prev => prev + 1);
@@ -169,11 +169,11 @@ export function ProductDetailSidebar({
             <H3 className="text-2xl font-bold mb-2 leading-tight">{product.name}</H3>
             <div className="flex items-center gap-3 flex-wrap">
               <Muted className="text-sm">{t('products.sku')}: {product.sku}</Muted>
-              {product.category && (
+              {product.categoryRelation && (
                 <>
                   <span className="text-muted-foreground">•</span>
                   <Badge variant="outline" className="font-normal">
-                    {getCategoryTranslation(product.category)}
+                    {product.categoryRelation.name}
                   </Badge>
                 </>
               )}
