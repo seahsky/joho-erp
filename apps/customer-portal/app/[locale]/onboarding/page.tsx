@@ -90,6 +90,21 @@ export interface TradeReferenceInfo {
   email: string;
 }
 
+interface SignatureState {
+  directorIndex: number;
+  applicantSignature: string | null;  // Base64 data URL
+  applicantSignedAt: Date | null;
+  guarantorSignature: string | null;  // Base64 data URL
+  guarantorSignedAt: Date | null;
+  witnessName: string;
+  witnessSignature: string | null;    // Base64 data URL
+  witnessSignedAt: Date | null;
+  // Store upload URLs separately
+  applicantSignatureUrl?: string;
+  guarantorSignatureUrl?: string;
+  witnessSignatureUrl?: string;
+}
+
 interface SavedFormData {
   currentStep: OnboardingStep;
   businessInfo: Partial<BusinessInfo>;
@@ -97,6 +112,7 @@ interface SavedFormData {
   financialInfo: Partial<FinancialInfo>;
   tradeReferences: TradeReferenceInfo[];
   termsAgreement: { hasAgreed: boolean };
+  signatureData?: SignatureState[];  // Added for signature persistence
 }
 
 export default function OnboardingPage() {
@@ -113,6 +129,7 @@ export default function OnboardingPage() {
   const [termsAgreement, setTermsAgreement] = useState<{ hasAgreed: boolean }>({
     hasAgreed: false,
   });
+  const [signatureData, setSignatureData] = useState<SignatureState[]>([]);
   const [isRestored, setIsRestored] = useState(false);
 
   // Restore form data from localStorage on mount
@@ -127,6 +144,7 @@ export default function OnboardingPage() {
         if (parsed.financialInfo) setFinancialInfo(parsed.financialInfo);
         if (parsed.tradeReferences) setTradeReferences(parsed.tradeReferences);
         if (parsed.termsAgreement) setTermsAgreement(parsed.termsAgreement);
+        if (parsed.signatureData) setSignatureData(parsed.signatureData);
       }
     } catch (e) {
       // Ignore parsing errors
@@ -146,13 +164,14 @@ export default function OnboardingPage() {
       financialInfo,
       tradeReferences,
       termsAgreement,
+      signatureData,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     } catch (e) {
       console.warn('Failed to save onboarding data:', e);
     }
-  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsAgreement, isRestored]);
+  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsAgreement, signatureData, isRestored]);
 
   // Clear localStorage on successful submission
   const clearSavedData = useCallback(() => {

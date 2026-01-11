@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@joho-erp/ui';
+import { Button, useToast } from '@joho-erp/ui';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { ApplicantSignature } from './applicant-signature';
 import { GuarantorSignature } from './guarantor-signature';
 import { api } from '@/trpc/client';
@@ -47,6 +48,7 @@ export function SignatureStep({
   isSubmitting,
 }: SignatureStepProps) {
   const t = useTranslations('onboarding.signatures');
+  const { toast } = useToast();
   const uploadMutation = api.upload.getSignatureUploadUrl.useMutation();
 
   // Initialize state for each director
@@ -69,6 +71,34 @@ export function SignatureStep({
   >(directors.map(() => ({})));
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isR2Available, setIsR2Available] = useState<boolean | null>(null);
+
+  // Check R2 configuration on mount
+  useEffect(() => {
+    const checkR2Config = async () => {
+      try {
+        // Make a test call to see if R2 is configured
+        await uploadMutation.mutateAsync({
+          signatureType: 'applicant',
+          directorIndex: 0,
+          contentLength: 1,
+        });
+        setIsR2Available(true);
+      } catch (error: any) {
+        if (error?.message?.includes('not configured') || error?.message?.includes('PRECONDITION_FAILED')) {
+          setIsR2Available(false);
+          toast({
+            title: t('storageNotConfigured', { defaultValue: 'Storage Not Configured' }),
+            description: t('contactSupport', { defaultValue: 'Please contact support to enable signature uploads.' }),
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    checkR2Config();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Update signature for a specific director
   const updateSignature = useCallback(
@@ -98,7 +128,7 @@ export function SignatureStep({
     []
   );
 
-  // Convert base64 to Blob
+  // Convert base64 to Blob with error handling
   const base64ToBlob = (base64: string): Blob => {
     const parts = base64.split(',');
     const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
@@ -109,6 +139,62 @@ export function SignatureStep({
       u8arr[i] = bstr.charCodeAt(i);
     }
     return new Blob([u8arr], { type: mime });
+  };
+
+  // Upload with timeout helper
+  const uploadWithTimeout = async (
+    url: string,
+    blob: Blob,
+    timeoutMs = 30000
+  ): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        body: blob,
+        headers: { 'Content-Type': 'image/png' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error(t('uploadTimeout', { defaultValue: 'Upload timed out. Please try again.' }));
+      }
+      throw error;
+    }
+  };
+
+  // Upload with retry logic
+  const uploadWithRetry = async (
+    url: string,
+    blob: Blob,
+    maxRetries = 3
+  ): Promise<Response> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await uploadWithTimeout(url, blob);
+      } catch (error: any) {
+        if (attempt === maxRetries) throw error;
+
+        // Show retry toast
+        toast({
+          title: t('retrying', {
+            defaultValue: 'Retrying upload... ({{attempt}}/{{maxRetries}})',
+            attempt,
+            maxRetries
+          }),
+          variant: 'default',
+        });
+
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    throw new Error('Upload failed after retries');
   };
 
   // Upload a signature to R2
@@ -126,17 +212,11 @@ export function SignatureStep({
       contentLength: blob.size,
     });
 
-    // Upload to R2
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: blob,
-      headers: {
-        'Content-Type': 'image/png',
-      },
-    });
+    // Upload to R2 with retry logic
+    const response = await uploadWithRetry(uploadUrl, blob);
 
     if (!response.ok) {
-      throw new Error('Failed to upload signature');
+      throw new Error(t('uploadFailed', { defaultValue: 'Failed to upload signature' }));
     }
 
     return publicUrl;
@@ -149,28 +229,49 @@ export function SignatureStep({
       const sig = signatures[index];
       const errs: (typeof errors)[0] = {};
 
-      if (!sig.applicantSignature) {
-        errs.applicantSignature = t('validation.signatureRequired', {
-          defaultValue: 'Signature is required',
+      // Validate applicant signature
+      if (!sig.applicantSignature || sig.applicantSignature.length < 200) {
+        errs.applicantSignature = t('emptySignature', {
+          defaultValue: 'Signature cannot be empty',
+        });
+        isValid = false;
+      } else if (!sig.applicantSignature.startsWith('data:image/png;base64,')) {
+        errs.applicantSignature = t('invalidSignature', {
+          defaultValue: 'Please draw a valid signature',
         });
         isValid = false;
       }
 
-      if (!sig.guarantorSignature) {
-        errs.guarantorSignature = t('validation.signatureRequired', {
-          defaultValue: 'Signature is required',
+      // Validate guarantor signature
+      if (!sig.guarantorSignature || sig.guarantorSignature.length < 200) {
+        errs.guarantorSignature = t('emptySignature', {
+          defaultValue: 'Signature cannot be empty',
+        });
+        isValid = false;
+      } else if (!sig.guarantorSignature.startsWith('data:image/png;base64,')) {
+        errs.guarantorSignature = t('invalidSignature', {
+          defaultValue: 'Please draw a valid signature',
         });
         isValid = false;
       }
 
+      // Validate witness name
       if (!sig.witnessName.trim()) {
-        errs.witnessName = t('witness.nameRequired');
+        errs.witnessName = t('witness.nameRequired', {
+          defaultValue: 'Witness name is required',
+        });
         isValid = false;
       }
 
-      if (!sig.witnessSignature) {
-        errs.witnessSignature = t('validation.signatureRequired', {
-          defaultValue: 'Signature is required',
+      // Validate witness signature
+      if (!sig.witnessSignature || sig.witnessSignature.length < 200) {
+        errs.witnessSignature = t('emptySignature', {
+          defaultValue: 'Signature cannot be empty',
+        });
+        isValid = false;
+      } else if (!sig.witnessSignature.startsWith('data:image/png;base64,')) {
+        errs.witnessSignature = t('invalidSignature', {
+          defaultValue: 'Please draw a valid signature',
         });
         isValid = false;
       }
@@ -214,10 +315,28 @@ export function SignatureStep({
       });
 
       const signatureData = await Promise.all(signatureDataPromises);
+
+      // Show success toast
+      toast({
+        title: t('uploadSuccess', { defaultValue: 'Signatures uploaded successfully' }),
+        variant: 'default',
+      });
+
       onComplete(signatureData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to upload signatures:', error);
-      // Show error toast or message
+
+      // Show error toast to user
+      toast({
+        title: t('uploadFailed', { defaultValue: 'Upload Failed' }),
+        description: error?.message || t('uploadErrorDescription', {
+          defaultValue: 'Failed to upload signatures. Please check your internet connection and try again.',
+        }),
+        variant: 'destructive',
+      });
+
+      // Don't proceed with form submission
+      return;
     } finally {
       setIsUploading(false);
     }
@@ -232,6 +351,25 @@ export function SignatureStep({
         <h2 className="text-2xl font-bold">{t('title')}</h2>
         <p className="text-gray-600">{t('description')}</p>
       </div>
+
+      {/* R2 Availability Warning */}
+      {isR2Available === false && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-900">
+                {t('uploadUnavailable', { defaultValue: 'Upload Unavailable' })}
+              </h3>
+              <p className="mt-1 text-sm text-red-700">
+                {t('uploadUnavailableDescription', {
+                  defaultValue: 'Signature storage is not currently configured. Please contact support to complete this step.',
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Terms & Conditions Section */}
       <div className="rounded-lg border p-6">
@@ -317,8 +455,20 @@ export function SignatureStep({
         <Button variant="outline" onClick={onBack} disabled={isProcessing}>
           {t('buttons.back')}
         </Button>
-        <Button onClick={handleSubmit} disabled={isProcessing}>
-          {isProcessing ? t('buttons.submitting') : t('buttons.submit')}
+        <Button onClick={handleSubmit} disabled={isProcessing || isR2Available === false}>
+          {isUploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t('uploading', { defaultValue: 'Uploading signatures...' })}
+            </>
+          ) : isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t('buttons.submitting', { defaultValue: 'Submitting...' })}
+            </>
+          ) : (
+            t('buttons.submit', { defaultValue: 'Submit' })
+          )}
         </Button>
       </div>
     </div>
