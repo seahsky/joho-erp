@@ -297,13 +297,12 @@ export default function PackingPage() {
             sidebar={
               <ProductSummaryView
                 productSummary={filteredProductSummary}
-                deliveryDate={deliveryDate}
                 onOrderBadgeClick={handleFocusOrder}
               />
             }
             sidebarTitle={t('summaryPanel')}
             sidebarIcon={Package}
-            sidebarDescription={`0/${totalProducts} ${t('gathered')}`}
+            sidebarDescription={`${totalProducts} ${t('uniqueProducts').toLowerCase()}`}
             main={
               <OrderListView
                 orders={filteredOrders}

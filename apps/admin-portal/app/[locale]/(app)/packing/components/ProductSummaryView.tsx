@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { Badge, Card, CardContent } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { CheckSquare, Square, Package2 } from 'lucide-react';
+import { Package2 } from 'lucide-react';
 
 /**
  * Reference to an order that requires a specific product
@@ -36,7 +35,6 @@ interface ValidatedProductSummaryItem extends ProductSummaryItem {
 
 interface ProductSummaryViewProps {
   readonly productSummary: readonly ProductSummaryItem[];
-  readonly deliveryDate: Date;
   readonly onOrderBadgeClick?: (orderNumber: string) => void;
 }
 
@@ -54,61 +52,11 @@ function hasProductId(item: ProductSummaryItem): item is ValidatedProductSummary
   return true;
 }
 
-/**
- * Format date for localStorage key (YYYY-MM-DD)
- */
-function formatDateForStorage(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
-
-export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeClick }: ProductSummaryViewProps): React.JSX.Element {
+export function ProductSummaryView({ productSummary, onOrderBadgeClick }: ProductSummaryViewProps): React.JSX.Element {
   const t = useTranslations('packing');
-
-  // Initialize gathered state from localStorage for this delivery date
-  const [gatheredProducts, setGatheredProducts] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-
-    const storageKey = `packing-gathered-${formatDateForStorage(deliveryDate)}`;
-    const stored = localStorage.getItem(storageKey);
-
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return new Set(Array.isArray(parsed) ? parsed : []);
-      } catch (error) {
-        console.error('Failed to parse gathered products from localStorage:', error);
-        return new Set();
-      }
-    }
-
-    return new Set();
-  });
 
   // Filter out items without productId using type predicate for type safety
   const validProductSummary = productSummary.filter(hasProductId);
-
-  /**
-   * Toggles the gathered state of a product
-   * Persists to localStorage for the current delivery date
-   */
-  const toggleProductGathered = (productId: string): void => {
-    setGatheredProducts((prev) => {
-      const next = new Set(prev);
-      if (next.has(productId)) {
-        next.delete(productId);
-      } else {
-        next.add(productId);
-      }
-
-      // Persist to localStorage
-      if (typeof window !== 'undefined') {
-        const storageKey = `packing-gathered-${formatDateForStorage(deliveryDate)}`;
-        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
-      }
-
-      return next;
-    });
-  };
 
   if (validProductSummary.length === 0) {
     return (
@@ -124,51 +72,26 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
   return (
     <Card className="rounded-t-none">
       <CardContent className="p-0">
-        {/* Checklist Items */}
+        {/* Product List */}
         <div className="divide-y divide-border">
         {validProductSummary.map((item, index) => {
-          const isGathered = gatheredProducts.has(item.productId);
           const allOrdersReady = item.orders?.every(order => order.status === 'ready_for_delivery') ?? false;
 
           return (
             <div
               key={item.productId}
-              role="button"
-              tabIndex={0}
-              onClick={() => toggleProductGathered(item.productId)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggleProductGathered(item.productId);
-                }
-              }}
-              className={`w-full text-left p-3 transition-all duration-200 hover:bg-muted/50 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                isGathered ? 'bg-success/10 hover:bg-success/15' : ''
-              } ${allOrdersReady ? 'bg-muted/30' : ''}`}
+              className={`w-full p-3 transition-all duration-200 ${allOrdersReady ? 'bg-muted/30' : ''}`}
               style={{
                 animationDelay: `${index * 30}ms`,
                 animation: 'slideIn 0.3s ease-out',
               }}
             >
               <div className="flex items-start gap-3">
-                {/* Checkbox */}
-                <div className="flex-shrink-0 mt-0.5">
-                  {isGathered ? (
-                    <CheckSquare className="h-6 w-6 text-success transition-transform group-hover:scale-110" />
-                  ) : (
-                    <Square className="h-6 w-6 text-muted-foreground transition-transform group-hover:scale-110" />
-                  )}
-                </div>
-
                 {/* Product Info */}
                 <div className="flex-1 min-w-0">
                   {/* SKU + Quantity */}
                   <div className="flex items-baseline justify-between gap-3 mb-1">
-                    <span
-                      className={`font-mono font-semibold text-sm tracking-tight ${
-                        isGathered ? 'text-muted-foreground line-through' : 'text-foreground'
-                      }`}
-                    >
+                    <span className="font-mono font-semibold text-sm tracking-tight text-foreground">
                       {item.sku}
                     </span>
                     <span className="font-bold text-base text-primary tabular-nums whitespace-nowrap">
@@ -178,11 +101,7 @@ export function ProductSummaryView({ productSummary, deliveryDate, onOrderBadgeC
                   </div>
 
                   {/* Product Name */}
-                  <p
-                    className={`text-xs font-medium mb-2 ${
-                      isGathered ? 'text-muted-foreground line-through' : 'text-muted-foreground'
-                    }`}
-                  >
+                  <p className="text-xs font-medium mb-2 text-muted-foreground">
                     {item.productName}
                   </p>
 
