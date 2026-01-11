@@ -299,6 +299,7 @@ model Order {
   bypassCreditLimit       Boolean             @default(false)
   bypassCreditReason      String?
   bypassCutoffTime        Boolean             @default(false)
+  bypassMinimumOrder      Boolean             @default(false)
   useCustomAddress        Boolean             @default(false)
   customDeliveryAddress   DeliveryAddress?
   adminNotes              String?
@@ -820,6 +821,7 @@ type DeliverySettings {
   orderCutoffTime     String              @default("14:00") // HH:mm format
   cutoffByArea        Json?               // Custom cutoff times per area
   defaultDeliveryWindow String?           // e.g., "9:00-17:00"
+  minimumOrderAmount  Int?                // In cents, null = no minimum
 }
 
 type WarehouseAddress {

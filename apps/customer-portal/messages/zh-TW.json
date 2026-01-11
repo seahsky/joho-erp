@@ -499,6 +499,10 @@
       "nextAvailable": "最早可配送日期：{date}",
       "minDateTomorrow": "最早配送為明天"
     },
+    "minimumOrder": {
+      "belowMinimum": "低於最低訂單",
+      "belowMinimumMessage": "您的訂單總額（{current}）低於最低訂單要求{required}。請再添加{shortfall}以繼續。"
+    },
     "credit": {
       "creditLimit": "信用額度",
       "outstandingBalance": "未結餘額",

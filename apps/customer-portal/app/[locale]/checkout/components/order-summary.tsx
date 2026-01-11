@@ -52,6 +52,9 @@ export function OrderSummary() {
   // Fetch available credit info
   const { data: creditInfo, isLoading: isLoadingCredit } = api.order.getAvailableCreditInfo.useQuery();
 
+  // Fetch minimum order info
+  const { data: minimumOrderInfo } = api.order.getMinimumOrderInfo.useQuery();
+
   // Set default delivery date based on cutoff info
   React.useEffect(() => {
     if (cutoffInfo?.nextAvailableDeliveryDate && !deliveryDate) {
@@ -129,6 +132,12 @@ export function OrderSummary() {
     if (!creditInfo || !cart) return false;
     return cart.total > creditInfo.availableCredit;
   }, [creditInfo, cart]);
+
+  // Check if order is below minimum
+  const belowMinimum = React.useMemo(() => {
+    if (!minimumOrderInfo?.hasMinimum || !cart) return false;
+    return cart.total < (minimumOrderInfo.minimumOrderAmount || 0);
+  }, [minimumOrderInfo, cart]);
 
   // Check for blocking conditions
   const isOnboardingIncomplete = !onboardingStatus?.onboardingComplete;
@@ -389,6 +398,27 @@ export function OrderSummary() {
         </Card>
       )}
 
+      {/* Minimum Order Warning */}
+      {belowMinimum && minimumOrderInfo && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <H3 className="text-base mb-1 text-amber-700">{t('minimumOrder.belowMinimum')}</H3>
+                <p className="text-sm text-amber-600">
+                  {t('minimumOrder.belowMinimumMessage', {
+                    current: formatAUD(total),
+                    required: formatAUD(minimumOrderInfo.minimumOrderAmount || 0),
+                    shortfall: formatAUD((minimumOrderInfo.minimumOrderAmount || 0) - total),
+                  })}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Order Items */}
       <Card>
         <CardHeader>
@@ -486,7 +516,7 @@ export function OrderSummary() {
         className="w-full"
         size="lg"
         onClick={handlePlaceOrder}
-        disabled={createOrder.isPending || cart.items.length === 0 || exceedsCredit || !deliveryDate}
+        disabled={createOrder.isPending || cart.items.length === 0 || exceedsCredit || belowMinimum || !deliveryDate}
       >
         {createOrder.isPending ? (
           <>
@@ -495,6 +525,8 @@ export function OrderSummary() {
           </>
         ) : exceedsCredit ? (
           tCredit('exceedsCredit')
+        ) : belowMinimum ? (
+          t('minimumOrder.belowMinimum')
         ) : (
           tCommon('placeOrder')
         )}

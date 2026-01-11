@@ -768,6 +768,10 @@
       "nextAvailable": "Earliest delivery available: {date}",
       "minDateTomorrow": "Earliest delivery is tomorrow"
     },
+    "minimumOrder": {
+      "belowMinimum": "Below Minimum Order",
+      "belowMinimumMessage": "Your order total ({current}) is below the minimum order requirement of {required}. Please add {shortfall} more to proceed."
+    },
     "credit": {
       "creditLimit": "Credit Limit",
       "outstandingBalance": "Outstanding Balance",

@@ -296,6 +296,7 @@ export const companyRouter = router({
         orderCutoffTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)').default('14:00'),
         cutoffByArea: z.record(z.string()).optional(),
         defaultDeliveryWindow: z.string().optional(),
+        minimumOrderAmount: z.number().int().positive().optional(), // In cents
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -315,6 +316,13 @@ export const companyRouter = router({
       if (oldSettings?.orderCutoffTime !== input.orderCutoffTime) {
         changes.push({ field: 'orderCutoffTime', oldValue: oldSettings?.orderCutoffTime, newValue: input.orderCutoffTime });
       }
+      if (oldSettings?.minimumOrderAmount !== input.minimumOrderAmount) {
+        changes.push({
+          field: 'minimumOrderAmount',
+          oldValue: oldSettings?.minimumOrderAmount,
+          newValue: input.minimumOrderAmount,
+        });
+      }
 
       // Extract old warehouse coordinates for change detection
       const oldWarehouse = oldSettings?.warehouseAddress as { latitude?: number; longitude?: number } | undefined;
@@ -330,6 +338,7 @@ export const companyRouter = router({
             orderCutoffTime: input.orderCutoffTime,
             cutoffByArea: input.cutoffByArea || null,
             defaultDeliveryWindow: input.defaultDeliveryWindow || null,
+            minimumOrderAmount: input.minimumOrderAmount || null,
           },
         },
       });

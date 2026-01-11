@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { formatCentsForInput, parseToCents } from '@joho-erp/shared';
 import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import {
@@ -41,6 +42,7 @@ export default function DeliverySettingsPage() {
   const [longitude, setLongitude] = useState(144.9631);
   const [cutoffTime, setCutoffTime] = useState('14:00');
   const [deliveryWindow, setDeliveryWindow] = useState('9:00-17:00');
+  const [minimumOrderAmount, setMinimumOrderAmount] = useState('');
 
   // UI state
   const [addressSearch, setAddressSearch] = useState('');
@@ -76,6 +78,9 @@ export default function DeliverySettingsPage() {
       if (ds.defaultDeliveryWindow) {
         setDeliveryWindow(ds.defaultDeliveryWindow);
       }
+      if (ds.minimumOrderAmount !== null && ds.minimumOrderAmount !== undefined) {
+        setMinimumOrderAmount(formatCentsForInput(ds.minimumOrderAmount));
+      }
     }
   }, [settings]);
 
@@ -90,6 +95,10 @@ export default function DeliverySettingsPage() {
     const savedLongitude = settings?.deliverySettings?.warehouseAddress?.longitude ?? 144.9631;
     const savedCutoffTime = settings?.deliverySettings?.orderCutoffTime || '14:00';
     const savedDeliveryWindow = settings?.deliverySettings?.defaultDeliveryWindow || '9:00-17:00';
+    const savedMinimumOrder = settings?.deliverySettings?.minimumOrderAmount ?? null;
+
+    // Convert current input to cents for comparison
+    const currentMinimumCents = minimumOrderAmount ? parseToCents(minimumOrderAmount) : null;
 
     // Compare current form values against saved/default values
     const hasModifications =
@@ -100,10 +109,11 @@ export default function DeliverySettingsPage() {
       latitude !== savedLatitude ||
       longitude !== savedLongitude ||
       cutoffTime !== savedCutoffTime ||
-      deliveryWindow !== savedDeliveryWindow;
+      deliveryWindow !== savedDeliveryWindow ||
+      currentMinimumCents !== savedMinimumOrder;
 
     setHasChanges(hasModifications);
-  }, [street, suburb, state, postcode, latitude, longitude, cutoffTime, deliveryWindow, settings]);
+  }, [street, suburb, state, postcode, latitude, longitude, cutoffTime, deliveryWindow, minimumOrderAmount, settings]);
 
   // Geocode search
   const handleSearch = async () => {
@@ -160,6 +170,17 @@ export default function DeliverySettingsPage() {
       return;
     }
 
+    // Parse and validate minimum order amount
+    const minimumOrderCents = minimumOrderAmount ? parseToCents(minimumOrderAmount) : null;
+    if (minimumOrderAmount && minimumOrderCents === null) {
+      toast({
+        title: t('validationError'),
+        description: t('invalidMinimumOrderAmount'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await saveSettingsMutation.mutateAsync({
         warehouseAddress: {
@@ -173,6 +194,7 @@ export default function DeliverySettingsPage() {
         },
         orderCutoffTime: cutoffTime,
         defaultDeliveryWindow: deliveryWindow || undefined,
+        minimumOrderAmount: minimumOrderCents || undefined,
       });
 
       toast({
@@ -443,6 +465,22 @@ export default function DeliverySettingsPage() {
                   onChange={(e) => setDeliveryWindow(e.target.value)}
                   placeholder={t('deliveryWindowPlaceholder')}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minimumOrderAmount">{t('minimumOrderAmount')}</Label>
+                <Input
+                  id="minimumOrderAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={minimumOrderAmount}
+                  onChange={(e) => setMinimumOrderAmount(e.target.value)}
+                  placeholder={t('minimumOrderPlaceholder')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('minimumOrderDescription')}
+                </p>
               </div>
             </CardContent>
           </Card>

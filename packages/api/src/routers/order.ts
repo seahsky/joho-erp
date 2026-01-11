@@ -311,6 +311,19 @@ export const orderRouter = router({
         });
       }
 
+      // Check minimum order amount (if configured)
+      const company = await prisma.company.findFirst({
+        select: { deliverySettings: true },
+      });
+      const minimumOrderAmount = company?.deliverySettings?.minimumOrderAmount;
+
+      if (minimumOrderAmount && totals.totalAmount < minimumOrderAmount) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Order total ($${(totals.totalAmount / 100).toFixed(2)}) does not meet the minimum order requirement ($${(minimumOrderAmount / 100).toFixed(2)}). Please add more items to your order.`,
+        });
+      }
+
       // Generate order number
       const orderNumber = generateOrderNumber();
 
@@ -542,6 +555,7 @@ export const orderRouter = router({
         bypassCreditLimit: z.boolean().default(false),
         bypassCreditReason: z.string().optional(),
         bypassCutoffTime: z.boolean().default(false),
+        bypassMinimumOrder: z.boolean().default(false),
 
         // Notes
         adminNotes: z.string().optional(),
@@ -653,6 +667,21 @@ export const orderRouter = router({
         }
       }
 
+      // 10. Check minimum order amount (unless bypassed)
+      if (!input.bypassMinimumOrder) {
+        const company = await prisma.company.findFirst({
+          select: { deliverySettings: true },
+        });
+        const minimumOrderAmount = company?.deliverySettings?.minimumOrderAmount;
+
+        if (minimumOrderAmount && totals.totalAmount < minimumOrderAmount) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Order total ($${(totals.totalAmount / 100).toFixed(2)}) does not meet the minimum order requirement ($${(minimumOrderAmount / 100).toFixed(2)})`,
+          });
+        }
+      }
+
       // 10. Generate order number
       const orderNumber = generateOrderNumber();
 
@@ -720,6 +749,7 @@ export const orderRouter = router({
             bypassCreditLimit: input.bypassCreditLimit,
             bypassCreditReason: input.bypassCreditReason,
             bypassCutoffTime: input.bypassCutoffTime,
+            bypassMinimumOrder: input.bypassMinimumOrder,
             useCustomAddress: input.useCustomAddress,
             customDeliveryAddress: input.useCustomAddress && input.customDeliveryAddress ? {
               street: input.customDeliveryAddress.street,
@@ -2424,4 +2454,21 @@ export const orderRouter = router({
 
       return { success: true, message: 'Confirmation email resent successfully' };
     }),
+
+  /**
+   * Get minimum order amount configuration
+   * Returns the minimum order amount and whether it's enabled
+   */
+  getMinimumOrderInfo: protectedProcedure.query(async () => {
+    const company = await prisma.company.findFirst({
+      select: { deliverySettings: true },
+    });
+
+    const minimumOrderAmount = company?.deliverySettings?.minimumOrderAmount || null;
+
+    return {
+      minimumOrderAmount, // In cents
+      hasMinimum: minimumOrderAmount !== null && minimumOrderAmount > 0,
+    };
+  }),
 });
