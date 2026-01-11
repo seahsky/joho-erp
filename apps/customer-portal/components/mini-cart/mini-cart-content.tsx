@@ -137,10 +137,12 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           </div>
 
           {/* GST */}
-          <div className="flex justify-between items-center mb-3 pb-3 border-b border-neutral-200/60">
-            <span className="text-sm text-neutral-600">{t('miniCart.gst')}</span>
-            <span className="text-sm font-medium text-neutral-800">{formatAUD(cart.gst)}</span>
-          </div>
+          {cart.gst > 0 && (
+            <div className="flex justify-between items-center mb-3 pb-3 border-b border-neutral-200/60">
+              <span className="text-sm text-neutral-600">{t('miniCart.gst')}</span>
+              <span className="text-sm font-medium text-neutral-800">{formatAUD(cart.gst)}</span>
+            </div>
+          )}
 
           {/* Total */}
           <div className="flex justify-between items-center">

@@ -74,19 +74,21 @@ export function CartSummary({
         </div>
 
         {/* GST */}
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground">{t('cart.tax')}</span>
-            {/* Show breakdown for mixed GST rates */}
-            {hasMultipleGstRates && (
-              <span className="text-xs text-muted-foreground">
-                {gstAppliedCount} {t('cart.gstBreakdown.withGst')} · {gstExemptCount}{' '}
-                {t('cart.gstBreakdown.exempt')}
-              </span>
-            )}
+        {gstCents > 0 && (
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">{t('cart.tax')}</span>
+              {/* Show breakdown for mixed GST rates */}
+              {hasMultipleGstRates && (
+                <span className="text-xs text-muted-foreground">
+                  {gstAppliedCount} {t('cart.gstBreakdown.withGst')} · {gstExemptCount}{' '}
+                  {t('cart.gstBreakdown.exempt')}
+                </span>
+              )}
+            </div>
+            <span className="font-medium">{formatAUD(gstCents)}</span>
           </div>
-          <span className="font-medium">{formatAUD(gstCents)}</span>
-        </div>
+        )}
 
         <div className="border-t pt-4">
           {/* Total */}

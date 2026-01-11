@@ -250,10 +250,12 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                   <Muted>{tCommon('subtotal')}</Muted>
                   <p className="font-medium">{formatCurrency(order.subtotal)}</p>
                 </div>
-                <div className="flex justify-between">
-                  <Muted>{tCommon('tax')}</Muted>
-                  <p className="font-medium">{formatCurrency(order.taxAmount)}</p>
-                </div>
+                {order.taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <Muted>{tCommon('tax')}</Muted>
+                    <p className="font-medium">{formatCurrency(order.taxAmount)}</p>
+                  </div>
+                )}
                 <div className="border-t pt-2 flex justify-between">
                   <p className="text-lg font-semibold">{tCommon('total')}</p>
                   <p className="text-lg font-bold">{formatCurrency(order.totalAmount)}</p>
