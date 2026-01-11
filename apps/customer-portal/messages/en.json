@@ -211,11 +211,13 @@
       "edit": "Click to edit exact quantity",
       "save": "Save",
       "cancel": "Cancel",
+      "confirm": "Confirm",
       "precision": "Enter exact quantity (1-999)",
       "max": "Maximum {max} available",
       "min": "Minimum 1 unit",
       "invalid": "Invalid quantity"
     },
+    "specialPrice": "Special Price",
     "details": {
       "expand": "Show details",
       "collapse": "Hide details",
@@ -420,7 +422,8 @@
     "subtotal": "Subtotal",
     "gst": "GST (10%)",
     "removeItem": "Remove",
-    "cartWithItems": "Shopping cart, {count, plural, one {# item} other {# items}}"
+    "cartWithItems": "Shopping cart, {count, plural, one {# item} other {# items}}",
+    "viewImage": "View product image"
   },
   "onboarding": {
     "progress": {
@@ -774,7 +777,10 @@
       "selectDate": "Select delivery date",
       "cutoffWarning": "Order cutoff time ({time}) has passed for today.",
       "nextAvailable": "Earliest delivery available: {date}",
-      "minDateTomorrow": "Earliest delivery is tomorrow"
+      "minDateTomorrow": "Earliest delivery is tomorrow",
+      "sundayNotAvailable": "Sunday delivery is not available",
+      "selectWeekday": "Please select a weekday (Monday-Saturday)",
+      "invalidDay": "The selected delivery day is not available"
     },
     "minimumOrder": {
       "belowMinimum": "Below Minimum Order",
@@ -901,7 +907,10 @@
     "afterCutoffTitle": "Today's cutoff ({time}) has passed",
     "nextAvailable": "Next available delivery: {date}",
     "compactBeforeCutoff": "Order by {time} for next-day delivery",
-    "compactAfterCutoff": "Next delivery: {date}"
+    "compactAfterCutoff": "Next delivery: {date}",
+    "weekdaysOnly": "(Monday-Saturday only)",
+    "beforeCutoffMessageWithDays": "Order by {time} today for next-day delivery (Monday-Saturday)",
+    "nextAvailableWithDays": "Next available delivery: {date} (Monday-Saturday)"
   },
   "illustratedEmptyState": {
     "emptyCart": {

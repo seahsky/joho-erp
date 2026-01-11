@@ -211,6 +211,7 @@ export function ProductList() {
       <StickyCartSummary
         locale={locale}
         onCartClick={() => setMiniCartOpen(true)}
+        isHidden={miniCartOpen}
       />
 
       {/* Main Container */}

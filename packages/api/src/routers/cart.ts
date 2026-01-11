@@ -46,6 +46,10 @@ interface CartItem {
   gstRate: number; // GST rate percentage (e.g., 10 for 10%)
   itemGst: number; // In cents (calculated GST for this item: subtotal * gstRate / 100)
   itemTotal: number; // In cents (subtotal + itemGst)
+
+  // Product display fields
+  imageUrl: string | null;
+  description: string | null;
 }
 
 /**
@@ -252,6 +256,19 @@ export const cartRouter = router({
       // Get product and validate
       const product = await prisma.product.findUnique({
         where: { id: input.productId },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          unit: true,
+          basePrice: true,
+          status: true,
+          currentStock: true,
+          applyGst: true,
+          gstRate: true,
+          imageUrl: true,
+          description: true,
+        },
       });
 
       if (!product) {
@@ -357,6 +374,10 @@ export const cartRouter = router({
           gstRate: gstRate,
           itemGst: itemGst, // Calculated GST for this item
           itemTotal: itemTotal, // subtotal + itemGst
+
+          // Product display fields
+          imageUrl: product.imageUrl,
+          description: product.description,
         };
 
         setCartItem(ctx.userId, newItem);

@@ -88,6 +88,33 @@ function getDayAfterTomorrowDate(): Date {
   return dayAfterTomorrow;
 }
 
+/**
+ * Check if a given date is a valid delivery day (not Sunday)
+ * @param date - The date to check
+ * @returns true if the date is Monday-Saturday, false if Sunday
+ */
+function isDeliveryDay(date: Date): boolean {
+  const dayOfWeek = date.getDay();
+  // Sunday is 0, Monday is 1, ..., Saturday is 6
+  return dayOfWeek !== 0;
+}
+
+/**
+ * Get the next valid delivery day, skipping Sunday if necessary
+ * @param date - The candidate delivery date
+ * @returns The same date if it's not Sunday, or the next day (Monday) if it is Sunday
+ */
+function getNextDeliveryDay(date: Date): Date {
+  if (isDeliveryDay(date)) {
+    return date;
+  }
+  
+  // If it's Sunday, advance to Monday
+  const nextDay = new Date(date);
+  nextDay.setDate(nextDay.getDate() + 1);
+  return nextDay;
+}
+
 // ============================================================================
 // MAIN FUNCTIONS
 // ============================================================================
@@ -151,6 +178,18 @@ export async function validateOrderCutoffTime(
   requestedDeliveryDate: Date,
   areaName?: string
 ): Promise<CutoffValidationResult> {
+  // Check if requested delivery date is Sunday
+  if (!isDeliveryDay(requestedDeliveryDate)) {
+    const nextAvailableDeliveryDate = await getMinDeliveryDate(areaName);
+    return {
+      isAfterCutoff: true,
+      cutoffTime: await getCutoffTimeForArea(areaName),
+      cutoffDateTime: requestedDeliveryDate,
+      nextAvailableDeliveryDate,
+      message: 'Sunday deliveries are not available. Please select a weekday (Monday-Saturday).',
+    };
+  }
+
   const now = getCurrentTimeInSydney();
   const cutoffTime = await getCutoffTimeForArea(areaName);
   const { hours: cutoffHours, minutes: cutoffMinutes } = parseTime(cutoffTime);
@@ -163,15 +202,9 @@ export async function validateOrderCutoffTime(
   const isAfterCutoff = now > dayBeforeDelivery;
 
   // Calculate next available delivery date
-  let nextAvailableDeliveryDate: Date;
-
-  if (isAfterCutoff) {
-    // If after cutoff for tomorrow's delivery, next available is day after tomorrow
-    nextAvailableDeliveryDate = getDayAfterTomorrowDate();
-  } else {
-    // If before cutoff, tomorrow is still available
-    nextAvailableDeliveryDate = getTomorrowDate();
-  }
+  const candidateDate = isAfterCutoff ? getDayAfterTomorrowDate() : getTomorrowDate();
+  // Skip Sunday if the candidate date falls on Sunday
+  const nextAvailableDeliveryDate = getNextDeliveryDay(candidateDate);
 
   // Build message
   let message: string | undefined;
@@ -204,9 +237,12 @@ export async function getCutoffInfo(areaName?: string): Promise<CutoffInfo> {
   const isAfterCutoff = now > todayCutoff;
 
   // Calculate next available delivery date
-  const nextAvailableDeliveryDate = isAfterCutoff
+  const candidateDate = isAfterCutoff
     ? getDayAfterTomorrowDate()
     : getTomorrowDate();
+  
+  // Skip Sunday if the candidate date falls on Sunday
+  const nextAvailableDeliveryDate = getNextDeliveryDay(candidateDate);
 
   return {
     cutoffTime,
@@ -224,7 +260,9 @@ export async function getCutoffInfo(areaName?: string): Promise<CutoffInfo> {
 export async function getMinDeliveryDate(areaName?: string): Promise<Date> {
   const { isAfterCutoff } = await getCutoffInfo(areaName);
 
-  return isAfterCutoff ? getDayAfterTomorrowDate() : getTomorrowDate();
+  const candidateDate = isAfterCutoff ? getDayAfterTomorrowDate() : getTomorrowDate();
+  // Skip Sunday if the candidate date falls on Sunday
+  return getNextDeliveryDay(candidateDate);
 }
 
 /**
@@ -235,6 +273,11 @@ export async function isValidDeliveryDate(
   requestedDate: Date,
   areaName?: string
 ): Promise<boolean> {
+  // Check if requested date is Sunday
+  if (!isDeliveryDay(requestedDate)) {
+    return false;
+  }
+
   const minDate = await getMinDeliveryDate(areaName);
 
   // Reset time component for comparison

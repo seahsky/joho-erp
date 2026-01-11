@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, useToast, cn } from '@joho-erp/ui';
-import { Minus, Plus, Loader2 } from 'lucide-react';
+import { Minus, Plus, Loader2, Check, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 const MAX_QUANTITY = 999;
@@ -371,7 +371,6 @@ export function InlineQuantityControls({
         type="number"
         value={inputValue}
         onChange={handleInputChange}
-        onBlur={handleSaveQuantity}
         onKeyDown={handleKeyDown}
         disabled={disabled || isPending}
         min={MIN_QUANTITY}
@@ -385,6 +384,34 @@ export function InlineQuantityControls({
         placeholder={currentQuantity.toString()}
         aria-label={t('products.quantity.precision')}
       />
+
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleSaveQuantity}
+        disabled={disabled || isPending || inputValue === currentQuantity.toString()}
+        className={cn(
+          'h-9 w-9 p-0',
+          'border-green-500 hover:bg-green-50 hover:border-green-600',
+          'disabled:border-border disabled:hover:bg-transparent'
+        )}
+        title={t('products.quantity.confirm')}
+        aria-label={t('products.quantity.confirm')}
+      >
+        <Check className="h-3.5 w-3.5 text-green-600" />
+      </Button>
+
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={handleCancelEdit}
+        disabled={disabled || isPending}
+        className="h-9 w-9 p-0 hover:bg-muted"
+        title={t('products.quantity.cancel')}
+        aria-label={t('products.quantity.cancel')}
+      >
+        <X className="h-3.5 w-3.5 text-muted-foreground" />
+      </Button>
 
       <Button
         size="sm"

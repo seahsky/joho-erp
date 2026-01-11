@@ -211,11 +211,13 @@
       "edit": "點擊輸入確切數量",
       "save": "儲存",
       "cancel": "取消",
+      "confirm": "確認",
       "precision": "輸入確切數量 (1-999)",
       "max": "最多 {max} 可用",
       "min": "最少 1 件",
       "invalid": "無效數量"
     },
+    "specialPrice": "特價",
     "details": {
       "expand": "顯示詳情",
       "collapse": "隱藏詳情",
@@ -420,7 +422,8 @@
     "subtotal": "小計",
     "gst": "GST (10%)",
     "removeItem": "移除",
-    "cartWithItems": "購物車, {count}件商品"
+    "cartWithItems": "購物車, {count}件商品",
+    "viewImage": "查看產品圖片"
   },
   "dashboard": {
     "title": "儀表板",
@@ -505,7 +508,10 @@
       "selectDate": "選擇配送日期",
       "cutoffWarning": "今天的訂單截止時間 ({time}) 已過。",
       "nextAvailable": "最早可配送日期：{date}",
-      "minDateTomorrow": "最早配送為明天"
+      "minDateTomorrow": "最早配送為明天",
+      "sundayNotAvailable": "週日不提供配送服務",
+      "selectWeekday": "請選擇工作日（週一至週六）",
+      "invalidDay": "所選配送日期不可用"
     },
     "minimumOrder": {
       "belowMinimum": "低於最低訂單",
@@ -901,7 +907,10 @@
     "afterCutoffTitle": "今天的截止時間 ({time}) 已過",
     "nextAvailable": "最早可配送日期：{date}",
     "compactBeforeCutoff": "在 {time} 前下單，可於次日送達",
-    "compactAfterCutoff": "下次配送：{date}"
+    "compactAfterCutoff": "下次配送：{date}",
+    "weekdaysOnly": "（僅限週一至週六）",
+    "beforeCutoffMessageWithDays": "今天在 {time} 前下單，可於次日送達（週一至週六）",
+    "nextAvailableWithDays": "最早可配送日期：{date}（週一至週六）"
   },
   "illustratedEmptyState": {
     "emptyCart": {

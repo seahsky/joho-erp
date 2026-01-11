@@ -11,9 +11,10 @@ import { api } from '@/trpc/client';
 interface StickyCartSummaryProps {
   locale: string;
   onCartClick: () => void; // Open mini-cart drawer/sheet
+  isHidden?: boolean; // Hide sticky summary when mini-cart is open
 }
 
-export function StickyCartSummary({ locale, onCartClick }: StickyCartSummaryProps) {
+export function StickyCartSummary({ locale, onCartClick, isHidden = false }: StickyCartSummaryProps) {
   const t = useTranslations();
   const router = useRouter();
   const [animate, setAnimate] = React.useState(false);
@@ -51,7 +52,11 @@ export function StickyCartSummary({ locale, onCartClick }: StickyCartSummaryProp
   const canCheckout = itemCount > 0 && !exceedsCredit;
 
   return (
-    <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+    <div className={cn(
+      "sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border",
+      isHidden && "opacity-0 pointer-events-none -translate-y-full",
+      "transition-all duration-300 ease-out"
+    )}>
       {/* Desktop Layout */}
       <div className="hidden md:block">
         <div className="container mx-auto px-4">

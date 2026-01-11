@@ -338,6 +338,14 @@ export const orderRouter = router({
       const minDeliveryDate = await getMinDeliveryDate(areaName);
       const deliveryDate = input.requestedDeliveryDate || minDeliveryDate;
 
+      // Check if delivery date is Sunday
+      if (deliveryDate.getDay() === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Sunday deliveries are not available. Please select a weekday (Monday-Saturday).',
+        });
+      }
+
       // Validate delivery date is not in the past and is at or after minimum date
       const isValidDate = await isValidDeliveryDate(deliveryDate, areaName);
       if (!isValidDate) {

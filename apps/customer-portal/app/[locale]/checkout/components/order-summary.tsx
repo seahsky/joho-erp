@@ -37,6 +37,7 @@ export function OrderSummary() {
 
   // State for delivery date
   const [deliveryDate, setDeliveryDate] = React.useState<string>('');
+  const [isSundayError, setIsSundayError] = React.useState<boolean>(false);
 
   // Fetch customer profile for delivery address
   const { data: customer, isLoading: isLoadingCustomer } = api.customer.getProfile.useQuery();
@@ -112,6 +113,19 @@ export function OrderSummary() {
       return;
     }
 
+    // Check if selected delivery date is Sunday
+    if (deliveryDate) {
+      const selectedDate = new Date(deliveryDate);
+      if (selectedDate.getDay() === 0) {
+        toast({
+          title: t('error'),
+          description: `${tDelivery('sundayNotAvailable')}. ${tDelivery('selectWeekday')}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // Convert cart items to order format
     const orderItems = cart.items.map((item) => ({
       productId: item.productId,
@@ -122,7 +136,7 @@ export function OrderSummary() {
       items: orderItems,
       requestedDeliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
     });
-  };
+  };;
 
   // Check if order exceeds available credit
   const exceedsCredit = cart?.exceedsCredit ?? false;
@@ -356,9 +370,22 @@ export function OrderSummary() {
               type="date"
               value={deliveryDate}
               min={minDeliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className="mt-1"
+              onChange={(e) => {
+                const selectedDate = e.target.value;
+                setDeliveryDate(selectedDate);
+
+                // Check if selected date is Sunday (getDay() returns 0 for Sunday)
+                const date = new Date(selectedDate);
+                const isSunday = date.getDay() === 0;
+                setIsSundayError(isSunday);
+              }}
+              className={`mt-1 ${isSundayError ? 'border-destructive' : ''}`}
             />
+            {isSundayError && (
+              <p className="text-sm text-destructive mt-1">
+                {tDelivery('sundayNotAvailable')}. {tDelivery('selectWeekday')}
+              </p>
+            )}
           </div>
 
           {/* Cutoff Reminder */}
@@ -485,7 +512,7 @@ export function OrderSummary() {
         className="w-full"
         size="lg"
         onClick={handlePlaceOrder}
-        disabled={createOrder.isPending || cart.items.length === 0 || exceedsCredit || belowMinimum || !deliveryDate}
+        disabled={createOrder.isPending || cart.items.length === 0 || exceedsCredit || belowMinimum || !deliveryDate || isSundayError}
       >
         {createOrder.isPending ? (
           <>
