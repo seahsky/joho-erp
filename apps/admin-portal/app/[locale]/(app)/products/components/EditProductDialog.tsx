@@ -13,7 +13,7 @@ import {
   ProductImageUpload,
   Checkbox,
 } from '@joho-erp/ui';
-import { Loader2, Package } from 'lucide-react';
+import { Loader2, Package, PackagePlus } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCentsForInput, parseToCents } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl';
 import imageCompression from 'browser-image-compression';
 import { CategorySelect } from './CategorySelect';
 import { CustomerPricingSection, type PricingEntry } from './CustomerPricingSection';
+import { StockAdjustmentDialog } from './StockAdjustmentDialog';
 
 type Customer = {
   id: string;
@@ -85,6 +86,9 @@ export function EditProductDialog({
 
   // Pricing state
   const [pricingMap, setPricingMap] = useState<Map<string, PricingEntry>>(new Map());
+
+  // Stock adjustment dialog state
+  const [showStockAdjustment, setShowStockAdjustment] = useState(false);
 
   // Fetch customers for pricing
   const { data: customersData } = api.customer.getAll.useQuery({
@@ -315,7 +319,7 @@ export function EditProductDialog({
       basePrice: basePriceInCents,
       applyGst,
       gstRate: gstRateValue,
-      currentStock: parseInt(currentStock) || 0,
+      // currentStock is now read-only, managed via StockAdjustmentDialog
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
       imageUrl: imageUrl || null,
@@ -501,14 +505,27 @@ export function EditProductDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="currentStock">{t('productForm.fields.currentStock')}</Label>
+                <Label htmlFor="currentStock">{t('productForm.fields.currentStockReadOnly')}</Label>
                 <Input
                   id="currentStock"
                   type="number"
                   value={currentStock}
-                  onChange={(e) => setCurrentStock(e.target.value)}
-                  placeholder={t('productForm.fields.currentStockPlaceholder')}
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('productForm.fields.stockAdjustmentHint')}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowStockAdjustment(true)}
+                  className="mt-2"
+                >
+                  <PackagePlus className="mr-2 h-4 w-4" />
+                  {t('productForm.buttons.adjustStock')}
+                </Button>
               </div>
 
               <div>
@@ -569,6 +586,18 @@ export function EditProductDialog({
           </div>
         </form>
       </DialogContent>
+
+      {/* Stock Adjustment Dialog */}
+      <StockAdjustmentDialog
+        open={showStockAdjustment}
+        onOpenChange={setShowStockAdjustment}
+        product={product}
+        onSuccess={() => {
+          setShowStockAdjustment(false);
+          // Refresh product data by refetching
+          onSuccess();
+        }}
+      />
     </Dialog>
   );
 }

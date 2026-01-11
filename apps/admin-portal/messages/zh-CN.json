@@ -711,6 +711,9 @@
       "gstRatePlaceholder": "10",
       "currentStock": "当前库存",
       "currentStockPlaceholder": "0",
+      "currentStockReadOnly": "当前库存（只读）",
+      "stockAdjustmentHint": "要调整库存水平，请使用库存调整功能",
+      "initialStockHint": "新产品从 0 库存开始。创建后使用库存调整添加初始库存。",
       "lowStockThreshold": "低库存阈值",
       "lowStockThresholdPlaceholder": "10",
       "status": "状态",
@@ -758,7 +761,8 @@
       "cancel": "取消",
       "createProduct": "创建产品",
       "addProduct": "添加产品",
-      "updateProduct": "更新产品"
+      "updateProduct": "更新产品",
+      "adjustStock": "调整库存"
     },
     "validation": {
       "skuNamePriceRequired": "货号、名称和基础价格为必填项",

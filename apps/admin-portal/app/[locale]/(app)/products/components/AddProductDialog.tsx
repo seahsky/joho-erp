@@ -54,7 +54,7 @@ export function AddProductDialog({
   const [basePrice, setBasePrice] = useState('');
   const [applyGst, setApplyGst] = useState(false);
   const [gstRate, setGstRate] = useState('10'); // Default 10% (Australian GST)
-  const [currentStock, setCurrentStock] = useState('0');
+  // currentStock is always 0 for new products - must use StockAdjustmentDialog after creation
   const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
 
@@ -236,7 +236,7 @@ export function AddProductDialog({
       basePrice: basePriceInCents, // Send cents to API
       applyGst,
       gstRate: gstRateValue, // Only set if applyGst is true
-      currentStock: parseInt(currentStock) || 0,
+      currentStock: 0, // Always 0 for new products - use StockAdjustmentDialog to add initial stock
       lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : undefined,
       status,
       imageUrl: imageUrl || undefined,
@@ -254,7 +254,7 @@ export function AddProductDialog({
     setBasePrice('');
     setApplyGst(false);
     setGstRate('10');
-    setCurrentStock('0');
+    // currentStock is always 0, no need to reset
     setLowStockThreshold('');
     setStatus('active');
     setImageUrl(null);
@@ -439,14 +439,17 @@ export function AddProductDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="currentStock">{t('productForm.fields.currentStock')}</Label>
+                <Label htmlFor="currentStock">{t('productForm.fields.currentStockReadOnly')}</Label>
                 <Input
                   id="currentStock"
                   type="number"
-                  value={currentStock}
-                  onChange={(e) => setCurrentStock(e.target.value)}
-                  placeholder={t('productForm.fields.currentStockPlaceholder')}
+                  value="0"
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('productForm.fields.initialStockHint')}
+                </p>
               </div>
 
               <div>

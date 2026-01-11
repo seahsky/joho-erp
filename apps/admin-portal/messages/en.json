@@ -711,6 +711,9 @@
       "gstRatePlaceholder": "10",
       "currentStock": "Current Stock",
       "currentStockPlaceholder": "0",
+      "currentStockReadOnly": "Current Stock (Read-Only)",
+      "stockAdjustmentHint": "To adjust stock levels, use the Stock Adjustment feature",
+      "initialStockHint": "New products start with 0 stock. Use Stock Adjustment after creation to add initial inventory.",
       "lowStockThreshold": "Low Stock Threshold",
       "lowStockThresholdPlaceholder": "10",
       "status": "Status",
@@ -758,7 +761,8 @@
       "cancel": "Cancel",
       "createProduct": "Create Product",
       "addProduct": "Add Product",
-      "updateProduct": "Update Product"
+      "updateProduct": "Update Product",
+      "adjustStock": "Adjust Stock"
     },
     "validation": {
       "skuNamePriceRequired": "SKU, name, and base price are required",

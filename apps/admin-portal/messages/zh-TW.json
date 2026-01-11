@@ -711,6 +711,9 @@
       "gstRatePlaceholder": "10",
       "currentStock": "當前庫存",
       "currentStockPlaceholder": "0",
+      "currentStockReadOnly": "目前庫存（唯讀）",
+      "stockAdjustmentHint": "要調整庫存水準，請使用庫存調整功能",
+      "initialStockHint": "新產品從 0 庫存開始。建立後使用庫存調整新增初始庫存。",
       "lowStockThreshold": "低庫存閾值",
       "lowStockThresholdPlaceholder": "10",
       "status": "狀態",
@@ -758,7 +761,8 @@
       "cancel": "取消",
       "createProduct": "創建產品",
       "addProduct": "添加產品",
-      "updateProduct": "更新產品"
+      "updateProduct": "更新產品",
+      "adjustStock": "調整庫存"
     },
     "validation": {
       "skuNamePriceRequired": "貨號、名稱和基礎價格為必填項",
