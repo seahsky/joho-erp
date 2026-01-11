@@ -7,10 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, Button, StatusBadge, type Sta
 import {
   CheckCircle2,
   Clock,
-  XCircle,
   ShoppingCart,
   Package,
-  CreditCard,
   ArrowRight,
   Loader2,
   AlertTriangle,
@@ -109,7 +107,7 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
       </Card>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {/* Onboarding Status */}
         <Card className={`shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 ${isOnboardingComplete ? 'border-green-200' : 'border-amber-200'}`}>
           <CardHeader className="pb-2">
@@ -136,50 +134,6 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Credit Application Status */}
-        <Card
-          className={`shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 ${
-            creditStatus === 'approved'
-              ? 'border-green-200'
-              : creditStatus === 'pending'
-              ? 'border-amber-200'
-              : 'border-red-200'
-          }`}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              {t('credit.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {creditStatus === 'approved' && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">{t('credit.approved')}</span>
-              </div>
-            )}
-            {creditStatus === 'pending' && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-amber-600">
-                  <Clock className="h-5 w-5" />
-                  <span className="font-medium">{t('credit.pending')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('credit.pendingMessage')}</p>
-              </div>
-            )}
-            {creditStatus === 'rejected' && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-red-600">
-                  <XCircle className="h-5 w-5" />
-                  <span className="font-medium">{t('credit.rejected')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('credit.rejectedMessage')}</p>
               </div>
             )}
           </CardContent>

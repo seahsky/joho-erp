@@ -186,8 +186,10 @@
     "tapToEdit": "Tap to edit quantity",
     "maxStockReached": "Maximum stock reached",
     "onboardingRequired": "Complete your onboarding to start ordering",
-    "creditPending": "Your credit application is pending approval",
-    "creditRejected": "Your credit application was not approved. Please contact us.",
+    "creditPending": "Your account is pending approval",
+    "creditRejected": "Your account requires approval. Please contact us.",
+    "accountPending": "Your account is pending approval",
+    "accountRejected": "Your account requires approval. Please contact us.",
     "completeOnboarding": "Complete Onboarding",
     "customPricing": "Special Price",
     "noImage": "No Image",
@@ -402,7 +404,10 @@
       "description": "GST applied to eligible items",
       "withGst": "items with GST",
       "exempt": "GST-exempt items"
-    }
+    },
+    "orderBlockedWarning": "Unable to process order. Please contact us.",
+    "checkoutBlocked": "Checkout unavailable",
+    "checkoutBlockedWarning": "Unable to checkout. Please contact us."
   },
   "miniCart": {
     "title": "Your Cart",
@@ -718,8 +723,9 @@
     "restrictions": {
       "title": "Checkout Restricted",
       "onboardingRequired": "Complete your registration to place orders.",
-      "creditPending": "Your credit application is pending. Orders will be enabled once approved.",
-      "creditRejected": "Your credit application was not approved. Please contact us for assistance."
+      "creditPending": "Your account is pending approval. Orders will be enabled once approved.",
+      "creditRejected": "Your account requires approval. Please contact us.",
+      "accountPendingApproval": "Your account is pending approval. Orders will be enabled once approved."
     },
     "recentOrders": {
       "title": "Recent Orders",
@@ -745,15 +751,17 @@
     "emptyCart": "Your cart is empty",
     "emptyCartDescription": "Add some products to your cart before checking out",
     "continueShopping": "Continue Shopping",
+    "orderBlocked": "Order Cannot Be Processed",
+    "orderBlockedMessage": "Please contact our sales team for assistance.",
     "blocking": {
       "onboardingTitle": "Complete Registration Required",
       "onboardingMessage": "Please complete your business registration before placing orders. You can still browse products and add items to your cart.",
       "completeOnboarding": "Complete Registration",
       "creditTitle": "Credit Approval Required",
-      "creditPendingMessage": "Your credit application is being reviewed. You can browse products and add items to your cart, but orders cannot be placed until your credit is approved.",
-      "creditRejectedMessage": "Your credit application was not approved. Please contact our sales team for assistance.",
+      "creditPendingMessage": "Your account is pending approval. Orders cannot be placed until approved.",
+      "creditRejectedMessage": "Your account requires approval. Please contact sales.",
       "viewProfile": "View Profile",
-      "creditPendingButton": "Credit Approval Pending"
+      "creditPendingButton": "Account Approval Pending"
     },
     "backorderWarning": {
       "title": "Backorder Approval Required",

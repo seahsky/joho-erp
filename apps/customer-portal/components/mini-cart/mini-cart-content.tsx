@@ -174,7 +174,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
             'border border-destructive/20'
           )}>
             <p className="text-xs text-destructive text-center font-medium">
-              {t('cart.creditLimitWarning')}
+              {t('cart.checkoutBlockedWarning')}
             </p>
           </div>
         )}

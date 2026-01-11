@@ -49,9 +49,6 @@ export function OrderSummary() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Fetch available credit info
-  const { data: creditInfo, isLoading: isLoadingCredit } = api.order.getAvailableCreditInfo.useQuery();
-
   // Fetch minimum order info
   const { data: minimumOrderInfo } = api.order.getMinimumOrderInfo.useQuery();
 
@@ -128,10 +125,7 @@ export function OrderSummary() {
   };
 
   // Check if order exceeds available credit
-  const exceedsCredit = React.useMemo(() => {
-    if (!creditInfo || !cart) return false;
-    return cart.total > creditInfo.availableCredit;
-  }, [creditInfo, cart]);
+  const exceedsCredit = cart?.exceedsCredit ?? false;
 
   // Check if order is below minimum
   const belowMinimum = React.useMemo(() => {
@@ -149,7 +143,7 @@ export function OrderSummary() {
   const total = cart?.total ?? 0;
 
   // Loading state
-  if (isLoadingCustomer || isLoadingCart || isLoadingCredit || isLoadingStatus) {
+  if (isLoadingCustomer || isLoadingCart || isLoadingStatus) {
     return (
       <div className="space-y-4">
         <Card>
@@ -379,18 +373,15 @@ export function OrderSummary() {
       </Card>
 
       {/* Credit Limit Warning */}
-      {exceedsCredit && creditInfo && (
+      {exceedsCredit && (
         <Card className="border-destructive bg-destructive/5">
           <CardContent className="p-4">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
               <div>
-                <H3 className="text-base mb-1 text-destructive">{tCredit('exceedsCredit')}</H3>
+                <H3 className="text-base mb-1 text-destructive">{t('orderBlocked')}</H3>
                 <p className="text-sm text-muted-foreground">
-                  {tCredit('exceedsCreditMessage', {
-                    total: formatAUD(total),
-                    available: formatAUD(creditInfo.availableCredit),
-                  })}
+                  {t('orderBlockedMessage')}
                 </p>
               </div>
             </div>
@@ -486,28 +477,6 @@ export function OrderSummary() {
             <p className="text-lg font-semibold">{tCommon('total')}</p>
             <p className="text-lg font-bold">{formatAUD(total)}</p>
           </div>
-
-          {/* Credit info if applicable */}
-          {customer.creditApplication.status === 'approved' && creditInfo && (
-            <div className="pt-3 border-t space-y-1">
-              <div className="flex justify-between text-sm">
-                <Muted>{tCredit('creditLimit')}</Muted>
-                <span>{formatAUD(creditInfo.creditLimit)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <Muted>{tCredit('outstandingBalance')}</Muted>
-                <span>{formatAUD(creditInfo.outstandingBalance)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-medium">
-                <span className={exceedsCredit ? 'text-destructive' : 'text-green-600'}>
-                  {tCredit('availableCredit')}
-                </span>
-                <span className={exceedsCredit ? 'text-destructive' : 'text-green-600'}>
-                  {formatAUD(creditInfo.availableCredit)}
-                </span>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

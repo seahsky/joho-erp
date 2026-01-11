@@ -185,8 +185,10 @@
     "tapToEdit": "點擊編輯數量",
     "maxStockReached": "已達到最大庫存",
     "onboardingRequired": "請完成註冊流程以開始訂購",
-    "creditPending": "您的信用申請正在審核中",
-    "creditRejected": "您的信用申請未獲批准，請聯繫我們",
+    "creditPending": "您的帳戶正在審核中",
+    "creditRejected": "您的帳戶需要審批。請聯繫我們。",
+    "accountPending": "您的帳戶正在審核中",
+    "accountRejected": "您的帳戶需要審批。請聯繫我們。",
     "completeOnboarding": "完成註冊",
     "customPricing": "專屬價格",
     "gstIncluded": "含消費稅",
@@ -402,7 +404,10 @@
       "description": "消費稅適用於符合條件的商品",
       "withGst": "含消費稅的商品",
       "exempt": "免消費稅的商品"
-    }
+    },
+    "orderBlockedWarning": "無法處理訂單。請聯繫我們。",
+    "checkoutBlocked": "無法結帳",
+    "checkoutBlockedWarning": "無法結帳。請聯繫我們。"
   },
   "miniCart": {
     "title": "您的購物車",
@@ -449,8 +454,9 @@
     "restrictions": {
       "title": "結帳受限",
       "onboardingRequired": "完成註冊後才能下單。",
-      "creditPending": "您的信用申請正在審核中。批准後即可下單。",
-      "creditRejected": "您的信用申請未獲批准。請聯繫我們獲取幫助。"
+      "creditPending": "您的帳戶正在審核中。審核通過後即可下單。",
+      "creditRejected": "您的帳戶需要審批。請聯繫我們。",
+      "accountPendingApproval": "您的帳戶正在審核中。審核通過後即可下單。"
     },
     "recentOrders": {
       "title": "最近訂單",
@@ -476,15 +482,17 @@
     "emptyCart": "您的購物車是空的",
     "emptyCartDescription": "結帳前請添加一些產品到購物車",
     "continueShopping": "繼續購物",
+    "orderBlocked": "無法處理訂單",
+    "orderBlockedMessage": "請聯繫我們的銷售團隊尋求幫助。",
     "blocking": {
       "onboardingTitle": "需要完成註冊",
       "onboardingMessage": "請在下單前完成您的企業註冊。您仍可以瀏覽產品並將商品添加到購物車。",
       "completeOnboarding": "完成註冊",
       "creditTitle": "需要信用審批",
-      "creditPendingMessage": "您的信用申請正在審核中。您可以瀏覽產品並將商品添加到購物車，但在信用批准之前無法下單。",
-      "creditRejectedMessage": "您的信用申請未獲批准。請聯繫我們的銷售團隊獲取幫助。",
+      "creditPendingMessage": "您的帳戶正在審核中。審核通過前無法下單。",
+      "creditRejectedMessage": "您的帳戶需要審批。請聯繫銷售團隊。",
       "viewProfile": "查看個人資料",
-      "creditPendingButton": "信用審批中"
+      "creditPendingButton": "帳戶審批中"
     },
     "backorderWarning": {
       "title": "需要缺貨訂單審批",

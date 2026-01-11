@@ -10,7 +10,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  CreditCard,
   Settings,
   LogOut,
   Loader2,
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 
 type UserDisplayData = { firstName: string | null; lastName: string | null } | null;
@@ -130,10 +128,6 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
       </div>
     );
   }
-
-  // usedCredit is now calculated from actual orders in the API
-  const usedCredit = customer.usedCredit ?? 0;
-  const availableCredit = customer.creditApplication.creditLimit - usedCredit;
 
   return (
     <div className="space-y-4">
@@ -322,71 +316,6 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                 </p>
               )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Credit Information */}
-      <Card className="shadow-sm hover:shadow-md transition-all duration-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            {t('creditInfo')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 md:p-6 space-y-3">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{t('creditStatus')}</p>
-            <p className="text-base">
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm ${
-                  customer.creditApplication.status === 'approved'
-                    ? 'bg-green-500 text-white'
-                    : customer.creditApplication.status === 'pending'
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-red-500 text-white'
-                }`}
-              >
-                {customer.creditApplication.status === 'approved' && `✓ ${t('approved')}`}
-                {customer.creditApplication.status === 'pending' && `⏳ ${t('pending')}`}
-                {customer.creditApplication.status === 'rejected' && `✗ ${t('rejected')}`}
-              </span>
-            </p>
-          </div>
-          {customer.creditApplication.status === 'approved' && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('creditLimit')}</p>
-                  <p className="text-xl font-bold">
-                    {formatCurrency(customer.creditApplication.creditLimit)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('availableCredit')}</p>
-                  <p className="text-xl font-bold text-green-600">
-                    {formatCurrency(availableCredit)}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">{t('used')}</span>
-                  <span className="font-medium">
-                    {formatCurrency(usedCredit)} /{' '}
-                    {formatCurrency(customer.creditApplication.creditLimit)}
-                  </span>
-                </div>
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary"
-                    style={{
-                      width: `${(usedCredit / customer.creditApplication.creditLimit) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </>
           )}
         </CardContent>
       </Card>
