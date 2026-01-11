@@ -123,8 +123,8 @@ export default function PackingPage() {
   }, [session?.orders]);
 
   // Data from API with fallbacks for loading state
-  const orders = session?.orders ?? [];
-  const productSummary = session?.productSummary ?? [];
+  const orders = useMemo(() => session?.orders ?? [], [session?.orders]);
+  const productSummary = useMemo(() => session?.productSummary ?? [], [session?.productSummary]);
 
   // Extract unique categories from productSummary
   const categories = useMemo(() => {

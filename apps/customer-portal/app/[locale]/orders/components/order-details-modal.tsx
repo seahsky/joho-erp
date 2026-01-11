@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -300,9 +301,11 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                           onClick={() => setShowPodPreview(true)}
                           className="relative w-20 h-20 rounded-md overflow-hidden border-2 border-border hover:border-primary transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                         >
-                          <img
+                          <Image
                             src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
                             alt={t('proofOfDelivery.imageAlt')}
+                            width={80}
+                            height={80}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -464,9 +467,11 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
             className="relative max-w-[90vw] max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <Image
               src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
               alt={t('proofOfDelivery.imageAlt')}
+              width={1200}
+              height={1200}
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent rounded-b-lg">

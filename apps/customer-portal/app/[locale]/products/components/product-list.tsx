@@ -56,7 +56,7 @@ export function ProductList() {
   });
 
   const { data: categoriesData } = api.category.getAll.useQuery();
-  const categories = categoriesData ?? [];
+  const categories = React.useMemo(() => categoriesData ?? [], [categoriesData]);
 
   // Pull-to-refresh for mobile
   const {

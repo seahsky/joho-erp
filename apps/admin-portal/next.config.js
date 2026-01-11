@@ -11,8 +11,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '3mb',
     },
-    // Enable instrumentation for Agenda scheduler
-    instrumentationHook: true,
   },
   // Externalize optional MongoDB dependencies used by Agenda
   webpack: (config, { isServer }) => {
