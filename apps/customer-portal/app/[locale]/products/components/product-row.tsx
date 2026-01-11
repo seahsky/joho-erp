@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { Badge, Muted, Large, cn } from '@joho-erp/ui';
+import { Badge, Muted, Large } from '@joho-erp/ui';
 import { formatAUD } from '@joho-erp/shared';
 import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
 import { InlineQuantityControls } from './inline-quantity-controls';
@@ -43,7 +43,7 @@ export function ProductRow({
   onExpandToggle,
   canAddToCart,
   cartQuantity,
-  creditStatus,
+  creditStatus: _creditStatus,
 }: ProductRowProps) {
   const t = useTranslations();
 

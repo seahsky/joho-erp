@@ -191,10 +191,36 @@ export function InlineQuantityControls({
   };
 
   const handleSaveQuantity = () => {
+    // Handle empty input - remove item from cart
+    if (inputValue.trim() === '') {
+      // Only remove if item is in cart
+      if (currentQuantity > 0) {
+        removeItem.mutate({ productId });
+      }
+      setIsEditing(false);
+      return;
+    }
+
     const newQty = parseInt(inputValue, 10);
 
-    // Validate input
-    if (isNaN(newQty) || newQty < MIN_QUANTITY || newQty > MAX_QUANTITY) {
+    // If invalid number or 0, remove item if in cart
+    if (isNaN(newQty) || newQty <= 0) {
+      if (currentQuantity > 0) {
+        removeItem.mutate({ productId });
+      } else {
+        toast({
+          title: t('products.quantity.invalid'),
+          description: t('products.quantity.precision'),
+          variant: 'destructive',
+        });
+        setInputValue(currentQuantity.toString());
+      }
+      setIsEditing(false);
+      return;
+    }
+
+    // Validate range
+    if (newQty > MAX_QUANTITY) {
       toast({
         title: t('products.quantity.invalid'),
         description: t('products.quantity.precision'),

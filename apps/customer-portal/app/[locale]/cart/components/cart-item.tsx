@@ -113,15 +113,35 @@ export function CartItem({ item }: CartItemProps) {
 
   const handleQuantityBlur = () => {
     setIsEditingQuantity(false);
+
+    // Handle empty input - remove item from cart
+    if (editQuantity.trim() === '') {
+      removeItem.mutate({ productId: item.productId });
+      return;
+    }
+
     const newQty = parseInt(editQuantity, 10);
-    if (!isNaN(newQty) && newQty > 0 && newQty !== item.quantity) {
+
+    // If invalid number, restore to original
+    if (isNaN(newQty)) {
+      setEditQuantity(item.quantity.toString());
+      return;
+    }
+
+    // If 0 or negative, remove item from cart
+    if (newQty <= 0) {
+      removeItem.mutate({ productId: item.productId });
+      return;
+    }
+
+    // If valid and different from current, update
+    if (newQty !== item.quantity) {
       updateQuantity.mutate({
         productId: item.productId,
         quantity: newQty,
       });
-    } else if (newQty <= 0) {
-      removeItem.mutate({ productId: item.productId });
     } else {
+      // Same value, just normalize the display
       setEditQuantity(item.quantity.toString());
     }
   };

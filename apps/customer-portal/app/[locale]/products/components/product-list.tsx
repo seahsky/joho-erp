@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { MobileSearch, Skeleton, useToast, cn, IllustratedEmptyState, Button, useIsMobile } from '@joho-erp/ui';
+import { MobileSearch, Skeleton, cn, IllustratedEmptyState, Button, useIsMobile } from '@joho-erp/ui';
 import { AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
@@ -44,7 +44,6 @@ export function ProductList() {
   const t = useTranslations();
   const tIllustrated = useTranslations('illustratedEmptyState');
   const locale = useLocale();
-  const { toast } = useToast();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>();
@@ -58,8 +57,6 @@ export function ProductList() {
 
   const { data: categoriesData } = api.category.getAll.useQuery();
   const categories = categoriesData ?? [];
-
-  const utils = api.useUtils();
 
   // Pull-to-refresh for mobile
   const {
