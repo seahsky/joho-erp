@@ -67,6 +67,9 @@ export function AddProductDialog({
   // Pricing state
   const [pricingMap, setPricingMap] = useState<Map<string, PricingEntry>>(new Map());
 
+  // Field error state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Fetch customers for pricing
   const { data: customersData } = api.customer.getAll.useQuery({
     limit: 1000,
@@ -174,57 +177,101 @@ export function AddProductDialog({
     [customersData?.customers]
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
 
-    // Validation
-    if (!sku || !name || !basePrice) {
-      toast({
-        title: t('productForm.validation.invalidInput'),
-        description: t('productForm.validation.skuNamePriceRequired'),
-        variant: 'destructive',
-      });
-      return;
+  const validateForm = (): { isValid: boolean; gstRateValue?: number; lossPercentage?: number } => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    // SKU validation
+    if (!sku?.trim()) {
+      errors.sku = t('productForm.validation.skuRequired');
+      isValid = false;
     }
 
-    // Convert basePrice from dollars to cents
-    const basePriceInCents = parseToCents(basePrice);
-    if (basePriceInCents === null || basePriceInCents <= 0) {
-      toast({
-        title: t('productForm.validation.invalidInput'),
-        description: t('productForm.validation.basePricePositive'),
-        variant: 'destructive',
-      });
-      return;
+    // Name validation
+    if (!name?.trim()) {
+      errors.name = t('productForm.validation.nameRequired');
+      isValid = false;
     }
 
-    // Validate GST rate if GST is applied
+    // Base price validation
+    if (!basePrice?.trim()) {
+      errors.basePrice = t('productForm.validation.basePriceRequired');
+      isValid = false;
+    } else {
+      const basePriceInCents = parseToCents(basePrice);
+      if (basePriceInCents === null || basePriceInCents <= 0) {
+        errors.basePrice = t('productForm.validation.basePricePositive');
+        isValid = false;
+      }
+    }
+
+    // Unit validation (should always have value due to default, but check anyway)
+    if (!unit) {
+      errors.unit = t('productForm.validation.unitRequired');
+      isValid = false;
+    }
+
+    // Package size validation (if provided)
+    if (packageSize && (isNaN(parseFloat(packageSize)) || parseFloat(packageSize) <= 0)) {
+      errors.packageSize = t('productForm.validation.packageSizePositive');
+      isValid = false;
+    }
+
+    // Category validation (optional based on business rules, but good to have)
+    if (!categoryId) {
+      errors.categoryId = t('productForm.validation.categoryRequired');
+      isValid = false;
+    }
+
+    // GST rate validation if GST is applied
     let gstRateValue: number | undefined;
     if (applyGst) {
       gstRateValue = parseFloat(gstRate);
       if (isNaN(gstRateValue) || gstRateValue < 0 || gstRateValue > 100) {
-        toast({
-          title: t('productForm.validation.invalidInput'),
-          description: t('productForm.validation.gstRateRange'),
-          variant: 'destructive',
-        });
-        return;
+        errors.gstRate = t('productForm.validation.gstRateRange');
+        isValid = false;
       }
     }
 
-    // Validate estimated loss percentage if provided
+    // Estimated loss percentage validation
     let lossPercentage: number | undefined;
     if (estimatedLossPercentage) {
       lossPercentage = parseFloat(estimatedLossPercentage);
       if (isNaN(lossPercentage) || lossPercentage < 0 || lossPercentage > 100) {
-        toast({
-          title: t('productForm.validation.invalidInput'),
-          description: t('productForm.validation.lossPercentageRange'),
-          variant: 'destructive',
-        });
-        return;
+        errors.estimatedLossPercentage = t('productForm.validation.lossPercentageRange');
+        isValid = false;
       }
     }
+
+    setFieldErrors(errors);
+    return { isValid, gstRateValue, lossPercentage };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const validation = validateForm();
+    if (!validation.isValid) {
+      toast({
+        title: t('productForm.validation.invalidInput'),
+        description: t('productForm.validation.fixErrors'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Get validated values
+    const basePriceInCents = parseToCents(basePrice)!;
+    const gstRateValue = validation.gstRateValue;
+    const lossPercentage = validation.lossPercentage;
 
     // Build customer pricing array (convert to cents)
     const customerPricing = Array.from(pricingMap.entries())
@@ -276,6 +323,7 @@ export function AddProductDialog({
     setStatus('active');
     setImageUrl(null);
     setPricingMap(new Map());
+    setFieldErrors({});
   };
 
   return (
@@ -296,25 +344,37 @@ export function AddProductDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">{t('productForm.sections.productDetails')}</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="sku">{t('productForm.fields.skuRequired')}</Label>
                 <Input
                   id="sku"
                   value={sku}
-                  onChange={(e) => setSku(e.target.value)}
+                  onChange={(e) => {
+                    setSku(e.target.value);
+                    clearFieldError('sku');
+                  }}
                   placeholder={t('productForm.fields.skuPlaceholder')}
                   required
                 />
+                {fieldErrors.sku && (
+                  <p className="text-sm text-destructive">{fieldErrors.sku}</p>
+                )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="name">{t('productForm.fields.nameRequired')}</Label>
                 <Input
                   id="name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    clearFieldError('name');
+                  }}
                   placeholder={t('productForm.fields.namePlaceholder')}
                   required
                 />
+                {fieldErrors.name && (
+                  <p className="text-sm text-destructive">{fieldErrors.name}</p>
+                )}
               </div>
             </div>
 
@@ -328,11 +388,14 @@ export function AddProductDialog({
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="category">{t('productForm.fields.category')}</Label>
               <CategorySelect
                 value={categoryId}
-                onChange={setCategoryId}
+                onChange={(value) => {
+                  setCategoryId(value);
+                  clearFieldError('categoryId');
+                }}
                 categories={categories}
                 onCreateCategory={handleCreateCategory}
                 isCreating={createCategoryMutation.isPending}
@@ -346,6 +409,9 @@ export function AddProductDialog({
                   creating: t('productForm.fields.creatingCategory'),
                 }}
               />
+              {fieldErrors.categoryId && (
+                <p className="text-sm text-destructive">{fieldErrors.categoryId}</p>
+              )}
             </div>
           </div>
 
@@ -377,12 +443,15 @@ export function AddProductDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">{t('productForm.sections.inventoryPricing')}</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="unit">{t('productForm.fields.unitRequired')}</Label>
                 <select
                   id="unit"
                   value={unit}
-                  onChange={(e) => setUnit(e.target.value as 'kg' | 'piece' | 'box' | 'carton')}
+                  onChange={(e) => {
+                    setUnit(e.target.value as 'kg' | 'piece' | 'box' | 'carton');
+                    clearFieldError('unit');
+                  }}
                   className="w-full px-3 py-2 border rounded-md"
                   required
                 >
@@ -391,33 +460,48 @@ export function AddProductDialog({
                   <option value="box">{t('productForm.units.box')}</option>
                   <option value="carton">{t('productForm.units.carton')}</option>
                 </select>
+                {fieldErrors.unit && (
+                  <p className="text-sm text-destructive">{fieldErrors.unit}</p>
+                )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="packageSize">{t('productForm.fields.packageSize')}</Label>
                 <Input
                   id="packageSize"
                   type="number"
                   step="0.01"
                   value={packageSize}
-                  onChange={(e) => setPackageSize(e.target.value)}
+                  onChange={(e) => {
+                    setPackageSize(e.target.value);
+                    clearFieldError('packageSize');
+                  }}
                   placeholder={t('productForm.fields.packageSizePlaceholder')}
                 />
+                {fieldErrors.packageSize && (
+                  <p className="text-sm text-destructive">{fieldErrors.packageSize}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="basePrice">{t('productForm.fields.basePrice')}</Label>
                 <Input
                   id="basePrice"
                   type="number"
                   step="0.01"
                   value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
+                  onChange={(e) => {
+                    setBasePrice(e.target.value);
+                    clearFieldError('basePrice');
+                  }}
                   placeholder={t('productForm.fields.basePricePlaceholder')}
                   required
                 />
+                {fieldErrors.basePrice && (
+                  <p className="text-sm text-destructive">{fieldErrors.basePrice}</p>
+                )}
               </div>
             </div>
 
@@ -438,7 +522,7 @@ export function AddProductDialog({
               </p>
 
               {applyGst && (
-                <div className="ml-6 w-1/2">
+                <div className="ml-6 w-1/2 space-y-2">
                   <Label htmlFor="gstRate">{t('productForm.fields.gstRate')}</Label>
                   <Input
                     id="gstRate"
@@ -447,9 +531,15 @@ export function AddProductDialog({
                     min="0"
                     max="100"
                     value={gstRate}
-                    onChange={(e) => setGstRate(e.target.value)}
+                    onChange={(e) => {
+                      setGstRate(e.target.value);
+                      clearFieldError('gstRate');
+                    }}
                     placeholder={t('productForm.fields.gstRatePlaceholder')}
                   />
+                  {fieldErrors.gstRate && (
+                    <p className="text-sm text-destructive">{fieldErrors.gstRate}</p>
+                  )}
                 </div>
               )}
             </div>

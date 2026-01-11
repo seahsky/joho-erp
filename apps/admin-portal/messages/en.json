@@ -769,11 +769,18 @@
     },
     "validation": {
       "skuNamePriceRequired": "SKU, name, and base price are required",
+      "skuRequired": "SKU is required",
+      "nameRequired": "Product name is required",
+      "basePriceRequired": "Base price is required",
       "basePricePositive": "Base price must be a positive number",
+      "unitRequired": "Unit is required",
       "unitCostPositive": "Unit cost must be a positive number",
+      "packageSizePositive": "Package size must be a positive number",
+      "categoryRequired": "Category is required",
       "gstRateRange": "GST rate must be between 0 and 100",
       "lossPercentageRange": "Loss percentage must be between 0 and 100",
       "invalidInput": "Invalid input",
+      "fixErrors": "Please fix the errors in the form",
       "invalidPercentAndPrice": "Please enter a valid percentage and base price",
       "invalidAmountAndPrice": "Please enter a valid amount and base price"
     },

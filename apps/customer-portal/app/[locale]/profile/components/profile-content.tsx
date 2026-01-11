@@ -43,6 +43,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
     postcode: '',
     deliveryInstructions: '',
   });
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
 
   // Initialize form when customer data loads
   React.useEffect(() => {
@@ -79,7 +80,65 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
     },
   });
 
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
+
+  const updateField = (field: keyof typeof editForm, value: string) => {
+    setEditForm({ ...editForm, [field]: value });
+    clearFieldError(field);
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const phoneRegex = /^[0-9\s\-\+\(\)]+$/;
+    let isValid = true;
+
+    // Phone validation
+    if (!editForm.phone?.trim()) {
+      errors.phone = t('edit.validation.phoneRequired');
+      isValid = false;
+    } else if (!phoneRegex.test(editForm.phone)) {
+      errors.phone = t('edit.validation.phoneInvalid');
+      isValid = false;
+    }
+
+    // Mobile validation (optional but must be valid if provided)
+    if (editForm.mobile && !phoneRegex.test(editForm.mobile)) {
+      errors.mobile = t('edit.validation.phoneInvalid');
+      isValid = false;
+    }
+
+    // Street validation
+    if (!editForm.street?.trim()) {
+      errors.street = t('edit.validation.streetRequired');
+      isValid = false;
+    }
+
+    // Suburb validation
+    if (!editForm.suburb?.trim()) {
+      errors.suburb = t('edit.validation.suburbRequired');
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const handleSave = () => {
+    if (!validateForm()) {
+      toast({
+        title: t('edit.validationError'),
+        description: t('edit.validationErrorMessage'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     updateProfile.mutate({
       contactPerson: {
         phone: editForm.phone,
@@ -105,6 +164,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
         deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
       });
     }
+    setFieldErrors({});
     setIsEditing(false);
   };
 
@@ -205,9 +265,12 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                   id="phone"
                   type="tel"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  onChange={(e) => updateField('phone', e.target.value)}
                   placeholder={t('phone')}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-sm text-destructive">{fieldErrors.phone}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mobile">{t('edit.mobile')}</Label>
@@ -215,9 +278,12 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                   id="mobile"
                   type="tel"
                   value={editForm.mobile}
-                  onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                  onChange={(e) => updateField('mobile', e.target.value)}
                   placeholder={t('edit.mobile')}
                 />
+                {fieldErrors.mobile && (
+                  <p className="text-sm text-destructive">{fieldErrors.mobile}</p>
+                )}
               </div>
             </>
           ) : (
@@ -259,9 +325,12 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                 <Input
                   id="street"
                   value={editForm.street}
-                  onChange={(e) => setEditForm({ ...editForm, street: e.target.value })}
+                  onChange={(e) => updateField('street', e.target.value)}
                   placeholder={t('street')}
                 />
+                {fieldErrors.street && (
+                  <p className="text-sm text-destructive">{fieldErrors.street}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -269,9 +338,12 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                   <Input
                     id="suburb"
                     value={editForm.suburb}
-                    onChange={(e) => setEditForm({ ...editForm, suburb: e.target.value })}
+                    onChange={(e) => updateField('suburb', e.target.value)}
                     placeholder={t('suburb')}
                   />
+                  {fieldErrors.suburb && (
+                    <p className="text-sm text-destructive">{fieldErrors.suburb}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">{t('state')}</Label>
@@ -297,7 +369,7 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
                 <Input
                   id="deliveryInstructions"
                   value={editForm.deliveryInstructions}
-                  onChange={(e) => setEditForm({ ...editForm, deliveryInstructions: e.target.value })}
+                  onChange={(e) => updateField('deliveryInstructions', e.target.value)}
                   placeholder={t('edit.deliveryInstructions')}
                 />
               </div>

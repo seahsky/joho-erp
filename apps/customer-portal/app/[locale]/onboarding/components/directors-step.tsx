@@ -18,6 +18,7 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
   const [directors, setDirectors] = useState<DirectorInfo[]>(
     data.length > 0 ? data : [createEmptyDirector()]
   );
+  const [directorErrors, setDirectorErrors] = useState<Record<number, Record<string, string>>>({});
 
   function createEmptyDirector(): DirectorInfo {
     return {
@@ -32,11 +33,25 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
     };
   }
 
+  const clearFieldError = (index: number, field: string) => {
+    if (directorErrors[index]?.[field]) {
+      const newErrors = { ...directorErrors };
+      if (newErrors[index]) {
+        delete newErrors[index][field];
+        if (Object.keys(newErrors[index]).length === 0) {
+          delete newErrors[index];
+        }
+      }
+      setDirectorErrors(newErrors);
+    }
+  };
+
   const updateDirector = (index: number, field: keyof DirectorInfo, value: string | DirectorInfo['residentialAddress']) => {
     const updated = [...directors];
     updated[index] = { ...updated[index], [field]: value };
     setDirectors(updated);
     onChange(updated);
+    clearFieldError(index, field);
   };
 
   const updateDirectorAddress = (index: number, field: string, value: string) => {
@@ -47,6 +62,7 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
     };
     setDirectors(updated);
     onChange(updated);
+    clearFieldError(index, field);
   };
 
   const addDirector = () => {
@@ -63,23 +79,72 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
     }
   };
 
-  const validate = () => {
-    return directors.every(
-      (d) =>
-        d.familyName &&
-        d.givenNames &&
-        d.residentialAddress.street &&
-        d.residentialAddress.suburb &&
-        d.residentialAddress.state &&
-        d.residentialAddress.postcode &&
-        d.dateOfBirth &&
-        d.driverLicenseNumber &&
-        d.licenseExpiry
-    );
+  const validateDirectors = (): boolean => {
+    const errors: Record<number, Record<string, string>> = {};
+    let isValid = true;
+
+    directors.forEach((director, index) => {
+      const directorErrors: Record<string, string> = {};
+
+      if (!director.familyName?.trim()) {
+        directorErrors.familyName = t('validation.familyNameRequired');
+        isValid = false;
+      }
+
+      if (!director.givenNames?.trim()) {
+        directorErrors.givenNames = t('validation.givenNamesRequired');
+        isValid = false;
+      }
+
+      if (!director.dateOfBirth) {
+        directorErrors.dateOfBirth = t('validation.dateOfBirthRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.street?.trim()) {
+        directorErrors.street = t('validation.streetRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.suburb?.trim()) {
+        directorErrors.suburb = t('validation.suburbRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.state?.trim()) {
+        directorErrors.state = t('validation.stateRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.postcode?.trim()) {
+        directorErrors.postcode = t('validation.postcodeRequired');
+        isValid = false;
+      } else if (!/^\d{4}$/.test(director.residentialAddress.postcode)) {
+        directorErrors.postcode = t('validation.postcodeInvalid');
+        isValid = false;
+      }
+
+      if (!director.driverLicenseNumber?.trim()) {
+        directorErrors.driverLicenseNumber = t('validation.driverLicenseRequired');
+        isValid = false;
+      }
+
+      if (!director.licenseExpiry) {
+        directorErrors.licenseExpiry = t('validation.licenseExpiryRequired');
+        isValid = false;
+      }
+
+      if (Object.keys(directorErrors).length > 0) {
+        errors[index] = directorErrors;
+      }
+    });
+
+    setDirectorErrors(errors);
+    return isValid;
   };
 
   const handleNext = () => {
-    if (validate()) {
+    if (validateDirectors()) {
       onNext();
     } else {
       toast({
@@ -110,29 +175,38 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.familyName')}</Label>
               <Input
                 value={director.familyName}
                 onChange={(e) => updateDirector(index, 'familyName', e.target.value)}
               />
+              {directorErrors[index]?.familyName && (
+                <p className="text-sm text-destructive">{directorErrors[index].familyName}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.givenNames')}</Label>
               <Input
                 value={director.givenNames}
                 onChange={(e) => updateDirector(index, 'givenNames', e.target.value)}
               />
+              {directorErrors[index]?.givenNames && (
+                <p className="text-sm text-destructive">{directorErrors[index].givenNames}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.dateOfBirth')}</Label>
               <Input
                 type="date"
                 value={director.dateOfBirth}
                 onChange={(e) => updateDirector(index, 'dateOfBirth', e.target.value)}
               />
+              {directorErrors[index]?.dateOfBirth && (
+                <p className="text-sm text-destructive">{directorErrors[index].dateOfBirth}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.position')}</Label>
               <Input
                 value={director.position}
@@ -143,29 +217,38 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
 
           <div className="mt-4 space-y-4">
             <h4 className="font-medium">{t('sections.residentialAddress')}</h4>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.street')}</Label>
               <Input
                 value={director.residentialAddress.street}
                 onChange={(e) => updateDirectorAddress(index, 'street', e.target.value)}
               />
+              {directorErrors[index]?.street && (
+                <p className="text-sm text-destructive">{directorErrors[index].street}</p>
+              )}
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('fields.suburb')}</Label>
                 <Input
                   value={director.residentialAddress.suburb}
                   onChange={(e) => updateDirectorAddress(index, 'suburb', e.target.value)}
                 />
+                {directorErrors[index]?.suburb && (
+                  <p className="text-sm text-destructive">{directorErrors[index].suburb}</p>
+                )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('fields.state')}</Label>
                 <Input
                   value={director.residentialAddress.state}
                   onChange={(e) => updateDirectorAddress(index, 'state', e.target.value)}
                 />
+                {directorErrors[index]?.state && (
+                  <p className="text-sm text-destructive">{directorErrors[index].state}</p>
+                )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('fields.postcode')}</Label>
                 <Input
                   maxLength={4}
@@ -174,19 +257,25 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
                     updateDirectorAddress(index, 'postcode', e.target.value.replace(/\D/g, ''))
                   }
                 />
+                {directorErrors[index]?.postcode && (
+                  <p className="text-sm text-destructive">{directorErrors[index].postcode}</p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.driverLicenseNumber')}</Label>
               <Input
                 value={director.driverLicenseNumber}
                 onChange={(e) => updateDirector(index, 'driverLicenseNumber', e.target.value)}
               />
+              {directorErrors[index]?.driverLicenseNumber && (
+                <p className="text-sm text-destructive">{directorErrors[index].driverLicenseNumber}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.licenseState')}</Label>
               <select
                 className="block w-full rounded-md border border-gray-300 px-3 py-2"
@@ -200,13 +289,16 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
                 ))}
               </select>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('fields.licenseExpiry')}</Label>
               <Input
                 type="date"
                 value={director.licenseExpiry}
                 onChange={(e) => updateDirector(index, 'licenseExpiry', e.target.value)}
               />
+              {directorErrors[index]?.licenseExpiry && (
+                <p className="text-sm text-destructive">{directorErrors[index].licenseExpiry}</p>
+              )}
             </div>
           </div>
         </div>

@@ -346,7 +346,15 @@
       "saving": "保存中...",
       "success": "资料已更新",
       "successMessage": "您的资料已成功更新！",
-      "error": "更新失败"
+      "error": "更新失败",
+      "validationError": "验证错误",
+      "validationErrorMessage": "请修正表单中的错误后再保存。",
+      "validation": {
+        "phoneRequired": "电话号码为必填项",
+        "phoneInvalid": "请输入有效的电话号码",
+        "streetRequired": "街道地址为必填项",
+        "suburbRequired": "市郊为必填项"
+      }
     }
   },
   "cart": {
@@ -655,7 +663,17 @@
         "residentialAddress": "住宅地址"
       },
       "validation": {
-        "allFieldsRequired": "所有董事信息字段均为必填项"
+        "allFieldsRequired": "所有董事信息字段均为必填项",
+        "familyNameRequired": "姓氏为必填项",
+        "givenNamesRequired": "名字为必填项",
+        "dateOfBirthRequired": "出生日期为必填项",
+        "streetRequired": "街道地址为必填项",
+        "suburbRequired": "市郊为必填项",
+        "stateRequired": "州为必填项",
+        "postcodeRequired": "邮递区号为必填项",
+        "postcodeInvalid": "邮递区号必须为 4 位数字",
+        "driverLicenseRequired": "驾照号码为必填项",
+        "licenseExpiryRequired": "驾照有效期为必填项"
       },
       "buttons": {
         "addDirector": "添加另一位董事",
@@ -679,7 +697,12 @@
         "accountNumber": "例如：12345678"
       },
       "validation": {
-        "allFieldsRequired": "所有财务字段均为必填项，BSB 必须为 6 位数字"
+        "allFieldsRequired": "所有财务字段均为必填项，BSB 必须为 6 位数字",
+        "bankNameRequired": "银行名称为必填项",
+        "accountNameRequired": "账户名称为必填项",
+        "bsbRequired": "银行识别码为必填项",
+        "bsbInvalid": "银行识别码必须为 6 位数字",
+        "accountNumberRequired": "账户号码为必填项"
       },
       "buttons": {
         "back": "返回",

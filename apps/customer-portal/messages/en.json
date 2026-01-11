@@ -346,7 +346,15 @@
       "saving": "Saving...",
       "success": "Profile Updated",
       "successMessage": "Your profile has been updated successfully!",
-      "error": "Update Failed"
+      "error": "Update Failed",
+      "validationError": "Validation Error",
+      "validationErrorMessage": "Please fix the errors in the form before saving.",
+      "validation": {
+        "phoneRequired": "Phone number is required",
+        "phoneInvalid": "Please enter a valid phone number",
+        "streetRequired": "Street address is required",
+        "suburbRequired": "Suburb is required"
+      }
     }
   },
   "cart": {
@@ -530,7 +538,17 @@
         "residentialAddress": "Residential Address"
       },
       "validation": {
-        "allFieldsRequired": "All director fields are required"
+        "allFieldsRequired": "All director fields are required",
+        "familyNameRequired": "Family name is required",
+        "givenNamesRequired": "Given names is required",
+        "dateOfBirthRequired": "Date of birth is required",
+        "streetRequired": "Street address is required",
+        "suburbRequired": "Suburb is required",
+        "stateRequired": "State is required",
+        "postcodeRequired": "Postcode is required",
+        "postcodeInvalid": "Postcode must be 4 digits",
+        "driverLicenseRequired": "Driver license number is required",
+        "licenseExpiryRequired": "License expiry date is required"
       },
       "buttons": {
         "addDirector": "Add Another Director",
@@ -554,7 +572,12 @@
         "accountNumber": "e.g., 12345678"
       },
       "validation": {
-        "allFieldsRequired": "All financial fields are required and BSB must be 6 digits"
+        "allFieldsRequired": "All financial fields are required and BSB must be 6 digits",
+        "bankNameRequired": "Bank name is required",
+        "accountNameRequired": "Account name is required",
+        "bsbRequired": "BSB is required",
+        "bsbInvalid": "BSB must be 6 digits",
+        "accountNumberRequired": "Account number is required"
       },
       "buttons": {
         "back": "Back",

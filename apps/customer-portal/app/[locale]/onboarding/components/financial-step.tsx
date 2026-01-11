@@ -16,23 +16,58 @@ export function FinancialStep({ data, onChange, onNext, onBack }: FinancialStepP
   const t = useTranslations('onboarding.financial');
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<FinancialInfo>>(data);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     onChange(formData);
   }, [formData, onChange]);
 
-  const validate = () => {
-    return (
-      formData.bankName &&
-      formData.accountName &&
-      formData.bsb &&
-      /^\d{6}$/.test(formData.bsb) &&
-      formData.accountNumber
-    );
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
+
+  const updateField = (field: keyof FinancialInfo, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    clearFieldError(field);
+  };
+
+  const validateFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!formData.bankName?.trim()) {
+      errors.bankName = t('validation.bankNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.accountName?.trim()) {
+      errors.accountName = t('validation.accountNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.bsb?.trim()) {
+      errors.bsb = t('validation.bsbRequired');
+      isValid = false;
+    } else if (!/^\d{6}$/.test(formData.bsb)) {
+      errors.bsb = t('validation.bsbInvalid');
+      isValid = false;
+    }
+
+    if (!formData.accountNumber?.trim()) {
+      errors.accountNumber = t('validation.accountNumberRequired');
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const handleNext = () => {
-    if (validate()) {
+    if (validateFields()) {
       onNext();
     } else {
       toast({
@@ -50,45 +85,57 @@ export function FinancialStep({ data, onChange, onNext, onBack }: FinancialStepP
       </div>
 
       <div className="space-y-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="bankName">{t('fields.bankName')}</Label>
           <Input
             id="bankName"
             value={formData.bankName || ''}
-            onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+            onChange={(e) => updateField('bankName', e.target.value)}
             placeholder={t('placeholders.bankName')}
           />
+          {fieldErrors.bankName && (
+            <p className="text-sm text-destructive">{fieldErrors.bankName}</p>
+          )}
         </div>
 
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="accountName">{t('fields.accountName')}</Label>
           <Input
             id="accountName"
             value={formData.accountName || ''}
-            onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+            onChange={(e) => updateField('accountName', e.target.value)}
             placeholder={t('placeholders.accountName')}
           />
+          {fieldErrors.accountName && (
+            <p className="text-sm text-destructive">{fieldErrors.accountName}</p>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="bsb">{t('fields.bsb')}</Label>
             <Input
               id="bsb"
               maxLength={6}
               value={formData.bsb || ''}
-              onChange={(e) => setFormData({ ...formData, bsb: e.target.value.replace(/\D/g, '') })}
+              onChange={(e) => updateField('bsb', e.target.value.replace(/\D/g, ''))}
               placeholder="123456"
             />
+            {fieldErrors.bsb && (
+              <p className="text-sm text-destructive">{fieldErrors.bsb}</p>
+            )}
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="accountNumber">{t('fields.accountNumber')}</Label>
             <Input
               id="accountNumber"
               value={formData.accountNumber || ''}
-              onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+              onChange={(e) => updateField('accountNumber', e.target.value)}
               placeholder={t('placeholders.accountNumber')}
             />
+            {fieldErrors.accountNumber && (
+              <p className="text-sm text-destructive">{fieldErrors.accountNumber}</p>
+            )}
           </div>
         </div>
       </div>

@@ -89,6 +89,9 @@ export function EditProductDialog({
   // Pricing state
   const [pricingMap, setPricingMap] = useState<Map<string, PricingEntry>>(new Map());
 
+  // Field error state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Stock adjustment dialog state
   const [showStockAdjustment, setShowStockAdjustment] = useState(false);
 
