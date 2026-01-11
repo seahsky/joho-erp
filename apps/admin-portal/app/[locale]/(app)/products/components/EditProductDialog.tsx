@@ -21,7 +21,7 @@ import { useTranslations } from 'next-intl';
 import imageCompression from 'browser-image-compression';
 import { CategorySelect } from './CategorySelect';
 import { CustomerPricingSection, type PricingEntry } from './CustomerPricingSection';
-import { StockAdjustmentDialog } from './StockAdjustmentDialog';
+import { StockAdjustmentDialog } from '../../inventory/components/StockAdjustmentDialog';
 
 type Customer = {
   id: string;

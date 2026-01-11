@@ -183,12 +183,12 @@ export async function generateSignatureUploadUrl(params: {
  * Used by the proxy upload API route to bypass CORS restrictions
  */
 export async function uploadToR2(params: {
-  productId: string;
+  path: string; // Generic path (e.g., 'products/productId', 'signatures')
   filename: string;
   contentType: AllowedMimeType;
   buffer: Buffer;
 }): Promise<{ publicUrl: string; key: string }> {
-  const { productId, filename, contentType, buffer } = params;
+  const { path, filename, contentType, buffer } = params;
 
   // Validate content type
   if (!IMAGE_UPLOAD_CONFIG.allowedMimeTypes.includes(contentType)) {
@@ -200,10 +200,10 @@ export async function uploadToR2(params: {
     throw new Error(`File too large: max ${IMAGE_UPLOAD_CONFIG.maxSizeBytes / 1024 / 1024}MB`);
   }
 
-  // Generate unique key: products/{productId}/{timestamp}-{sanitizedFilename}
+  // Generate unique key: {path}/{timestamp}-{sanitizedFilename}
   const timestamp = Date.now();
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const key = `products/${productId}/${timestamp}-${sanitizedFilename}`;
+  const key = `${path}/${timestamp}-${sanitizedFilename}`;
 
   const client = getR2Client();
 

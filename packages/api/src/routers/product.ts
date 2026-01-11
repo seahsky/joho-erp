@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure, requirePermission } from '../trpc';
+import { router, protectedProcedure, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus } from '@joho-erp/shared';
@@ -427,7 +427,7 @@ export const productRouter = router({
     }),
 
   // Admin: Adjust stock level (manual stock management)
-  adjustStock: requirePermission('products:adjust_stock')
+  adjustStock: requireAnyPermission(['products:adjust_stock', 'inventory:adjust'])
     .input(
       z.object({
         productId: z.string(),

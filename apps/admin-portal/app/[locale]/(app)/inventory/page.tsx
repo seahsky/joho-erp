@@ -35,13 +35,17 @@ import {
   Layers,
   Search,
   Download,
+  Plus,
+  PackagePlus,
 } from 'lucide-react';
 import {
   StockMovementChart,
   InventoryValueChart,
   ProductTurnoverTable,
   ComparisonAnalytics,
+  StockAdjustmentDialog,
 } from './components';
+import { PermissionGate } from '@/components/permission-gate';
 import { ExportDialog } from './components/ExportDialog';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -59,6 +63,16 @@ export default function InventoryPage() {
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison'>('overview');
+
+  // Stock adjustment state
+  const [showStockDialog, setShowStockDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: string;
+    name: string;
+    sku: string;
+    currentStock: number;
+    unit: string;
+  } | null>(null);
 
   // API calls
   const { data: summary } = api.dashboard.getInventorySummary.useQuery();
@@ -89,6 +103,30 @@ export default function InventoryPage() {
     }
   };
 
+  // Stock adjustment event handlers
+  const handleStockAdjustSuccess = () => {
+    refetchTransactions();
+    setSelectedProduct(null);
+    setShowStockDialog(false);
+  };
+
+  const handleQuickAdjust = (tx: {
+    productId: string;
+    productName: string;
+    productSku: string;
+    productUnit: string;
+    newStock: number;
+  }) => {
+    setSelectedProduct({
+      id: tx.productId,
+      name: tx.productName,
+      sku: tx.productSku,
+      currentStock: tx.newStock,
+      unit: tx.productUnit,
+    });
+    setShowStockDialog(true);
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex justify-between items-center mb-6 md:mb-8">
@@ -96,10 +134,24 @@ export default function InventoryPage() {
           <H1>{t('inventory.title')}</H1>
           <Muted className="mt-2">{t('inventory.subtitle')}</Muted>
         </div>
-        <Button onClick={() => setExportDialogOpen(true)}>
-          <Download className="h-4 w-4 mr-2" />
-          {t('inventory.export.export')}
-        </Button>
+        <div className="flex gap-2">
+          <PermissionGate permission="products:adjust_stock">
+            <Button
+              variant="default"
+              onClick={() => {
+                setSelectedProduct(null);
+                setShowStockDialog(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{t('inventory.adjustStock')}</span>
+            </Button>
+          </PermissionGate>
+          <Button onClick={() => setExportDialogOpen(true)}>
+            <Download className="h-4 w-4 mr-2" />
+            {t('inventory.export.export')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -309,27 +361,40 @@ export default function InventoryPage() {
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p
-                            className={`font-medium tabular-nums ${
-                              tx.quantity > 0 ? 'text-success' : 'text-destructive'
-                            }`}
-                          >
-                            {tx.quantity > 0 ? '+' : ''}
-                            {tx.quantity} {tx.productUnit}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {tx.previousStock} → {tx.newStock}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(tx.createdAt).toLocaleDateString('en-AU', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <div className="text-right">
+                            <p
+                              className={`font-medium tabular-nums ${
+                                tx.quantity > 0 ? 'text-success' : 'text-destructive'
+                              }`}
+                            >
+                              {tx.quantity > 0 ? '+' : ''}
+                              {tx.quantity} {tx.productUnit}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {tx.previousStock} → {tx.newStock}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(tx.createdAt).toLocaleDateString('en-AU', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                          <PermissionGate permission="products:adjust_stock">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hidden sm:flex shrink-0"
+                              onClick={() => handleQuickAdjust(tx)}
+                              title={t('inventory.adjustStock')}
+                            >
+                              <PackagePlus className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
                         </div>
                       </div>
                     ))}
@@ -369,6 +434,17 @@ export default function InventoryPage() {
           <ComparisonAnalytics />
         </TabsContent>
       </Tabs>
+
+      {/* Stock Adjustment Dialog */}
+      <StockAdjustmentDialog
+        open={showStockDialog}
+        onOpenChange={(open) => {
+          setShowStockDialog(open);
+          if (!open) setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+        onSuccess={handleStockAdjustSuccess}
+      />
 
       {/* Export Dialog */}
       <ExportDialog

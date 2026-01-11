@@ -2170,6 +2170,13 @@
       "damaged_goods": "Damaged Goods",
       "expired_stock": "Expired Stock"
     },
+    "adjustStock": "Adjust Stock",
+    "productSelector": {
+      "searchPlaceholder": "Search by product name or SKU...",
+      "selectProduct": "Select a product to adjust stock",
+      "noResults": "No products found",
+      "loading": "Loading products..."
+    },
     "tabs": {
       "overview": "Overview",
       "trends": "Trends",

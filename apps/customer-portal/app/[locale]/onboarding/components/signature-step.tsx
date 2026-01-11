@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, useToast } from '@joho-erp/ui';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { ApplicantSignature } from './applicant-signature';
 import { GuarantorSignature } from './guarantor-signature';
-import { api } from '@/trpc/client';
 
 interface DirectorInfo {
   familyName: string;
@@ -49,7 +48,6 @@ export function SignatureStep({
 }: SignatureStepProps) {
   const t = useTranslations('onboarding.signatures');
   const { toast } = useToast();
-  const uploadMutation = api.upload.getSignatureUploadUrl.useMutation();
 
   // Initialize state for each director
   const [signatures, setSignatures] = useState<SignatureState[]>(
@@ -71,35 +69,6 @@ export function SignatureStep({
   >(directors.map(() => ({})));
 
   const [isUploading, setIsUploading] = useState(false);
-  const [isR2Available, setIsR2Available] = useState<boolean | null>(null);
-
-  // Check R2 configuration on mount
-  useEffect(() => {
-    const checkR2Config = async () => {
-      try {
-        // Make a test call to see if R2 is configured
-        await uploadMutation.mutateAsync({
-          signatureType: 'applicant',
-          directorIndex: 0,
-          contentLength: 1,
-        });
-        setIsR2Available(true);
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage?.includes('not configured') || errorMessage?.includes('PRECONDITION_FAILED')) {
-          setIsR2Available(false);
-          toast({
-            title: t('storageNotConfigured', { defaultValue: 'Storage Not Configured' }),
-            description: t('contactSupport', { defaultValue: 'Please contact support to enable signature uploads.' }),
-            variant: 'destructive',
-          });
-        }
-      }
-    };
-
-    checkR2Config();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Update signature for a specific director
   const updateSignature = useCallback(
@@ -144,22 +113,28 @@ export function SignatureStep({
 
   // Upload with timeout helper
   const uploadWithTimeout = async (
-    url: string,
-    blob: Blob,
+    formData: FormData,
     timeoutMs = 30000
-  ): Promise<Response> => {
+  ): Promise<{ publicUrl: string }> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(url, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'Content-Type': 'image/png' },
+      const response = await fetch('/api/upload/signature', {
+        method: 'POST',
+        body: formData,
         signal: controller.signal,
       });
+
       clearTimeout(timeoutId);
-      return response;
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error: unknown) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
@@ -171,13 +146,13 @@ export function SignatureStep({
 
   // Upload with retry logic
   const uploadWithRetry = async (
-    url: string,
-    blob: Blob,
+    formData: FormData,
     maxRetries = 3
-  ): Promise<Response> => {
+  ): Promise<string> => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await uploadWithTimeout(url, blob);
+        const response = await uploadWithTimeout(formData);
+        return response.publicUrl;
       } catch (error: unknown) {
         if (attempt === maxRetries) throw error;
 
@@ -206,21 +181,14 @@ export function SignatureStep({
   ): Promise<string> => {
     const blob = base64ToBlob(base64Data);
 
-    // Get presigned URL
-    const { uploadUrl, publicUrl } = await uploadMutation.mutateAsync({
-      signatureType,
-      directorIndex,
-      contentLength: blob.size,
-    });
+    // Create FormData for proxy upload
+    const formData = new FormData();
+    formData.append('file', blob, `signature-${signatureType}-${directorIndex}.png`);
+    formData.append('signatureType', signatureType);
+    formData.append('directorIndex', directorIndex.toString());
 
-    // Upload to R2 with retry logic
-    const response = await uploadWithRetry(uploadUrl, blob);
-
-    if (!response.ok) {
-      throw new Error(t('uploadFailed', { defaultValue: 'Failed to upload signature' }));
-    }
-
-    return publicUrl;
+    // Upload to proxy route with retry logic
+    return uploadWithRetry(formData);
   };
 
   // Validate all signatures
@@ -354,24 +322,7 @@ export function SignatureStep({
         <p className="text-gray-600">{t('description')}</p>
       </div>
 
-      {/* R2 Availability Warning */}
-      {isR2Available === false && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-red-900">
-                {t('uploadUnavailable', { defaultValue: 'Upload Unavailable' })}
-              </h3>
-              <p className="mt-1 text-sm text-red-700">
-                {t('uploadUnavailableDescription', {
-                  defaultValue: 'Signature storage is not currently configured. Please contact support to complete this step.',
-                })}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* R2 Availability Warning - Removed: upload route now handles R2 configuration errors */}
 
       {/* Terms & Conditions Section */}
       <div className="rounded-lg border p-6">
@@ -457,7 +408,7 @@ export function SignatureStep({
         <Button variant="outline" onClick={onBack} disabled={isProcessing}>
           {t('buttons.back')}
         </Button>
-        <Button onClick={handleSubmit} disabled={isProcessing || isR2Available === false}>
+        <Button onClick={handleSubmit} disabled={isProcessing}>
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -28,7 +28,7 @@ import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree } from '
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
-import { StockAdjustmentDialog } from './components/StockAdjustmentDialog';
+import { StockAdjustmentDialog } from '../inventory/components/StockAdjustmentDialog';
 import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@joho-erp/shared';

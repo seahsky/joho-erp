@@ -115,7 +115,7 @@ export async function POST(request: Request): Promise<NextResponse<UploadRespons
 
     // 8. Upload to R2
     const result = await uploadToR2({
-      productId,
+      path: `products/${productId}`,
       filename: file.name,
       contentType,
       buffer,

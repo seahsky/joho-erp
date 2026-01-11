@@ -28,8 +28,9 @@ export const uploadRouter = router({
   /**
    * Check if R2 storage is configured
    * Useful for conditional UI rendering
+   * Public endpoint - used by both admin and customer portals
    */
-  isConfigured: requirePermission('products:edit').query(() => {
+  isConfigured: publicProcedure.query(() => {
     return { configured: isR2Configured() };
   }),
 
@@ -137,7 +138,10 @@ export const uploadRouter = router({
 
   /**
    * Get presigned URL for uploading a signature image
+   * @deprecated Use POST /api/upload/signature proxy route instead
    * Public endpoint - used during credit application (before user has an account)
+   * This endpoint is deprecated and will be removed in a future version.
+   * Customer portal now uses the proxy route pattern for signature uploads.
    */
   getSignatureUploadUrl: publicProcedure
     .input(

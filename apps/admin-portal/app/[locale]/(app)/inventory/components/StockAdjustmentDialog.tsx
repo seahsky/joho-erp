@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
   TrendingDown,
   History,
   AlertTriangle,
+  Search,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
@@ -54,6 +55,35 @@ export function StockAdjustmentDialog({
 }: StockAdjustmentDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('stockAdjustment');
+  const tInventory = useTranslations('inventory');
+
+  // Product selection state
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(product);
+  const [productSearch, setProductSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Sync selectedProduct with prop changes
+  useEffect(() => {
+    setSelectedProduct(product);
+  }, [product]);
+
+  // Debounce product search (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(productSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  // Fetch products for selection (only when no product is selected)
+  const { data: productsData, isLoading: productsLoading } = api.product.getAll.useQuery(
+    {
+      search: debouncedSearch,
+      status: 'active' as const,
+      limit: 100,
+    },
+    { enabled: !selectedProduct && open }
+  );
 
   // Form state
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('stock_received');
@@ -62,8 +92,8 @@ export function StockAdjustmentDialog({
 
   // Fetch stock history
   const { data: historyData, isLoading: historyLoading } = api.product.getStockHistory.useQuery(
-    { productId: product?.id || '', limit: 10 },
-    { enabled: !!product?.id && open }
+    { productId: selectedProduct?.id || '', limit: 10 },
+    { enabled: !!selectedProduct?.id && open }
   );
 
   const adjustStockMutation = api.product.adjustStock.useMutation({
@@ -86,10 +116,10 @@ export function StockAdjustmentDialog({
 
   // Calculate new stock preview
   const newStock = useMemo(() => {
-    if (!product) return 0;
+    if (!selectedProduct) return 0;
     const qty = parseFloat(quantity) || 0;
-    return product.currentStock + qty;
-  }, [product, quantity]);
+    return selectedProduct.currentStock + qty;
+  }, [selectedProduct, quantity]);
 
   const isNegativeResult = newStock < 0;
   const quantityNum = parseFloat(quantity) || 0;
@@ -97,7 +127,7 @@ export function StockAdjustmentDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!product) return;
+    if (!selectedProduct) return;
 
     // Validation
     if (!quantity || quantityNum === 0) {
@@ -125,7 +155,7 @@ export function StockAdjustmentDialog({
     }
 
     await adjustStockMutation.mutateAsync({
-      productId: product.id,
+      productId: selectedProduct.id,
       adjustmentType,
       quantity: quantityNum,
       notes: notes.trim(),
@@ -136,6 +166,11 @@ export function StockAdjustmentDialog({
     setAdjustmentType('stock_received');
     setQuantity('');
     setNotes('');
+    setProductSearch('');
+    // Only reset selectedProduct if it wasn't provided as a prop
+    if (!product) {
+      setSelectedProduct(null);
+    }
   };
 
   const getTransactionTypeLabel = (type: string, adjType?: string | null) => {
@@ -168,8 +203,6 @@ export function StockAdjustmentDialog({
     }
   };
 
-  if (!product) return null;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -178,24 +211,104 @@ export function StockAdjustmentDialog({
             <Package className="h-5 w-5" />
             {t('dialog.title')}
           </DialogTitle>
-          <DialogDescription>{t('dialog.description')}</DialogDescription>
+          <DialogDescription>
+            {selectedProduct ? t('dialog.description') : tInventory('productSelector.selectProduct')}
+          </DialogDescription>
         </DialogHeader>
 
-        {/* Product Info */}
-        <div className="bg-muted p-4 rounded-lg space-y-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="font-semibold text-lg">{product.name}</div>
-              <div className="text-sm text-muted-foreground">SKU: {product.sku}</div>
+        {/* Product Selection Mode (when no product selected) */}
+        {!selectedProduct && (
+          <div className="space-y-4">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={tInventory('productSelector.searchPlaceholder')}
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="pl-9"
+                autoFocus
+              />
             </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">{t('fields.currentStock')}</div>
-              <div className="text-2xl font-bold">
-                {product.currentStock} <span className="text-sm font-normal">{product.unit}</span>
-              </div>
+
+            {/* Products List */}
+            <div className="max-h-[400px] overflow-y-auto space-y-2 border rounded-lg p-2">
+              {productsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {tInventory('productSelector.loading')}
+                  </span>
+                </div>
+              ) : productsData?.items.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">{tInventory('productSelector.noResults')}</p>
+                </div>
+              ) : (
+                productsData?.items.map((prod) => {
+                  // For admin users, currentStock should always be present
+                  const currentStock = 'currentStock' in prod ? prod.currentStock : 0;
+                  return (
+                    <button
+                      key={prod.id}
+                      type="button"
+                      onClick={() => setSelectedProduct({
+                        id: prod.id,
+                        name: prod.name,
+                        sku: prod.sku,
+                        currentStock,
+                        unit: prod.unit,
+                      })}
+                      className="w-full p-3 rounded-lg border hover:bg-accent transition-colors text-left flex items-center justify-between gap-4"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{prod.name}</div>
+                        <div className="text-sm text-muted-foreground">SKU: {prod.sku}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm text-muted-foreground">Stock</div>
+                        <div className="font-semibold">
+                          {currentStock} {prod.unit}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Adjustment Form Mode (when product is selected) */}
+        {selectedProduct && (
+          <>
+            {/* Product Info */}
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-semibold text-lg">{selectedProduct.name}</div>
+                  <div className="text-sm text-muted-foreground">SKU: {selectedProduct.sku}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">{t('fields.currentStock')}</div>
+                  <div className="text-2xl font-bold">
+                    {selectedProduct.currentStock}{' '}
+                    <span className="text-sm font-normal">{selectedProduct.unit}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Back button when product wasn't pre-selected */}
+              {!product && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedProduct(null)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  ← Change product
+                </button>
+              )}
+            </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Adjustment Type */}
@@ -233,7 +346,7 @@ export function StockAdjustmentDialog({
                 placeholder="0"
                 className="flex-1"
               />
-              <span className="text-muted-foreground">{product.unit}</span>
+              <span className="text-muted-foreground">{selectedProduct.unit}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">{t('fields.quantityHint')}</p>
           </div>
@@ -259,14 +372,14 @@ export function StockAdjustmentDialog({
                   <span className="text-sm font-medium">{t('fields.newStock')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">{product.currentStock}</span>
+                  <span className="text-muted-foreground">{selectedProduct.currentStock}</span>
                   <span>{quantityNum >= 0 ? '+' : ''}</span>
                   <span className={quantityNum >= 0 ? 'text-green-600' : 'text-orange-600'}>
                     {quantityNum}
                   </span>
                   <span>=</span>
                   <span className={`font-bold ${isNegativeResult ? 'text-red-600' : ''}`}>
-                    {newStock} {product.unit}
+                    {newStock} {selectedProduct.unit}
                   </span>
                 </div>
               </div>
@@ -373,6 +486,8 @@ export function StockAdjustmentDialog({
             </div>
           )}
         </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -2170,6 +2170,13 @@
       "damaged_goods": "损坏商品",
       "expired_stock": "过期商品"
     },
+    "adjustStock": "调整库存",
+    "productSelector": {
+      "searchPlaceholder": "按产品名称或SKU搜索...",
+      "selectProduct": "选择要调整库存的产品",
+      "noResults": "未找到产品",
+      "loading": "加载产品中..."
+    },
     "tabs": {
       "overview": "概览",
       "trends": "趋势",
