@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Badge, Muted, H4, Large, cn } from '@joho-erp/ui';
 import { ChevronUp } from 'lucide-react';
-import { formatAUD, getDiscountPercentage } from '@joho-erp/shared';
+import { formatAUD, getDiscountPercentage, createMoney } from '@joho-erp/shared';
 
 interface ExpandableDetailsProps {
   expanded: boolean;
@@ -30,7 +30,7 @@ export function ExpandableDetails({
 
   // Calculate discount percentage if custom pricing applies
   const discountPercentage = product.hasCustomPricing && product.effectivePrice
-    ? getDiscountPercentage(product.basePrice, product.effectivePrice)
+    ? getDiscountPercentage(createMoney(product.basePrice), createMoney(product.effectivePrice))
     : null;
 
   // Determine display price (effective price or base price)

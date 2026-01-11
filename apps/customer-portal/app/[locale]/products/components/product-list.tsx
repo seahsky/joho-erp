@@ -3,17 +3,16 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { MobileSearch, Skeleton, useToast, cn, IllustratedEmptyState, Button } from '@joho-erp/ui';
+import { MobileSearch, Skeleton, useToast, cn, IllustratedEmptyState, Button, useIsMobile } from '@joho-erp/ui';
 import { AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import type { ProductWithPricing } from '@joho-erp/shared';
+import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
 import { StickyCartSummary } from './sticky-cart-summary';
 import { CategoryChipBar } from './category-chip-bar';
 import { ProductRow } from './product-row';
 import { MiniCartDrawer } from '@/components/mini-cart/mini-cart-drawer';
 import { MiniCartSheet } from '@/components/mini-cart/mini-cart-sheet';
 import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
-import { useIsMobile } from '@joho-erp/ui/hooks/use-mobile';
 
 // Product type for customer portal (receives stockStatus/hasStock from API)
 interface Product {
@@ -80,7 +79,7 @@ export function ProductList() {
   const { data: onboardingStatus } = api.customer.getOnboardingStatus.useQuery();
 
   // Determine if user can add to cart
-  const canAddToCart = onboardingStatus?.hasCustomerRecord && onboardingStatus?.creditStatus === 'approved';
+  const canAddToCart = !!(onboardingStatus?.hasCustomerRecord && onboardingStatus?.creditStatus === 'approved');
 
   // Get cart data to check which products are in cart (only if user can add to cart)
   const { data: cart } = api.cart.getCart.useQuery(undefined, {
@@ -310,7 +309,7 @@ export function ProductList() {
       </div>
 
       {/* Mini-Cart (Desktop: Drawer, Mobile: Sheet) */}
-      {isMobile ? (
+      {isMobile === true ? (
         <MiniCartSheet
           open={miniCartOpen}
           onClose={() => setMiniCartOpen(false)}

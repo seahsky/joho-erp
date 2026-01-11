@@ -157,6 +157,7 @@
     "yourSpecialPrice": "Your special price per {unit}",
     "perUnit": "per {unit}",
     "inclGst": "(incl. GST)",
+    "gstIncluded": "GST Included",
     "unitsAvailable": "{count}{unit} available",
     "noProductsFound": "No products found",
     "emptyWithCategory": "Try selecting a different category or clear your filters.",
@@ -188,6 +189,49 @@
     "creditPending": "Your credit application is pending approval",
     "creditRejected": "Your credit application was not approved. Please contact us.",
     "completeOnboarding": "Complete Onboarding",
+    "customPricing": "Special Price",
+    "cartSummary": {
+      "title": "Your Cart",
+      "items": "{count} item",
+      "total": "Total",
+      "creditAvailable": "Credit Available",
+      "viewCart": "View Cart",
+      "checkout": "Checkout",
+      "empty": "Cart is empty",
+      "orderBy": "Order by {time} for {date} delivery"
+    },
+    "quantity": {
+      "add": "Add to cart",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "Current quantity: {count}",
+      "edit": "Click to edit exact quantity",
+      "save": "Save",
+      "cancel": "Cancel",
+      "precision": "Enter exact quantity (1-999)",
+      "max": "Maximum {max} available",
+      "min": "Minimum 1 unit",
+      "invalid": "Invalid quantity"
+    },
+    "details": {
+      "expand": "Show details",
+      "collapse": "Hide details",
+      "description": "Product Description",
+      "pricingBreakdown": "Pricing Breakdown",
+      "basePrice": "Base Price",
+      "yourPrice": "Your Special Price",
+      "discount": "Your Discount",
+      "gstIncluded": "GST Included",
+      "noDescription": "No description available",
+      "beforeGst": "Before GST",
+      "gstRate": "GST"
+    },
+    "categoryBar": {
+      "title": "Filter by category",
+      "allProducts": "All Products",
+      "showing": "Showing {count} products",
+      "clearFilter": "Clear filter"
+    },
     "sidebar": {
       "categories": "Categories",
       "allProducts": "All Products",

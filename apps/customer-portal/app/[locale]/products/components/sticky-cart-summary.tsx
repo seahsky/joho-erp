@@ -86,12 +86,12 @@ export function StickyCartSummary({ locale, onCartClick }: StickyCartSummaryProp
             </button>
 
             {/* Center: Order Cutoff Reminder (if applicable) */}
-            {cutoffInfo && cutoffInfo.canOrderForNextDelivery && (
+            {cutoffInfo && !cutoffInfo.isAfterCutoff && (
               <div className="flex items-center gap-2 text-sm">
                 <Muted className="text-xs">
                   {t('products.cartSummary.orderBy', {
                     time: cutoffInfo.cutoffTime,
-                    date: cutoffInfo.nextDeliveryDate,
+                    date: cutoffInfo.nextAvailableDeliveryDate.toLocaleDateString(),
                   })}
                 </Muted>
               </div>
