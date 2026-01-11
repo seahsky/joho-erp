@@ -229,6 +229,7 @@ export default function CartPage() {
                 exceedsCredit={cart.exceedsCredit}
                 creditLimitCents={cart.creditLimit}
                 locale={locale}
+                items={cart.items}
               />
             </div>
           </div>

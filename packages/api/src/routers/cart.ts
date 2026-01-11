@@ -6,11 +6,8 @@ import {
   createMoney,
   multiplyMoney,
   toCents,
-  calculateTotalWithGST,
   getEffectivePrice,
-  ZERO_AUD,
-  isGreaterThan,
-  sumMoney,
+  DEFAULT_GST_RATE,
 } from '@joho-erp/shared';
 import { calculateAvailableCredit } from './order';
 
@@ -39,10 +36,16 @@ interface CartItem {
   productName: string;
   unit: string;
   quantity: number;
-  unitPrice: number; // In cents (effective price with customer-specific discount)
-  basePrice: number; // In cents (original price)
-  subtotal: number; // In cents (unitPrice * quantity)
+  unitPrice: number; // In cents (effective price with customer-specific discount, before GST)
+  basePrice: number; // In cents (original price, before GST)
+  subtotal: number; // In cents (unitPrice * quantity, before GST)
   hasCustomPricing: boolean;
+
+  // Per-product GST fields (denormalized from Product at add-to-cart time)
+  applyGst: boolean; // Whether GST should be applied to this item
+  gstRate: number; // GST rate percentage (e.g., 10 for 10%)
+  itemGst: number; // In cents (calculated GST for this item: subtotal * gstRate / 100)
+  itemTotal: number; // In cents (subtotal + itemGst)
 }
 
 /**
@@ -50,10 +53,10 @@ interface CartItem {
  * All monetary values in cents
  */
 interface Cart {
-  items: CartItem[];
-  subtotal: number; // In cents
-  gst: number; // In cents (10% Australian GST)
-  total: number; // In cents
+  items: CartItem[]; // Items include per-product GST calculations
+  subtotal: number; // In cents (sum of all item.subtotal)
+  gst: number; // In cents (sum of all item.itemGst, aggregated from per-product rates)
+  total: number; // In cents (sum of all item.itemTotal)
   itemCount: number;
   exceedsCredit: boolean;
   creditLimit: number; // In cents
@@ -112,33 +115,64 @@ function clearUserCart(userId: string): void {
 // ============================================================================
 
 /**
- * Calculate cart totals using dinero.js
- * Includes 10% Australian GST
+ * Calculate GST for a single cart item based on product settings
+ * @param subtotal - Item subtotal in cents (unitPrice * quantity)
+ * @param applyGst - Whether GST should be applied to this item
+ * @param gstRate - GST rate percentage (e.g., 10 for 10%), or null to use default
+ * @returns Object with itemGst and itemTotal in cents
+ */
+function calculateItemGst(
+  subtotal: number,
+  applyGst: boolean,
+  gstRate?: number | null
+): { itemGst: number; itemTotal: number } {
+  if (!applyGst) {
+    return { itemGst: 0, itemTotal: subtotal };
+  }
+
+  const rate = gstRate ?? DEFAULT_GST_RATE; // Default to 10 if null
+
+  const subtotalMoney = createMoney(subtotal);
+  const gstMoney = multiplyMoney(subtotalMoney, { amount: Math.round(rate), scale: 2 });
+  const itemGst = toCents(gstMoney);
+
+  return {
+    itemGst,
+    itemTotal: subtotal + itemGst,
+  };
+}
+
+/**
+ * Calculate cart totals by aggregating per-item GST
+ * Each item has its own GST rate, we sum them to get total GST
  */
 function calculateCartTotals(items: CartItem[], creditLimit: number): Cart {
-  // Calculate subtotal using dinero.js
-  const subtotalMoney = items.length > 0
-    ? sumMoney(items.map(item => createMoney(item.subtotal)))
-    : ZERO_AUD;
+  if (items.length === 0) {
+    return {
+      items: [],
+      subtotal: 0,
+      gst: 0,
+      total: 0,
+      itemCount: 0,
+      exceedsCredit: false,
+      creditLimit,
+    };
+  }
 
-  // Calculate GST and total (10% Australian GST)
-  const { gst, total } = calculateTotalWithGST(subtotalMoney);
+  // Aggregate subtotals, GST, and totals from pre-calculated item values
+  const subtotalCents = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const gstCents = items.reduce((sum, item) => sum + item.itemGst, 0);
+  const totalCents = items.reduce((sum, item) => sum + item.itemTotal, 0);
 
-  // Convert to cents for storage
-  const subtotalCents = toCents(subtotalMoney);
-  const gstCents = toCents(gst);
-  const totalCents = toCents(total);
-
-  // Check if cart total exceeds credit limit
-  const creditLimitMoney = createMoney(creditLimit);
-  const exceedsCredit = isGreaterThan(total, creditLimitMoney);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const exceedsCredit = totalCents > creditLimit;
 
   return {
     items,
     subtotal: subtotalCents,
-    gst: gstCents,
-    total: totalCents,
-    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    gst: gstCents, // Sum of per-item GST (not blanket 10%)
+    total: totalCents, // Sum of per-item totals
+    itemCount,
     exceedsCredit,
     creditLimit,
   };
@@ -280,25 +314,49 @@ export const cartRouter = router({
         const newSubtotalMoney = multiplyMoney(priceMoney, newQuantity);
         const newSubtotal = toCents(newSubtotalMoney);
 
+        // Recalculate GST with new subtotal (preserve original rate)
+        const { itemGst, itemTotal } = calculateItemGst(
+          newSubtotal,
+          existingItem.applyGst,
+          existingItem.gstRate
+        );
+
         const updatedItem: CartItem = {
           ...existingItem,
           quantity: newQuantity,
           subtotal: newSubtotal,
+          itemGst: itemGst,
+          itemTotal: itemTotal,
         };
 
         setCartItem(ctx.userId, updatedItem);
       } else {
         // Add new item to cart
+
+        // Calculate item GST based on product settings
+        const gstRate = product.gstRate ?? DEFAULT_GST_RATE; // 10 if null
+        const { itemGst, itemTotal } = calculateItemGst(
+          itemSubtotal,
+          product.applyGst,
+          gstRate
+        );
+
         const newItem: CartItem = {
           productId: product.id,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,
           quantity: input.quantity,
-          unitPrice: effectivePrice, // In cents
-          basePrice: product.basePrice, // In cents
-          subtotal: itemSubtotal, // In cents
+          unitPrice: effectivePrice, // In cents (before GST)
+          basePrice: product.basePrice, // In cents (before GST)
+          subtotal: itemSubtotal, // In cents (before GST)
           hasCustomPricing: priceInfo.hasCustomPricing,
+
+          // Per-product GST fields
+          applyGst: product.applyGst,
+          gstRate: gstRate,
+          itemGst: itemGst, // Calculated GST for this item
+          itemTotal: itemTotal, // subtotal + itemGst
         };
 
         setCartItem(ctx.userId, newItem);
@@ -411,11 +469,20 @@ export const cartRouter = router({
       const newSubtotalMoney = multiplyMoney(priceMoney, input.quantity);
       const newSubtotal = toCents(newSubtotalMoney);
 
+      // Recalculate GST with new subtotal (preserve original rate)
+      const { itemGst, itemTotal } = calculateItemGst(
+        newSubtotal,
+        existingItem.applyGst,
+        existingItem.gstRate
+      );
+
       // Update item
       const updatedItem: CartItem = {
         ...existingItem,
         quantity: input.quantity,
         subtotal: newSubtotal,
+        itemGst: itemGst,
+        itemTotal: itemTotal,
       };
 
       setCartItem(ctx.userId, updatedItem);

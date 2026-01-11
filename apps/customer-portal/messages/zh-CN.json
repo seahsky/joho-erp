@@ -352,6 +352,11 @@
       "step1": "购物车",
       "step2": "确认订单",
       "step3": "完成"
+    },
+    "gstBreakdown": {
+      "description": "消费税适用于符合条件的商品",
+      "withGst": "含消费税的商品",
+      "exempt": "免消费税的商品"
     }
   },
   "miniCart": {
@@ -730,6 +735,20 @@
         "witnessRequired": "每个担保人签名都需要见证人",
         "signatureRequired": "请提供签名"
       },
+      "uploadFailed": "上传失败",
+      "uploadErrorDescription": "签名上传失败。请检查您的网络连接并重试。",
+      "uploadSuccess": "签名上传成功",
+      "uploading": "正在上传签名...",
+      "uploadTimeout": "上传超时，请重试。",
+      "networkError": "上传过程中发生网络错误",
+      "fileTooLarge": "签名文件过大（最大500KB）",
+      "invalidSignature": "请绘制有效的签名",
+      "emptySignature": "签名不能为空",
+      "retrying": "正在重试上传... ({{attempt}}/{{maxRetries}})",
+      "storageNotConfigured": "存储未配置",
+      "contactSupport": "请联系技术支持以启用签名上传功能。",
+      "uploadUnavailable": "上传功能不可用",
+      "uploadUnavailableDescription": "签名存储当前未配置。请联系技术支持以完成此步骤。",
       "buttons": {
         "back": "返回",
         "submit": "提交申请",

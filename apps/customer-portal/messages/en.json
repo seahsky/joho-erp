@@ -352,6 +352,11 @@
       "step1": "Cart",
       "step2": "Review",
       "step3": "Complete"
+    },
+    "gstBreakdown": {
+      "description": "GST applied to eligible items",
+      "withGst": "items with GST",
+      "exempt": "GST-exempt items"
     }
   },
   "miniCart": {
@@ -615,6 +620,20 @@
         "witnessRequired": "Each guarantor signature requires a witness",
         "signatureRequired": "Signature is required"
       },
+      "uploadFailed": "Upload Failed",
+      "uploadErrorDescription": "Failed to upload signatures. Please check your internet connection and try again.",
+      "uploadSuccess": "Signatures uploaded successfully",
+      "uploading": "Uploading signatures...",
+      "uploadTimeout": "Upload timed out. Please try again.",
+      "networkError": "Network error occurred during upload",
+      "fileTooLarge": "Signature file is too large (max 500KB)",
+      "invalidSignature": "Please draw a valid signature",
+      "emptySignature": "Signature cannot be empty",
+      "retrying": "Retrying upload... ({{attempt}}/{{maxRetries}})",
+      "storageNotConfigured": "Storage Not Configured",
+      "contactSupport": "Please contact support to enable signature uploads.",
+      "uploadUnavailable": "Upload Unavailable",
+      "uploadUnavailableDescription": "Signature storage is not currently configured. Please contact support to complete this step.",
       "buttons": {
         "back": "Back",
         "submit": "Submit Application",
