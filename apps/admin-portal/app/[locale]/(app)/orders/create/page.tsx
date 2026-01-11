@@ -74,6 +74,9 @@ export default function CreateOrderOnBehalfPage() {
   // Delivery date
   const [requestedDeliveryDate, setRequestedDeliveryDate] = useState('');
 
+  // Field error state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Fetch data
   const { data: customersData } = api.customer.getAll.useQuery({ limit: 1000 });
   const { data: productsData } = api.product.getAll.useQuery({});
@@ -139,6 +142,78 @@ export default function CreateOrderOnBehalfPage() {
     return Math.min(100, (projectedUsed / creditInfo.creditLimit) * 100);
   }, [creditInfo, total]);
 
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    // Customer validation
+    if (!selectedCustomerId) {
+      errors.selectedCustomerId = t('validation.customerRequired');
+      isValid = false;
+    }
+
+    // Order items validation
+    if (orderItems.length === 0) {
+      errors.orderItems = t('validation.itemsRequired');
+      isValid = false;
+    }
+
+    // Custom address validation (if enabled)
+    if (useCustomAddress) {
+      if (!customStreet?.trim()) {
+        errors.customStreet = t('validation.streetRequired');
+        isValid = false;
+      }
+
+      if (!customSuburb?.trim()) {
+        errors.customSuburb = t('validation.suburbRequired');
+        isValid = false;
+      }
+
+      if (!customState?.trim()) {
+        errors.customState = t('validation.stateRequired');
+        isValid = false;
+      }
+
+      if (!customPostcode?.trim()) {
+        errors.customPostcode = t('validation.postcodeRequired');
+        isValid = false;
+      } else if (!/^\d{4}$/.test(customPostcode)) {
+        errors.customPostcode = t('validation.postcodeInvalid');
+        isValid = false;
+      }
+    }
+
+    // Bypass credit reason validation (if bypass is enabled)
+    if (bypassCreditLimit && !bypassCreditReason?.trim()) {
+      errors.bypassCreditReason = t('validation.bypassReasonRequired');
+      isValid = false;
+    }
+
+    // Delivery date validation (if provided, must be future date)
+    if (requestedDeliveryDate) {
+      const selectedDate = new Date(requestedDeliveryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+
+      if (selectedDate < today) {
+        errors.requestedDeliveryDate = t('validation.deliveryDateInvalid');
+        isValid = false;
+      }
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   // Add item to order
   const handleAddItem = () => {
     if (!selectedProductId || quantity <= 0) {
@@ -194,33 +269,10 @@ export default function CreateOrderOnBehalfPage() {
     e.preventDefault();
 
     // Validation
-    if (!selectedCustomerId) {
+    if (!validateForm()) {
       toast({
-        title: t('validation.customerRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (orderItems.length === 0) {
-      toast({
-        title: t('validation.itemsRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (bypassCreditLimit && !bypassCreditReason.trim()) {
-      toast({
-        title: t('validation.bypassReasonRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (useCustomAddress && (!customStreet || !customSuburb || !customState || !customPostcode)) {
-      toast({
-        title: t('validation.customAddressRequired'),
+        title: t('validation.invalidInput'),
+        description: t('validation.fixErrors'),
         variant: 'destructive',
       });
       return;
@@ -274,13 +326,16 @@ export default function CreateOrderOnBehalfPage() {
             <CardDescription>{t('sections.customerDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="customer">{t('fields.customer')}</Label>
               <select
                 id="customer"
-                className="w-full px-3 py-2 border rounded-md mt-1"
+                className="w-full px-3 py-2 border rounded-md"
                 value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCustomerId(e.target.value);
+                  clearFieldError('selectedCustomerId');
+                }}
                 required
               >
                 <option value="">{t('placeholders.selectCustomer')}</option>
@@ -290,6 +345,9 @@ export default function CreateOrderOnBehalfPage() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.selectedCustomerId && (
+                <p className="text-sm text-destructive">{fieldErrors.selectedCustomerId}</p>
+              )}
             </div>
 
             {selectedCustomer && creditInfo && (
@@ -437,6 +495,11 @@ export default function CreateOrderOnBehalfPage() {
                 {t('buttons.addItem')}
               </Button>
 
+              {/* Order Items Error */}
+              {fieldErrors.orderItems && (
+                <p className="text-sm text-destructive mt-2">{fieldErrors.orderItems}</p>
+              )}
+
               {/* Order Items Table */}
               {orderItems.length > 0 && (
                 <div className="mt-6">
@@ -523,40 +586,65 @@ export default function CreateOrderOnBehalfPage() {
 
                 {useCustomAddress && (
                   <div className="space-y-4 pl-6 border-l-2">
-                    <div>
+                    <div className="space-y-2">
                       <Label>{t('fields.street')}</Label>
                       <Input
                         value={customStreet}
-                        onChange={(e) => setCustomStreet(e.target.value)}
+                        onChange={(e) => {
+                          setCustomStreet(e.target.value);
+                          clearFieldError('customStreet');
+                        }}
                         placeholder={t('placeholders.street')}
                       />
+                      {fieldErrors.customStreet && (
+                        <p className="text-sm text-destructive">{fieldErrors.customStreet}</p>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('fields.suburb')}</Label>
                         <Input
                           value={customSuburb}
-                          onChange={(e) => setCustomSuburb(e.target.value)}
+                          onChange={(e) => {
+                            setCustomSuburb(e.target.value);
+                            clearFieldError('customSuburb');
+                          }}
                           placeholder={t('placeholders.suburb')}
                         />
+                        {fieldErrors.customSuburb && (
+                          <p className="text-sm text-destructive">{fieldErrors.customSuburb}</p>
+                        )}
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('fields.state')}</Label>
                         <Input
                           value={customState}
-                          onChange={(e) => setCustomState(e.target.value)}
+                          onChange={(e) => {
+                            setCustomState(e.target.value);
+                            clearFieldError('customState');
+                          }}
                           placeholder="NSW"
                         />
+                        {fieldErrors.customState && (
+                          <p className="text-sm text-destructive">{fieldErrors.customState}</p>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('fields.postcode')}</Label>
                         <Input
                           value={customPostcode}
-                          onChange={(e) => setCustomPostcode(e.target.value)}
+                          onChange={(e) => {
+                            setCustomPostcode(e.target.value);
+                            clearFieldError('customPostcode');
+                          }}
                           placeholder="2000"
+                          maxLength={4}
                         />
+                        {fieldErrors.customPostcode && (
+                          <p className="text-sm text-destructive">{fieldErrors.customPostcode}</p>
+                        )}
                       </div>
                       <div>
                         <Label>{t('fields.area')}</Label>
@@ -611,18 +699,25 @@ export default function CreateOrderOnBehalfPage() {
                   </div>
                 )}
 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="deliveryDate">{t('fields.deliveryDate')}</Label>
                   <Input
                     id="deliveryDate"
                     type="date"
                     value={requestedDeliveryDate}
-                    onChange={(e) => setRequestedDeliveryDate(e.target.value)}
-                    className="mt-1"
+                    onChange={(e) => {
+                      setRequestedDeliveryDate(e.target.value);
+                      clearFieldError('requestedDeliveryDate');
+                    }}
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t('info.deliveryDateOptional')}
-                  </p>
+                  {fieldErrors.requestedDeliveryDate && (
+                    <p className="text-sm text-destructive">{fieldErrors.requestedDeliveryDate}</p>
+                  )}
+                  {!fieldErrors.requestedDeliveryDate && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('info.deliveryDateOptional')}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -652,16 +747,22 @@ export default function CreateOrderOnBehalfPage() {
                     </Label>
                   </div>
                   {bypassCreditLimit && (
-                    <div className="pl-6">
+                    <div className="pl-6 space-y-2">
                       <Label>{t('fields.bypassReason')}</Label>
                       <textarea
                         value={bypassCreditReason}
-                        onChange={(e) => setBypassCreditReason(e.target.value)}
+                        onChange={(e) => {
+                          setBypassCreditReason(e.target.value);
+                          clearFieldError('bypassCreditReason');
+                        }}
                         placeholder={t('placeholders.bypassReason')}
                         rows={2}
                         required
                         className="w-full px-3 py-2 border rounded-md"
                       />
+                      {fieldErrors.bypassCreditReason && (
+                        <p className="text-sm text-destructive">{fieldErrors.bypassCreditReason}</p>
+                      )}
                     </div>
                   )}
                 </div>

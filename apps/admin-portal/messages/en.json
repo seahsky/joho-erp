@@ -558,8 +558,16 @@
     "validation": {
       "customerRequired": "Please select a customer",
       "itemsRequired": "Please add at least one item to the order",
+      "streetRequired": "Street address is required",
+      "suburbRequired": "Suburb is required",
+      "stateRequired": "State is required",
+      "postcodeRequired": "Postcode is required",
+      "postcodeInvalid": "Postcode must be 4 digits",
       "bypassReasonRequired": "Please provide a reason for bypassing credit limit",
       "customAddressRequired": "Please fill in all custom address fields",
+      "deliveryDateInvalid": "Delivery date must be in the future",
+      "invalidInput": "Invalid input",
+      "fixErrors": "Please fix the errors in the form",
       "invalidItem": "Invalid item",
       "selectProductAndQuantity": "Please select a product and enter a quantity"
     },

@@ -85,14 +85,20 @@ export const inventoryRouter = router({
               }),
             ]);
 
-            // Calculate total inventory value
-            const products = await prisma.product.findMany({
-              where: { status: 'active' },
-              select: { currentStock: true, basePrice: true },
+            // Calculate total inventory value from batch costs
+            const batches = await prisma.inventoryBatch.findMany({
+              where: {
+                isConsumed: false,
+                product: { status: 'active' },
+              },
+              select: {
+                quantityRemaining: true,
+                costPerUnit: true,
+              },
             });
 
-            const totalValue = products.reduce(
-              (sum, p) => sum + p.currentStock * p.basePrice,
+            const totalValue = batches.reduce(
+              (sum, batch) => sum + batch.quantityRemaining * batch.costPerUnit,
               0
             );
 
@@ -103,26 +109,57 @@ export const inventoryRouter = router({
                 products: {
                   where: { status: 'active' },
                   select: {
+                    id: true,
                     currentStock: true,
-                    basePrice: true,
                     lowStockThreshold: true,
                   },
                 },
               },
             });
 
-            const categoryBreakdown = categories.map((cat) => ({
-              name: cat.name,
-              productCount: cat.products.length,
-              totalStock: cat.products.reduce((sum, p) => sum + p.currentStock, 0),
-              totalValue: cat.products.reduce(
-                (sum, p) => sum + p.currentStock * p.basePrice,
+            // Get batch values for all products
+            const productIds = categories.flatMap((cat) =>
+              cat.products.map((p) => p.id)
+            );
+
+            const categoryBatches = await prisma.inventoryBatch.findMany({
+              where: {
+                productId: { in: productIds },
+                isConsumed: false,
+              },
+              select: {
+                productId: true,
+                quantityRemaining: true,
+                costPerUnit: true,
+              },
+            });
+
+            // Group batch values by product
+            const batchValuesByProduct = new Map<string, number>();
+            categoryBatches.forEach((batch) => {
+              const currentValue = batchValuesByProduct.get(batch.productId) || 0;
+              batchValuesByProduct.set(
+                batch.productId,
+                currentValue + batch.quantityRemaining * batch.costPerUnit
+              );
+            });
+
+            const categoryBreakdown = categories.map((cat) => {
+              const categoryValue = cat.products.reduce(
+                (sum, p) => sum + (batchValuesByProduct.get(p.id) || 0),
                 0
-              ),
-              lowStockCount: cat.products.filter(
-                (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
-              ).length,
-            }));
+              );
+
+              return {
+                name: cat.name,
+                productCount: cat.products.length,
+                totalStock: cat.products.reduce((sum, p) => sum + p.currentStock, 0),
+                totalValue: categoryValue,
+                lowStockCount: cat.products.filter(
+                  (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
+                ).length,
+              };
+            });
 
             // Get transactions with filters
             const transactionWhere: any = {};
@@ -275,15 +312,21 @@ export const inventoryRouter = router({
               };
             });
 
-            // Get inventory value history (simplified - current snapshot by date)
-            // For export, we'll use product snapshots
-            const products = await prisma.product.findMany({
-              where: { status: 'active' },
-              select: { currentStock: true, basePrice: true },
+            // Get inventory value history from batch costs
+            // For export, we'll use batch-based calculation
+            const trendsBatches = await prisma.inventoryBatch.findMany({
+              where: {
+                isConsumed: false,
+                product: { status: 'active' },
+              },
+              select: {
+                quantityRemaining: true,
+                costPerUnit: true,
+              },
             });
 
-            const currentTotalValue = products.reduce(
-              (sum, p) => sum + p.currentStock * p.basePrice,
+            const currentTotalValue = trendsBatches.reduce(
+              (sum, batch) => sum + batch.quantityRemaining * batch.costPerUnit,
               0
             );
 

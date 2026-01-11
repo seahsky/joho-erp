@@ -84,6 +84,11 @@ export default function ProductsPage() {
   const { data: categoriesData } = api.category.getAll.useQuery();
   const categories = categoriesData ?? [];
 
+  // Fetch total inventory value from API based on actual costs
+  const { data: inventoryStats } = api.inventoryStats.getInventoryValueHistory.useQuery({
+    granularity: 'daily',
+  });
+
   // Data from API with fallbacks for loading state
   const productList = (productsData?.items ?? []) as Product[];
   const totalProducts = productsData?.total ?? productList.length;
@@ -91,7 +96,8 @@ export default function ProductsPage() {
   const lowStockProducts = productList.filter(
     (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
   ).length;
-  const totalValue = productList.reduce((sum, p) => sum + p.basePrice * p.currentStock, 0);
+  // Use API value from inventory stats (based on actual batch costs)
+  const totalValue = inventoryStats?.[inventoryStats.length - 1]?.value ?? 0;
 
   if (error) {
     return (

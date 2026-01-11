@@ -153,15 +153,32 @@ export const inventoryStatsRouter = router({
       const { startDate } = getDateBoundaries(input.granularity);
       const dateGroup = getDateGroupExpression(input.granularity);
 
-      // Get current total inventory value (in cents)
-      const currentValueResult = (await prisma.product.aggregateRaw({
+      // Get current total inventory value from batch costs (in cents)
+      const currentValueResult = (await prisma.inventoryBatch.aggregateRaw({
         pipeline: [
-          { $match: { status: 'active' } },
+          // Join with products to filter active products only
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'productId',
+              foreignField: '_id',
+              as: 'product',
+            },
+          },
+          { $unwind: '$product' },
+          // Filter for active products and non-consumed batches
+          {
+            $match: {
+              'product.status': 'active',
+              isConsumed: false,
+            },
+          },
+          // Calculate batch value and sum
           {
             $group: {
               _id: null,
               totalValue: {
-                $sum: { $multiply: ['$currentStock', '$basePrice'] },
+                $sum: { $multiply: ['$quantityRemaining', '$costPerUnit'] },
               },
             },
           },
@@ -170,7 +187,7 @@ export const inventoryStatsRouter = router({
 
       const currentValue = currentValueResult[0]?.totalValue || 0;
 
-      // Get value changes from transactions (join with products for basePrice)
+      // Get value changes from transactions using actual cost per unit
       const valueChanges = (await prisma.inventoryTransaction.aggregateRaw({
         pipeline: [
           {
@@ -191,7 +208,14 @@ export const inventoryStatsRouter = router({
             $group: {
               _id: dateGroup,
               valueChange: {
-                $sum: { $multiply: ['$quantity', '$product.basePrice'] },
+                $sum: {
+                  $multiply: [
+                    '$quantity',
+                    // Use transaction's costPerUnit if available (for stock_received),
+                    // otherwise use product basePrice as fallback (for adjustments/sales)
+                    { $ifNull: ['$costPerUnit', '$product.basePrice'] },
+                  ],
+                },
               },
             },
           },

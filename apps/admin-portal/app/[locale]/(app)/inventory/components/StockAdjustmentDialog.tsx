@@ -169,7 +169,7 @@ export function StockAdjustmentDialog({
 
       if (!costInCents) {
         toast({
-          title: t('stockAdjustment.validation.costRequired'),
+          title: t('validation.costRequired'),
           variant: 'destructive',
         });
         return;
@@ -177,7 +177,7 @@ export function StockAdjustmentDialog({
 
       if (!stockInDate) {
         toast({
-          title: t('stockAdjustment.validation.stockInDateRequired'),
+          title: t('validation.stockInDateRequired'),
           variant: 'destructive',
         });
         return;
@@ -185,7 +185,7 @@ export function StockAdjustmentDialog({
 
       if (stockInDate > new Date()) {
         toast({
-          title: t('stockAdjustment.validation.stockInDateFuture'),
+          title: t('validation.stockInDateFuture'),
           variant: 'destructive',
         });
         return;
@@ -194,7 +194,7 @@ export function StockAdjustmentDialog({
       const tempNum = parseFloat(vehicleTemperature);
       if (vehicleTemperature && (isNaN(tempNum) || tempNum < -30 || tempNum > 25)) {
         toast({
-          title: t('stockAdjustment.validation.vehicleTemperatureRange'),
+          title: t('validation.vehicleTemperatureRange'),
           variant: 'destructive',
         });
         return;
@@ -411,14 +411,14 @@ export function StockAdjustmentDialog({
               <div className="flex items-center gap-2 mb-2">
                 <Package className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-semibold text-blue-900">
-                  {t('stockAdjustment.fields.stockReceivedDetails')}
+                  {t('fields.stockReceivedDetails')}
                 </span>
               </div>
 
               {/* Cost Per Unit - REQUIRED */}
               <div>
                 <Label htmlFor="costPerUnit">
-                  {t('stockAdjustment.fields.costPerUnit')} <span className="text-red-500">*</span>
+                  {t('fields.costPerUnit')} <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-muted-foreground">$</span>
@@ -436,14 +436,14 @@ export function StockAdjustmentDialog({
                   <span className="text-muted-foreground text-sm">per {selectedProduct.unit}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.costPerUnitHint')}
+                  {t('fields.costPerUnitHint')}
                 </p>
               </div>
 
               {/* Stock In Date - REQUIRED */}
               <div>
                 <Label htmlFor="stockInDate">
-                  {t('stockAdjustment.fields.stockInDate')} <span className="text-red-500">*</span>
+                  {t('fields.stockInDate')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="stockInDate"
@@ -455,14 +455,14 @@ export function StockAdjustmentDialog({
                   required
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.stockInDateHint')}
+                  {t('fields.stockInDateHint')}
                 </p>
               </div>
 
               {/* Supplier Invoice Number - OPTIONAL */}
               <div>
                 <Label htmlFor="supplierInvoiceNumber">
-                  {t('stockAdjustment.fields.supplierInvoiceNumber')}
+                  {t('fields.supplierInvoiceNumber')}
                 </Label>
                 <Input
                   id="supplierInvoiceNumber"
@@ -470,18 +470,18 @@ export function StockAdjustmentDialog({
                   maxLength={100}
                   value={supplierInvoiceNumber}
                   onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-                  placeholder={t('stockAdjustment.fields.supplierInvoiceNumberPlaceholder')}
+                  placeholder={t('fields.supplierInvoiceNumberPlaceholder')}
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.supplierInvoiceNumberHint')}
+                  {t('fields.supplierInvoiceNumberHint')}
                 </p>
               </div>
 
               {/* MTV Number - OPTIONAL (PrimeSafe Meat Transfer Vehicle) */}
               <div>
                 <Label htmlFor="mtvNumber">
-                  {t('stockAdjustment.fields.mtvNumber')}
+                  {t('fields.mtvNumber')}
                 </Label>
                 <Input
                   id="mtvNumber"
@@ -489,18 +489,18 @@ export function StockAdjustmentDialog({
                   maxLength={50}
                   value={mtvNumber}
                   onChange={(e) => setMtvNumber(e.target.value)}
-                  placeholder={t('stockAdjustment.fields.mtvNumberPlaceholder')}
+                  placeholder={t('fields.mtvNumberPlaceholder')}
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.mtvNumberHint')}
+                  {t('fields.mtvNumberHint')}
                 </p>
               </div>
 
               {/* Vehicle Temperature - OPTIONAL */}
               <div>
                 <Label htmlFor="vehicleTemperature">
-                  {t('stockAdjustment.fields.vehicleTemperature')}
+                  {t('fields.vehicleTemperature')}
                 </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Input
@@ -517,14 +517,14 @@ export function StockAdjustmentDialog({
                   <span className="text-muted-foreground">°C</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.vehicleTemperatureHint')}
+                  {t('fields.vehicleTemperatureHint')}
                 </p>
               </div>
 
               {/* Expiry Date - OPTIONAL */}
               <div>
                 <Label htmlFor="expiryDate">
-                  {t('stockAdjustment.fields.expiryDate')}
+                  {t('fields.expiryDate')}
                 </Label>
                 <Input
                   id="expiryDate"
@@ -535,7 +535,7 @@ export function StockAdjustmentDialog({
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('stockAdjustment.fields.expiryDateHint')}
+                  {t('fields.expiryDateHint')}
                 </p>
               </div>
             </div>
