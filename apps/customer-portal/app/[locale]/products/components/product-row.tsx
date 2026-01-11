@@ -93,7 +93,7 @@ export function ProductRow({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                <span className="text-xs font-medium">No Image</span>
+                <span className="text-xs font-medium">{t('products.noImage')}</span>
               </div>
             )}
           </div>

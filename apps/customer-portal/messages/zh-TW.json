@@ -190,6 +190,7 @@
     "completeOnboarding": "完成註冊",
     "customPricing": "專屬價格",
     "gstIncluded": "含消費稅",
+    "noImage": "暫無圖片",
     "cartSummary": {
       "title": "購物車",
       "items": "{count} 件商品",

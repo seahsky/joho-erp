@@ -190,6 +190,7 @@
     "creditRejected": "Your credit application was not approved. Please contact us.",
     "completeOnboarding": "Complete Onboarding",
     "customPricing": "Special Price",
+    "noImage": "No Image",
     "cartSummary": {
       "title": "Your Cart",
       "items": "{count} item",
