@@ -317,7 +317,6 @@ export const productRouter = router({
         unit: z.enum(['kg', 'piece', 'box', 'carton']).optional(),
         packageSize: z.number().positive().optional(),
         basePrice: z.number().int().positive().optional(), // In cents
-        unitCost: z.number().int().positive().nullish(), // In cents (null to remove)
         applyGst: z.boolean().optional(),
         gstRate: z.number().min(0).max(100).nullish(), // GST rate as percentage (null to remove)
         currentStock: z.number().min(0).optional(),
@@ -440,10 +439,39 @@ export const productRouter = router({
         ]),
         quantity: z.number(), // Positive to add, negative to reduce
         notes: z.string().min(1, 'Notes are required'),
+        // NEW: Required for stock_received
+        costPerUnit: z.number().int().positive().optional(), // In cents
+        expiryDate: z.date().optional(),
       })
+        .refine(
+          (data) => {
+            // If stock_received, costPerUnit is REQUIRED
+            if (data.adjustmentType === 'stock_received') {
+              return data.costPerUnit !== undefined;
+            }
+            return true;
+          },
+          {
+            message: 'costPerUnit is required when adjustmentType is stock_received',
+            path: ['costPerUnit'],
+          }
+        )
+        .refine(
+          (data) => {
+            // expiryDate must be in future if provided
+            if (data.expiryDate) {
+              return data.expiryDate > new Date();
+            }
+            return true;
+          },
+          {
+            message: 'expiryDate must be in the future',
+            path: ['expiryDate'],
+          }
+        )
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, adjustmentType, quantity, notes } = input;
+      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate } = input;
 
       // Get current product
       const product = await prisma.product.findUnique({
@@ -469,10 +497,10 @@ export const productRouter = router({
         });
       }
 
-      // Use transaction to create inventory transaction and update product atomically
+      // Use transaction to create inventory transaction, batch, and update product atomically
       const result = await prisma.$transaction(async (tx) => {
-        // Create inventory transaction record
-        await tx.inventoryTransaction.create({
+        // 1. Create inventory transaction record
+        const transaction = await tx.inventoryTransaction.create({
           data: {
             productId,
             type: 'adjustment',
@@ -483,10 +511,50 @@ export const productRouter = router({
             referenceType: 'manual',
             notes,
             createdBy: ctx.userId || 'system',
+            // NEW: Store cost and expiry for stock_received
+            costPerUnit: adjustmentType === 'stock_received' ? costPerUnit : null,
+            expiryDate: adjustmentType === 'stock_received' ? expiryDate : null,
           },
         });
 
-        // Update product stock
+        // 2. If receiving stock (positive quantity): Create InventoryBatch
+        if (adjustmentType === 'stock_received' && quantity > 0) {
+          await tx.inventoryBatch.create({
+            data: {
+              productId,
+              quantityRemaining: quantity,
+              initialQuantity: quantity,
+              costPerUnit: costPerUnit!,
+              receivedAt: new Date(),
+              expiryDate: expiryDate || null,
+              receiveTransactionId: transaction.id,
+              notes,
+            },
+          });
+        }
+
+        // 3. If reducing stock (negative quantity): Consume via FIFO
+        if (quantity < 0) {
+          const { consumeStock } = await import('../services/inventory-batch');
+          const result = await consumeStock(
+            productId,
+            Math.abs(quantity),
+            transaction.id,
+            undefined,
+            undefined,
+            tx
+          );
+
+          // Log expiry warnings if any
+          if (result.expiryWarnings.length > 0) {
+            console.warn(
+              `Expiry warnings for product ${product.sku}:`,
+              result.expiryWarnings
+            );
+          }
+        }
+
+        // 4. Update product stock
         const updatedProduct = await tx.product.update({
           where: { id: productId },
           data: { currentStock: newStock },

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
-import { prisma, type InventoryReferenceType } from '@joho-erp/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
@@ -415,7 +415,7 @@ export const orderRouter = router({
             const newStock = previousStock - item.quantity;
 
             // Create inventory transaction (sale)
-            await tx.inventoryTransaction.create({
+            const transaction = await tx.inventoryTransaction.create({
               data: {
                 productId: item.productId,
                 type: 'sale',
@@ -428,6 +428,25 @@ export const orderRouter = router({
                 createdBy: ctx.userId,
               },
             });
+
+            // NEW: Consume from batches via FIFO
+            const { consumeStock } = await import('../services/inventory-batch');
+            const result = await consumeStock(
+              item.productId,
+              item.quantity,
+              transaction.id,
+              newOrder.id,
+              orderNumber,
+              tx
+            );
+
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for order ${orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
 
             // Update product stock
             await tx.product.update({
@@ -783,7 +802,7 @@ export const orderRouter = router({
             const newStock = previousStock - item.quantity;
 
             // Create inventory transaction (sale)
-            await tx.inventoryTransaction.create({
+            const transaction = await tx.inventoryTransaction.create({
               data: {
                 productId: item.productId,
                 type: 'sale',
@@ -796,6 +815,25 @@ export const orderRouter = router({
                 createdBy: ctx.userId,
               },
             });
+
+            // NEW: Consume from batches via FIFO
+            const { consumeStock } = await import('../services/inventory-batch');
+            const result = await consumeStock(
+              item.productId,
+              item.quantity,
+              transaction.id,
+              newOrder.id,
+              orderNumber,
+              tx
+            );
+
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for order ${orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
 
             // Update product stock
             await tx.product.update({
@@ -1489,7 +1527,7 @@ export const orderRouter = router({
           const newStock = previousStock - item.quantity;
 
           // Create inventory transaction (sale)
-          await tx.inventoryTransaction.create({
+          const transaction = await tx.inventoryTransaction.create({
             data: {
               productId: item.productId,
               type: 'sale',
@@ -1502,6 +1540,25 @@ export const orderRouter = router({
               createdBy: ctx.userId,
             },
           });
+
+          // NEW: Consume from batches via FIFO
+          const { consumeStock } = await import('../services/inventory-batch');
+          const result = await consumeStock(
+            item.productId,
+            item.quantity,
+            transaction.id,
+            createdOrder.id,
+            orderNumber,
+            tx
+          );
+
+          // Log expiry warnings if any
+          if (result.expiryWarnings.length > 0) {
+            console.warn(
+              `Expiry warnings for reorder ${orderNumber}:`,
+              result.expiryWarnings
+            );
+          }
 
           // Update product stock
           await tx.product.update({
@@ -1752,53 +1809,69 @@ export const orderRouter = router({
           select: { id: true, currentStock: true, name: true },
         });
 
-        // Validate stock availability and prepare transactions
-        const inventoryTransactions = updatedItems.map((item: any) => {
-          const product = products.find((p) => p.id === item.productId);
-          if (!product) {
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: `Product not found: ${item.productId}`,
+        // Create inventory transactions and update product stocks with FIFO consumption
+        await prisma.$transaction(async (tx) => {
+          const { consumeStock } = await import('../services/inventory-batch');
+          
+          for (const item of updatedItems) {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Product not found: ${item.productId}`,
+              });
+            }
+
+            const previousStock = product.currentStock;
+            const newStock = previousStock - item.quantity;
+
+            if (newStock < 0) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
+              });
+            }
+
+            // Create inventory transaction
+            const transaction = await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'sale',
+                quantity: -item.quantity,
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: orderId,
+                notes: `Backorder partially approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Consume from batches via FIFO
+            const result = await consumeStock(
+              item.productId,
+              item.quantity,
+              transaction.id,
+              orderId,
+              order.orderNumber,
+              tx
+            );
+
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for backorder ${order.orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
             });
           }
-
-          const previousStock = product.currentStock;
-          const newStock = previousStock - item.quantity;
-
-          if (newStock < 0) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
-            });
-          }
-
-          return {
-            productId: item.productId,
-            type: 'sale' as const,
-            quantity: -item.quantity,
-            previousStock,
-            newStock,
-            referenceType: 'order' as InventoryReferenceType,
-            referenceId: orderId,
-            notes: `Backorder partially approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
-            createdBy: ctx.userId,
-          };
         });
-
-        // Create inventory transactions and update product stocks in a transaction
-        await prisma.$transaction([
-          // Create all inventory transactions
-          ...inventoryTransactions.map((tx) =>
-            prisma.inventoryTransaction.create({ data: tx })
-          ),
-          // Update all product stocks
-          ...inventoryTransactions.map((tx) =>
-            prisma.product.update({
-              where: { id: tx.productId },
-              data: { currentStock: tx.newStock },
-            })
-          ),
-        ]);
 
         // Log partial backorder approval to audit trail
         await logBackorderApproval(
@@ -1873,53 +1946,69 @@ export const orderRouter = router({
           select: { id: true, currentStock: true, name: true },
         });
 
-        // Validate stock availability and prepare transactions
-        const inventoryTransactions = (order.items as any[]).map((item: any) => {
-          const product = products.find((p) => p.id === item.productId);
-          if (!product) {
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: `Product not found: ${item.productId}`,
+        // Create inventory transactions and update product stocks with FIFO consumption
+        await prisma.$transaction(async (tx) => {
+          const { consumeStock } = await import('../services/inventory-batch');
+          
+          for (const item of order.items as any[]) {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Product not found: ${item.productId}`,
+              });
+            }
+
+            const previousStock = product.currentStock;
+            const newStock = previousStock - item.quantity;
+
+            if (newStock < 0) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
+              });
+            }
+
+            // Create inventory transaction
+            const transaction = await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'sale',
+                quantity: -item.quantity,
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: orderId,
+                notes: `Backorder fully approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Consume from batches via FIFO
+            const result = await consumeStock(
+              item.productId,
+              item.quantity,
+              transaction.id,
+              orderId,
+              order.orderNumber,
+              tx
+            );
+
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for backorder ${order.orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
             });
           }
-
-          const previousStock = product.currentStock;
-          const newStock = previousStock - item.quantity;
-
-          if (newStock < 0) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
-            });
-          }
-
-          return {
-            productId: item.productId,
-            type: 'sale' as const,
-            quantity: -item.quantity,
-            previousStock,
-            newStock,
-            referenceType: 'order' as InventoryReferenceType,
-            referenceId: orderId,
-            notes: `Backorder fully approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
-            createdBy: ctx.userId,
-          };
         });
-
-        // Create inventory transactions and update product stocks in a transaction
-        await prisma.$transaction([
-          // Create all inventory transactions
-          ...inventoryTransactions.map((tx) =>
-            prisma.inventoryTransaction.create({ data: tx })
-          ),
-          // Update all product stocks
-          ...inventoryTransactions.map((tx) =>
-            prisma.product.update({
-              where: { id: tx.productId },
-              data: { currentStock: tx.newStock },
-            })
-          ),
-        ]);
 
         // Log full backorder approval to audit trail
         await logBackorderApproval(

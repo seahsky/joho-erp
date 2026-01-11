@@ -40,7 +40,6 @@ type Product = {
   unit: string;
   packageSize?: number | null;
   basePrice: number;
-  unitCost?: number | null;
   applyGst?: boolean;
   gstRate?: number | null;
   currentStock: number;
@@ -73,7 +72,6 @@ export function EditProductDialog({
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
-  const [unitCost, setUnitCost] = useState('');
   const [applyGst, setApplyGst] = useState(false);
   const [gstRate, setGstRate] = useState('10');
   const [currentStock, setCurrentStock] = useState('0');
@@ -140,8 +138,6 @@ export function EditProductDialog({
       setPackageSize(product.packageSize?.toString() || '');
       // basePrice is stored in cents, convert to dollars for display
       setBasePrice(formatCentsForInput(product.basePrice));
-      // unitCost is stored in cents, convert to dollars for display
-      setUnitCost(product.unitCost ? formatCentsForInput(product.unitCost) : '');
       setApplyGst(product.applyGst || false);
       setGstRate(product.gstRate?.toString() || '10');
       setCurrentStock(product.currentStock.toString());
@@ -278,22 +274,6 @@ export function EditProductDialog({
       return;
     }
 
-    // Convert unitCost from dollars to cents (optional field)
-    let unitCostInCents: number | null | undefined;
-    if (unitCost) {
-      unitCostInCents = parseToCents(unitCost);
-      if (unitCostInCents === null || unitCostInCents <= 0) {
-        toast({
-          title: t('productForm.validation.invalidInput'),
-          description: t('productForm.validation.unitCostPositive'),
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else {
-      unitCostInCents = null; // Clear the value if empty
-    }
-
     // Validate GST rate if GST is applied
     let gstRateValue: number | null | undefined;
     if (applyGst) {
@@ -333,7 +313,6 @@ export function EditProductDialog({
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
       basePrice: basePriceInCents,
-      unitCost: unitCostInCents,
       applyGst,
       gstRate: gstRateValue,
       currentStock: parseInt(currentStock) || 0,
@@ -474,31 +453,17 @@ export function EditProductDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="basePrice">{t('productForm.fields.basePrice')}</Label>
-                <Input
-                  id="basePrice"
-                  type="number"
-                  step="0.01"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder={t('productForm.fields.basePricePlaceholder')}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="unitCost">{t('productForm.fields.unitCost')}</Label>
-                <Input
-                  id="unitCost"
-                  type="number"
-                  step="0.01"
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(e.target.value)}
-                  placeholder={t('productForm.fields.unitCostPlaceholder')}
-                />
-              </div>
+            <div>
+              <Label htmlFor="basePrice">{t('productForm.fields.basePrice')}</Label>
+              <Input
+                id="basePrice"
+                type="number"
+                step="0.01"
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
+                placeholder={t('productForm.fields.basePricePlaceholder')}
+                required
+              />
             </div>
 
             {/* GST Settings */}

@@ -52,7 +52,6 @@ export function AddProductDialog({
   const [unit, setUnit] = useState<'kg' | 'piece' | 'box' | 'carton'>('kg');
   const [packageSize, setPackageSize] = useState('');
   const [basePrice, setBasePrice] = useState('');
-  const [unitCost, setUnitCost] = useState('');
   const [applyGst, setApplyGst] = useState(false);
   const [gstRate, setGstRate] = useState('10'); // Default 10% (Australian GST)
   const [currentStock, setCurrentStock] = useState('0');
@@ -198,21 +197,6 @@ export function AddProductDialog({
       return;
     }
 
-    // Convert unitCost from dollars to cents (optional field)
-    let unitCostInCents: number | undefined;
-    if (unitCost) {
-      const parsed = parseToCents(unitCost);
-      if (parsed === null || parsed <= 0) {
-        toast({
-          title: t('productForm.validation.invalidInput'),
-          description: t('productForm.validation.unitCostPositive'),
-          variant: 'destructive',
-        });
-        return;
-      }
-      unitCostInCents = parsed;
-    }
-
     // Validate GST rate if GST is applied
     let gstRateValue: number | undefined;
     if (applyGst) {
@@ -250,7 +234,6 @@ export function AddProductDialog({
       unit,
       packageSize: packageSize ? parseFloat(packageSize) : undefined,
       basePrice: basePriceInCents, // Send cents to API
-      unitCost: unitCostInCents, // Send cents to API (optional)
       applyGst,
       gstRate: gstRateValue, // Only set if applyGst is true
       currentStock: parseInt(currentStock) || 0,
@@ -269,7 +252,6 @@ export function AddProductDialog({
     setUnit('kg');
     setPackageSize('');
     setBasePrice('');
-    setUnitCost('');
     setApplyGst(false);
     setGstRate('10');
     setCurrentStock('0');
@@ -418,18 +400,6 @@ export function AddProductDialog({
                   onChange={(e) => setBasePrice(e.target.value)}
                   placeholder={t('productForm.fields.basePricePlaceholder')}
                   required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="unitCost">{t('productForm.fields.unitCost')}</Label>
-                <Input
-                  id="unitCost"
-                  type="number"
-                  step="0.01"
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(e.target.value)}
-                  placeholder={t('productForm.fields.unitCostPlaceholder')}
                 />
               </div>
             </div>

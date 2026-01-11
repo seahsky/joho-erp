@@ -205,7 +205,6 @@ model Product {
   unit                ProductUnit
   packageSize         Float?
   basePrice           Int                 // Stored in cents (e.g., 2550 = $25.50)
-  unitCost            Int?                // Cost per unit in cents (e.g., 1500 = $15.00)
   applyGst            Boolean             @default(false)
   gstRate             Float?              // GST rate as percentage (e.g., 10.0 for 10%)
   currentStock        Float               @default(0)
@@ -219,6 +218,7 @@ model Product {
   // Relations
   inventoryTransactions InventoryTransaction[]
   customerPricing     CustomerPricing[]
+  batches             InventoryBatch[]
 
   // Indexes
   @@index([status])
@@ -371,8 +371,13 @@ model InventoryTransaction {
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
 
+  // Batch costing fields (only for stock_received transactions)
+  costPerUnit         Int?                        // In cents - cost when receiving stock
+  expiryDate          DateTime?                   // Expiry date when receiving stock
+
   // Relations
   product             Product                     @relation(fields: [productId], references: [id])
+  batchConsumptions   BatchConsumption[]          // Track which batches were affected
 
   // Indexes
   @@index([productId, createdAt(sort: Desc)])
@@ -381,6 +386,74 @@ model InventoryTransaction {
   @@index([adjustmentType])
   @@index([createdAt(sort: Desc), type])
   @@map("inventorytransactions")
+}
+
+// Inventory Batch Model - Tracks cost per batch with FIFO consumption
+model InventoryBatch {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String              @db.ObjectId
+
+  // Batch tracking
+  quantityRemaining   Float               // Current available quantity
+  initialQuantity     Float               // Original quantity received (for reporting)
+  costPerUnit         Int                 // In cents - cost per unit when received
+
+  // FIFO and expiry tracking
+  receivedAt          DateTime            @default(now())
+  expiryDate          DateTime?           // Critical for food safety - nullable for non-perishables
+
+  // Traceability
+  receiveTransactionId String?            @db.ObjectId  // Link to InventoryTransaction that created this batch
+  notes               String?             // Admin notes (e.g., "Supplier: ABC Meats, Invoice: #12345")
+
+  // Soft delete for audit trail
+  isConsumed          Boolean             @default(false)  // True when quantityRemaining = 0
+  consumedAt          DateTime?           // When fully consumed
+
+  // Timestamps
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  product             Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  consumptions        BatchConsumption[]  // Track which orders consumed from this batch
+
+  // Indexes for FIFO performance
+  @@index([productId, receivedAt])        // FIFO order lookup
+  @@index([productId, expiryDate])        // Expiry warnings
+  @@index([productId, isConsumed])        // Active batches only
+  @@index([expiryDate, isConsumed])       // Global expiry warnings
+  @@map("inventorybatches")
+}
+
+// Batch Consumption Model - Tracks which batches were consumed for COGS calculation
+model BatchConsumption {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  batchId             String              @db.ObjectId
+  transactionId       String              @db.ObjectId
+
+  // Consumption details
+  quantityConsumed    Float               // How much was taken from this batch
+  costPerUnit         Int                 // In cents - cost at time of consumption (denormalized from batch)
+  totalCost           Int                 // In cents - quantityConsumed * costPerUnit (for quick COGS)
+
+  // Reference
+  orderId             String?             @db.ObjectId  // If consumed by an order
+  orderNumber         String?             // Denormalized for easy lookup
+
+  consumedAt          DateTime            @default(now())
+  createdAt           DateTime            @default(now())
+
+  // Relations
+  batch               InventoryBatch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  transaction         InventoryTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([batchId])
+  @@index([transactionId])
+  @@index([orderId])
+  @@index([consumedAt(sort: Desc)])
+  @@map("batchconsumptions")
 }
 
 // Audit Log Model

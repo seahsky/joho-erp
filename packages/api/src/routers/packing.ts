@@ -402,9 +402,9 @@ export const packingRouter = router({
       const newStock = product.currentStock - quantityDiff;
 
       // Perform all updates in a transaction
-      await prisma.$transaction([
+      await prisma.$transaction(async (tx) => {
         // Create inventory transaction for audit trail
-        prisma.inventoryTransaction.create({
+        const transaction = await tx.inventoryTransaction.create({
           data: {
             productId,
             type: 'adjustment',
@@ -417,14 +417,52 @@ export const packingRouter = router({
             notes: `Packing quantity adjustment for order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit}`,
             createdBy: ctx.userId || 'system',
           },
-        }),
+        });
+
+        // NEW: Handle batch consumption based on quantity change
+        if (quantityDiff > 0) {
+          // Increasing order qty (reducing stock) - consume from batches
+          const { consumeStock } = await import('../services/inventory-batch');
+          const result = await consumeStock(
+            productId,
+            quantityDiff,
+            transaction.id,
+            orderId,
+            order.orderNumber,
+            tx
+          );
+
+          // Log expiry warnings if any
+          if (result.expiryWarnings.length > 0) {
+            console.warn(
+              `Expiry warnings during packing adjustment for order ${order.orderNumber}:`,
+              result.expiryWarnings
+            );
+          }
+        } else if (quantityDiff < 0) {
+          // Reducing order qty (returning stock) - create new batch for returned stock
+          await tx.inventoryBatch.create({
+            data: {
+              productId,
+              quantityRemaining: Math.abs(quantityDiff),
+              initialQuantity: Math.abs(quantityDiff),
+              costPerUnit: 0, // Unknown cost - admin can adjust later
+              receivedAt: new Date(),
+              expiryDate: null,
+              receiveTransactionId: transaction.id,
+              notes: `Stock returned from packing adjustment: Order ${order.orderNumber}`,
+            },
+          });
+        }
+
         // Update product stock
-        prisma.product.update({
+        await tx.product.update({
           where: { id: productId },
           data: { currentStock: newStock },
-        }),
+        });
+
         // Update order with new items and totals
-        prisma.order.update({
+        await tx.order.update({
           where: { id: orderId },
           data: {
             items: updatedItems,
@@ -440,8 +478,8 @@ export const packingRouter = router({
               },
             },
           },
-        }),
-      ]);
+        });
+      });
 
       // Audit log - HIGH: Quantity changes during packing must be tracked
       await logPackingItemQuantityUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {

@@ -503,4 +503,102 @@ export const inventoryRouter = router({
         }
       }),
   }),
+
+  /**
+   * Get batches expiring soon (within X days)
+   */
+  getExpiringBatches: requirePermission('inventory:view')
+    .input(
+      z.object({
+        daysThreshold: z.number().int().positive().default(7),
+        includeExpired: z.boolean().default(false),
+      })
+    )
+    .query(async ({ input }) => {
+      const { daysThreshold, includeExpired } = input;
+
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+
+      const where: any = {
+        expiryDate: { not: null },
+        isConsumed: false,
+        quantityRemaining: { gt: 0 },
+      };
+
+      if (includeExpired) {
+        where.expiryDate.lte = thresholdDate;
+      } else {
+        where.AND = [
+          { expiryDate: { gt: new Date() } },
+          { expiryDate: { lte: thresholdDate } },
+        ];
+      }
+
+      const batches = await prisma.inventoryBatch.findMany({
+        where,
+        include: {
+          product: {
+            select: { id: true, sku: true, name: true, unit: true },
+          },
+        },
+        orderBy: { expiryDate: 'asc' },
+      });
+
+      const now = new Date();
+      const enrichedBatches = batches.map((batch) => ({
+        ...batch,
+        daysUntilExpiry: Math.ceil(
+          (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        ),
+        isExpired: batch.expiryDate! < now,
+        totalValue: batch.quantityRemaining * batch.costPerUnit,
+      }));
+
+      return {
+        batches: enrichedBatches,
+        summary: {
+          totalBatches: enrichedBatches.length,
+          totalValue: enrichedBatches.reduce((sum, b) => sum + b.totalValue, 0),
+          expiredCount: enrichedBatches.filter((b) => b.isExpired).length,
+        },
+      };
+    }),
+
+  /**
+   * Get all batches for a specific product
+   */
+  getProductBatches: requirePermission('inventory:view')
+    .input(
+      z.object({
+        productId: z.string(),
+        includeConsumed: z.boolean().default(false),
+      })
+    )
+    .query(async ({ input }) => {
+      const batches = await prisma.inventoryBatch.findMany({
+        where: {
+          productId: input.productId,
+          isConsumed: input.includeConsumed ? undefined : false,
+        },
+        include: {
+          consumptions: {
+            take: 10,
+            orderBy: { consumedAt: 'desc' },
+          },
+        },
+        orderBy: { receivedAt: 'asc' },
+      });
+
+      return batches.map((batch) => ({
+        ...batch,
+        totalValue: batch.quantityRemaining * batch.costPerUnit,
+        utilizationRate:
+          batch.initialQuantity > 0
+            ? ((batch.initialQuantity - batch.quantityRemaining) /
+                batch.initialQuantity) *
+              100
+            : 0,
+      }));
+    }),
 });

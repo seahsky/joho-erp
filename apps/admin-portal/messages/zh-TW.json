@@ -2318,7 +2318,15 @@
         "exportedAt": "匯出時間",
         "exportedOn": "匯出於",
         "page": "頁",
-        "showingFirst": "顯示前"
+        "showingFirst": "顯示前",
+        "costPerUnit": "單位成本",
+        "costPerUnitHelp": "輸入您實際支付的成本（以美元為單位）",
+        "expiryDate": "到期日期",
+        "expiryDateHelp": "如果沒有到期日期，請留空"
+      },
+      "validation": {
+        "costPerUnitRequired": "接收庫存時需要單位成本",
+        "expiryDateFuture": "到期日期必須在未來"
       }
     }
   },
