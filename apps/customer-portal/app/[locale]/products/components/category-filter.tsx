@@ -5,12 +5,11 @@ import { useTranslations } from 'next-intl';
 import { BottomSheet, Button, Badge } from '@joho-erp/ui';
 import { Filter, X, Check } from 'lucide-react';
 import { cn } from '@joho-erp/ui';
-import type { ProductCategory } from '@joho-erp/shared';
 
 interface CategoryFilterProps {
-  categories: ProductCategory[];
-  selectedCategory: ProductCategory | undefined;
-  onSelectCategory: (category: ProductCategory | undefined) => void;
+  categories: Array<{ id: string; name: string; count: number }>;
+  selectedCategory: string | undefined;
+  onSelectCategory: (category: string | undefined) => void;
   productCount: number;
 }
 
@@ -24,14 +23,9 @@ export function CategoryFilter({
   const [mobileFilterOpen, setMobileFilterOpen] = React.useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
-  const handleCategorySelect = (category: ProductCategory | undefined) => {
+  const handleCategorySelect = (category: string | undefined) => {
     onSelectCategory(category);
     setMobileFilterOpen(false);
-  };
-
-  const getCategoryTranslation = (category: ProductCategory) => {
-    const categoryKey = category.toLowerCase();
-    return t(`categories.${categoryKey}`);
   };
 
   return (
@@ -78,17 +72,18 @@ export function CategoryFilter({
           {/* Category Chips */}
           {categories.map((category) => (
             <button
-              key={category}
-              onClick={() => onSelectCategory(category)}
+              key={category.id}
+              onClick={() => onSelectCategory(category.id)}
               className={cn(
                 'px-4 min-h-11 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
                 'border-2 hover:scale-105 active:scale-95',
-                selectedCategory === category
+                selectedCategory === category.id
                   ? 'bg-primary text-primary-foreground border-primary shadow-md'
                   : 'bg-background text-foreground border-border hover:border-primary/50'
               )}
             >
-              {getCategoryTranslation(category)}
+              {category.name}
+              <span className="ml-2 text-xs opacity-75">({category.count})</span>
             </button>
           ))}
         </div>
@@ -104,7 +99,7 @@ export function CategoryFilter({
           <span className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
             <span className="font-medium">
-              {selectedCategory ? getCategoryTranslation(selectedCategory) : t('products.allProducts')}
+              {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name || t('products.allProducts') : t('products.allProducts')}
             </span>
           </span>
           {selectedCategory && (
@@ -159,18 +154,21 @@ export function CategoryFilter({
               {/* Category Options */}
               {categories.map((category) => (
                 <button
-                  key={category}
-                  onClick={() => handleCategorySelect(category)}
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category.id)}
                   className={cn(
                     'w-full flex items-center justify-between p-4 rounded-xl transition-all duration-200',
                     'border-2 text-left',
-                    selectedCategory === category
+                    selectedCategory === category.id
                       ? 'bg-primary text-primary-foreground border-primary shadow-md'
                       : 'bg-background hover:bg-muted border-border'
                   )}
                 >
-                  <span className="font-medium">{getCategoryTranslation(category)}</span>
-                  {selectedCategory === category && <Check className="h-5 w-5" />}
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{category.name}</span>
+                    <span className="text-sm opacity-75">({category.count})</span>
+                  </div>
+                  {selectedCategory === category.id && <Check className="h-5 w-5" />}
                 </button>
               ))}
             </div>

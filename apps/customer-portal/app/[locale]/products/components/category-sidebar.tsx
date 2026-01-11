@@ -4,10 +4,9 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { cn, useIsMobileOrTablet } from '@joho-erp/ui';
 import { LayoutGrid } from 'lucide-react';
-import type { ProductCategory } from '@joho-erp/shared';
 
 interface CategoryWithCount {
-  id: ProductCategory;
+  id: string;
   name: string;
   count: number;
   disabled?: boolean;
@@ -15,8 +14,8 @@ interface CategoryWithCount {
 
 interface CategorySidebarProps {
   categories: CategoryWithCount[];
-  selectedCategory: ProductCategory | undefined;
-  onSelectCategory: (category: ProductCategory | undefined) => void;
+  selectedCategory: string | undefined;
+  onSelectCategory: (category: string | undefined) => void;
   totalProductCount: number;
 }
 

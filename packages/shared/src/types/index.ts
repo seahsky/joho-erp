@@ -39,7 +39,10 @@ export type ProductStatus = 'active' | 'discontinued' | 'out_of_stock';
 export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
 
 // Product Category
+/** @deprecated Use Category model from database instead */
 export type ProductCategory = 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed';
+
+/** @deprecated Use api.category.getAll instead */
 export const PRODUCT_CATEGORIES: ProductCategory[] = ['Beef', 'Pork', 'Chicken', 'Lamb', 'Processed'];
 
 // Customer Status

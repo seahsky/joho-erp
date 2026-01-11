@@ -297,10 +297,12 @@ export function OrderSummary() {
               <Muted>{tCommon('subtotal')}</Muted>
               <span>{formatAUD(subtotal)}</span>
             </div>
-            <div className="flex justify-between">
-              <Muted>{tCommon('tax')}</Muted>
-              <span>{formatAUD(gst)}</span>
-            </div>
+            {gst > 0 && (
+              <div className="flex justify-between">
+                <Muted>{tCommon('tax')}</Muted>
+                <span>{formatAUD(gst)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-lg pt-2 border-t">
               <span>{tCommon('total')}</span>
               <span>{formatAUD(total)}</span>
@@ -444,10 +446,12 @@ export function OrderSummary() {
             <Muted>{tCommon('subtotal')}</Muted>
             <p className="font-medium">{formatAUD(subtotal)}</p>
           </div>
-          <div className="flex justify-between">
-            <Muted>{tCommon('tax')}</Muted>
-            <p className="font-medium">{formatAUD(gst)}</p>
-          </div>
+          {gst > 0 && (
+            <div className="flex justify-between">
+              <Muted>{tCommon('tax')}</Muted>
+              <p className="font-medium">{formatAUD(gst)}</p>
+            </div>
+          )}
           <div className="border-t pt-3 flex justify-between">
             <p className="text-lg font-semibold">{tCommon('total')}</p>
             <p className="text-lg font-bold">{formatAUD(total)}</p>

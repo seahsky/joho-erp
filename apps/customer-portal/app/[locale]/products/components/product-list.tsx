@@ -7,8 +7,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Button, Badge, Skeleton, H4, Muted, Large, useToast, cn, IllustratedEmptyState } from '@joho-erp/ui';
 import { AlertCircle, Clock, XCircle, Loader2, Package } from 'lucide-react';
 import { api } from '@/trpc/client';
-import type { ProductWithPricing, ProductCategory, StockStatus } from '@joho-erp/shared';
-import { formatAUD, PRODUCT_CATEGORIES } from '@joho-erp/shared';
+import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { ProductDetailSidebar } from './product-detail-sidebar';
 import { CategorySidebar } from './category-sidebar';
 import { StaggeredList } from '@/components/staggered-list';
@@ -20,7 +20,12 @@ interface Product {
   name: string;
   sku: string;
   description: string | null;
-  category: ProductCategory | null;
+  categoryId: string | null;
+  categoryRelation: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  } | null;
   unit: string;
   basePrice: number;
   stockStatus: StockStatus;
@@ -41,15 +46,18 @@ export function ProductList() {
   const locale = useLocale();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<ProductCategory | undefined>();
+  const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>();
   const [selectedProduct, setSelectedProduct] = React.useState<(Product & ProductWithPricing) | null>(null);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [pendingProductId, setPendingProductId] = React.useState<string | null>(null);
 
   const { data: products, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
-    category: selectedCategory,
+    categoryId: selectedCategory,
   });
+
+  const { data: categoriesData } = api.category.getAll.useQuery();
+  const categories = categoriesData ?? [];
 
   const utils = api.useUtils();
 
@@ -178,25 +186,22 @@ export function ProductList() {
   }, [products]);
 
   const categoriesWithCounts = React.useMemo(() => {
-    const counts = new Map<ProductCategory, number>();
+    if (!categories.length) return [];
+
+    const counts = new Map<string, number>();
     allInStockProducts.forEach(p => {
-      if (p.category) {
-        counts.set(p.category, (counts.get(p.category) || 0) + 1);
+      if (p.categoryId) {
+        counts.set(p.categoryId, (counts.get(p.categoryId) || 0) + 1);
       }
     });
-    // Always return all categories, with disabled=true for those with 0 count
-    return PRODUCT_CATEGORIES.map((categoryId) => ({
-      id: categoryId,
-      name: t(`categories.${categoryId.toLowerCase()}`),
-      count: counts.get(categoryId) || 0,
-      disabled: (counts.get(categoryId) || 0) === 0,
-    }));
-  }, [allInStockProducts, t]);
 
-  const getCategoryTranslation = (category: ProductCategory) => {
-    const categoryKey = category.toLowerCase();
-    return t(`categories.${categoryKey}`);
-  };
+    return categories.map((category) => ({
+      id: category.id,
+      name: category.name, // Use name directly from database
+      count: counts.get(category.id) || 0,
+      disabled: (counts.get(category.id) || 0) === 0,
+    }));
+  }, [allInStockProducts, categories]);
 
   const getStockBadge = (stockStatus: StockStatus) => {
     switch (stockStatus) {
@@ -213,7 +218,7 @@ export function ProductList() {
   // Filter products by selected category (from pre-computed in-stock products)
   const inStockProducts = React.useMemo(() => {
     if (!selectedCategory) return allInStockProducts;
-    return allInStockProducts.filter(p => p.category === selectedCategory);
+    return allInStockProducts.filter(p => p.categoryId === selectedCategory);
   }, [allInStockProducts, selectedCategory]);
 
   const handleProductClick = (product: Product & ProductWithPricing) => {
@@ -420,11 +425,11 @@ export function ProductList() {
                   </H4>
                   <div className="flex items-center gap-3 flex-wrap">
                     <Muted className="text-sm">SKU: {product.sku}</Muted>
-                    {product.category && (
+                    {product.categoryRelation && (
                       <>
                         <span className="text-muted-foreground text-xs">•</span>
                         <Badge variant="outline" className="text-xs font-normal">
-                          {getCategoryTranslation(product.category)}
+                          {product.categoryRelation.name}
                         </Badge>
                       </>
                     )}

@@ -25,7 +25,7 @@ export const productRouter = router({
     .input(
       z
         .object({
-          category: productCategoryEnum.optional(),
+          categoryId: z.string().optional(),
           status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
           search: z.string().optional(),
           showAll: z.boolean().optional(), // If true, show all statuses (for admin)
@@ -37,8 +37,9 @@ export const productRouter = router({
       const { page, limit, sortBy, sortOrder, showAll, ...filters } = input;
       const where: any = {};
 
-      if (filters.category) {
-        where.category = filters.category;
+      if (filters.categoryId) {
+        where.categoryId = filters.categoryId;
+        where.categoryRelation = { isActive: true }; // Only show products with active categories
       }
 
       if (filters.status) {
