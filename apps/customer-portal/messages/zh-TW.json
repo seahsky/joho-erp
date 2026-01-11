@@ -352,6 +352,11 @@
       "step1": "購物車",
       "step2": "確認訂單",
       "step3": "完成"
+    },
+    "gstBreakdown": {
+      "description": "消費稅適用於符合條件的商品",
+      "withGst": "含消費稅的商品",
+      "exempt": "免消費稅的商品"
     }
   },
   "miniCart": {

@@ -2,12 +2,27 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Card, CardContent, CardHeader, H3, Badge } from '@joho-erp/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  H3,
+  Badge,
+} from '@joho-erp/ui';
 import { AlertTriangle, ShoppingCart } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
 import { CutoffReminder } from '@/components/cutoff-reminder';
+
+interface CartItem {
+  productId: string;
+  applyGst: boolean;
+  gstRate: number;
+  itemGst: number; // in cents
+  quantity: number;
+}
 
 interface CartSummaryProps {
   subtotalCents: number; // in cents
@@ -16,6 +31,7 @@ interface CartSummaryProps {
   exceedsCredit: boolean;
   creditLimitCents: number; // in cents
   locale: string;
+  items?: CartItem[]; // Optional cart items for GST breakdown
 }
 
 export function CartSummary({
@@ -25,9 +41,15 @@ export function CartSummary({
   exceedsCredit,
   creditLimitCents,
   locale,
+  items = [],
 }: CartSummaryProps) {
   const t = useTranslations();
   const router = useRouter();
+
+  // Calculate GST breakdown
+  const gstAppliedCount = items.filter((item) => item.applyGst).length;
+  const gstExemptCount = items.length - gstAppliedCount;
+  const hasMultipleGstRates = gstAppliedCount > 0 && gstExemptCount > 0;
 
   // Fetch cutoff info
   const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
@@ -53,7 +75,16 @@ export function CartSummary({
 
         {/* GST */}
         <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">{t('cart.tax')}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-muted-foreground">{t('cart.tax')}</span>
+            {/* Show breakdown for mixed GST rates */}
+            {hasMultipleGstRates && (
+              <span className="text-xs text-muted-foreground">
+                {gstAppliedCount} {t('cart.gstBreakdown.withGst')} · {gstExemptCount}{' '}
+                {t('cart.gstBreakdown.exempt')}
+              </span>
+            )}
+          </div>
           <span className="font-medium">{formatAUD(gstCents)}</span>
         </div>
 

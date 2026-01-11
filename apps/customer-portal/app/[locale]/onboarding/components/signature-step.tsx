@@ -84,8 +84,9 @@ export function SignatureStep({
           contentLength: 1,
         });
         setIsR2Available(true);
-      } catch (error: any) {
-        if (error?.message?.includes('not configured') || error?.message?.includes('PRECONDITION_FAILED')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('not configured') || errorMessage?.includes('PRECONDITION_FAILED')) {
           setIsR2Available(false);
           toast({
             title: t('storageNotConfigured', { defaultValue: 'Storage Not Configured' }),
@@ -159,9 +160,9 @@ export function SignatureStep({
       });
       clearTimeout(timeoutId);
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(t('uploadTimeout', { defaultValue: 'Upload timed out. Please try again.' }));
       }
       throw error;
@@ -177,7 +178,7 @@ export function SignatureStep({
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await uploadWithTimeout(url, blob);
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (attempt === maxRetries) throw error;
 
         // Show retry toast
@@ -323,15 +324,16 @@ export function SignatureStep({
       });
 
       onComplete(signatureData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to upload signatures:', error);
 
       // Show error toast to user
+      const errorMessage = error instanceof Error ? error.message : t('uploadErrorDescription', {
+        defaultValue: 'Failed to upload signatures. Please check your internet connection and try again.',
+      });
       toast({
         title: t('uploadFailed', { defaultValue: 'Upload Failed' }),
-        description: error?.message || t('uploadErrorDescription', {
-          defaultValue: 'Failed to upload signatures. Please check your internet connection and try again.',
-        }),
+        description: errorMessage,
         variant: 'destructive',
       });
 

@@ -352,6 +352,11 @@
       "step1": "Cart",
       "step2": "Review",
       "step3": "Complete"
+    },
+    "gstBreakdown": {
+      "description": "GST applied to eligible items",
+      "withGst": "items with GST",
+      "exempt": "GST-exempt items"
     }
   },
   "miniCart": {

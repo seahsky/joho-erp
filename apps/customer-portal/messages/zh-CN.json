@@ -352,6 +352,11 @@
       "step1": "购物车",
       "step2": "确认订单",
       "step3": "完成"
+    },
+    "gstBreakdown": {
+      "description": "消费税适用于符合条件的商品",
+      "withGst": "含消费税的商品",
+      "exempt": "免消费税的商品"
     }
   },
   "miniCart": {
