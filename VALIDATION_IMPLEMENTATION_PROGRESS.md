@@ -6,16 +6,17 @@ This document tracks the implementation of inline field-level validation error m
 > **Note**: This document was updated on 2026-01-12 to reflect actual implementation status. Previous version incorrectly claimed 9/9 completion before validation was fully wired.
 
 **Last Updated:** 2026-01-12
-**Status:** ✅ ALL PRIMARY FORMS 100% COMPLETED (9 of 9 targeted forms)
+**Status:** ✅ ALL PRIMARY FORMS 100% COMPLETED (10 of 10 targeted forms)
 **Implementation Status:** ✅ All validation logic fully wired and functional
-**i18n Status:** ✅ All Chinese translations added (21 keys in zh-CN & zh-TW)
+**i18n Status:** ✅ All Chinese translations aligned (20 validation keys per language, 1 orphaned key removed)
 **Type Check:** ✅ All type checks passing (7/7 packages)
 **Validation Code:** ✅ No type errors in validation implementation
 **Build Status:** ✅ Production build succeeds
+**Final Verification:** ✅ Completed 2026-01-12 - All validation wired, i18n aligned, builds passing
 
 ---
 
-## ✅ Completed Forms (9)
+## ✅ Completed Forms (10)
 
 ### Customer Portal (Previous Session)
 1. **Directors Step** (`apps/customer-portal/app/[locale]/onboarding/components/directors-step.tsx`)
@@ -472,8 +473,16 @@ const validateForm = (): boolean => {
   - categories.validation: 1 key ✅
   - customerForm.validation: 33 keys (already complete) ✅
 
+### i18n Cleanup (2026-01-12)
+- 🧹 **Orphaned Key Removed**: `pricing.validation.dateOrder`
+  - Found in both zh-CN.json and zh-TW.json but NOT in en.json
+  - Unused in codebase (0 references found)
+  - Likely added during development but replaced by `effectiveToInvalid`
+  - Removed to maintain i18n parity across all language files
+
 ### Status
 **ALL PRIMARY FORMS NOW HAVE COMPLETE i18n COVERAGE (en, zh-CN, zh-TW)**
+**i18n PARITY VERIFIED** - All translation files aligned, no orphaned keys
 
 ---
 

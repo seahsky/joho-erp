@@ -1032,8 +1032,7 @@
       "priceRequired": "自訂價格為必填項",
       "pricePositive": "自訂價格必須大於0",
       "effectiveFromRequired": "生效日期為必填項",
-      "effectiveToInvalid": "截止日期必須在生效日期之後或相同",
-      "dateOrder": "生效日期必須早於到期日期"
+      "effectiveToInvalid": "截止日期必須在生效日期之後或相同"
     },
     "buttons": {
       "addCustomPrice": "添加自訂價格",
