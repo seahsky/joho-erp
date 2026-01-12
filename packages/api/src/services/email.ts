@@ -114,7 +114,7 @@ export async function sendBackorderSubmittedEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Backorder Submitted for Review</h1>
                 </td>
               </tr>
@@ -126,7 +126,7 @@ export async function sendBackorderSubmittedEmail(params: {
                     Thank you for your order! We've received your order <strong>#${orderNumber}</strong>, but some items exceed our current stock levels.
                   </p>
 
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What happens next?</strong><br/>
                       Your order has been submitted for backorder approval. We'll review the stock availability and get back to you within 1-2 business days with an approval decision.
@@ -241,7 +241,7 @@ export async function sendBackorderApprovedEmail(params: {
 
     const estimatedFulfillmentHtml = estimatedFulfillment
       ? `
-        <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+        <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; font-size: 16px;">
             <strong>Estimated Fulfillment Date:</strong><br/>
             ${estimatedFulfillment.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -276,7 +276,7 @@ export async function sendBackorderApprovedEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Backorder Approved!</h1>
                 </td>
               </tr>
@@ -288,7 +288,7 @@ export async function sendBackorderApprovedEmail(params: {
                     Great news! Your backorder for order <strong>#${orderNumber}</strong> has been approved.
                   </p>
 
-                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What happens next?</strong><br/>
                       We'll fulfill your order as soon as stock becomes available. You'll receive a notification when your order is ready for delivery.
@@ -412,7 +412,7 @@ export async function sendBackorderRejectedEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #ef4444;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Backorder Update</h1>
                 </td>
               </tr>
@@ -424,7 +424,7 @@ export async function sendBackorderRejectedEmail(params: {
                     Thank you for your order <strong>#${orderNumber}</strong>. After reviewing the stock availability and fulfillment timeline, we're unable to fulfill this backorder at this time.
                   </p>
 
-                  <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Reason:</strong><br/>
                       ${reason}
@@ -532,7 +532,7 @@ export async function sendBackorderPartialApprovalEmail(params: {
           <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">
             ${item.requestedQuantity} ${item.unit}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #10b981; font-weight: 600;">
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #E64A3C; font-weight: 600;">
             ${item.approvedQuantity} ${item.unit}
           </td>
         </tr>
@@ -542,7 +542,7 @@ export async function sendBackorderPartialApprovalEmail(params: {
 
     const estimatedFulfillmentHtml = estimatedFulfillment
       ? `
-        <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+        <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; font-size: 16px;">
             <strong>Estimated Fulfillment Date:</strong><br/>
             ${estimatedFulfillment.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -577,7 +577,7 @@ export async function sendBackorderPartialApprovalEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Backorder Partially Approved</h1>
                 </td>
               </tr>
@@ -589,7 +589,7 @@ export async function sendBackorderPartialApprovalEmail(params: {
                     We've reviewed your backorder for order <strong>#${orderNumber}</strong>. While we can't fulfill the full quantities requested, we've approved partial quantities based on available stock.
                   </p>
 
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What happens next?</strong><br/>
                       We'll fulfill the approved quantities as soon as stock becomes available. You'll receive a notification when your order is ready for delivery.
@@ -721,7 +721,7 @@ export async function sendBackorderAdminNotification(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🔔 New Backorder Requires Approval</h1>
                 </td>
               </tr>
@@ -762,7 +762,7 @@ export async function sendBackorderAdminNotification(params: {
                     </tbody>
                   </table>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Action Required:</strong><br/>
                       Log in to the admin portal to review and approve or reject this backorder.
@@ -839,7 +839,7 @@ export async function sendCreditApprovedEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Credit Application Approved!</h1>
                 </td>
               </tr>
@@ -851,7 +851,7 @@ export async function sendCreditApprovedEmail(params: {
                     Congratulations! We're pleased to inform you that your credit application for <strong>${customerName}</strong> has been approved.
                   </p>
 
-                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What happens next?</strong><br/>
                       You can now place orders up to your approved credit limit. Simply log in to your account and start shopping!
@@ -865,7 +865,7 @@ export async function sendCreditApprovedEmail(params: {
                         <strong>Credit Limit:</strong>
                       </td>
                       <td style="padding: 12px; background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                        <strong style="color: #10b981; font-size: 18px;">${formatAUD(creditLimit)}</strong>
+                        <strong style="color: #E64A3C; font-size: 18px;">${formatAUD(creditLimit)}</strong>
                       </td>
                     </tr>
                     <tr>
@@ -946,7 +946,7 @@ export async function sendCreditRejectedEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #ef4444;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Credit Application Update</h1>
                 </td>
               </tr>
@@ -958,7 +958,7 @@ export async function sendCreditRejectedEmail(params: {
                     Thank you for your credit application for <strong>${customerName}</strong>. After careful review, we're unable to approve credit terms at this time.
                   </p>
 
-                  <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Reason:</strong><br/>
                       ${reason}
@@ -1042,7 +1042,7 @@ export async function sendDriverUrgentCancellationEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #ef4444;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🚨 URGENT: DO NOT DELIVER</h1>
                 </td>
               </tr>
@@ -1050,7 +1050,7 @@ export async function sendDriverUrgentCancellationEmail(params: {
                 <td style="padding: 30px;">
                   <p style="margin: 0 0 20px 0; font-size: 16px;">Hi ${driverName},</p>
 
-                  <div style="background-color: #fee2e2; border: 2px solid #ef4444; padding: 20px; margin: 20px 0; text-align: center;">
+                  <div style="background-color: #FDEBE9; border: 2px solid #E64A3C; padding: 20px; margin: 20px 0; text-align: center;">
                     <p style="margin: 0; font-size: 20px; font-weight: bold; color: #dc2626;">
                       ⛔ DO NOT DELIVER ORDER #${orderNumber}
                     </p>
@@ -1075,14 +1075,14 @@ export async function sendDriverUrgentCancellationEmail(params: {
                     </tr>
                   </table>
 
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Cancellation Reason:</strong><br/>
                       ${cancellationReason}
                     </p>
                   </div>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What to do:</strong><br/>
                       1. Do NOT deliver this order<br/>
@@ -1193,7 +1193,7 @@ export async function sendOrderConfirmationEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Order Confirmed!</h1>
                 </td>
               </tr>
@@ -1205,7 +1205,7 @@ export async function sendOrderConfirmationEmail(params: {
                     Thank you for your order! We've received your order <strong>#${orderNumber}</strong> and it's being processed.
                   </p>
 
-                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>What happens next?</strong><br/>
                       We'll prepare your order for packing and notify you when it's ready for delivery.
@@ -1254,7 +1254,7 @@ export async function sendOrderConfirmationEmail(params: {
                     </tr>
                     <tr style="border-top: 2px solid #e5e7eb;">
                       <td style="padding: 12px 0; font-size: 18px;"><strong>Total:</strong></td>
-                      <td style="padding: 12px 0; text-align: right; font-size: 18px;"><strong style="color: #10b981;">${formatAUD(totalAmount)}</strong></td>
+                      <td style="padding: 12px 0; text-align: right; font-size: 18px;"><strong style="color: #E64A3C;">${formatAUD(totalAmount)}</strong></td>
                     </tr>
                   </table>
 
@@ -1338,7 +1338,7 @@ export async function sendOrderOutForDeliveryEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🚚 Your Order is On the Way!</h1>
                 </td>
               </tr>
@@ -1350,7 +1350,7 @@ export async function sendOrderOutForDeliveryEmail(params: {
                     Great news! Your order <strong>#${orderNumber}</strong> is out for delivery${driverName ? ` with ${driverName}` : ''}.
                   </p>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Delivery Address:</strong><br/>
                       ${deliveryAddress.street}<br/>
@@ -1425,7 +1425,7 @@ export async function sendOrderDeliveredEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">✓ Order Delivered!</h1>
                 </td>
               </tr>
@@ -1437,7 +1437,7 @@ export async function sendOrderDeliveredEmail(params: {
                     Your order <strong>#${orderNumber}</strong> has been successfully delivered.
                   </p>
 
-                  <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Delivery Details:</strong><br/>
                       Delivered on: ${deliveredAt.toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}<br/>
@@ -1634,13 +1634,13 @@ export async function sendPackingTimeoutAlertEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">⚠️ Packing Session Timeout</h1>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 30px;">
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 0 0 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 0 0 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>A packing session has timed out</strong> after ${timeoutDuration} of inactivity.
                       The following orders have been reverted to <strong>"Confirmed"</strong> status
@@ -1677,7 +1677,7 @@ export async function sendPackingTimeoutAlertEmail(params: {
                     </tbody>
                   </table>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Action Required:</strong><br/>
                       Please assign a packer to resume packing these orders for today's deliveries.
@@ -1742,7 +1742,7 @@ export async function sendLowStockAlertEmail(params: {
             <strong>${item.productName}</strong><br/>
             <span style="color: #6b7280; font-size: 14px;">${item.sku}</span>
           </td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: ${item.currentStock === 0 ? '#dc2626' : '#f59e0b'}; font-weight: bold;">
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: ${item.currentStock === 0 ? '#dc2626' : '#E64A3C'}; font-weight: bold;">
             ${item.currentStock} ${item.unit}
           </td>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">
@@ -1771,7 +1771,7 @@ export async function sendLowStockAlertEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">📦 Low Stock Alert</h1>
                 </td>
               </tr>
@@ -1783,15 +1783,15 @@ export async function sendLowStockAlertEmail(params: {
 
                   <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     ${outOfStockCount > 0 ? `
-                    <div style="background-color: #fee2e2; padding: 10px 15px; border-radius: 8px; display: inline-block;">
+                    <div style="background-color: #FDEBE9; padding: 10px 15px; border-radius: 8px; display: inline-block;">
                       <span style="color: #dc2626; font-weight: bold;">${outOfStockCount}</span>
                       <span style="color: #dc2626;"> Out of Stock</span>
                     </div>
                     ` : ''}
                     ${lowStockCount > 0 ? `
-                    <div style="background-color: #fef3c7; padding: 10px 15px; border-radius: 8px; display: inline-block;">
-                      <span style="color: #f59e0b; font-weight: bold;">${lowStockCount}</span>
-                      <span style="color: #f59e0b;"> Low Stock</span>
+                    <div style="background-color: #FDEBE9; padding: 10px 15px; border-radius: 8px; display: inline-block;">
+                      <span style="color: #E64A3C; font-weight: bold;">${lowStockCount}</span>
+                      <span style="color: #E64A3C;"> Low Stock</span>
                     </div>
                     ` : ''}
                   </div>
@@ -1809,7 +1809,7 @@ export async function sendLowStockAlertEmail(params: {
                     </tbody>
                   </table>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Action Required:</strong><br/>
                       Review inventory levels and place orders with suppliers as needed.
@@ -1874,13 +1874,13 @@ export async function sendXeroSyncErrorEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #ef4444;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🔴 Xero Sync Failed</h1>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 30px;">
-                  <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 0 0 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 0 0 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>A Xero synchronization has failed</strong> after ${attempts} attempt(s).
                       Manual intervention may be required.
@@ -1912,7 +1912,7 @@ export async function sendXeroSyncErrorEmail(params: {
                     ${errorMessage}
                   </div>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Action Required:</strong><br/>
                       1. Check Xero connection status in Settings → Integrations<br/>
@@ -1987,7 +1987,7 @@ export async function sendNewOrderNotificationEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: ${isBackorder ? '#f59e0b' : '#22c55e'};">
+                <td style="padding: 40px 30px; text-align: center; background-color: ${isBackorder ? '#E64A3C' : '#22c55e'};">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">
                     ${isBackorder ? '🔔 New Backorder Received' : '🛒 New Order Received'}
                   </h1>
@@ -2000,7 +2000,7 @@ export async function sendNewOrderNotificationEmail(params: {
                   </p>
 
                   ${isBackorder ? `
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 0 0 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 0 0 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>⚠️ Backorder Alert:</strong> This order contains items that exceed current stock levels.
                       Please review and approve in the admin portal.
@@ -2032,7 +2032,7 @@ export async function sendNewOrderNotificationEmail(params: {
                     </tr>
                   </table>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Next Steps:</strong><br/>
                       ${isBackorder
@@ -2196,7 +2196,7 @@ export async function sendOrderConfirmedByAdminEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Order Confirmed!</h1>
                 </td>
               </tr>
@@ -2208,7 +2208,7 @@ export async function sendOrderConfirmedByAdminEmail(params: {
                     Great news! Your order <strong>#${orderNumber}</strong> has been confirmed and is now being prepared for packing.
                   </p>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Estimated Delivery Date:</strong><br/>
                       ${formattedDate}
@@ -2399,7 +2399,7 @@ export async function sendCreditNoteIssuedEmail(params: {
                     A credit note has been issued to your account for order <strong>#${orderNumber}</strong>.
                   </p>
 
-                  <div style="background-color: #d1fae5; border-left: 4px solid #059669; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #059669; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 18px;">
                       <strong>Credit Amount:</strong> ${formatAUD(refundAmount)}
                     </p>
@@ -2620,7 +2620,7 @@ export async function sendOrderReturnedToWarehouseEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #f59e0b;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">⚠️ Order Returned to Warehouse</h1>
                 </td>
               </tr>
@@ -2648,14 +2648,14 @@ export async function sendOrderReturnedToWarehouseEmail(params: {
                     </tr>
                   </table>
 
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Return Reason:</strong> ${formattedReason}
                     </p>
                     ${returnNotes ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;"><strong>Driver Notes:</strong> ${returnNotes}</p>` : ''}
                   </div>
 
-                  <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Next Steps:</strong><br/>
                       1. Contact the customer to reschedule delivery<br/>
@@ -2727,7 +2727,7 @@ export async function sendNewCustomerRegistrationAdminEmail(params: {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <tr>
-                <td style="padding: 40px 30px; text-align: center; background-color: #3b82f6;">
+                <td style="padding: 40px 30px; text-align: center; background-color: #E64A3C;">
                   <h1 style="margin: 0; color: #ffffff; font-size: 24px;">New Customer Registration</h1>
                 </td>
               </tr>
@@ -2765,7 +2765,7 @@ export async function sendNewCustomerRegistrationAdminEmail(params: {
                     ` : ''}
                   </table>
 
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                  <div style="background-color: #FDEBE9; border-left: 4px solid #E64A3C; padding: 15px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;">
                       <strong>Action Required:</strong> Please review this customer's credit application in the admin portal.
                     </p>
