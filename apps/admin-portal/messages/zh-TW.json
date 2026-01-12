@@ -716,6 +716,10 @@
       "initialStockHint": "新產品從 0 庫存開始。建立後使用庫存調整新增初始庫存。",
       "lowStockThreshold": "低庫存閾值",
       "lowStockThresholdPlaceholder": "10",
+      "estimatedLossPercentage": "預計損失率 %",
+      "estimatedLossPercentageTooltip": "加工過程中損失的產品百分比（例如：肉類修整、去脂）。用於計算加工庫存時的輸出量。例如，25%的損失意味著加工100公斤可產出75公斤成品。",
+      "lossPercentagePlaceholder": "例如：15 表示 15% 的損失",
+      "expectedYield": "預計產出",
       "status": "狀態",
       "selectCategory": "選擇分類",
       "createCategory": "建立新分類",
@@ -888,7 +892,8 @@
       "source": "來源",
       "output": "輸出",
       "loss": "損耗",
-      "yield": "產量"
+      "yield": "產量",
+      "available": "可用"
     },
     "validation": {
       "sourceRequired": "來源產品為必填項",

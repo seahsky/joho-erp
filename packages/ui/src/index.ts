@@ -31,6 +31,7 @@ export * from './components/stock-level-badge';
 export * from './components/area-badge';
 export * from './components/area-selector';
 export * from './components/days-on-hand-badge';
+export * from './components/tooltip';
 
 // Mobile Components
 export * from './components/mobile';

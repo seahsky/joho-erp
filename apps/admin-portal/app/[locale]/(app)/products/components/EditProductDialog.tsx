@@ -12,8 +12,12 @@ import {
   Label,
   ProductImageUpload,
   Checkbox,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@joho-erp/ui';
-import { Loader2, Package, PackagePlus } from 'lucide-react';
+import { Loader2, Package, PackagePlus, HelpCircle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCentsForInput, parseToCents } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -407,7 +411,8 @@ export function EditProductDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <TooltipProvider>
+          <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Product Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">{t('productForm.sections.productDetails')}</h3>
@@ -648,7 +653,17 @@ export function EditProductDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="estimatedLossPercentage">{t('productForm.fields.estimatedLossPercentage')}</Label>
+              <div className="flex items-center gap-1">
+                <Label htmlFor="estimatedLossPercentage">{t('productForm.fields.estimatedLossPercentage')}</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>{t('productForm.fields.estimatedLossPercentageTooltip')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Input
                 id="estimatedLossPercentage"
                 type="number"
@@ -716,7 +731,8 @@ export function EditProductDialog({
               {t('productForm.buttons.updateProduct')}
             </Button>
           </div>
-        </form>
+          </form>
+        </TooltipProvider>
       </DialogContent>
 
       {/* Stock Adjustment Dialog */}

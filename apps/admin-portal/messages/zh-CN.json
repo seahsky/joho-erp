@@ -716,6 +716,10 @@
       "initialStockHint": "新产品从 0 库存开始。创建后使用库存调整添加初始库存。",
       "lowStockThreshold": "低库存阈值",
       "lowStockThresholdPlaceholder": "10",
+      "estimatedLossPercentage": "预计损失率 %",
+      "estimatedLossPercentageTooltip": "加工过程中损失的产品百分比（例如：肉类修剪、去脂）。用于计算加工库存时的输出量。例如，25%的损失意味着加工100公斤可产出75公斤成品。",
+      "lossPercentagePlaceholder": "例如：15 表示 15% 的损失",
+      "expectedYield": "预计产出",
       "status": "状态",
       "selectCategory": "选择分类",
       "createCategory": "创建新分类",
@@ -888,7 +892,8 @@
       "source": "源",
       "output": "输出",
       "loss": "损耗",
-      "yield": "产量"
+      "yield": "产量",
+      "available": "可用"
     },
     "validation": {
       "sourceRequired": "源产品为必填项",

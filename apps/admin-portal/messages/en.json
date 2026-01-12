@@ -726,6 +726,7 @@
       "lowStockThreshold": "Low Stock Threshold",
       "lowStockThresholdPlaceholder": "10",
       "estimatedLossPercentage": "Estimated Loss %",
+      "estimatedLossPercentageTooltip": "Percentage of product lost during processing (e.g., meat trimming, fat removal). Used to calculate output quantity when processing stock. For example, 25% loss means processing 100kg yields 75kg of finished product.",
       "lossPercentagePlaceholder": "e.g., 15 for 15% loss",
       "expectedYield": "Expected yield",
       "status": "Status",
@@ -908,7 +909,8 @@
       "source": "Source",
       "output": "Output",
       "loss": "Loss",
-      "yield": "Yield"
+      "yield": "Yield",
+      "available": "Available"
     },
     "validation": {
       "sourceRequired": "Source product is required",

@@ -415,7 +415,7 @@ export function ProcessStockDialog({
                   />
                   {sourceProduct && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Available: {sourceProduct.currentStock} {sourceProduct.unit}
+                      {t('preview.available')}: {sourceProduct.currentStock} {sourceProduct.unit}
                     </p>
                   )}
                 </div>
