@@ -1180,6 +1180,10 @@ export const orderRouter = router({
             where: { id: input.orderId },
             data: {
               status: input.newStatus,
+              // Clear pending backorder status when cancelling
+              ...(currentOrder.backorderStatus === 'pending_approval'
+                ? { backorderStatus: 'none' }
+                : {}),
               statusHistory: [
                 ...currentOrder.statusHistory,
                 {
@@ -1280,6 +1284,10 @@ export const orderRouter = router({
         where: { id: input.orderId },
         data: {
           status: input.newStatus,
+          // Clear pending backorder status when cancelling
+          ...(input.newStatus === 'cancelled' && currentOrder.backorderStatus === 'pending_approval'
+            ? { backorderStatus: 'none' }
+            : {}),
           statusHistory: [
             ...currentOrder.statusHistory,
             {

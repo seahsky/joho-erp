@@ -37,7 +37,9 @@ export function OrderHeader({
         </h1>
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <StatusBadge status={status} />
-          <BackorderStatusBadge status={backorderStatus} />
+          {status !== 'cancelled' && status !== 'delivered' && (
+            <BackorderStatusBadge status={backorderStatus} />
+          )}
           <span className="text-muted-foreground flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             {formatDate(orderedAt)}

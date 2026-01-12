@@ -904,6 +904,8 @@ type OrderItem {
   quantity            Float
   unitPrice           Int                 // Stored in cents
   subtotal            Int                 // Stored in cents
+  applyGst            Boolean             @default(false)
+  gstRate             Float?              // GST rate as percentage (e.g., 10.0 for 10%)
 }
 
 type StatusHistory {
