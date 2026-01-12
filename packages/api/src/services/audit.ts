@@ -1449,6 +1449,7 @@ export async function logCategoryCreate(
   metadata: {
     name: string;
     description?: string;
+    processingLossPercentage?: number | null;
   }
 ): Promise<void> {
   await createAuditLog({
@@ -1462,6 +1463,7 @@ export async function logCategoryCreate(
     metadata: {
       name: metadata.name,
       description: metadata.description,
+      processingLossPercentage: metadata.processingLossPercentage,
       type: 'category_create',
     },
   });

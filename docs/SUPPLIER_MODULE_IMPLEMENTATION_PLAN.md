@@ -981,12 +981,27 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
-import { ResponsiveTable, type TableColumn } from '@joho-erp/ui';
+import {
+  ResponsiveTable,
+  type TableColumn,
+  CountUp,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@joho-erp/ui';
 import { Button } from '@joho-erp/ui/components/button';
 import { Input } from '@joho-erp/ui/components/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@joho-erp/ui/components/select';
 import { formatAUD } from '@joho-erp/shared';
 import { SupplierStatusBadge } from './components/SupplierStatusBadge';
-import { Building2, Plus, Search } from 'lucide-react';
+import { Building2, Plus, Search, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -1151,29 +1166,53 @@ export default function SuppliersPage() {
         </PermissionGate>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Uses inline Card pattern (no StatsCard component exists) */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatsCard
-            title={t('stats.total')}
-            value={stats.total}
-            icon={Building2}
-          />
-          <StatsCard
-            title={t('stats.active')}
-            value={stats.active}
-            variant="success"
-          />
-          <StatsCard
-            title={t('stats.pending')}
-            value={stats.pendingApproval}
-            variant="warning"
-          />
-          <StatsCard
-            title={t('stats.suspended')}
-            value={stats.suspended}
-            variant="destructive"
-          />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('stats.total')}</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                <CountUp end={stats.total} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('stats.active')}</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">
+                <CountUp end={stats.active} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('stats.pending')}</CardTitle>
+              <Clock className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">
+                <CountUp end={stats.pendingApproval} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('stats.suspended')}</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">
+                <CountUp end={stats.suspended} />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -1296,10 +1335,11 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { Button } from '@joho-erp/ui/components/button';
 import { Card } from '@joho-erp/ui/components/card';
+import { Badge, Skeleton } from '@joho-erp/ui';
 import { formatAUD } from '@joho-erp/shared';
-import { ArrowLeft, Edit, Building2 } from 'lucide-react';
+import { ArrowLeft, Edit, Building2, Ban, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { EditSupplierDialog } from '../components/EditSupplierDialog';
+import { SupplierStatusBadge } from '../components/SupplierStatusBadge';
 import { LinkProductDialog } from '../components/LinkProductDialog';
 
 interface PageProps {
@@ -1318,12 +1358,38 @@ export default function SupplierDetailPage({ params }: PageProps) {
     id: resolvedParams.id,
   });
 
+  // Loading state with skeleton UI
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-8 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-64" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
+  // Error state with back button
   if (!supplier) {
-    return <div>Supplier not found</div>;
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-8">
+        <Card className="p-6 text-center">
+          <p className="text-destructive mb-4">{t('errorLoading')}</p>
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('common:back')}
+          </Button>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -1359,14 +1425,26 @@ export default function SupplierDetailPage({ params }: PageProps) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Primary Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Business Information */}
+          {/* Business Information - Uses inline pattern (no InfoItem component exists) */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">{t('businessInfo')}</h2>
             <div className="grid md:grid-cols-2 gap-4">
-              <InfoItem label={t('businessName')} value={supplier.businessName} />
-              <InfoItem label={t('tradingName')} value={supplier.tradingName || '-'} />
-              <InfoItem label={t('abn')} value={supplier.abn || '-'} />
-              <InfoItem label={t('acn')} value={supplier.acn || '-'} />
+              <div>
+                <p className="text-sm text-muted-foreground">{t('businessName')}</p>
+                <p className="font-medium">{supplier.businessName}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('tradingName')}</p>
+                <p className="font-medium">{supplier.tradingName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('abn')}</p>
+                <p className="font-medium font-mono">{supplier.abn || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('acn')}</p>
+                <p className="font-medium font-mono">{supplier.acn || '-'}</p>
+              </div>
             </div>
           </Card>
 
@@ -1379,10 +1457,22 @@ export default function SupplierDetailPage({ params }: PageProps) {
                   {t('primaryContact')}
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <InfoItem label={t('name')} value={supplier.primaryContact.name} />
-                  <InfoItem label={t('position')} value={supplier.primaryContact.position || '-'} />
-                  <InfoItem label={t('email')} value={supplier.primaryContact.email} />
-                  <InfoItem label={t('phone')} value={supplier.primaryContact.phone} />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('name')}</p>
+                    <p className="font-medium">{supplier.primaryContact.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('position')}</p>
+                    <p className="font-medium">{supplier.primaryContact.position || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('email')}</p>
+                    <p className="font-medium">{supplier.primaryContact.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('phone')}</p>
+                    <p className="font-medium">{supplier.primaryContact.phone}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1392,16 +1482,22 @@ export default function SupplierDetailPage({ params }: PageProps) {
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">{t('financialTerms')}</h2>
             <div className="grid md:grid-cols-2 gap-4">
-              <InfoItem
-                label={t('creditLimit')}
-                value={formatAUD(supplier.creditLimit)}
-              />
-              <InfoItem
-                label={t('currentBalance')}
-                value={formatAUD(supplier.currentBalance)}
-              />
-              <InfoItem label={t('paymentTerms')} value={supplier.paymentTerms || '-'} />
-              <InfoItem label={t('paymentMethod')} value={supplier.paymentMethod} />
+              <div>
+                <p className="text-sm text-muted-foreground">{t('creditLimit')}</p>
+                <p className="font-medium">{formatAUD(supplier.creditLimit)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('currentBalance')}</p>
+                <p className="font-medium">{formatAUD(supplier.currentBalance)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('paymentTerms')}</p>
+                <p className="font-medium">{supplier.paymentTerms || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('paymentMethod')}</p>
+                <p className="font-medium">{supplier.paymentMethod}</p>
+              </div>
             </div>
           </Card>
 
@@ -1422,19 +1518,46 @@ export default function SupplierDetailPage({ params }: PageProps) {
 
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
+          {/* Suspension Info - Shown when supplier is suspended */}
+          {supplier.status === 'suspended' && (
+            <Card className="p-6 border-destructive bg-destructive/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Ban className="h-5 w-5 text-destructive" />
+                <h2 className="text-lg font-semibold text-destructive">{t('suspended')}</h2>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">{t('reason')}: </span>
+                  <span>{supplier.suspensionReason}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{t('date')}: </span>
+                  <span>{new Date(supplier.suspendedAt!).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Delivery Terms */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">{t('deliveryTerms')}</h2>
             <div className="space-y-3">
-              <InfoItem
-                label={t('minimumOrder')}
-                value={supplier.minimumOrderValue ? formatAUD(supplier.minimumOrderValue) : '-'}
-              />
-              <InfoItem
-                label={t('leadTime')}
-                value={supplier.leadTimeDays ? `${supplier.leadTimeDays} days` : '-'}
-              />
-              <InfoItem label={t('deliveryDays')} value={supplier.deliveryDays || '-'} />
+              <div>
+                <p className="text-sm text-muted-foreground">{t('minimumOrder')}</p>
+                <p className="font-medium">
+                  {supplier.minimumOrderValue ? formatAUD(supplier.minimumOrderValue) : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('leadTime')}</p>
+                <p className="font-medium">
+                  {supplier.leadTimeDays ? `${supplier.leadTimeDays} ${t('days')}` : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t('deliveryDays')}</p>
+                <p className="font-medium">{supplier.deliveryDays || '-'}</p>
+              </div>
             </div>
           </Card>
 
@@ -2105,6 +2228,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui/hooks/use-toast';
 import { parseToCents, validateABN, validateACN } from '@joho-erp/shared';
+import { cn } from '@joho-erp/ui/lib/utils';
 import {
   Card,
   CardContent,
@@ -2119,8 +2243,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Checkbox,
 } from '@joho-erp/ui';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewSupplierPage() {
@@ -2220,16 +2345,16 @@ export default function NewSupplierPage() {
     });
   };
   
-  // Tab navigation buttons
+  // Tab navigation with error indicators
   const tabs = [
-    { id: 'business', label: t('tabs.business') },
-    { id: 'contact', label: t('tabs.contact') },
-    { id: 'address', label: t('tabs.address') },
-    { id: 'financial', label: t('tabs.financial') },
-    { id: 'delivery', label: t('tabs.delivery') },
-    { id: 'categories', label: t('tabs.categories') },
+    { id: 'business', label: t('tabs.business'), hasError: Object.keys(businessErrors).length > 0 },
+    { id: 'contact', label: t('tabs.contact'), hasError: Object.keys(contactErrors).length > 0 },
+    { id: 'address', label: t('tabs.address'), hasError: Object.keys(addressErrors).length > 0 },
+    { id: 'financial', label: t('tabs.financial'), hasError: false },
+    { id: 'delivery', label: t('tabs.delivery'), hasError: false },
+    { id: 'categories', label: t('tabs.categories'), hasError: false },
   ];
-  
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
@@ -2245,18 +2370,24 @@ export default function NewSupplierPage() {
           <p className="text-muted-foreground">{t('description')}</p>
         </div>
       </div>
-      
-      {/* Tab Navigation */}
-      <div className="mb-6 flex flex-wrap gap-2">
+
+      {/* Tab Navigation - Uses underline pattern from Customer module */}
+      <div className="mb-6 flex flex-wrap gap-1 border-b">
         {tabs.map((tab) => (
-          <Button
+          <button
             key={tab.id}
-            variant={activeTab === tab.id ? 'default' : 'outline'}
-            size="sm"
             onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+              activeTab === tab.id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+              tab.hasError && "text-destructive"
+            )}
           >
             {tab.label}
-          </Button>
+            {tab.hasError && <span className="ml-1 text-destructive">*</span>}
+          </button>
         ))}
       </div>
       
