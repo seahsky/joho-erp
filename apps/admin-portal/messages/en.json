@@ -182,6 +182,8 @@
     "subtitle": "Manage your supplier accounts and relationships",
     "addSupplier": "Add Supplier",
     "totalSuppliers": "Total Suppliers",
+    "listTitle": "Suppliers",
+    "listDescription": "A list of all your suppliers and their details",
     "code": "Code",
     "businessName": "Business Name",
     "contact": "Contact",
@@ -194,7 +196,9 @@
     "pending": "Pending Approval",
     "searchPlaceholder": "Search suppliers...",
     "filterByStatus": "Filter by status",
+    "filterByCategory": "Filter by category",
     "allStatuses": "All Statuses",
+    "allCategories": "All Categories",
     "stats": {
       "total": "Total Suppliers",
       "active": "Active",
@@ -203,7 +207,8 @@
     },
     "emptyState": {
       "title": "No suppliers found",
-      "description": "Get started by adding your first supplier"
+      "description": "Get started by adding your first supplier",
+      "adjustFilters": "Try adjusting your search or filters"
     },
     "loading": "Loading suppliers...",
     "errorLoading": "Error loading suppliers"

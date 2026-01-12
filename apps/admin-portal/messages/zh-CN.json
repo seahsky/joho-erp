@@ -182,6 +182,8 @@
     "subtitle": "管理您的供应商账户和合作关系",
     "addSupplier": "新增供应商",
     "totalSuppliers": "供应商总数",
+    "listTitle": "供应商列表",
+    "listDescription": "所有供应商及其详细信息",
     "code": "编码",
     "businessName": "公司名称",
     "contact": "联系人",
@@ -194,7 +196,9 @@
     "pending": "待审批",
     "searchPlaceholder": "搜索供应商...",
     "filterByStatus": "按状态筛选",
+    "filterByCategory": "按类别筛选",
     "allStatuses": "所有状态",
+    "allCategories": "所有类别",
     "stats": {
       "total": "供应商总数",
       "active": "活跃",
@@ -203,7 +207,8 @@
     },
     "emptyState": {
       "title": "未找到供应商",
-      "description": "添加您的第一个供应商以开始"
+      "description": "添加您的第一个供应商以开始",
+      "adjustFilters": "尝试调整搜索或筛选条件"
     },
     "loading": "正在加载供应商...",
     "errorLoading": "加载供应商时出错"

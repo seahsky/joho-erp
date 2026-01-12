@@ -182,6 +182,8 @@
     "subtitle": "管理您的供應商帳戶和合作關係",
     "addSupplier": "新增供應商",
     "totalSuppliers": "供應商總數",
+    "listTitle": "供應商列表",
+    "listDescription": "所有供應商及其詳細資訊",
     "code": "編碼",
     "businessName": "公司名稱",
     "contact": "聯絡人",
@@ -194,7 +196,9 @@
     "pending": "待審批",
     "searchPlaceholder": "搜尋供應商...",
     "filterByStatus": "按狀態篩選",
+    "filterByCategory": "按類別篩選",
     "allStatuses": "所有狀態",
+    "allCategories": "所有類別",
     "stats": {
       "total": "供應商總數",
       "active": "活躍",
@@ -203,7 +207,8 @@
     },
     "emptyState": {
       "title": "未找到供應商",
-      "description": "新增您的第一個供應商以開始"
+      "description": "新增您的第一個供應商以開始",
+      "adjustFilters": "嘗試調整搜尋或篩選條件"
     },
     "loading": "正在載入供應商...",
     "errorLoading": "載入供應商時出錯"
