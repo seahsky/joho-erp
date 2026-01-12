@@ -11,8 +11,12 @@ import {
   Button,
   Input,
   Label,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@joho-erp/ui';
-import { Loader2 } from 'lucide-react';
+import { Loader2, HelpCircle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
@@ -33,6 +37,7 @@ export function AddCategoryDialog({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [processingLossPercentage, setProcessingLossPercentage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Clear individual field error
@@ -65,6 +70,7 @@ export function AddCategoryDialog({
   const resetForm = () => {
     setName('');
     setDescription('');
+    setProcessingLossPercentage('');
     setFieldErrors({});
   };
 
@@ -78,6 +84,14 @@ export function AddCategoryDialog({
     } else if (name.length > 50) {
       errors.name = t('categories.validation.nameTooLong');
       isValid = false;
+    }
+
+    if (processingLossPercentage) {
+      const lossValue = parseFloat(processingLossPercentage);
+      if (isNaN(lossValue) || lossValue < 0 || lossValue > 100) {
+        errors.processingLossPercentage = t('categories.validation.lossPercentageRange');
+        isValid = false;
+      }
     }
 
     setFieldErrors(errors);
@@ -99,6 +113,9 @@ export function AddCategoryDialog({
     createMutation.mutate({
       name: name.trim(),
       description: description.trim() || undefined,
+      processingLossPercentage: processingLossPercentage
+        ? parseFloat(processingLossPercentage)
+        : undefined,
     });
   };
 
@@ -148,6 +165,45 @@ export function AddCategoryDialog({
               rows={3}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <Label htmlFor="processingLossPercentage">
+                {t('categories.fields.processingLossPercentage')}
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>{t('categories.fields.processingLossPercentageTooltip')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Input
+              id="processingLossPercentage"
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={processingLossPercentage}
+              onChange={(e) => {
+                setProcessingLossPercentage(e.target.value);
+                clearFieldError('processingLossPercentage');
+              }}
+              placeholder={t('categories.fields.lossPercentagePlaceholder')}
+            />
+            {fieldErrors.processingLossPercentage && (
+              <p className="text-sm text-destructive">{fieldErrors.processingLossPercentage}</p>
+            )}
+            {processingLossPercentage && !fieldErrors.processingLossPercentage && (
+              <p className="text-sm text-muted-foreground">
+                {t('categories.fields.expectedYield')}: {(100 - parseFloat(processingLossPercentage || '0')).toFixed(1)}%
+              </p>
+            )}
           </div>
 
           <DialogFooter>

@@ -853,7 +853,11 @@
       "descriptionPlaceholder": "Optional description for this category",
       "productCount": "Products",
       "active": "Active",
-      "activeDescription": "Inactive categories won't appear in product selection"
+      "activeDescription": "Inactive categories won't appear in product selection",
+      "processingLossPercentage": "Processing Loss %",
+      "processingLossPercentageTooltip": "Default processing loss percentage for products in this category during internal/warehouse operations. For example, 20% loss means processing 100kg yields 80kg of finished product.",
+      "lossPercentagePlaceholder": "e.g., 15",
+      "expectedYield": "Expected Yield"
     },
     "status": {
       "active": "Active",
@@ -887,7 +891,8 @@
     },
     "validation": {
       "nameRequired": "Category name is required",
-      "nameTooLong": "Category name must be 50 characters or less"
+      "nameTooLong": "Category name must be 50 characters or less",
+      "lossPercentageRange": "Processing loss must be between 0 and 100"
     },
     "info": {
       "hasProducts": "This category has {count} product(s) assigned"

@@ -853,7 +853,11 @@
       "descriptionPlaceholder": "此分类的可选描述",
       "productCount": "产品数",
       "active": "启用",
-      "activeDescription": "未启用的分类不会出现在产品选择中"
+      "activeDescription": "未启用的分类不会出现在产品选择中",
+      "processingLossPercentage": "加工损耗率 %",
+      "processingLossPercentageTooltip": "此类别产品在内部/仓库加工过程中的默认损耗百分比。例如，20%的损耗意味着加工100公斤可产出80公斤成品。",
+      "lossPercentagePlaceholder": "例如：15",
+      "expectedYield": "预计产出率"
     },
     "status": {
       "active": "启用",
@@ -887,7 +891,8 @@
     },
     "validation": {
       "nameRequired": "分类名称为必填项",
-      "nameTooLong": "分类名称不得超过50个字符"
+      "nameTooLong": "分类名称不得超过50个字符",
+      "lossPercentageRange": "加工损耗必须在0到100之间"
     },
     "info": {
       "hasProducts": "此分类已分配 {count} 个产品"
