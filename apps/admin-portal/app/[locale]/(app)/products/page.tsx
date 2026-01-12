@@ -24,12 +24,11 @@ import {
   StockLevelBadge,
   type StatusType,
 } from '@joho-erp/ui';
-import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree, ArrowRightLeft } from 'lucide-react';
+import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from '../inventory/components/StockAdjustmentDialog';
-import { ProcessStockDialog } from '../inventory/components/ProcessStockDialog';
 import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@joho-erp/shared';
@@ -58,14 +57,12 @@ export default function ProductsPage() {
   const tCommon = useTranslations('common');
   const tProductForm = useTranslations('productForm');
   const tStock = useTranslations('stockAdjustment');
-  const tInventory = useTranslations('inventory');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
-  const [showProcessStockDialog, setShowProcessStockDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Sorting hook
@@ -291,15 +288,6 @@ export default function ProductsPage() {
         <TabsContent value="products" className="space-y-6">
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-2">
-            <PermissionGate permission="products:adjust_stock">
-              <Button
-                variant="outline"
-                onClick={() => setShowProcessStockDialog(true)}
-              >
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                {tInventory('processStock')}
-              </Button>
-            </PermissionGate>
             <PermissionGate permission="products:create">
               <Button
                 className="btn-enhanced btn-primary-enhanced w-full sm:w-auto"
@@ -461,13 +449,6 @@ export default function ProductsPage() {
           if (!open) setSelectedProduct(null);
         }}
         product={selectedProduct}
-        onSuccess={() => refetch()}
-      />
-
-      {/* Process Stock Dialog */}
-      <ProcessStockDialog
-        open={showProcessStockDialog}
-        onOpenChange={setShowProcessStockDialog}
         onSuccess={() => refetch()}
       />
     </div>

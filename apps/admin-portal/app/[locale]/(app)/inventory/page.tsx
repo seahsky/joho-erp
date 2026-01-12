@@ -37,6 +37,7 @@ import {
   Download,
   Plus,
   PackagePlus,
+  ArrowRightLeft,
 } from 'lucide-react';
 import {
   StockMovementChart,
@@ -44,6 +45,7 @@ import {
   ProductTurnoverTable,
   ComparisonAnalytics,
   StockAdjustmentDialog,
+  ProcessStockDialog,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
 import { ExportDialog } from './components/ExportDialog';
@@ -73,6 +75,9 @@ export default function InventoryPage() {
     currentStock: number;
     unit: string;
   } | null>(null);
+
+  // Process stock dialog state
+  const [showProcessStockDialog, setShowProcessStockDialog] = useState(false);
 
   // API calls
   const { data: summary } = api.dashboard.getInventorySummary.useQuery();
@@ -110,6 +115,11 @@ export default function InventoryPage() {
     setShowStockDialog(false);
   };
 
+  const handleProcessStockSuccess = () => {
+    refetchTransactions();
+    setShowProcessStockDialog(false);
+  };
+
   const handleQuickAdjust = (tx: {
     productId: string;
     productName: string;
@@ -145,6 +155,15 @@ export default function InventoryPage() {
             >
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">{t('inventory.adjustStock')}</span>
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="products:adjust_stock">
+            <Button
+              variant="outline"
+              onClick={() => setShowProcessStockDialog(true)}
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{t('inventory.processStock')}</span>
             </Button>
           </PermissionGate>
           <Button onClick={() => setExportDialogOpen(true)}>
@@ -444,6 +463,13 @@ export default function InventoryPage() {
         }}
         product={selectedProduct}
         onSuccess={handleStockAdjustSuccess}
+      />
+
+      {/* Process Stock Dialog */}
+      <ProcessStockDialog
+        open={showProcessStockDialog}
+        onOpenChange={setShowProcessStockDialog}
+        onSuccess={handleProcessStockSuccess}
       />
 
       {/* Export Dialog */}

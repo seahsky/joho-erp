@@ -889,7 +889,9 @@
       "selectSource": "Select source product (raw material)",
       "selectTarget": "Select target product (processed)",
       "changeSource": "Change source",
-      "changeTarget": "Change target"
+      "changeTarget": "Change target",
+      "processingDetails": "Processing Details",
+      "noProductsFound": "No products found"
     },
     "fields": {
       "sourceProduct": "Source Product",
@@ -915,7 +917,8 @@
       "quantityPositive": "Quantity must be greater than 0",
       "insufficientStock": "Insufficient stock in source product",
       "costRequired": "Cost per unit is required",
-      "zeroOutput": "Output quantity cannot be zero"
+      "zeroOutput": "Output quantity cannot be zero",
+      "fixErrors": "Please fix the following errors:"
     },
     "messages": {
       "success": "Stock processed successfully",

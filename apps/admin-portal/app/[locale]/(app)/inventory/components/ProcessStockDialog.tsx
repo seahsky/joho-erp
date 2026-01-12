@@ -339,7 +339,7 @@ export function ProcessStockDialog({
                     </div>
                   ) : products.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      No products found
+                      {t('dialog.noProductsFound')}
                     </p>
                   ) : (
                     products.map((product) => (
@@ -399,7 +399,7 @@ export function ProcessStockDialog({
           {/* Form Fields */}
           {sourceProduct && targetProduct && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold">Processing Details</h3>
+              <h3 className="text-sm font-semibold">{t('dialog.processingDetails')}</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -468,7 +468,7 @@ export function ProcessStockDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900">Please fix the following errors:</p>
+                  <p className="text-sm font-medium text-red-900">{t('validation.fixErrors')}</p>
                   <ul className="text-sm text-red-700 list-disc list-inside mt-1">
                     {validationErrors.map((error, index) => (
                       <li key={index}>{error}</li>

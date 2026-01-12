@@ -862,6 +862,58 @@
       "loadMore": "載入更多"
     }
   },
+  "processStock": {
+    "dialog": {
+      "title": "加工庫存",
+      "description": "將原材料轉換為加工產品",
+      "selectSource": "選擇來源產品（原材料）",
+      "selectTarget": "選擇目標產品（加工品）",
+      "changeSource": "更換來源產品",
+      "changeTarget": "更換目標產品",
+      "processingDetails": "加工詳情",
+      "noProductsFound": "未找到產品"
+    },
+    "fields": {
+      "sourceProduct": "來源產品",
+      "targetProduct": "目標產品",
+      "quantityToProcess": "加工數量",
+      "costPerUnit": "單位成本（目標產品）",
+      "costPerUnitHint": "加工產品的單位成本",
+      "expiryDate": "有效期（選填）",
+      "notes": "備註（選填）",
+      "notesPlaceholder": "新增加工備註..."
+    },
+    "preview": {
+      "title": "轉換預覽",
+      "source": "來源",
+      "output": "輸出",
+      "loss": "損耗",
+      "yield": "產量"
+    },
+    "validation": {
+      "sourceRequired": "來源產品為必填項",
+      "targetRequired": "目標產品為必填項",
+      "sameProduct": "來源產品和目標產品必須不同",
+      "quantityPositive": "數量必須大於0",
+      "insufficientStock": "來源產品庫存不足",
+      "costRequired": "單位成本為必填項",
+      "zeroOutput": "輸出數量不能為零",
+      "fixErrors": "請修正以下錯誤："
+    },
+    "messages": {
+      "success": "庫存加工成功",
+      "successDetails": "已加工 {processed} {sourceUnit} → {produced} {targetUnit}",
+      "error": "加工庫存失敗"
+    },
+    "warnings": {
+      "expiryTitle": "有效期警告",
+      "expiryMessage": "{count} 批次即將過期"
+    },
+    "buttons": {
+      "processStock": "加工庫存",
+      "processing": "加工中..."
+    }
+  },
   "pricingDialog": {
     "title": {
       "edit": "編輯自訂價格",

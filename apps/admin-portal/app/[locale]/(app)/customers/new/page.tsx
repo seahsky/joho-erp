@@ -289,7 +289,7 @@ export default function NewCustomerPage() {
   };
 
   // Validation functions
-  const validateBusinessInfo = (): boolean => {
+  const _validateBusinessInfo = (): boolean => {
     const errors: Record<string, string> = {};
     let isValid = true;
 
@@ -320,7 +320,7 @@ export default function NewCustomerPage() {
     return isValid;
   };
 
-  const validateContactPerson = (): boolean => {
+  const _validateContactPerson = (): boolean => {
     const errors: Record<string, string> = {};
     let isValid = true;
 

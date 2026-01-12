@@ -862,6 +862,58 @@
       "loadMore": "加载更多"
     }
   },
+  "processStock": {
+    "dialog": {
+      "title": "加工库存",
+      "description": "将原材料转换为加工产品",
+      "selectSource": "选择源产品（原材料）",
+      "selectTarget": "选择目标产品（加工品）",
+      "changeSource": "更换源产品",
+      "changeTarget": "更换目标产品",
+      "processingDetails": "加工详情",
+      "noProductsFound": "未找到产品"
+    },
+    "fields": {
+      "sourceProduct": "源产品",
+      "targetProduct": "目标产品",
+      "quantityToProcess": "加工数量",
+      "costPerUnit": "单位成本（目标产品）",
+      "costPerUnitHint": "加工产品的单位成本",
+      "expiryDate": "有效期（可选）",
+      "notes": "备注（可选）",
+      "notesPlaceholder": "添加加工备注..."
+    },
+    "preview": {
+      "title": "转换预览",
+      "source": "源",
+      "output": "输出",
+      "loss": "损耗",
+      "yield": "产量"
+    },
+    "validation": {
+      "sourceRequired": "源产品为必填项",
+      "targetRequired": "目标产品为必填项",
+      "sameProduct": "源产品和目标产品必须不同",
+      "quantityPositive": "数量必须大于0",
+      "insufficientStock": "源产品库存不足",
+      "costRequired": "单位成本为必填项",
+      "zeroOutput": "输出数量不能为零",
+      "fixErrors": "请修正以下错误："
+    },
+    "messages": {
+      "success": "库存加工成功",
+      "successDetails": "已加工 {processed} {sourceUnit} → {produced} {targetUnit}",
+      "error": "加工库存失败"
+    },
+    "warnings": {
+      "expiryTitle": "有效期警告",
+      "expiryMessage": "{count} 批次即将过期"
+    },
+    "buttons": {
+      "processStock": "加工库存",
+      "processing": "加工中..."
+    }
+  },
   "pricingDialog": {
     "title": {
       "edit": "编辑自定义价格",
