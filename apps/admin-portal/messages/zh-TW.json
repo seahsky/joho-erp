@@ -2518,6 +2518,7 @@
       "expired_stock": "過期商品"
     },
     "adjustStock": "調整庫存",
+    "processStock": "加工庫存",
     "productSelector": {
       "searchPlaceholder": "按產品名稱或SKU搜尋...",
       "selectProduct": "選擇要調整庫存的產品",
