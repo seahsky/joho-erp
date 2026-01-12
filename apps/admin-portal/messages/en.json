@@ -1356,14 +1356,26 @@
       "postcodeRequired": "Postcode is required",
       "postcodeInvalid": "Postcode must be 4 digits",
       "areaTagRequired": "Delivery area is required",
+      "bsbRequired": "BSB is required",
       "bsbInvalid": "BSB must be 6 digits",
-      "creditLimitInvalid": "Credit limit must be a positive number or zero"
+      "creditLimitInvalid": "Credit limit must be a positive number or zero",
+      "familyNameRequired": "Family name is required",
+      "givenNamesRequired": "Given names are required",
+      "dateOfBirthRequired": "Date of birth is required",
+      "driverLicenseRequired": "Driver license number is required",
+      "licenseExpiryRequired": "License expiry date is required",
+      "companyNameRequired": "Company name is required",
+      "contactPersonRequired": "Contact person name is required",
+      "bankNameRequired": "Bank name is required",
+      "accountNameRequired": "Account name is required",
+      "accountNumberRequired": "Account number is required"
     },
     "messages": {
       "createSuccess": "Customer created successfully!",
       "createError": "Failed to create customer",
       "duplicateEmail": "A customer with this email already exists",
-      "duplicateABN": "A customer with this ABN already exists"
+      "duplicateABN": "A customer with this ABN already exists",
+      "fixValidationErrors": "Please fix the validation errors before submitting"
     }
   },
   "packing": {
