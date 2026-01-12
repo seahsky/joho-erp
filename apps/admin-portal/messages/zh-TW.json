@@ -633,7 +633,11 @@
       "descriptionPlaceholder": "此分類的可選描述",
       "productCount": "產品數",
       "active": "啟用",
-      "activeDescription": "未啟用的分類不會出現在產品選擇中"
+      "activeDescription": "未啟用的分類不會出現在產品選擇中",
+      "processingLossPercentage": "加工損耗率 %",
+      "processingLossPercentageTooltip": "此類別產品在內部/倉庫加工過程中的預設損耗百分比。例如，20%的損耗意味著加工100公斤可產出80公斤成品。",
+      "lossPercentagePlaceholder": "例如：15",
+      "expectedYield": "預計產出率"
     },
     "status": {
       "active": "啟用",
@@ -667,7 +671,8 @@
     },
     "validation": {
       "nameRequired": "分類名稱為必填項",
-      "nameTooLong": "分類名稱不得超過50個字符"
+      "nameTooLong": "分類名稱不得超過50個字符",
+      "lossPercentageRange": "加工損耗必須在0到100之間"
     },
     "info": {
       "hasProducts": "此分類已分配 {count} 個產品"

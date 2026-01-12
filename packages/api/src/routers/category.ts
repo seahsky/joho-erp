@@ -21,6 +21,7 @@ export const categoryRouter = router({
       z.object({
         name: z.string().min(1).max(50),
         description: z.string().optional(),
+        processingLossPercentage: z.number().min(0).max(100).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -40,6 +41,7 @@ export const categoryRouter = router({
         data: {
           name: input.name,
           description: input.description,
+          processingLossPercentage: input.processingLossPercentage,
         },
       });
 
@@ -47,6 +49,7 @@ export const categoryRouter = router({
       await logCategoryCreate(ctx.userId, undefined, ctx.userRole, ctx.userName, category.id, {
         name: input.name,
         description: input.description,
+        processingLossPercentage: input.processingLossPercentage,
       }).catch((error) => {
         console.error('Audit log failed for category create:', error);
       });
@@ -62,6 +65,7 @@ export const categoryRouter = router({
         name: z.string().min(1).max(50).optional(),
         description: z.string().optional(),
         isActive: z.boolean().optional(),
+        processingLossPercentage: z.number().min(0).max(100).nullish(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -86,6 +90,9 @@ export const categoryRouter = router({
       }
       if (updates.isActive !== undefined && updates.isActive !== existing.isActive) {
         changes.push({ field: 'isActive', oldValue: existing.isActive, newValue: updates.isActive });
+      }
+      if (updates.processingLossPercentage !== undefined && updates.processingLossPercentage !== existing.processingLossPercentage) {
+        changes.push({ field: 'processingLossPercentage', oldValue: existing.processingLossPercentage, newValue: updates.processingLossPercentage });
       }
 
       // If updating name, check for duplicates

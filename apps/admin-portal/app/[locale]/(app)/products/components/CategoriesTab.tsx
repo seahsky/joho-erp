@@ -38,6 +38,7 @@ type Category = {
   name: string;
   description: string | null;
   isActive: boolean;
+  processingLossPercentage: number | null;
   productCount: number;
   createdAt: Date;
   updatedAt: Date;

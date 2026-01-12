@@ -160,15 +160,16 @@ enum XeroSyncJobStatus {
 
 // Category Model
 model Category {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String    @unique
-  description String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                       String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                     String    @unique
+  description              String?
+  isActive                 Boolean   @default(true)
+  processingLossPercentage Float?    // Optional: 0-100, processing loss % for internal operations
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   // Relations
-  products    Product[]
+  products Product[]
 
   @@index([isActive])
   @@map("categories")
