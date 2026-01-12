@@ -27,7 +27,7 @@ import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
-import { BackorderStatusBadge, type BackorderStatusType } from './components/BackorderStatusBadge';
+import { BackorderStatusBadge } from './components/BackorderStatusBadge';
 import { BackorderApprovalDialog, type BackorderOrder } from './components/BackorderApprovalDialog';
 import { ConfirmOrderDialog, type ConfirmOrder } from './components/ConfirmOrderDialog';
 import { XeroOrderSyncBadge } from '@/components/xero-sync-badge';
@@ -41,7 +41,6 @@ type Order = {
   status: StatusType;
   totalAmount: number;
   requestedDeliveryDate: Date;
-  backorderStatus: BackorderStatusType;
   stockShortfall?: Record<
     string,
     {
@@ -50,6 +49,7 @@ type Order = {
       shortfall: number;
     }
   >;
+  approvedQuantities?: Record<string, number>;
   items: Array<{
     productId: string;
     productName: string;
@@ -154,10 +154,10 @@ export default function OrdersPage() {
   // Data from API with fallbacks for loading state
   const orders = (data?.orders ?? []).map((order) => ({
     ...order,
-    backorderStatus: (order.backorderStatus as BackorderStatusType) || 'none',
     stockShortfall: order.stockShortfall as
       | Record<string, { requested: number; available: number; shortfall: number }>
       | undefined,
+    approvedQuantities: order.approvedQuantities as Record<string, number> | undefined,
   })) as Order[];
 
   // Apply client-side filters
@@ -171,9 +171,9 @@ export default function OrdersPage() {
       if (!matchesSearch) return false;
     }
 
-    // Backorder status filter
-    if (backorderFilter) {
-      if (order.backorderStatus !== backorderFilter) return false;
+    // Backorder status filter (pending backorders are awaiting_approval with stockShortfall)
+    if (backorderFilter === 'pending') {
+      if (!(order.status === 'awaiting_approval' && order.stockShortfall)) return false;
     }
 
     return true;
@@ -183,7 +183,7 @@ export default function OrdersPage() {
   const awaitingApprovalOrders = filteredOrders.filter((o) => o.status === 'awaiting_approval').length;
   const confirmedOrders = filteredOrders.filter((o) => o.status === 'confirmed').length;
   const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
-  const pendingBackorders = orders.filter((o) => o.backorderStatus === 'pending_approval').length;
+  const pendingBackorders = orders.filter((o) => o.status === 'awaiting_approval' && o.stockShortfall).length;
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
   if (error) {
@@ -225,7 +225,7 @@ export default function OrdersPage() {
   };
 
   const handleFilterPendingBackorders = () => {
-    setBackorderFilter('pending_approval');
+    setBackorderFilter('pending');
   };
 
   // Handler for confirming an order
@@ -286,7 +286,7 @@ export default function OrdersPage() {
       render: (order) => (
         <div className="flex items-center gap-2">
           <StatusBadge status={order.status} />
-          <BackorderStatusBadge status={order.backorderStatus} compact />
+          <BackorderStatusBadge order={order} compact />
           <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} compact />
         </div>
       ),
@@ -298,7 +298,7 @@ export default function OrdersPage() {
       className: 'text-right',
       render: (order) => (
         <div className="flex justify-end gap-2">
-          {order.backorderStatus === 'pending_approval' && (
+          {order.status === 'awaiting_approval' && order.stockShortfall && (
             <PermissionGate permission="orders:approve_backorder">
               <Button
                 variant="default"
@@ -309,8 +309,8 @@ export default function OrdersPage() {
               </Button>
             </PermissionGate>
           )}
-          {/* Confirm button only for awaiting_approval orders (backorders) */}
-          {order.status === 'awaiting_approval' && order.backorderStatus !== 'pending_approval' && (
+          {/* Confirm button only for awaiting_approval orders (non-backorders) */}
+          {order.status === 'awaiting_approval' && !order.stockShortfall && (
             <PermissionGate permission="orders:confirm">
               <Button
                 variant="default"
@@ -344,7 +344,7 @@ export default function OrdersPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <StatusBadge status={order.status} />
-          <BackorderStatusBadge status={order.backorderStatus} compact />
+          <BackorderStatusBadge order={order} compact />
           <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} compact />
         </div>
       </div>
@@ -369,7 +369,7 @@ export default function OrdersPage() {
       </div>
 
       <div className="flex gap-2 pt-2 border-t">
-        {order.backorderStatus === 'pending_approval' ? (
+        {order.status === 'awaiting_approval' && order.stockShortfall ? (
           <>
             <PermissionGate permission="orders:approve_backorder">
               <Button
@@ -545,11 +545,8 @@ export default function OrdersPage() {
                 value={backorderFilter}
                 onChange={(e) => setBackorderFilter(e.target.value)}
               >
-                <option value="">{t('allBackorderStatuses')}</option>
-                <option value="pending_approval">{t('backorder.pending_approval')}</option>
-                <option value="approved">{t('backorder.approved')}</option>
-                <option value="rejected">{t('backorder.rejected')}</option>
-                <option value="partial_approved">{t('backorder.partial_approved')}</option>
+                <option value="">{t('allOrders')}</option>
+                <option value="pending">{t('backorder.pending_approval')}</option>
               </select>
             </div>
           </div>

@@ -174,7 +174,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-400 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => router.push('/orders?backorderStatus=pending_approval')}>
+              onClick={() => router.push('/orders?backorderFilter=pending')}>
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium">{t('dashboard.pendingBackorders')}</CardTitle>

@@ -94,14 +94,6 @@ enum RouteType {
   delivery   // Final route for actual delivery (ready_for_delivery only)
 }
 
-enum BackorderStatus {
-  none                // Normal order (within stock)
-  pending_approval    // Awaiting admin review
-  approved           // Admin approved backorder
-  rejected           // Admin rejected backorder
-  partial_approved   // Partial quantity approved
-}
-
 enum ProofOfDeliveryType {
   signature
   photo
@@ -433,8 +425,7 @@ model Order {
   placedOnBehalfOf        String?             // Customer ID when admin places order
   placedByAdmin           String?             // Admin user ID who placed the order
 
-  // Backorder fields
-  backorderStatus         BackorderStatus     @default(none)
+  // Backorder fields (backorder decision inferred from stockShortfall + approvedQuantities + status)
   stockShortfall          Json?               // {productId: {requested: X, available: Y, shortfall: Z}}
   approvedQuantities      Json?               // {productId: approvedQty} - For partial approvals
   backorderNotes          String?             // Admin notes on approval/rejection
@@ -454,7 +445,7 @@ model Order {
   @@index([orderedAt(sort: Desc)])
   @@index([xero.invoiceId])
   @@index([createdAt(sort: Desc)])
-  @@index([backorderStatus, createdAt(sort: Desc)])
+  @@index([status, stockShortfall, createdAt(sort: Desc)])  // For backorder queries
   @@map("orders")
 }
 

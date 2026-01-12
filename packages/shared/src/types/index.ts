@@ -31,6 +31,30 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+// Backorder Decision (inferred from order fields, not stored)
+export type BackorderDecision = 'none' | 'approved' | 'partial' | 'rejected';
+
+/**
+ * Infer the backorder decision from order fields.
+ * This replaces the removed backorderStatus field.
+ *
+ * Logic:
+ * - If stockShortfall is null → normal order ('none')
+ * - If status is 'cancelled' → backorder was rejected ('rejected')
+ * - If approvedQuantities exists → partial approval ('partial')
+ * - Otherwise → full approval ('approved')
+ */
+export function inferBackorderDecision(order: {
+  stockShortfall?: unknown;
+  approvedQuantities?: unknown;
+  status: OrderStatus | string;
+}): BackorderDecision {
+  if (!order.stockShortfall) return 'none';
+  if (order.status === 'cancelled') return 'rejected';
+  if (order.approvedQuantities) return 'partial';
+  return 'approved';
+}
+
 // Product Status
 export type ProductStatus = 'active' | 'discontinued' | 'out_of_stock';
 

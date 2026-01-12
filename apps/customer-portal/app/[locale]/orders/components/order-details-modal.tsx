@@ -32,7 +32,8 @@ import { MapPin, Package, Info, XCircle, Loader2, Camera, CheckCircle, X } from 
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
-import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
+import { BackorderStatusBadge } from './BackorderStatusBadge';
+import { inferBackorderDecision } from '@joho-erp/shared';
 
 interface OrderItem {
   productName: string;
@@ -123,16 +124,14 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
     });
   };
 
-  // Helper function to get backorder info message based on status
-  const getBackorderInfoMessage = (status: BackorderStatusType) => {
-    switch (status) {
-      case 'pending_approval':
-        return t('backorderInfo.pendingApproval');
+  // Helper function to get backorder info message based on decision
+  const getBackorderInfoMessage = (decision: ReturnType<typeof inferBackorderDecision>) => {
+    switch (decision) {
       case 'approved':
         return t('backorderInfo.approved');
       case 'rejected':
         return t('backorderInfo.rejected');
-      case 'partial_approved':
+      case 'partial':
         return t('backorderInfo.partialApproval');
       default:
         return null;
@@ -186,9 +185,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                   </div>
                   <div className="flex flex-col gap-1 items-end">
                     <StatusBadge status={order.status as StatusType} />
-                    <BackorderStatusBadge
-                      status={(order.backorderStatus as BackorderStatusType) || 'none'}
-                    />
+                    <BackorderStatusBadge order={order} />
                   </div>
                 </div>
 
@@ -202,21 +199,26 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
             </Card>
 
             {/* Backorder Information */}
-            {order.backorderStatus && order.backorderStatus !== 'none' && (
-              <Card className="border-info bg-info/5">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 text-info mt-0.5 flex-shrink-0" />
-                    <div>
-                      <H3 className="text-base mb-1">{t('backorderStatus')}</H3>
-                      <p className="text-sm text-muted-foreground">
-                        {getBackorderInfoMessage((order.backorderStatus as BackorderStatusType) || 'none')}
-                      </p>
+            {(() => {
+              const decision = inferBackorderDecision(order);
+              // Show for approved/partial/rejected backorders (not for 'none' or pending)
+              if (decision === 'none' || order.status === 'awaiting_approval') return null;
+              return (
+                <Card className="border-info bg-info/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-info mt-0.5 flex-shrink-0" />
+                      <div>
+                        <H3 className="text-base mb-1">{t('backorderStatus')}</H3>
+                        <p className="text-sm text-muted-foreground">
+                          {getBackorderInfoMessage(decision)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Order Items */}
             <Card>

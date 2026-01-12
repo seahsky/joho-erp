@@ -11,7 +11,7 @@ import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { OrderDetailsModal } from './order-details-modal';
-import { BackorderStatusBadge, type BackorderStatusType } from './BackorderStatusBadge';
+import { BackorderStatusBadge } from './BackorderStatusBadge';
 import { StaggeredList } from '@/components/staggered-list';
 import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
 
@@ -298,9 +298,7 @@ export function OrderList() {
                 </div>
                 <div className="flex flex-col gap-1 items-end">
                   <StatusBadge status={order.status as StatusType} />
-                  <BackorderStatusBadge
-                    status={(order.backorderStatus as BackorderStatusType) || 'none'}
-                  />
+                  <BackorderStatusBadge order={order} />
                 </div>
               </div>
 

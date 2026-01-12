@@ -22,7 +22,6 @@ import { DeliveryInfo } from './components/DeliveryInfo';
 import { XeroSyncCard } from './components/XeroSyncCard';
 import { OrderActions } from './components/OrderActions';
 import { AuditLogSection } from '@/components/audit-log-section';
-import { type BackorderStatusType } from '../components/BackorderStatusBadge';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -149,7 +148,8 @@ export default function OrderDetailPage({ params }: PageProps) {
         customerName={order.customerName}
         orderedAt={order.orderedAt}
         status={order.status as StatusType}
-        backorderStatus={(order.backorderStatus || 'none') as BackorderStatusType}
+        stockShortfall={order.stockShortfall}
+        approvedQuantities={order.approvedQuantities}
         onBack={handleBack}
       />
 

@@ -109,12 +109,9 @@ export async function calculateAvailableCredit(customerId: string, creditLimit: 
   const outstandingOrders = await prisma.order.findMany({
     where: {
       customerId,
+      // Exclude awaiting_approval (pending backorders) - they don't count until approved
       status: {
-        in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
-      },
-      // Exclude pending backorders (they don't count until approved)
-      backorderStatus: {
-        not: 'pending_approval',
+        in: ['confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
     },
     select: {
@@ -139,11 +136,9 @@ export async function getOutstandingBalance(customerId: string): Promise<number>
   const outstandingOrders = await prisma.order.findMany({
     where: {
       customerId,
+      // Exclude awaiting_approval (pending backorders) - they don't count until approved
       status: {
-        in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
-      },
-      backorderStatus: {
-        not: 'pending_approval',
+        in: ['confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
     },
     select: {
@@ -379,9 +374,6 @@ export const orderRouter = router({
         });
       }
 
-      // Determine backorder status
-      const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
-
       // Create order with stock reservation in a transaction
       // Get user details for status history
       const userDetails = await getUserDetails(ctx.userId);
@@ -417,8 +409,7 @@ export const orderRouter = router({
             orderedAt: new Date(),
             createdBy: ctx.userId,
 
-            // Backorder fields
-            backorderStatus,
+            // Backorder fields (stockShortfall presence indicates backorder)
             stockShortfall: stockValidation.requiresBackorder
               ? stockValidation.stockShortfall
               : undefined,
@@ -748,10 +739,7 @@ export const orderRouter = router({
             }
           : customer.deliveryAddress;
 
-      // 13. Determine backorder status
-      const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
-
-      // 14. Get user details for status history
+      // 13. Get user details for status history
       const userDetails = await getUserDetails(ctx.userId);
 
       // 15. Create order with stock reservation in a transaction
@@ -806,8 +794,7 @@ export const orderRouter = router({
             placedOnBehalfOf: customer.id,
             placedByAdmin: ctx.userId,
 
-            // Backorder fields
-            backorderStatus,
+            // Backorder fields (stockShortfall presence indicates backorder)
             stockShortfall: stockValidation.requiresBackorder
               ? stockValidation.stockShortfall
               : undefined,
@@ -1167,10 +1154,10 @@ export const orderRouter = router({
       // Handle stock restoration when cancelling
       // Only restore stock if:
       // 1. Order is being cancelled
-      // 2. Order had stock reserved (NOT a pending backorder)
+      // 2. Order had stock reserved (NOT a pending backorder - pending backorders have awaiting_approval status)
       const shouldRestoreStock =
         input.newStatus === 'cancelled' &&
-        currentOrder.backorderStatus !== 'pending_approval';
+        currentOrder.status !== 'awaiting_approval';
 
       if (shouldRestoreStock) {
         // Restore stock in a transaction
@@ -1180,10 +1167,6 @@ export const orderRouter = router({
             where: { id: input.orderId },
             data: {
               status: input.newStatus,
-              // Clear pending backorder status when cancelling
-              ...(currentOrder.backorderStatus === 'pending_approval'
-                ? { backorderStatus: 'none' }
-                : {}),
               statusHistory: [
                 ...currentOrder.statusHistory,
                 {
@@ -1284,10 +1267,6 @@ export const orderRouter = router({
         where: { id: input.orderId },
         data: {
           status: input.newStatus,
-          // Clear pending backorder status when cancelling
-          ...(input.newStatus === 'cancelled' && currentOrder.backorderStatus === 'pending_approval'
-            ? { backorderStatus: 'none' }
-            : {}),
           statusHistory: [
             ...currentOrder.statusHistory,
             {
@@ -1498,7 +1477,6 @@ export const orderRouter = router({
 
       // Validate stock and check if backorder is needed
       const stockValidation = await validateStockWithBackorder(orderItems, products);
-      const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
       const orderStatus = stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed';
 
       // Validate credit limit
@@ -1549,8 +1527,7 @@ export const orderRouter = router({
             orderedAt: new Date(),
             createdBy: ctx.userId,
 
-            // Backorder fields
-            backorderStatus,
+            // Backorder fields (stockShortfall presence indicates backorder)
             stockShortfall: stockValidation.requiresBackorder
               ? stockValidation.stockShortfall
               : undefined,
@@ -1724,9 +1701,10 @@ export const orderRouter = router({
     .query(async ({ input }) => {
       const { customerId, dateFrom, dateTo, page, limit } = input;
 
-      // Build where clause
+      // Build where clause (pending backorders have awaiting_approval status and stockShortfall)
       const where: any = {
-        backorderStatus: 'pending_approval',
+        status: 'awaiting_approval',
+        stockShortfall: { not: null },
       };
 
       if (customerId) {
@@ -1791,8 +1769,8 @@ export const orderRouter = router({
         });
       }
 
-      // Verify order is in pending_approval status
-      if (order.backorderStatus !== 'pending_approval') {
+      // Verify order is pending backorder approval (awaiting_approval status with stockShortfall)
+      if (order.status !== 'awaiting_approval' || !order.stockShortfall) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Order is not pending backorder approval',
@@ -1844,8 +1822,7 @@ export const orderRouter = router({
             subtotal: newTotals.subtotal,
             taxAmount: newTotals.taxAmount,
             totalAmount: newTotals.totalAmount,
-            backorderStatus: 'partial_approved',
-            approvedQuantities,
+            approvedQuantities,  // This field indicates partial approval
             backorderNotes: notes,
             expectedFulfillment,
             reviewedBy: ctx.userId,
@@ -1980,10 +1957,10 @@ export const orderRouter = router({
         return updatedOrder;
       } else {
         // Full approval - no quantity changes needed
+        // Note: backorder approval is inferred from stockShortfall being set + status moving to confirmed
         const updatedOrder = await prisma.order.update({
           where: { id: orderId },
           data: {
-            backorderStatus: 'approved',
             backorderNotes: notes,
             expectedFulfillment,
             reviewedBy: ctx.userId,
@@ -2144,8 +2121,8 @@ export const orderRouter = router({
         });
       }
 
-      // Verify order is in pending_approval status
-      if (order.backorderStatus !== 'pending_approval') {
+      // Verify order is pending backorder approval (awaiting_approval status with stockShortfall)
+      if (order.status !== 'awaiting_approval' || !order.stockShortfall) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Order is not pending backorder approval',
@@ -2156,10 +2133,10 @@ export const orderRouter = router({
       const userDetails = await getUserDetails(ctx.userId);
 
       // Update order to rejected and cancelled
+      // Note: rejection is inferred from stockShortfall being set + status being cancelled
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
-          backorderStatus: 'rejected',
           backorderNotes: reason,
           reviewedBy: ctx.userId,
           reviewedAt: new Date(),
@@ -2327,7 +2304,7 @@ export const orderRouter = router({
 
       // Check stock availability for non-backorders and convert to backorder if insufficient
       let stockValidation: StockValidationResult = { requiresBackorder: false, stockShortfall: {} };
-      if (order.backorderStatus === 'none') {
+      if (!order.stockShortfall) {  // Normal order (not a backorder)
         const orderItems = order.items as Array<{ productId: string; quantity: number }>;
         const productIds = orderItems.map((item) => item.productId);
         const products = await prisma.product.findMany({
@@ -2344,8 +2321,7 @@ export const orderRouter = router({
           const updatedBackorder = await prisma.order.update({
             where: { id: orderId },
             data: {
-              backorderStatus: 'pending_approval',
-              stockShortfall: stockValidation.stockShortfall,
+              stockShortfall: stockValidation.stockShortfall,  // This indicates it's now a backorder
               statusHistory: {
                 push: {
                   status: 'awaiting_approval',
@@ -2516,7 +2492,7 @@ export const orderRouter = router({
       // Cancel the order and restore stock in a transaction
       const cancelledOrder = await prisma.$transaction(async (tx) => {
         // For normal orders (not backorders), restore the stock
-        if (order.backorderStatus === 'none') {
+        if (!order.stockShortfall) {
           const orderItems = order.items as Array<{ productId: string; quantity: number }>;
 
           for (const item of orderItems) {

@@ -4,14 +4,16 @@ import { Button, StatusBadge, type StatusType } from '@joho-erp/ui';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatDate } from '@joho-erp/shared';
-import { BackorderStatusBadge, type BackorderStatusType } from '../../components/BackorderStatusBadge';
+import { BackorderStatusBadge } from '../../components/BackorderStatusBadge';
 
 interface OrderHeaderProps {
   orderNumber: string;
   customerName: string;
   orderedAt: Date | string;
   status: StatusType;
-  backorderStatus: BackorderStatusType;
+  // Fields needed for backorder decision inference
+  stockShortfall?: unknown;
+  approvedQuantities?: unknown;
   onBack: () => void;
 }
 
@@ -20,10 +22,14 @@ export function OrderHeader({
   customerName,
   orderedAt,
   status,
-  backorderStatus,
+  stockShortfall,
+  approvedQuantities,
   onBack,
 }: OrderHeaderProps) {
   const t = useTranslations('orderDetail');
+
+  // Create order object for BackorderStatusBadge
+  const order = { status, stockShortfall, approvedQuantities };
 
   return (
     <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -38,7 +44,7 @@ export function OrderHeader({
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <StatusBadge status={status} />
           {status !== 'cancelled' && status !== 'delivered' && (
-            <BackorderStatusBadge status={backorderStatus} />
+            <BackorderStatusBadge order={order} />
           )}
           <span className="text-muted-foreground flex items-center gap-1">
             <Calendar className="h-4 w-4" />
