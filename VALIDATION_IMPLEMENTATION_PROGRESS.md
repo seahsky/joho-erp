@@ -3,9 +3,12 @@
 ## 📋 Overview
 This document tracks the implementation of inline field-level validation error messages across all forms in both admin and customer portals. The goal is to replace toast-only error notifications with persistent per-field error displays.
 
+> **Note**: This document was updated on 2026-01-12 to reflect actual implementation status. Previous version incorrectly claimed 9/9 completion before validation was fully wired.
+
 **Last Updated:** 2026-01-12
-**Status:** ✅ ALL PRIMARY FORMS COMPLETED (9 of 9 targeted forms)
-**Type Check:** ⚠️ Pre-existing type errors in database package (unrelated to validation implementation)
+**Status:** ✅ ALL PRIMARY FORMS NOW COMPLETED (9 of 9 targeted forms)
+**Customer Form Status:** ✅ Validation fully wired and functional (completed 2026-01-12)
+**Type Check:** ✅ All type checks passing
 **Validation Code:** ✅ No type errors in validation implementation
 
 ---
@@ -69,7 +72,11 @@ This document tracks the implementation of inline field-level validation error m
    - i18n keys already existed
 
 10. **Customer Creation Form** (`apps/admin-portal/app/[locale]/(app)/customers/new/page.tsx`)
-   - ✅ **COMPLETED TODAY - ALL PHASES**
+   - ✅ **COMPLETED - FULLY WIRED (2026-01-12)**
+   - **Implementation History:**
+     - Previous state: Validation functions existed but were unused (prefixed with `_`)
+     - Fixed: Removed underscores from `validateBusinessInfo`, `validateContactPerson`, `clearCreditError`
+     - Fixed: Added `clearCreditError()` calls to all credit field onChange handlers
    - **Phase A: Business & Contact Fields (10 fields)**
      - accountType, businessName, tradingName, abn, acn
      - firstName, lastName, email, phone, mobile
@@ -558,23 +565,33 @@ pnpm build       # Must succeed
 
 ## 🎯 Next Steps
 
-### Option A: Tackle Customer Creation Form (Recommended)
-**Approach:** Break into phases A-E, implement incrementally
-- Start with Phase A (Business + Contact fields)
-- Run type-check after each phase
-- Most complex form, best to tackle while patterns are fresh
+### ✅ Primary Forms Complete
 
-### Option B: Complete Simple Forms First
-**Approach:** Knock out quick wins
-- AddCategoryDialog + EditCategoryDialog (< 30 min)
-- SetPriceDialog (~ 1 hour)
-- Build momentum before tackling customer form
+All 9 primary forms now have inline validation implemented and fully wired. The validation implementation for core user workflows is complete.
 
-### Option C: Hybrid Approach
-**Approach:** Mix of both
-- Complete SetPriceDialog (medium complexity, good practice)
-- Tackle Customer Form phases A-B
-- Complete category dialogs as palate cleanser
+### 🔄 Optional Future Enhancements
+
+**1. Add Missing Chinese Translations (HIGH PRIORITY)**
+   - **Files:** `apps/admin-portal/messages/zh-CN.json`, `apps/admin-portal/messages/zh-TW.json`
+   - **Missing Keys:** 22 translation keys for validation messages
+   - **Impact:** Chinese-language users currently see English validation messages
+   - **Estimated Time:** 30 minutes
+   - **Details:** Keys exist in en.json but missing in Chinese files for:
+     - `orderOnBehalf.validation` (8 keys)
+     - `productForm.validation` (7 keys)
+     - `pricing.validation` (5 keys)
+     - `categories.validation` (1 key)
+
+**2. Implement Additional Dialog Validations (MEDIUM PRIORITY)**
+   - **StockAdjustmentDialog** - Inventory operations (8 fields, conditional validation)
+   - **ProcessStockDialog** - Stock processing with calculations (6 fields)
+   - **BackorderApprovalDialog** - Order approval workflow (variable fields)
+   - **Estimated Time:** 2-3 hours total
+   - **Impact:** Improved UX for inventory management workflows
+
+**3. Phase 3 Dialogs (LOW PRIORITY)**
+   - Additional 8+ dialogs identified for potential validation enhancement
+   - See "PHASE 3 FORMS (To Be Explored)" section below for full list
 
 ---
 

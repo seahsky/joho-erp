@@ -146,7 +146,7 @@ export default function NewCustomerPage() {
     }
   };
 
-  const _clearCreditError = (field: string) => {
+  const clearCreditError = (field: string) => {
     if (creditErrors[field]) {
       const newErrors = { ...creditErrors };
       delete newErrors[field];
@@ -289,7 +289,7 @@ export default function NewCustomerPage() {
   };
 
   // Validation functions
-  const _validateBusinessInfo = (): boolean => {
+  const validateBusinessInfo = (): boolean => {
     const errors: Record<string, string> = {};
     let isValid = true;
 
@@ -320,7 +320,7 @@ export default function NewCustomerPage() {
     return isValid;
   };
 
-  const _validateContactPerson = (): boolean => {
+  const validateContactPerson = (): boolean => {
     const errors: Record<string, string> = {};
     let isValid = true;
 
@@ -576,8 +576,8 @@ export default function NewCustomerPage() {
   };
 
   const validateForm = (): boolean => {
-    const businessValid = _validateBusinessInfo();
-    const contactValid = _validateContactPerson();
+    const businessValid = validateBusinessInfo();
+    const contactValid = validateContactPerson();
     const addressValid = validateAddresses();
     const financialValid = validateFinancialInfo();
     const directorsValid = validateDirectors();
@@ -1283,12 +1283,13 @@ export default function NewCustomerPage() {
                       step="100"
                       placeholder={t('creditApplication.requestedCreditLimitPlaceholder')}
                       value={formData.requestedCreditLimit ? (formData.requestedCreditLimit / 100).toFixed(0) : ''}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           requestedCreditLimit: e.target.value ? parseToCents(e.target.value) || undefined : undefined,
-                        })
-                      }
+                        });
+                        clearCreditError('requestedCreditLimit');
+                      }}
                     />
                     <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
@@ -1301,12 +1302,13 @@ export default function NewCustomerPage() {
                       step="100"
                       placeholder={t('creditApplication.forecastPurchasePlaceholder')}
                       value={formData.forecastPurchase ? (formData.forecastPurchase / 100).toFixed(0) : ''}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           forecastPurchase: e.target.value ? parseToCents(e.target.value) || undefined : undefined,
-                        })
-                      }
+                        });
+                        clearCreditError('forecastPurchase');
+                      }}
                     />
                     <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
@@ -1322,7 +1324,10 @@ export default function NewCustomerPage() {
                       step="100"
                       placeholder={t('creditApplication.approvedCreditLimitPlaceholder')}
                       value={formData.creditLimit ? (formData.creditLimit / 100).toFixed(0) : '0'}
-                      onChange={(e) => setFormData({ ...formData, creditLimit: parseToCents(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, creditLimit: parseToCents(e.target.value) || 0 });
+                        clearCreditError('creditLimit');
+                      }}
                     />
                     <p className="text-xs text-muted-foreground">{t('creditApplication.enterDollars')}</p>
                   </div>
@@ -1332,7 +1337,10 @@ export default function NewCustomerPage() {
                       id="paymentTerms"
                       placeholder={t('creditApplication.paymentTermsPlaceholder')}
                       value={formData.paymentTerms}
-                      onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, paymentTerms: e.target.value });
+                        clearCreditError('paymentTerms');
+                      }}
                     />
                   </div>
                 </div>

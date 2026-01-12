@@ -773,6 +773,7 @@
       "basePricePositive": "基礎價格必須為正數",
       "unitCostPositive": "單位成本必須為正數",
       "gstRateRange": "GST稅率必須在0到100之間",
+      "lossPercentageRange": "損失百分比必須在 0 到 100 之間",
       "invalidInput": "無效輸入",
       "invalidPercentAndPrice": "請輸入有效的百分比和基礎價格",
       "invalidAmountAndPrice": "請輸入有效的金額和基礎價格"
