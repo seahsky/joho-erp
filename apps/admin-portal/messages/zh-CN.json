@@ -560,8 +560,16 @@
       "itemsRequired": "请至少添加一个项目到订单",
       "bypassReasonRequired": "绕过信用额度时必须提供原因",
       "customAddressRequired": "请填写所有自定义地址字段",
+      "deliveryDateInvalid": "配送日期必须在未来",
+      "fixErrors": "请修正表单中的错误",
+      "invalidInput": "无效输入",
       "invalidItem": "无效项目",
-      "selectProductAndQuantity": "请选择产品并输入数量"
+      "postcodeInvalid": "邮政编码必须为4位数字",
+      "postcodeRequired": "邮政编码为必填项",
+      "selectProductAndQuantity": "请选择产品并输入数量",
+      "stateRequired": "州为必填项",
+      "streetRequired": "街道地址为必填项",
+      "suburbRequired": "区/镇为必填项"
     },
     "messages": {
       "orderCreated": "订单创建成功",
@@ -658,7 +666,8 @@
       "deleteError": "删除分类失败"
     },
     "validation": {
-      "nameRequired": "分类名称为必填项"
+      "nameRequired": "分类名称为必填项",
+      "nameTooLong": "分类名称不得超过50个字符"
     },
     "info": {
       "hasProducts": "此分类已分配 {count} 个产品"
@@ -770,11 +779,18 @@
     },
     "validation": {
       "skuNamePriceRequired": "货号、名称和基础价格为必填项",
+      "skuRequired": "货号为必填项",
+      "nameRequired": "产品名称为必填项",
+      "basePriceRequired": "基础价格为必填项",
       "basePricePositive": "基础价格必须为正数",
+      "unitRequired": "单位为必填项",
       "unitCostPositive": "单位成本必须为正数",
+      "packageSizePositive": "包装大小必须为正数",
+      "categoryRequired": "类别为必填项",
       "gstRateRange": "GST税率必须在0到100之间",
       "lossPercentageRange": "损失百分比必须在 0 到 100 之间",
       "invalidInput": "无效输入",
+      "fixErrors": "请修正表单中的错误",
       "invalidPercentAndPrice": "请输入有效的百分比和基础价格",
       "invalidAmountAndPrice": "请输入有效的金额和基础价格"
     },
@@ -1011,7 +1027,12 @@
       "same": "与标准价格相同"
     },
     "validation": {
+      "customerRequired": "客户为必填项",
+      "productRequired": "产品为必填项",
+      "priceRequired": "自定义价格为必填项",
       "pricePositive": "自定义价格必须大于0",
+      "effectiveFromRequired": "生效日期为必填项",
+      "effectiveToInvalid": "截止日期必须在生效日期之后或相同",
       "dateOrder": "生效日期必须早于到期日期"
     },
     "buttons": {

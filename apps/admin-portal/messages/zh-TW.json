@@ -560,8 +560,16 @@
       "itemsRequired": "請至少新增一個項目至訂單",
       "bypassReasonRequired": "繞過信用額度時必須提供原因",
       "customAddressRequired": "請填寫所有自訂地址欄位",
+      "deliveryDateInvalid": "配送日期必須在未來",
+      "fixErrors": "請修正表單中的錯誤",
+      "invalidInput": "無效輸入",
       "invalidItem": "無效項目",
-      "selectProductAndQuantity": "請選擇產品並輸入數量"
+      "postcodeInvalid": "郵遞區號必須為4位數字",
+      "postcodeRequired": "郵遞區號為必填項",
+      "selectProductAndQuantity": "請選擇產品並輸入數量",
+      "stateRequired": "州為必填項",
+      "streetRequired": "街道地址為必填項",
+      "suburbRequired": "區/鎮為必填項"
     },
     "messages": {
       "orderCreated": "訂單建立成功",
@@ -658,7 +666,8 @@
       "deleteError": "刪除分類失敗"
     },
     "validation": {
-      "nameRequired": "分類名稱為必填項"
+      "nameRequired": "分類名稱為必填項",
+      "nameTooLong": "分類名稱不得超過50個字符"
     },
     "info": {
       "hasProducts": "此分類已分配 {count} 個產品"
@@ -770,11 +779,18 @@
     },
     "validation": {
       "skuNamePriceRequired": "貨號、名稱和基礎價格為必填項",
+      "skuRequired": "貨號為必填項",
+      "nameRequired": "產品名稱為必填項",
+      "basePriceRequired": "基礎價格為必填項",
       "basePricePositive": "基礎價格必須為正數",
+      "unitRequired": "單位為必填項",
       "unitCostPositive": "單位成本必須為正數",
+      "packageSizePositive": "包裝大小必須為正數",
+      "categoryRequired": "類別為必填項",
       "gstRateRange": "GST稅率必須在0到100之間",
       "lossPercentageRange": "損失百分比必須在 0 到 100 之間",
       "invalidInput": "無效輸入",
+      "fixErrors": "請修正表單中的錯誤",
       "invalidPercentAndPrice": "請輸入有效的百分比和基礎價格",
       "invalidAmountAndPrice": "請輸入有效的金額和基礎價格"
     },
@@ -1011,7 +1027,12 @@
       "same": "與標準價格相同"
     },
     "validation": {
+      "customerRequired": "客戶為必填項",
+      "productRequired": "產品為必填項",
+      "priceRequired": "自訂價格為必填項",
       "pricePositive": "自訂價格必須大於0",
+      "effectiveFromRequired": "生效日期為必填項",
+      "effectiveToInvalid": "截止日期必須在生效日期之後或相同",
       "dateOrder": "生效日期必須早於到期日期"
     },
     "buttons": {

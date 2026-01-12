@@ -6,10 +6,12 @@ This document tracks the implementation of inline field-level validation error m
 > **Note**: This document was updated on 2026-01-12 to reflect actual implementation status. Previous version incorrectly claimed 9/9 completion before validation was fully wired.
 
 **Last Updated:** 2026-01-12
-**Status:** ✅ ALL PRIMARY FORMS NOW COMPLETED (9 of 9 targeted forms)
-**Customer Form Status:** ✅ Validation fully wired and functional (completed 2026-01-12)
-**Type Check:** ✅ All type checks passing
+**Status:** ✅ ALL PRIMARY FORMS 100% COMPLETED (9 of 9 targeted forms)
+**Implementation Status:** ✅ All validation logic fully wired and functional
+**i18n Status:** ✅ All Chinese translations added (21 keys in zh-CN & zh-TW)
+**Type Check:** ✅ All type checks passing (7/7 packages)
 **Validation Code:** ✅ No type errors in validation implementation
+**Build Status:** ✅ Production build succeeds
 
 ---
 
@@ -453,19 +455,25 @@ const validateForm = (): boolean => {
 
 ## 🌐 i18n Completion
 
-### Completed
-- ✅ Customer Portal: `en.json`, `zh-CN.json`, `zh-TW.json` (previous session)
-- ✅ Admin Portal: `en.json` (EditProductDialog, Order Creation Form)
+### Completed ✅
+- ✅ Customer Portal: `en.json`, `zh-CN.json`, `zh-TW.json` (completed in previous session)
+- ✅ Admin Portal: `en.json` - All validation keys present
+- ✅ Admin Portal: `zh-CN.json` - **All 21 missing validation keys added (2026-01-12)**
+  - orderOnBehalf.validation: 8 keys ✅
+  - productForm.validation: 7 keys ✅
+  - pricing.validation: 5 keys ✅
+  - categories.validation: 1 key ✅
+  - customerForm.validation: 33 keys (already complete) ✅
 
-### Remaining
-- ⏳ Admin Portal: `zh-CN.json` - Add Chinese translations for:
-  - productForm.validation (already in en.json)
-  - orderOnBehalf.validation (newly added keys)
-  - pricing.validation (to be added)
-  - categoryForm.validation (to be added)
-  - customerForm.validation (additional keys needed)
+- ✅ Admin Portal: `zh-TW.json` - **All 21 missing validation keys added (2026-01-12)**
+  - orderOnBehalf.validation: 8 keys ✅
+  - productForm.validation: 7 keys ✅
+  - pricing.validation: 5 keys ✅
+  - categories.validation: 1 key ✅
+  - customerForm.validation: 33 keys (already complete) ✅
 
-- ⏳ Admin Portal: `zh-TW.json` - Add Traditional Chinese translations for all above
+### Status
+**ALL PRIMARY FORMS NOW HAVE COMPLETE i18n COVERAGE (en, zh-CN, zh-TW)**
 
 ---
 
@@ -571,16 +579,15 @@ All 9 primary forms now have inline validation implemented and fully wired. The 
 
 ### 🔄 Optional Future Enhancements
 
-**1. Add Missing Chinese Translations (HIGH PRIORITY)**
+**1. ✅ Chinese Translations - COMPLETED (2026-01-12)**
    - **Files:** `apps/admin-portal/messages/zh-CN.json`, `apps/admin-portal/messages/zh-TW.json`
-   - **Missing Keys:** 22 translation keys for validation messages
-   - **Impact:** Chinese-language users currently see English validation messages
-   - **Estimated Time:** 30 minutes
-   - **Details:** Keys exist in en.json but missing in Chinese files for:
-     - `orderOnBehalf.validation` (8 keys)
-     - `productForm.validation` (7 keys)
-     - `pricing.validation` (5 keys)
-     - `categories.validation` (1 key)
+   - **Status:** All 21 translation keys successfully added
+   - **Completion:** Chinese-language users now see properly localized validation messages
+   - **Added Keys:**
+     - `orderOnBehalf.validation` (8 keys) ✅
+     - `productForm.validation` (7 keys) ✅
+     - `pricing.validation` (5 keys) ✅
+     - `categories.validation` (1 key) ✅
 
 **2. Implement Additional Dialog Validations (MEDIUM PRIORITY)**
    - **StockAdjustmentDialog** - Inventory operations (8 fields, conditional validation)
