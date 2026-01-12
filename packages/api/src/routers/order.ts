@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
-import { prisma } from '@joho-erp/database';
+import { prisma, PrismaClient } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
@@ -43,10 +43,16 @@ interface StockValidationResult {
   stockShortfall: Record<string, { requested: number; available: number; shortfall: number }>;
 }
 
-function validateStockWithBackorder(
+async function validateStockWithBackorder(
   items: Array<{ productId: string; quantity: number }>,
-  products: Array<{ id: string; name: string; currentStock: number }>
-): StockValidationResult {
+  products: Array<{ id: string; name: string; currentStock: number }>,
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+): Promise<StockValidationResult> {
+  const { getAvailableStockQuantity } = await import('../services/inventory-batch');
+
   const result: StockValidationResult = {
     requiresBackorder: false,
     stockShortfall: {},
@@ -56,13 +62,17 @@ function validateStockWithBackorder(
     const product = products.find((p) => p.id === item.productId);
     if (!product) continue;
 
-    if (product.currentStock < item.quantity) {
+    // Use batch-aware stock quantity instead of cached currentStock
+    // This accounts for expired batches and consumed stock
+    const availableStock = await getAvailableStockQuantity(item.productId, tx);
+
+    if (availableStock < item.quantity) {
       // Stock insufficient - backorder needed
       result.requiresBackorder = true;
       result.stockShortfall[item.productId] = {
         requested: item.quantity,
-        available: product.currentStock,
-        shortfall: item.quantity - product.currentStock,
+        available: availableStock,
+        shortfall: item.quantity - availableStock,
       };
     }
   }
@@ -264,7 +274,7 @@ export const orderRouter = router({
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
       // Validate stock and check if backorder is needed
-      const stockValidation = validateStockWithBackorder(input.items, products);
+      const stockValidation = await validateStockWithBackorder(input.items, products);
 
       // Build order items with prices (using customer-specific pricing if available)
       const orderItems = input.items.map((item) => {
@@ -645,7 +655,7 @@ export const orderRouter = router({
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
       // 6. Validate stock and check if backorder is needed
-      const stockValidation = validateStockWithBackorder(input.items, products);
+      const stockValidation = await validateStockWithBackorder(input.items, products);
 
       // 7. Build order items with prices
       const orderItems = input.items.map((item) => {
@@ -1473,7 +1483,7 @@ export const orderRouter = router({
       const totals = calculateOrderTotals(newOrderItems, 0.1);
 
       // Validate stock and check if backorder is needed
-      const stockValidation = validateStockWithBackorder(orderItems, products);
+      const stockValidation = await validateStockWithBackorder(orderItems, products);
       const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
       const orderStatus = stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed';
 
@@ -2303,7 +2313,7 @@ export const orderRouter = router({
           where: { id: { in: productIds } },
         });
 
-        stockValidation = validateStockWithBackorder(orderItems, products);
+        stockValidation = await validateStockWithBackorder(orderItems, products);
 
         // If stock is insufficient, convert to backorder instead of blocking
         if (stockValidation.requiresBackorder) {
