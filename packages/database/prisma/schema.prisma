@@ -154,6 +154,21 @@ enum XeroSyncJobStatus {
   failed
 }
 
+enum SupplierStatus {
+  active
+  inactive
+  pending_approval
+  suspended
+}
+
+enum PaymentMethod {
+  bank_transfer
+  credit_card
+  cheque
+  cash_on_delivery
+  account_credit
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -220,6 +235,7 @@ model Product {
   inventoryTransactions InventoryTransaction[]
   customerPricing     CustomerPricing[]
   batches             InventoryBatch[]
+  suppliers           ProductSupplier[]     // Suppliers for this product
 
   // Indexes
   @@index([status])
@@ -228,6 +244,115 @@ model Product {
   @@index([name])
   @@index([currentStock, lowStockThreshold])
   @@map("products")
+}
+
+// Supplier Model
+model Supplier {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Business Information
+  supplierCode        String              @unique
+  businessName        String
+  tradingName         String?
+  abn                 String?             // Australian Business Number
+  acn                 String?             // Australian Company Number
+
+  // Contact Information
+  primaryContact      SupplierContact
+  secondaryContact    SupplierContact?
+  accountsContact     SupplierContact?    // For invoicing/payments
+
+  // Address
+  businessAddress     SupplierAddress
+  deliveryAddress     SupplierAddress?    // If different from business
+
+  // Financial Terms (ALL IN CENTS)
+  paymentTerms        String?             // e.g., "Net 30", "COD"
+  paymentMethod       PaymentMethod       @default(account_credit)
+  creditLimit         Int                 @default(0)        // In cents
+  currentBalance      Int                 @default(0)        // In cents
+  bankDetails         SupplierBankDetails?
+
+  // Delivery Terms
+  minimumOrderValue   Int?                                   // In cents
+  minimumOrderQty     Float?
+  leadTimeDays        Int?                // Standard lead time in days
+  deliveryDays        String?             // e.g., "Mon, Wed, Fri"
+  deliveryNotes       String?
+
+  // Product Categories (what they supply)
+  primaryCategories   String[]            // e.g., ["Beef", "Lamb"]
+
+  // Performance & Compliance
+  qualityRating       Float?              // 0-5 stars (optional)
+  onTimeDeliveryRate  Float?              // 0-100 percentage
+  foodSafetyLicense   String?
+  licenseExpiry       DateTime?
+  insuranceExpiry     DateTime?
+
+  // Status & Metadata
+  status              SupplierStatus      @default(active)
+  suspensionReason    String?             // Required if suspended
+  suspendedAt         DateTime?
+  suspendedBy         String?             // User who suspended
+  internalNotes       String?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  createdBy           String              // Clerk user ID
+
+  // Relations
+  products            ProductSupplier[]   // Many-to-many with products
+  inventoryBatches    InventoryBatch[]    // Batches received from supplier
+
+  // Indexes (supplierCode already indexed via @unique)
+  @@index([status])
+  @@index([businessName])
+  @@index([primaryCategories])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])  // Filtered list queries
+  @@index([businessName, status])           // Search with filter
+  @@map("suppliers")
+}
+
+// ProductSupplier Junction Model - Links products to suppliers with cost tracking
+model ProductSupplier {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String              @db.ObjectId
+  supplierId          String              @db.ObjectId
+
+  // Product-specific supplier details
+  supplierSku         String?             // Supplier's SKU for this product
+  supplierProductName String?             // Supplier's name for product
+  costPrice           Int                 // In cents - current cost
+  lastCostPrice       Int?                // In cents - previous cost for comparison
+
+  // Ordering
+  packSize            Float?              // How product is packed by supplier
+  moq                 Float?              // Minimum order quantity
+  leadTimeDays        Int?                // Product-specific lead time
+
+  // Performance & Status
+  isPreferredSupplier Boolean             @default(false)
+  lastOrderDate       DateTime?
+  lastReceiveDate     DateTime?
+  totalOrdersCount    Int                 @default(0)
+  isActive            Boolean             @default(true)
+  discontinuedAt      DateTime?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  product             Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier            Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  // Constraints & Indexes
+  @@unique([productId, supplierId])       // One record per product-supplier pair
+  @@index([supplierId, isActive])
+  @@index([productId, isActive])
+  @@index([isPreferredSupplier])
+  @@map("productsuppliers")
 }
 
 // Customer Model
@@ -393,6 +518,7 @@ model InventoryTransaction {
 model InventoryBatch {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   productId           String              @db.ObjectId
+  supplierId          String?             @db.ObjectId  // Optional supplier reference
 
   // Batch tracking
   quantityRemaining   Float               // Current available quantity
@@ -423,6 +549,7 @@ model InventoryBatch {
 
   // Relations
   product             Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier            Supplier?           @relation(fields: [supplierId], references: [id])
   consumptions        BatchConsumption[]  // Track which orders consumed from this batch
 
   // Indexes for FIFO performance
@@ -430,6 +557,7 @@ model InventoryBatch {
   @@index([productId, expiryDate])        // Expiry warnings
   @@index([productId, isConsumed])        // Active batches only
   @@index([expiryDate, isConsumed])       // Global expiry warnings
+  @@index([supplierId])                   // Supplier lookup
   @@map("inventorybatches")
 }
 
@@ -849,6 +977,30 @@ type BankDetails {
   accountName         String
   bsb                 String
   accountNumber       String
+}
+
+// Supplier-related composite types
+type SupplierContact {
+  name                String
+  position            String?
+  email               String
+  phone               String
+  mobile              String?
+}
+
+type SupplierAddress {
+  street              String
+  suburb              String
+  state               AustralianState
+  postcode            String
+  country             String              @default("Australia")
+}
+
+type SupplierBankDetails {
+  accountName         String
+  bsb                 String
+  accountNumber       String
+  bankName            String?
 }
 
 type XeroSettings {

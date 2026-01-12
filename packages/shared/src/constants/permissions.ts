@@ -43,6 +43,33 @@ export const PERMISSION_DEFINITIONS: Record<
     description: 'Suspend or reactivate customers',
   },
 
+  // Suppliers
+  'suppliers:view': {
+    module: 'suppliers',
+    action: 'view',
+    description: 'View supplier list and details',
+  },
+  'suppliers:create': {
+    module: 'suppliers',
+    action: 'create',
+    description: 'Create new suppliers',
+  },
+  'suppliers:edit': {
+    module: 'suppliers',
+    action: 'edit',
+    description: 'Edit supplier information',
+  },
+  'suppliers:delete': {
+    module: 'suppliers',
+    action: 'delete',
+    description: 'Delete suppliers',
+  },
+  'suppliers:suspend': {
+    module: 'suppliers',
+    action: 'suspend',
+    description: 'Suspend or reactivate suppliers',
+  },
+
   // Orders
   'orders:view': {
     module: 'orders',
@@ -302,6 +329,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'customers:view',
     'customers:create',
     'customers:edit',
+    'suppliers:view',
     'orders:view',
     'orders:create',
     'orders:edit',
@@ -318,6 +346,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'customers:view',
     'customers:edit',
     'customers:approve_credit',
+    'suppliers:view',
+    'suppliers:edit',
     'orders:view',
     'orders:confirm',
     'orders:cancel',

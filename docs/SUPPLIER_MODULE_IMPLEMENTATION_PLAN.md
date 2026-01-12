@@ -1,8 +1,28 @@
 # Supplier Management Module - Complete Implementation Plan
 
-**Status:** Planning Complete - Ready for Implementation
+**Status:** Implementation In Progress - Phases 1-3 Complete, Plan Updated
 **Created:** 2026-01-12
+**Last Updated:** 2026-01-12
 **Estimated Duration:** 17-19 days (7 phases)
+
+### Implementation Progress
+- [x] Phase 1: Database Foundation - COMPLETE (Schema already existed)
+- [x] Phase 2: Permissions & API - COMPLETE (11 endpoints with validation)
+- [x] Phase 3: Navigation & i18n - COMPLETE (50+ keys in 3 languages)
+- [ ] Phase 4: List Page
+- [ ] Phase 5: Create Page (Updated: Uses full page pattern, not dialog)
+- [ ] Phase 6: Detail Page & Product Linking (Updated: Includes edit mode toggle)
+- [ ] Phase 7: Integration & Testing
+
+> **Plan Update (2026-01-12)**: Comprehensive update to match Customer module patterns:
+> - Added 2 missing API endpoints (delete, getCategories) - now 11 total
+> - Added complete SupplierStatusBadge component implementation
+> - Added complete LinkProductDialog component with product search
+> - Expanded Create Page with 7 key form patterns (state management, error tracking, validation)
+> - Enhanced Detail Page with edit mode toggle, floating action bar, and suspension dialogs
+> - Added performance metrics, compliance, and linked products table patterns
+> - Expanded i18n keys (90+ keys for supplierDetail namespace)
+> - Uses full page pattern for create/edit operations (not dialogs) due to form complexity (40+ fields)
 
 ---
 
@@ -91,15 +111,17 @@ Add a comprehensive supplier management module to the Joho Foods ERP admin porta
 ### 6. Frontend Pages & Components (ALL NEW)
 ```
 apps/admin-portal/app/[locale]/(app)/suppliers/
-├── page.tsx                           # List page
+├── page.tsx                           # List page with stats, search, filters
+├── new/
+│   └── page.tsx                       # Create page (tabbed form, matches Customer pattern)
 ├── [id]/
-│   └── page.tsx                       # Detail page
+│   └── page.tsx                       # Detail/Edit page (view mode + edit mode toggle)
 └── components/
-    ├── CreateSupplierDialog.tsx       # Create dialog
-    ├── EditSupplierDialog.tsx         # Edit dialog
-    ├── LinkProductDialog.tsx          # Product linking
-    └── SupplierStatusBadge.tsx        # Status badge
+    ├── SupplierStatusBadge.tsx        # Status badge component
+    └── LinkProductDialog.tsx          # Product linking dialog (simple)
 ```
+
+> **Note**: Uses full page pattern (like Customers) instead of dialogs for create/edit operations due to form complexity (40+ fields across multiple sections).
 
 ---
 
@@ -218,6 +240,8 @@ model Supplier {
   @@index([businessName])
   @@index([primaryCategories])
   @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])  // Filtered list queries
+  @@index([businessName, status])           // Search with filter
   @@map("suppliers")
 }
 ```
@@ -305,9 +329,13 @@ model InventoryBatch {
 
 ```typescript
 import { z } from 'zod';
-import { router, protectedProcedure, requirePermission } from '../trpc';
-import { prisma } from '@joho-erp/database';
-import { SupplierStatus, PaymentMethod } from '@joho-erp/database/generated/prisma';
+import { router, requirePermission, protectedProcedure } from '../trpc';
+import { prisma, SupplierStatus, PaymentMethod, AustralianState } from '@joho-erp/database';
+import { TRPCError } from '@trpc/server';
+import { buildPrismaOrderBy, paginatePrismaQuery } from '@joho-erp/shared';
+import { sortInputSchema } from '../schemas';
+import { createAuditLog } from '../services/audit';
+import type { AuditChange } from '../services/audit';
 
 // Validation Schemas
 const supplierContactSchema = z.object({
@@ -366,80 +394,61 @@ const supplierSortFieldMapping: Record<string, string> = {
 
 export const supplierRouter = router({
   // List all suppliers with filtering, sorting, pagination
-  getAll: protectedProcedure
-    .use(requirePermission('suppliers:view'))
+  getAll: requirePermission('suppliers:view')
     .input(
       z.object({
         search: z.string().optional(),
         status: z.nativeEnum(SupplierStatus).optional(),
         category: z.string().optional(),
-        page: z.number().int().positive().default(1),
-        limit: z.number().int().positive().default(20),
-        sortBy: z.string().optional(),
-        sortOrder: z.enum(['asc', 'desc']).optional(),
-      })
+      }).merge(sortInputSchema)  // Adds sortBy, sortOrder, page, limit
     )
-    .query(async ({ input, ctx }) => {
-      const { page, limit, sortBy, sortOrder, search, status, category } = input;
+    .query(async ({ input }) => {
+      const { page, limit, sortBy, sortOrder, ...filters } = input;
 
       // Build where clause
       const where: any = {};
 
-      if (search) {
+      if (filters.search) {
         where.OR = [
-          { businessName: { contains: search, mode: 'insensitive' } },
-          { supplierCode: { contains: search, mode: 'insensitive' } },
-          { tradingName: { contains: search, mode: 'insensitive' } },
-          { 'primaryContact.email': { contains: search, mode: 'insensitive' } },
+          { businessName: { contains: filters.search, mode: 'insensitive' } },
+          { supplierCode: { contains: filters.search, mode: 'insensitive' } },
+          { tradingName: { contains: filters.search, mode: 'insensitive' } },
         ];
       }
 
-      if (status) {
-        where.status = status;
+      if (filters.status) {
+        where.status = filters.status;
       }
 
-      if (category) {
-        where.primaryCategories = { has: category };
+      if (filters.category) {
+        where.primaryCategories = { has: filters.category };
       }
 
       // Build order by
-      const orderBy = buildPrismaOrderBy(
-        sortBy,
-        sortOrder,
-        supplierSortFieldMapping
-      );
+      const orderBy = sortBy && supplierSortFieldMapping[sortBy]
+        ? buildPrismaOrderBy(sortBy, sortOrder, supplierSortFieldMapping)
+        : { businessName: 'asc' as const };
 
-      // Execute query
-      const skip = (page - 1) * limit;
-      const [suppliers, total] = await Promise.all([
-        prisma.supplier.findMany({
-          where,
-          orderBy,
-          skip,
-          take: limit,
-          include: {
-            _count: {
-              select: { products: true, inventoryBatches: true },
-            },
-          },
-        }),
-        prisma.supplier.count({ where }),
-      ]);
+      // Execute with paginatePrismaQuery utility
+      const result = await paginatePrismaQuery(prisma.supplier, where, {
+        page,
+        limit,
+        orderBy,
+        include: {
+          _count: { select: { products: true, inventoryBatches: true } },
+        },
+      });
 
       return {
-        suppliers,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
-        },
+        suppliers: result.items,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
       };
     }),
 
   // Get supplier by ID with full details
-  getById: protectedProcedure
-    .use(requirePermission('suppliers:view'))
+  getById: requirePermission('suppliers:view')
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const supplier = await prisma.supplier.findUnique({
@@ -473,8 +482,7 @@ export const supplierRouter = router({
     }),
 
   // Get aggregate statistics
-  getStats: protectedProcedure
-    .use(requirePermission('suppliers:view'))
+  getStats: requirePermission('suppliers:view')
     .query(async () => {
       const [total, active, inactive, suspended, pendingApproval] = await Promise.all([
         prisma.supplier.count(),
@@ -494,8 +502,7 @@ export const supplierRouter = router({
     }),
 
   // Create new supplier
-  create: protectedProcedure
-    .use(requirePermission('suppliers:create'))
+  create: requirePermission('suppliers:create')
     .input(createSupplierSchema)
     .mutation(async ({ input, ctx }) => {
       // Check for duplicate supplier code
@@ -518,21 +525,20 @@ export const supplierRouter = router({
         },
       });
 
-      // Log creation (assuming audit log function exists)
-      await logAuditEvent({
-        entityType: 'supplier',
-        entityId: supplier.id,
-        action: 'create',
+      // Audit log
+      await createAuditLog({
         userId: ctx.userId!,
-        metadata: { supplierCode: supplier.supplierCode },
+        action: 'create',
+        entity: 'supplier',
+        entityId: supplier.id,
+        metadata: { supplierCode: supplier.supplierCode, businessName: supplier.businessName },
       });
 
       return supplier;
     }),
 
   // Update supplier
-  update: protectedProcedure
-    .use(requirePermission('suppliers:edit'))
+  update: requirePermission('suppliers:edit')
     .input(
       z.object({
         id: z.string(),
@@ -542,7 +548,7 @@ export const supplierRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { id, data } = input;
 
-      // Check supplier exists
+      // Fetch current for change tracking
       const existing = await prisma.supplier.findUnique({ where: { id } });
       if (!existing) {
         throw new TRPCError({
@@ -557,21 +563,30 @@ export const supplierRouter = router({
         data,
       });
 
-      // Log update
-      await logAuditEvent({
-        entityType: 'supplier',
-        entityId: supplier.id,
-        action: 'update',
+      // Calculate field-level changes
+      const changes: AuditChange[] = [];
+      for (const [key, newValue] of Object.entries(data)) {
+        const oldValue = existing[key as keyof typeof existing];
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changes.push({ field: key, oldValue, newValue });
+        }
+      }
+
+      // Audit log with changes
+      await createAuditLog({
         userId: ctx.userId!,
-        metadata: { changes: data },
+        action: 'update',
+        entity: 'supplier',
+        entityId: id,
+        changes,
+        metadata: { supplierCode: supplier.supplierCode },
       });
 
       return supplier;
     }),
 
   // Update supplier status
-  updateStatus: protectedProcedure
-    .use(requirePermission('suppliers:edit'))
+  updateStatus: requirePermission('suppliers:edit')
     .input(
       z.object({
         id: z.string(),
@@ -582,6 +597,16 @@ export const supplierRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { id, status, reason } = input;
 
+      // Fetch current for change tracking
+      const existing = await prisma.supplier.findUnique({ where: { id } });
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Supplier not found',
+        });
+      }
+
+      const oldStatus = existing.status;
       const updateData: any = { status };
 
       if (status === 'suspended') {
@@ -606,21 +631,21 @@ export const supplierRouter = router({
         data: updateData,
       });
 
-      // Log status change
-      await logAuditEvent({
-        entityType: 'supplier',
-        entityId: supplier.id,
-        action: 'update',
+      // Audit log status change with field-level tracking
+      await createAuditLog({
         userId: ctx.userId!,
-        metadata: { statusChange: { from: 'previous', to: status, reason } },
+        action: 'update',
+        entity: 'supplier',
+        entityId: id,
+        changes: [{ field: 'status', oldValue: oldStatus, newValue: status }],
+        metadata: { supplierCode: supplier.supplierCode, reason },
       });
 
       return supplier;
     }),
 
   // Link product to supplier
-  linkProduct: protectedProcedure
-    .use(requirePermission('suppliers:edit'))
+  linkProduct: requirePermission('suppliers:edit')
     .input(
       z.object({
         supplierId: z.string(),
@@ -661,8 +686,7 @@ export const supplierRouter = router({
     }),
 
   // Update product-supplier link
-  updateProductLink: protectedProcedure
-    .use(requirePermission('suppliers:edit'))
+  updateProductLink: requirePermission('suppliers:edit')
     .input(
       z.object({
         id: z.string(),
@@ -686,8 +710,7 @@ export const supplierRouter = router({
     }),
 
   // Get products for supplier
-  getProducts: protectedProcedure
-    .use(requirePermission('suppliers:view'))
+  getProducts: requirePermission('suppliers:view')
     .input(
       z.object({
         supplierId: z.string(),
@@ -711,6 +734,114 @@ export const supplierRouter = router({
 
       return products;
     }),
+
+  // Delete supplier (soft delete)
+  delete: requirePermission('suppliers:delete')
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id } = input;
+
+      // Fetch supplier for validation
+      const existing = await prisma.supplier.findUnique({
+        where: { id },
+        include: { _count: { select: { inventoryBatches: true } } },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Supplier not found',
+        });
+      }
+
+      // Prevent deletion if supplier has inventory batches
+      if (existing._count.inventoryBatches > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot delete supplier with existing inventory batches',
+        });
+      }
+
+      // Soft delete - set status to inactive
+      const supplier = await prisma.supplier.update({
+        where: { id },
+        data: { status: 'inactive' },
+      });
+
+      // Audit log
+      await createAuditLog({
+        userId: ctx.userId!,
+        action: 'delete',
+        entity: 'supplier',
+        entityId: id,
+        metadata: { supplierCode: supplier.supplierCode, businessName: supplier.businessName },
+      });
+
+      return supplier;
+    }),
+
+  // Get unique categories from active suppliers
+  getCategories: requirePermission('suppliers:view')
+    .query(async () => {
+      const suppliers = await prisma.supplier.findMany({
+        where: { status: 'active' },
+        select: { primaryCategories: true },
+      });
+
+      // Flatten and deduplicate categories
+      const categories = [...new Set(suppliers.flatMap((s) => s.primaryCategories))];
+      
+      return categories.sort();
+    }),
+});
+```
+
+### Audit Logging Interface
+
+The audit logging system uses the following interface for field-level change tracking:
+
+**File:** `/packages/api/src/services/audit.ts`
+
+```typescript
+export interface AuditLogParams {
+  userId: string;
+  userEmail?: string;
+  userRole?: string;
+  userName?: string | null;
+  action: AuditAction;        // 'create' | 'update' | 'delete'
+  entity: string;             // 'supplier' | 'productSupplier'
+  entityId?: string;
+  changes?: AuditChange[];    // Field-level change tracking
+  metadata?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface AuditChange {
+  field: string;              // Field name that changed
+  oldValue: unknown;          // Previous value
+  newValue: unknown;          // New value
+}
+```
+
+**Usage Pattern:**
+```typescript
+// For updates with change tracking
+const changes: AuditChange[] = [];
+for (const [key, newValue] of Object.entries(data)) {
+  const oldValue = existing[key as keyof typeof existing];
+  if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+    changes.push({ field: key, oldValue, newValue });
+  }
+}
+
+await createAuditLog({
+  userId: ctx.userId!,
+  action: 'update',
+  entity: 'supplier',
+  entityId: id,
+  changes,
+  metadata: { supplierCode: supplier.supplierCode },
 });
 ```
 
@@ -803,19 +934,20 @@ export type Permission =
 
 **File:** `/apps/admin-portal/config/navigation.ts`
 
+**Note:** Suppliers navigation item should be placed **before Customers** in the navigation for high visibility.
+
 ```typescript
 import { Building2 } from 'lucide-react';
 
 export const ADMIN_NAV_ITEMS: NavigationItem[] = [
-  // ... existing items
   {
-    id: 'products',
-    labelKey: 'products',
-    icon: Package,
-    path: '/products',
-    permission: 'products:view',
+    id: 'dashboard',
+    labelKey: 'dashboard',
+    icon: LayoutDashboard,
+    path: '/dashboard',
+    permission: 'dashboard:view',
   },
-  // ADD THIS:
+  // ADD SUPPLIERS HERE (before customers):
   {
     id: 'suppliers',
     labelKey: 'suppliers',
@@ -824,13 +956,13 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     permission: 'suppliers:view',
   },
   {
-    id: 'inventory',
-    labelKey: 'inventory',
-    icon: Warehouse,
-    path: '/inventory',
-    permission: 'inventory:view',
+    id: 'customers',
+    labelKey: 'customers',
+    icon: Users,
+    path: '/customers',
+    permission: 'customers:view',
   },
-  // ... rest of items
+  // ... rest of existing items (orders, products, inventory, etc.)
 ];
 ```
 
@@ -843,16 +975,19 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
 ```typescript
 'use client';
 
-import { useState } from 'use';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useTableSort } from '@joho-erp/shared/hooks';
+import { PermissionGate } from '@/components/permission-gate';
 import { ResponsiveTable, type TableColumn } from '@joho-erp/ui';
 import { Button } from '@joho-erp/ui/components/button';
 import { Input } from '@joho-erp/ui/components/input';
 import { formatAUD } from '@joho-erp/shared';
-import { CreateSupplierDialog } from './components/CreateSupplierDialog';
+import { SupplierStatusBadge } from './components/SupplierStatusBadge';
 import { Building2, Plus, Search } from 'lucide-react';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -874,10 +1009,10 @@ type Supplier = {
 };
 
 export default function SuppliersPage() {
+  const router = useRouter();
   const t = useTranslations('suppliers');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const { sortBy, sortOrder, handleSort } = useTableSort('name', 'asc');
 
@@ -1006,10 +1141,14 @@ export default function SuppliersPage() {
           <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('addSupplier')}
-        </Button>
+        <PermissionGate permission="suppliers:create">
+          <Link href="/suppliers/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('addSupplier')}
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
 
       {/* Stats Cards */}
@@ -1078,20 +1217,70 @@ export default function SuppliersPage() {
           description: t('emptyState.description'),
           action: {
             label: t('addSupplier'),
-            onClick: () => setShowCreateDialog(true),
+            onClick: () => router.push('/suppliers/new'),
           },
         }}
-      />
-
-      {/* Create Dialog */}
-      <CreateSupplierDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSuccess={() => refetch()}
       />
     </div>
   );
 }
+```
+
+#### 1.5 SupplierStatusBadge Component
+
+**File:** `/apps/admin-portal/app/[locale]/(app)/suppliers/components/SupplierStatusBadge.tsx`
+
+```typescript
+'use client';
+
+import { StatusBadge } from '@joho-erp/ui';
+import type { SupplierStatus } from '@joho-erp/database';
+
+// Map supplier-specific statuses to generic StatusBadge types
+const statusMap: Record<SupplierStatus, 'active' | 'inactive' | 'suspended' | 'pending'> = {
+  active: 'active',
+  inactive: 'inactive',
+  suspended: 'suspended',
+  pending_approval: 'pending',
+};
+
+interface SupplierStatusBadgeProps {
+  status: SupplierStatus;
+  showIcon?: boolean;
+  className?: string;
+}
+
+export function SupplierStatusBadge({
+  status,
+  showIcon = true,
+  className
+}: SupplierStatusBadgeProps) {
+  return (
+    <StatusBadge
+      status={statusMap[status]}
+      showIcon={showIcon}
+      className={className}
+    />
+  );
+}
+```
+
+**Usage:**
+```typescript
+import { SupplierStatusBadge } from './components/SupplierStatusBadge';
+
+// In list table column
+{
+  key: 'status',
+  label: t('status'),
+  render: (supplier) => <SupplierStatusBadge status={supplier.status} />,
+}
+
+// In detail page header
+<div className="flex items-center gap-3">
+  <h1 className="text-3xl font-bold">{supplier.businessName}</h1>
+  <SupplierStatusBadge status={supplier.status} />
+</div>
 ```
 
 #### 2. Detail Page
@@ -1295,14 +1484,304 @@ export default function SupplierDetailPage({ params }: PageProps) {
 }
 ```
 
-#### 3. Create Dialog Component
+**Enhanced Detail Page Patterns (from Customer module):**
 
-**File:** `/apps/admin-portal/app/[locale]/(app)/suppliers/components/CreateSupplierDialog.tsx`
+**1. Edit Mode Toggle with Floating Action Bar:**
+```typescript
+const [isEditing, setIsEditing] = useState(false);
+const [isSaving, setIsSaving] = useState(false);
+const [editData, setEditData] = useState<SupplierEditData | null>(null);
+
+// Start editing - copy supplier data to edit state
+const handleStartEdit = () => {
+  setEditData({
+    businessName: supplier.businessName,
+    tradingName: supplier.tradingName || '',
+    abn: supplier.abn || '',
+    acn: supplier.acn || '',
+    primaryContact: { ...supplier.primaryContact },
+    // ... copy all editable fields
+  });
+  setIsEditing(true);
+};
+
+// Cancel editing
+const handleCancelEdit = () => {
+  setEditData(null);
+  setIsEditing(false);
+};
+
+// Save changes
+const handleSave = async () => {
+  setIsSaving(true);
+  try {
+    await updateMutation.mutateAsync({
+      id: supplier.id,
+      data: editData,
+    });
+    setIsEditing(false);
+    toast({ description: t('updateSuccess') });
+  } catch (error) {
+    toast({ variant: 'destructive', description: error.message });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+// In JSX - Floating Action Bar
+{isEditing && (
+  <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 bg-background border rounded-lg shadow-lg p-3">
+    <Button variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
+      {t('common:cancel')}
+    </Button>
+    <Button onClick={handleSave} disabled={isSaving}>
+      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {t('common:save')}
+    </Button>
+  </div>
+)}
+```
+
+**2. Conditional Rendering for View/Edit Modes:**
+```typescript
+// In card content
+{isEditing ? (
+  <Input
+    value={editData.businessName}
+    onChange={(e) => setEditData({ ...editData, businessName: e.target.value })}
+  />
+) : (
+  <InfoItem label={t('businessName')} value={supplier.businessName} />
+)}
+```
+
+**3. PermissionGate for Actions:**
+```typescript
+<div className="flex gap-2">
+  <PermissionGate permission="suppliers:edit">
+    {!isEditing && (
+      <Button onClick={handleStartEdit}>
+        <Edit className="h-4 w-4 mr-2" />
+        {t('common:edit')}
+      </Button>
+    )}
+  </PermissionGate>
+
+  <PermissionGate permission="suppliers:suspend">
+    {supplier.status === 'active' && (
+      <Button variant="destructive" onClick={() => setShowSuspendDialog(true)}>
+        {t('suspend')}
+      </Button>
+    )}
+    {supplier.status === 'suspended' && (
+      <Button variant="outline" onClick={() => setShowActivateDialog(true)}>
+        {t('activate')}
+      </Button>
+    )}
+  </PermissionGate>
+</div>
+```
+
+**4. Suspension Dialog with Reason Validation:**
+```typescript
+const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+const [suspensionReason, setSuspensionReason] = useState('');
+
+const suspendMutation = api.supplier.updateStatus.useMutation({
+  onSuccess: () => {
+    toast({ description: t('suspendSuccess') });
+    setShowSuspendDialog(false);
+    setSuspensionReason('');
+    refetch();
+  },
+});
+
+// In JSX
+<AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>{t('suspendTitle')}</AlertDialogTitle>
+      <AlertDialogDescription>{t('suspendDescription')}</AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <div className="space-y-2">
+      <Label>{t('suspensionReason')} *</Label>
+      <Textarea
+        value={suspensionReason}
+        onChange={(e) => setSuspensionReason(e.target.value)}
+        placeholder={t('suspensionReasonPlaceholder')}
+        rows={3}
+      />
+      {suspensionReason.length > 0 && suspensionReason.length < 10 && (
+        <p className="text-sm text-destructive">
+          {t('suspensionReasonMinLength')}
+        </p>
+      )}
+    </div>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={() => suspendMutation.mutate({
+          id: supplier.id,
+          status: 'suspended',
+          reason: suspensionReason,
+        })}
+        disabled={suspensionReason.length < 10}
+        className="bg-destructive hover:bg-destructive/90"
+      >
+        {t('suspend')}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+**5. Additional Sidebar Cards:**
+
+**Performance Metrics Card:**
+```typescript
+<Card className="p-6">
+  <h2 className="text-lg font-semibold mb-4">{t('performance')}</h2>
+  <div className="space-y-4">
+    <div>
+      <Label className="text-muted-foreground">{t('qualityRating')}</Label>
+      <div className="flex items-center gap-2 mt-1">
+        {/* StarRating component or simple display */}
+        <span className="font-medium">
+          {supplier.qualityRating?.toFixed(1) || '-'}/5
+        </span>
+      </div>
+    </div>
+    <div>
+      <Label className="text-muted-foreground">{t('onTimeDelivery')}</Label>
+      <p className="font-medium">
+        {supplier.onTimeDeliveryRate ? `${supplier.onTimeDeliveryRate.toFixed(1)}%` : '-'}
+      </p>
+    </div>
+  </div>
+</Card>
+```
+
+**Compliance Card:**
+```typescript
+<Card className="p-6">
+  <h2 className="text-lg font-semibold mb-4">{t('compliance')}</h2>
+  <div className="space-y-4">
+    <div>
+      <Label className="text-muted-foreground">{t('foodSafetyLicense')}</Label>
+      <p>{supplier.foodSafetyLicense || '-'}</p>
+      {supplier.licenseExpiry && (
+        <p className={cn(
+          "text-sm",
+          isExpiringSoon(supplier.licenseExpiry) ? "text-destructive" : "text-muted-foreground"
+        )}>
+          {t('expires')}: {formatDate(supplier.licenseExpiry)}
+        </p>
+      )}
+    </div>
+    <div>
+      <Label className="text-muted-foreground">{t('insurance')}</Label>
+      {supplier.insuranceExpiry ? (
+        <p className={cn(
+          "text-sm",
+          isExpiringSoon(supplier.insuranceExpiry) ? "text-destructive" : "text-muted-foreground"
+        )}>
+          {t('expires')}: {formatDate(supplier.insuranceExpiry)}
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">-</p>
+      )}
+    </div>
+  </div>
+</Card>
+```
+
+**Suspension Info Card (shown when suspended):**
+```typescript
+{supplier.status === 'suspended' && (
+  <Card className="p-6 border-destructive">
+    <h2 className="text-lg font-semibold text-destructive mb-4">
+      {t('suspended')}
+    </h2>
+    <div className="space-y-2 text-sm">
+      <p><strong>{t('reason')}:</strong> {supplier.suspensionReason}</p>
+      <p><strong>{t('date')}:</strong> {formatDate(supplier.suspendedAt!)}</p>
+      <p><strong>{t('by')}:</strong> {supplier.suspendedBy}</p>
+    </div>
+  </Card>
+)}
+```
+
+**6. Linked Products Table with Actions:**
+```typescript
+<Card className="p-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-semibold">{t('linkedProducts')}</h2>
+    <PermissionGate permission="suppliers:edit">
+      <Button size="sm" onClick={() => setShowLinkProductDialog(true)}>
+        <Plus className="mr-2 h-4 w-4" />
+        {t('linkProduct')}
+      </Button>
+    </PermissionGate>
+  </div>
+
+  {supplier.products.length === 0 ? (
+    <EmptyState
+      icon={Package}
+      title={t('noLinkedProducts')}
+      description={t('noLinkedProductsDescription')}
+    />
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-2">{t('product')}</th>
+            <th className="text-left py-2">{t('supplierSku')}</th>
+            <th className="text-right py-2">{t('costPrice')}</th>
+            <th className="text-center py-2">{t('preferred')}</th>
+            <th className="text-right py-2">{t('actions')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {supplier.products.map((link) => (
+            <tr key={link.id} className="border-b last:border-0">
+              <td className="py-3">
+                <div>
+                  <p className="font-medium">{link.product.name}</p>
+                  <p className="text-sm text-muted-foreground font-mono">{link.product.sku}</p>
+                </div>
+              </td>
+              <td className="py-3 font-mono text-sm">{link.supplierSku || '-'}</td>
+              <td className="py-3 text-right font-medium">{formatAUD(link.costPrice)}</td>
+              <td className="py-3 text-center">
+                {link.isPreferredSupplier && <Badge variant="success">{t('preferred')}</Badge>}
+              </td>
+              <td className="py-3 text-right">
+                <Button variant="ghost" size="sm" onClick={() => handleEditProductLink(link)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</Card>
+```
+
+#### 2.5 LinkProductDialog Component
+
+**File:** `/apps/admin-portal/app/[locale]/(app)/suppliers/components/LinkProductDialog.tsx`
+
+This dialog allows linking products to suppliers with cost tracking, minimum order quantities, and preferred supplier designation.
 
 ```typescript
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui/hooks/use-toast';
@@ -1313,419 +1792,672 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@joho-erp/ui/components/dialog';
-import { Button } from '@joho-erp/ui/components/button';
-import { Input } from '@joho-erp/ui/components/input';
-import { Label } from '@joho-erp/ui/components/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@joho-erp/ui/components/tabs';
-import { Loader2 } from 'lucide-react';
+  DialogFooter,
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Checkbox,
+} from '@joho-erp/ui';
+import { Loader2, Search } from 'lucide-react';
 
-interface CreateSupplierDialogProps {
+interface LinkProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  supplierId: string;
   onSuccess: () => void;
 }
 
-export function CreateSupplierDialog({
+export function LinkProductDialog({
   open,
   onOpenChange,
+  supplierId,
   onSuccess,
-}: CreateSupplierDialogProps) {
+}: LinkProductDialogProps) {
+  const t = useTranslations('supplierDetail');
+  const tCommon = useTranslations('common');
   const { toast } = useToast();
-  const t = useTranslations('supplierForm');
 
   // Form state
-  const [supplierCode, setSupplierCode] = useState('');
-  const [businessName, setBusinessName] = useState('');
-  const [abn, setAbn] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [street, setStreet] = useState('');
-  const [suburb, setSuburb] = useState('');
-  const [state, setState] = useState('');
-  const [postcode, setPostcode] = useState('');
-  const [creditLimit, setCreditLimit] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState('');
+  const [productId, setProductId] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [supplierSku, setSupplierSku] = useState('');
+  const [supplierProductName, setSupplierProductName] = useState('');
+  const [costPrice, setCostPrice] = useState('');
+  const [packSize, setPackSize] = useState('');
+  const [moq, setMoq] = useState('');
   const [leadTimeDays, setLeadTimeDays] = useState('');
+  const [isPreferredSupplier, setIsPreferredSupplier] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Fetch products for dropdown (with search)
+  const { data: productsData, isLoading: isLoadingProducts } = api.product.getAll.useQuery(
+    {
+      search: productSearch || undefined,
+      limit: 50,
+      status: 'active',
+    },
+    { enabled: open } // Only fetch when dialog is open
+  );
 
-  // Create mutation
-  const createMutation = api.supplier.create.useMutation({
-    onSuccess: () => {
-      toast({
-        description: t('messages.createSuccess'),
-      });
-      onSuccess();
-      onOpenChange(false);
+  const products = productsData?.products ?? [];
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
       resetForm();
+    }
+  }, [open]);
+
+  const resetForm = () => {
+    setProductId('');
+    setProductSearch('');
+    setSupplierSku('');
+    setSupplierProductName('');
+    setCostPrice('');
+    setPackSize('');
+    setMoq('');
+    setLeadTimeDays('');
+    setIsPreferredSupplier(false);
+    setErrors({});
+  };
+
+  const linkMutation = api.supplier.linkProduct.useMutation({
+    onSuccess: () => {
+      toast({ description: t('productLinked') });
+      onOpenChange(false);
+      onSuccess();
     },
     onError: (error) => {
-      toast({
-        variant: 'destructive',
-        description: error.message,
-      });
+      if (error.message.includes('already linked')) {
+        setErrors({ productId: t('productAlreadyLinked') });
+      } else {
+        toast({ variant: 'destructive', description: error.message });
+      }
     },
   });
 
-  const resetForm = () => {
-    setSupplierCode('');
-    setBusinessName('');
-    setAbn('');
-    setContactName('');
-    setContactEmail('');
-    setContactPhone('');
-    setStreet('');
-    setSuburb('');
-    setState('');
-    setPostcode('');
-    setCreditLimit('');
-    setPaymentTerms('');
-    setLeadTimeDays('');
-    setFieldErrors({});
-  };
-
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
 
-    if (!supplierCode.trim()) {
-      errors.supplierCode = t('validation.supplierCodeRequired');
+    if (!productId) {
+      newErrors.productId = t('validation.productRequired');
     }
 
-    if (!businessName.trim()) {
-      errors.businessName = t('validation.businessNameRequired');
+    if (!costPrice.trim()) {
+      newErrors.costPrice = t('validation.costPriceRequired');
+    } else {
+      const cents = parseToCents(costPrice);
+      if (cents === null || cents <= 0) {
+        newErrors.costPrice = t('validation.costPriceInvalid');
+      }
     }
 
-    if (!contactName.trim()) {
-      errors.contactName = t('validation.contactNameRequired');
-    }
-
-    if (!contactEmail.trim()) {
-      errors.contactEmail = t('validation.contactEmailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-      errors.contactEmail = t('validation.contactEmailInvalid');
-    }
-
-    if (!contactPhone.trim()) {
-      errors.contactPhone = t('validation.contactPhoneRequired');
-    }
-
-    if (!street.trim()) {
-      errors.street = t('validation.streetRequired');
-    }
-
-    if (!suburb.trim()) {
-      errors.suburb = t('validation.suburbRequired');
-    }
-
-    if (!state.trim()) {
-      errors.state = t('validation.stateRequired');
-    }
-
-    if (!postcode.trim()) {
-      errors.postcode = t('validation.postcodeRequired');
-    } else if (!/^\d{4}$/.test(postcode)) {
-      errors.postcode = t('validation.postcodeInvalid');
-    }
-
-    if (creditLimit && parseToCents(creditLimit) === null) {
-      errors.creditLimit = t('validation.creditLimitInvalid');
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) {
-      toast({
-        variant: 'destructive',
-        description: t('messages.fixValidationErrors'),
-      });
-      return;
-    }
+    if (!validateForm()) return;
 
-    const creditLimitCents = creditLimit ? parseToCents(creditLimit) || 0 : 0;
-    const leadTimeDaysInt = leadTimeDays ? parseInt(leadTimeDays, 10) : undefined;
-
-    createMutation.mutate({
-      supplierCode,
-      businessName,
-      abn: abn || undefined,
-      primaryContact: {
-        name: contactName,
-        email: contactEmail,
-        phone: contactPhone,
-      },
-      businessAddress: {
-        street,
-        suburb,
-        state: state as any,
-        postcode,
-        country: 'Australia',
-      },
-      creditLimit: creditLimitCents,
-      paymentTerms: paymentTerms || undefined,
-      leadTimeDays: leadTimeDaysInt,
-      primaryCategories: [],
-      paymentMethod: 'account_credit',
+    linkMutation.mutate({
+      supplierId,
+      productId,
+      supplierSku: supplierSku.trim() || undefined,
+      supplierProductName: supplierProductName.trim() || undefined,
+      costPrice: parseToCents(costPrice)!,
+      packSize: packSize ? parseFloat(packSize) : undefined,
+      moq: moq ? parseFloat(moq) : undefined,
+      leadTimeDays: leadTimeDays ? parseInt(leadTimeDays, 10) : undefined,
+      isPreferredSupplier,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>{t('title.create')}</DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
+          <DialogTitle>{t('linkProduct')}</DialogTitle>
+          <DialogDescription>{t('linkProductDescription')}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="business" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="business">{t('tabs.business')}</TabsTrigger>
-            <TabsTrigger value="contact">{t('tabs.contact')}</TabsTrigger>
-            <TabsTrigger value="financial">{t('tabs.financial')}</TabsTrigger>
-          </TabsList>
-
-          {/* Business Info Tab */}
-          <TabsContent value="business" className="space-y-4">
-            <div>
-              <Label htmlFor="supplierCode">{t('fields.supplierCode')} *</Label>
+        <div className="grid gap-4 py-4">
+          {/* Product Search & Select */}
+          <div className="space-y-2">
+            <Label htmlFor="productId">{t('product')} *</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                id="supplierCode"
-                value={supplierCode}
-                onChange={(e) => setSupplierCode(e.target.value)}
-                placeholder={t('fields.supplierCodePlaceholder')}
+                placeholder={t('searchProducts')}
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="pl-10 mb-2"
               />
-              {fieldErrors.supplierCode && (
-                <p className="text-sm text-destructive mt-1">
-                  {fieldErrors.supplierCode}
-                </p>
-              )}
             </div>
+            <Select value={productId} onValueChange={setProductId}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('selectProduct')} />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingProducts ? (
+                  <div className="p-2 text-center text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                    {tCommon('loading')}
+                  </div>
+                ) : products.length === 0 ? (
+                  <div className="p-2 text-center text-muted-foreground">
+                    {t('noProductsFound')}
+                  </div>
+                ) : (
+                  products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {product.sku}
+                        </span>
+                        <span>{product.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {errors.productId && (
+              <p className="text-sm text-destructive">{errors.productId}</p>
+            )}
+          </div>
 
-            <div>
-              <Label htmlFor="businessName">{t('fields.businessName')} *</Label>
-              <Input
-                id="businessName"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder={t('fields.businessNamePlaceholder')}
-              />
-              {fieldErrors.businessName && (
-                <p className="text-sm text-destructive mt-1">
-                  {fieldErrors.businessName}
-                </p>
-              )}
-            </div>
+          {/* Cost Price (required) */}
+          <div className="space-y-2">
+            <Label htmlFor="costPrice">{t('costPrice')} *</Label>
+            <Input
+              id="costPrice"
+              type="text"
+              inputMode="decimal"
+              value={costPrice}
+              onChange={(e) => {
+                setCostPrice(e.target.value);
+                setErrors((prev) => ({ ...prev, costPrice: '' }));
+              }}
+              placeholder="0.00"
+            />
+            <p className="text-xs text-muted-foreground">{t('enterDollars')}</p>
+            {errors.costPrice && (
+              <p className="text-sm text-destructive">{errors.costPrice}</p>
+            )}
+          </div>
 
-            <div>
-              <Label htmlFor="abn">{t('fields.abn')}</Label>
-              <Input
-                id="abn"
-                value={abn}
-                onChange={(e) => setAbn(e.target.value)}
-                placeholder={t('fields.abnPlaceholder')}
-                maxLength={11}
-              />
-              {fieldErrors.abn && (
-                <p className="text-sm text-destructive mt-1">{fieldErrors.abn}</p>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Contact & Address Tab */}
-          <TabsContent value="contact" className="space-y-4">
+          {/* Supplier's Product Details */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h3 className="font-medium">{t('sections.primaryContact')}</h3>
-
-              <div>
-                <Label htmlFor="contactName">{t('fields.contactName')} *</Label>
-                <Input
-                  id="contactName"
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  placeholder={t('fields.contactNamePlaceholder')}
-                />
-                {fieldErrors.contactName && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.contactName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="contactEmail">{t('fields.contactEmail')} *</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder={t('fields.contactEmailPlaceholder')}
-                />
-                {fieldErrors.contactEmail && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.contactEmail}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="contactPhone">{t('fields.contactPhone')} *</Label>
-                <Input
-                  id="contactPhone"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder={t('fields.contactPhonePlaceholder')}
-                />
-                {fieldErrors.contactPhone && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.contactPhone}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-medium">{t('sections.businessAddress')}</h3>
-
-              <div>
-                <Label htmlFor="street">{t('fields.street')} *</Label>
-                <Input
-                  id="street"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder={t('fields.streetPlaceholder')}
-                />
-                {fieldErrors.street && (
-                  <p className="text-sm text-destructive mt-1">{fieldErrors.street}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="suburb">{t('fields.suburb')} *</Label>
-                  <Input
-                    id="suburb"
-                    value={suburb}
-                    onChange={(e) => setSuburb(e.target.value)}
-                    placeholder={t('fields.suburbPlaceholder')}
-                  />
-                  {fieldErrors.suburb && (
-                    <p className="text-sm text-destructive mt-1">{fieldErrors.suburb}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="state">{t('fields.state')} *</Label>
-                  <Select value={state} onValueChange={setState}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('fields.statePlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NSW">NSW</SelectItem>
-                      <SelectItem value="VIC">VIC</SelectItem>
-                      <SelectItem value="QLD">QLD</SelectItem>
-                      <SelectItem value="SA">SA</SelectItem>
-                      <SelectItem value="WA">WA</SelectItem>
-                      <SelectItem value="TAS">TAS</SelectItem>
-                      <SelectItem value="NT">NT</SelectItem>
-                      <SelectItem value="ACT">ACT</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.state && (
-                    <p className="text-sm text-destructive mt-1">{fieldErrors.state}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="postcode">{t('fields.postcode')} *</Label>
-                <Input
-                  id="postcode"
-                  value={postcode}
-                  onChange={(e) => setPostcode(e.target.value)}
-                  placeholder={t('fields.postcodePlaceholder')}
-                  maxLength={4}
-                />
-                {fieldErrors.postcode && (
-                  <p className="text-sm text-destructive mt-1">{fieldErrors.postcode}</p>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Financial Terms Tab */}
-          <TabsContent value="financial" className="space-y-4">
-            <div>
-              <Label htmlFor="creditLimit">{t('fields.creditLimit')}</Label>
+              <Label htmlFor="supplierSku">{t('supplierSku')}</Label>
               <Input
-                id="creditLimit"
+                id="supplierSku"
+                value={supplierSku}
+                onChange={(e) => setSupplierSku(e.target.value)}
+                placeholder={t('supplierSkuPlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplierProductName">{t('supplierProductName')}</Label>
+              <Input
+                id="supplierProductName"
+                value={supplierProductName}
+                onChange={(e) => setSupplierProductName(e.target.value)}
+                placeholder={t('supplierProductNamePlaceholder')}
+              />
+            </div>
+          </div>
+
+          {/* Ordering Details */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="packSize">{t('packSize')}</Label>
+              <Input
+                id="packSize"
                 type="number"
-                min="0"
-                step="100"
-                value={creditLimit}
-                onChange={(e) => setCreditLimit(e.target.value)}
-                placeholder={t('fields.creditLimitPlaceholder')}
+                step="0.01"
+                value={packSize}
+                onChange={(e) => setPackSize(e.target.value)}
+                placeholder="e.g., 10"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('hints.enterDollars')}
-              </p>
-              {fieldErrors.creditLimit && (
-                <p className="text-sm text-destructive mt-1">
-                  {fieldErrors.creditLimit}
-                </p>
-              )}
             </div>
-
-            <div>
-              <Label htmlFor="paymentTerms">{t('fields.paymentTerms')}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="moq">{t('moq')}</Label>
               <Input
-                id="paymentTerms"
-                value={paymentTerms}
-                onChange={(e) => setPaymentTerms(e.target.value)}
-                placeholder={t('fields.paymentTermsPlaceholder')}
+                id="moq"
+                type="number"
+                step="0.01"
+                value={moq}
+                onChange={(e) => setMoq(e.target.value)}
+                placeholder="e.g., 5"
               />
             </div>
-
-            <div>
-              <Label htmlFor="leadTimeDays">{t('fields.leadTimeDays')}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="leadTimeDays">{t('leadTimeDays')}</Label>
               <Input
                 id="leadTimeDays"
                 type="number"
-                min="0"
                 value={leadTimeDays}
                 onChange={(e) => setLeadTimeDays(e.target.value)}
-                placeholder={t('fields.leadTimeDaysPlaceholder')}
+                placeholder="e.g., 3"
               />
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2 mt-6">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={createMutation.isPending}
-          >
-            {t('buttons.cancel')}
+          {/* Preferred Supplier */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isPreferredSupplier"
+              checked={isPreferredSupplier}
+              onCheckedChange={(checked) => setIsPreferredSupplier(checked === true)}
+            />
+            <Label htmlFor="isPreferredSupplier" className="text-sm font-normal">
+              {t('preferredSupplier')}
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            {t('preferredSupplierDescription')}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {tCommon('cancel')}
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={createMutation.isPending}
-          >
-            {createMutation.isPending && (
+          <Button onClick={handleSubmit} disabled={linkMutation.isPending}>
+            {linkMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            {t('buttons.createSupplier')}
+            {t('linkProduct')}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+```
+
+**Props Interface:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `open` | `boolean` | Controls dialog visibility |
+| `onOpenChange` | `(open: boolean) => void` | Called when dialog should open/close |
+| `supplierId` | `string` | The supplier ID to link products to |
+| `onSuccess` | `() => void` | Called after successful link (typically to refetch supplier data) |
+
+#### 3. Create Page Component
+
+**File:** `/apps/admin-portal/app/[locale]/(app)/suppliers/new/page.tsx`
+
+> **Note**: This component follows the Customer module pattern (`/customers/new/page.tsx`) with a tabbed form layout instead of a dialog, due to the complexity of supplier data (40+ fields across multiple sections).
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { api } from '@/trpc/client';
+import { useToast } from '@joho-erp/ui/hooks/use-toast';
+import { parseToCents, validateABN, validateACN } from '@joho-erp/shared';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@joho-erp/ui';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+
+export default function NewSupplierPage() {
+  const router = useRouter();
+  const t = useTranslations('supplierForm');
+  const { toast } = useToast();
+  
+  const [activeTab, setActiveTab] = useState('business');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form state - organized by tab
+  const [formData, setFormData] = useState({
+    // Business Information
+    supplierCode: '',
+    businessName: '',
+    tradingName: '',
+    abn: '',
+    acn: '',
+    
+    // Primary Contact
+    primaryContact: {
+      name: '',
+      position: '',
+      email: '',
+      phone: '',
+      mobile: '',
+    },
+    
+    // Business Address
+    businessAddress: {
+      street: '',
+      suburb: '',
+      state: 'NSW',
+      postcode: '',
+      country: 'Australia',
+    },
+    
+    // Financial Terms
+    paymentTerms: '',
+    paymentMethod: 'account_credit',
+    creditLimit: 0, // In cents
+    
+    // Delivery Terms
+    minimumOrderValue: undefined as number | undefined, // In cents
+    leadTimeDays: undefined as number | undefined,
+    deliveryDays: '',
+    deliveryNotes: '',
+    
+    // Categories
+    primaryCategories: [] as string[],
+  });
+  
+  // Per-tab error tracking
+  const [businessErrors, setBusinessErrors] = useState<Record<string, string>>({});
+  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+  
+  const createMutation = api.supplier.create.useMutation({
+    onSuccess: () => {
+      toast({ description: t('messages.createSuccess') });
+      router.push('/suppliers');
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', description: error.message });
+    },
+  });
+  
+  const validateBusinessInfo = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.supplierCode.trim()) {
+      errors.supplierCode = t('validation.supplierCodeRequired');
+    }
+    if (!formData.businessName.trim()) {
+      errors.businessName = t('validation.businessNameRequired');
+    }
+    if (formData.abn && !validateABN(formData.abn)) {
+      errors.abn = t('validation.abnInvalid');
+    }
+    
+    setBusinessErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
+  const handleSubmit = () => {
+    if (!validateBusinessInfo()) {
+      toast({ variant: 'destructive', description: t('messages.fixValidationErrors') });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    createMutation.mutate({
+      ...formData,
+      // Ensure monetary values are in cents
+      creditLimit: formData.creditLimit,
+      minimumOrderValue: formData.minimumOrderValue,
+    });
+  };
+  
+  // Tab navigation buttons
+  const tabs = [
+    { id: 'business', label: t('tabs.business') },
+    { id: 'contact', label: t('tabs.contact') },
+    { id: 'address', label: t('tabs.address') },
+    { id: 'financial', label: t('tabs.financial') },
+    { id: 'delivery', label: t('tabs.delivery') },
+    { id: 'categories', label: t('tabs.categories') },
+  ];
+  
+  return (
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      {/* Header */}
+      <div className="mb-6 flex items-center gap-4">
+        <Link href="/suppliers">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('common:back')}
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold">{t('title.create')}</h1>
+          <p className="text-muted-foreground">{t('description')}</p>
+        </div>
+      </div>
+      
+      {/* Tab Navigation */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+      
+      {/* Tab Content - Business Information */}
+      {activeTab === 'business' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('tabs.business')}</CardTitle>
+            <CardDescription>{t('sections.businessDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="supplierCode">{t('fields.supplierCode')} *</Label>
+              <Input
+                id="supplierCode"
+                value={formData.supplierCode}
+                onChange={(e) => setFormData({ ...formData, supplierCode: e.target.value })}
+                placeholder={t('fields.supplierCodePlaceholder')}
+              />
+              {businessErrors.supplierCode && (
+                <p className="text-sm text-destructive mt-1">{businessErrors.supplierCode}</p>
+              )}
+            </div>
+            {/* Additional fields: businessName, tradingName, abn, acn */}
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Additional tabs: contact, address, financial, delivery, categories */}
+      {/* Follow the same Card pattern as above */}
+      
+      {/* Submit Button */}
+      <div className="mt-6 flex justify-end gap-2">
+        <Link href="/suppliers">
+          <Button variant="outline">{t('buttons.cancel')}</Button>
+        </Link>
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {t('buttons.createSupplier')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+> **Implementation Note**: This is a simplified example. The full implementation should include all 6 tabs with complete form fields, following the patterns established in `/customers/new/page.tsx`.
+
+**Key Patterns to Follow (from Customer module):**
+
+**1. Comprehensive Form State with Optional Sections:**
+```typescript
+const [formData, setFormData] = useState({
+  // Required sections
+  supplierCode: '',
+  businessName: '',
+  primaryContact: { name: '', email: '', phone: '', position: '', mobile: '' },
+  businessAddress: { street: '', suburb: '', state: 'NSW', postcode: '', country: 'Australia' },
+
+  // Optional sections with toggles
+  includeSecondaryContact: false,
+  secondaryContact: { name: '', email: '', phone: '', position: '', mobile: '' },
+  includeAccountsContact: false,
+  accountsContact: { name: '', email: '', phone: '', position: '', mobile: '' },
+
+  // Address toggle
+  sameAsBusinessAddress: true,
+  deliveryAddress: { street: '', suburb: '', state: 'NSW', postcode: '', country: 'Australia' },
+
+  // Bank details toggle
+  includeBankDetails: false,
+  bankDetails: { accountName: '', bsb: '', accountNumber: '', bankName: '' },
+
+  // Categories management
+  primaryCategories: [] as string[],
+  newCategory: '', // For input field
+
+  // Monetary fields (user enters dollars, convert on submit)
+  creditLimit: '',
+  minimumOrderValue: '',
+});
+```
+
+**2. Per-Section Error Tracking with Clear Helpers:**
+```typescript
+const [businessErrors, setBusinessErrors] = useState<Record<string, string>>({});
+const [primaryContactErrors, setPrimaryContactErrors] = useState<Record<string, string>>({});
+const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+const [financialErrors, setFinancialErrors] = useState<Record<string, string>>({});
+
+// Clear error on field change
+const clearBusinessError = (field: string) => {
+  setBusinessErrors((prev) => {
+    const next = { ...prev };
+    delete next[field];
+    return next;
+  });
+};
+
+// Usage in input onChange
+onChange={(e) => {
+  setFormData({ ...formData, supplierCode: e.target.value.toUpperCase() });
+  clearBusinessError('supplierCode');
+}}
+```
+
+**3. Nested Object Update Helpers:**
+```typescript
+const updateContact = (
+  contactType: 'primaryContact' | 'secondaryContact' | 'accountsContact',
+  field: string,
+  value: string
+) => {
+  setFormData((prev) => ({
+    ...prev,
+    [contactType]: {
+      ...prev[contactType],
+      [field]: value,
+    },
+  }));
+  if (contactType === 'primaryContact') {
+    clearPrimaryContactError(field);
+  }
+};
+```
+
+**4. Tab Error Indicators:**
+```typescript
+const tabs = [
+  { id: 'business', label: t('tabs.business'), hasError: Object.keys(businessErrors).length > 0 },
+  { id: 'contact', label: t('tabs.contact'), hasError: Object.keys(primaryContactErrors).length > 0 },
+  // ... more tabs
+];
+
+// In JSX
+<Button
+  variant={activeTab === tab.id ? 'default' : 'outline'}
+  className={tab.hasError ? 'border-destructive' : ''}
+>
+  {tab.label}
+  {tab.hasError && <span className="ml-1 text-destructive">*</span>}
+</Button>
+```
+
+**5. Composite Validation with Tab Navigation:**
+```typescript
+const validateAllTabs = (): boolean => {
+  const isBusinessValid = validateBusinessInfo();
+  const isContactValid = validatePrimaryContact();
+  const isAddressValid = validateAddress();
+  const isFinancialValid = validateFinancial();
+
+  // Navigate to first tab with errors
+  if (!isBusinessValid) setActiveTab('business');
+  else if (!isContactValid) setActiveTab('contact');
+  else if (!isAddressValid) setActiveTab('address');
+  else if (!isFinancialValid) setActiveTab('financial');
+
+  return isBusinessValid && isContactValid && isAddressValid && isFinancialValid;
+};
+```
+
+**6. Category Array Management:**
+```typescript
+const handleAddCategory = () => {
+  if (formData.newCategory.trim() && !formData.primaryCategories.includes(formData.newCategory.trim())) {
+    setFormData((prev) => ({
+      ...prev,
+      primaryCategories: [...prev.primaryCategories, prev.newCategory.trim()],
+      newCategory: '',
+    }));
+  }
+};
+
+const handleRemoveCategory = (category: string) => {
+  setFormData((prev) => ({
+    ...prev,
+    primaryCategories: prev.primaryCategories.filter((c) => c !== category),
+  }));
+};
+```
+
+**7. Monetary Field Conversion on Submit:**
+```typescript
+const handleSubmit = () => {
+  if (!validateAllTabs()) {
+    toast({ variant: 'destructive', description: t('messages.fixValidationErrors') });
+    return;
+  }
+
+  createMutation.mutate({
+    ...formData,
+    creditLimit: parseToCents(formData.creditLimit) || 0, // Convert to cents
+    minimumOrderValue: parseToCents(formData.minimumOrderValue) || undefined,
+    // Only include optional sections if toggled
+    secondaryContact: formData.includeSecondaryContact ? formData.secondaryContact : undefined,
+    accountsContact: formData.includeAccountsContact ? formData.accountsContact : undefined,
+    deliveryAddress: formData.sameAsBusinessAddress ? undefined : formData.deliveryAddress,
+    bankDetails: formData.includeBankDetails ? formData.bankDetails : undefined,
+  });
+};
 ```
 
 ---
@@ -1851,10 +2583,16 @@ Add to all three files: `en.json`, `zh-CN.json`, `zh-TW.json`
     "categories": "Categories",
     "metadata": "Metadata",
     "primaryContact": "Primary Contact",
+    "secondaryContact": "Secondary Contact",
+    "accountsContact": "Accounts Contact",
+    "addresses": "Addresses",
+    "businessAddress": "Business Address",
+    "deliveryAddress": "Delivery Address",
     "name": "Name",
     "position": "Position",
     "email": "Email",
     "phone": "Phone",
+    "mobile": "Mobile",
     "businessName": "Business Name",
     "tradingName": "Trading Name",
     "abn": "ABN",
@@ -1864,11 +2602,71 @@ Add to all three files: `en.json`, `zh-CN.json`, `zh-TW.json`
     "paymentTerms": "Payment Terms",
     "paymentMethod": "Payment Method",
     "minimumOrder": "Minimum Order Value",
+    "minimumQty": "Minimum Order Quantity",
     "leadTime": "Lead Time",
     "deliveryDays": "Delivery Days",
+    "deliveryNotes": "Delivery Notes",
     "createdAt": "Created",
     "updatedAt": "Last Updated",
-    "linkProduct": "Link Product"
+    "linkProduct": "Link Product",
+    "linkProductDescription": "Link a product to this supplier with pricing and ordering details",
+    "productLinked": "Product linked successfully",
+    "productAlreadyLinked": "This product is already linked to this supplier",
+    "searchProducts": "Search products...",
+    "selectProduct": "Select a product...",
+    "noProductsFound": "No products found",
+    "product": "Product",
+    "supplierSku": "Supplier SKU",
+    "supplierSkuPlaceholder": "Supplier's product code",
+    "supplierProductName": "Supplier Product Name",
+    "supplierProductNamePlaceholder": "How the supplier calls this product",
+    "costPrice": "Cost Price",
+    "packSize": "Pack Size",
+    "moq": "Minimum Order Qty",
+    "leadTimeDays": "Lead Time (Days)",
+    "preferredSupplier": "Mark as preferred supplier",
+    "preferredSupplierDescription": "The preferred supplier will be used by default for ordering this product",
+    "enterDollars": "Enter amount in dollars",
+    "preferred": "Preferred",
+    "actions": "Actions",
+    "noLinkedProducts": "No linked products",
+    "noLinkedProductsDescription": "Link products to track cost pricing and ordering details from this supplier",
+    "noCategories": "No categories assigned",
+    "performance": "Performance Metrics",
+    "qualityRating": "Quality Rating",
+    "onTimeDelivery": "On-Time Delivery Rate",
+    "compliance": "Compliance",
+    "foodSafetyLicense": "Food Safety License",
+    "insurance": "Insurance",
+    "expires": "Expires",
+    "days": "days",
+    "bankDetails": "Bank Details",
+    "accountName": "Account Name",
+    "bsb": "BSB",
+    "accountNumber": "Account Number",
+    "bankName": "Bank Name",
+    "suspended": "Supplier Suspended",
+    "suspendTitle": "Suspend Supplier",
+    "suspendDescription": "Are you sure you want to suspend this supplier? They will not appear in supplier lists for ordering.",
+    "suspendSuccess": "Supplier suspended successfully",
+    "suspensionReason": "Suspension Reason",
+    "suspensionReasonPlaceholder": "Explain why this supplier is being suspended...",
+    "suspensionReasonMinLength": "Reason must be at least 10 characters",
+    "reason": "Reason",
+    "date": "Date",
+    "by": "By",
+    "suspend": "Suspend",
+    "activate": "Activate",
+    "activateTitle": "Activate Supplier",
+    "activateDescription": "Are you sure you want to reactivate this supplier?",
+    "activateSuccess": "Supplier activated successfully",
+    "updateSuccess": "Supplier updated successfully",
+    "recentBatches": "Recent Inventory Batches",
+    "validation": {
+      "productRequired": "Please select a product",
+      "costPriceRequired": "Cost price is required",
+      "costPriceInvalid": "Please enter a valid cost price greater than 0"
+    }
   }
 }
 ```
@@ -2031,57 +2829,82 @@ const createSupplierSchema = z.object({
 
 ---
 
-### Phase 5: Create & Edit (Day 10-13)
+### Phase 5: Create Page (Day 10-13)
 
 **Tasks:**
-1. Create CreateSupplierDialog component with multi-tab form
-2. Implement form state management (individual fields)
-3. Add validation with field-level error tracking
-4. Implement monetary field handling (parseToCents/formatCentsForInput)
-5. Create EditSupplierDialog component
-6. Test CRUD operations end-to-end
-7. Test with invalid inputs
-8. Test monetary values (cents storage, dollar display)
+1. Create `/suppliers/new/page.tsx` with tabbed form (matches Customer pattern)
+2. Implement 6 form tabs:
+   - Business Information (supplierCode, businessName, tradingName, abn, acn)
+   - Contact Information (primaryContact, secondaryContact, accountsContact)
+   - Addresses (businessAddress, deliveryAddress with "same as business" checkbox)
+   - Financial Terms (paymentTerms, paymentMethod, creditLimit, bankDetails)
+   - Delivery Terms (minimumOrderValue, leadTimeDays, deliveryDays, deliveryNotes)
+   - Categories & Compliance (primaryCategories, qualityRating, licenses)
+3. Implement form state management with per-tab error tracking
+4. Add validation with field-level error display
+5. Implement monetary field handling (parseToCents for inputs)
+6. Add ABN/ACN validation (11/9 digits respectively)
+7. Test CRUD operations end-to-end
+8. Test with invalid inputs
+9. Test monetary values (cents storage, dollar display)
 
 **Validation:**
 - Can create new supplier with all fields
+- Tab navigation works correctly
 - Validation shows errors for invalid inputs
 - Monetary values parse correctly from user input
 - Credit limit stored as cents in database
-- Can edit existing supplier
-- Pre-filled values display correctly in edit dialog
-- Success/error toasts display
+- ABN/ACN validation works
+- Success toast and redirect to list on create
+- Error toast on failure
 
 **Files Created:**
-- `/apps/admin-portal/app/[locale]/(app)/suppliers/components/CreateSupplierDialog.tsx`
-- `/apps/admin-portal/app/[locale]/(app)/suppliers/components/EditSupplierDialog.tsx`
+- `/apps/admin-portal/app/[locale]/(app)/suppliers/new/page.tsx`
 
 ---
 
 ### Phase 6: Detail Page & Product Linking (Day 14-16)
 
 **Tasks:**
-1. Create supplier detail page with 3-column layout
-2. Display business info, contact info, financial terms
-3. Add delivery terms sidebar
-4. Create LinkProductDialog component
-5. Implement product linking (ProductSupplier creation)
-6. Display linked products table
-7. Show inventory batches from supplier
-8. Add status management UI
+1. Create supplier detail page with two-column layout (matches Customer pattern):
+   - Left column (2/3): Main content cards
+   - Right column (1/3): Sidebar with quick stats
+2. Implement edit mode toggle with floating action bar (Cancel/Save buttons)
+3. Display all supplier information in Card components:
+   - Business Information card
+   - Contact Information card (collapsible sections for each contact)
+   - Address cards (business, delivery)
+   - Financial Terms card
+   - Delivery Terms card
+   - Linked Products card with table and Link Product button
+   - Recent Inventory Batches card
+4. Implement sidebar cards:
+   - Categories (as badges)
+   - Performance Metrics (quality rating, on-time delivery)
+   - Compliance (license expiry, insurance expiry)
+   - Audit Log section
+5. Create LinkProductDialog component for product linking
+6. Implement status management dialogs (Suspend/Activate using AlertDialog)
+7. Add PermissionGate for edit/suspend actions
 
 **Validation:**
 - Detail page loads with all supplier information
-- All monetary values display formatted as "$X.XX"
+- Edit mode toggle works with floating action bar
+- Fields become editable in edit mode
+- Validation on save
+- All monetary values display formatted with formatAUD()
 - Can link products to supplier
 - Linked products display with cost prices
 - Can update product-supplier links
 - Recent inventory batches display
+- Status change dialogs work (suspend requires reason)
 - Can navigate back to list
+- Mobile responsive layout
 
 **Files Created:**
 - `/apps/admin-portal/app/[locale]/(app)/suppliers/[id]/page.tsx`
 - `/apps/admin-portal/app/[locale]/(app)/suppliers/components/LinkProductDialog.tsx`
+- `/apps/admin-portal/app/[locale]/(app)/suppliers/components/SupplierStatusBadge.tsx` (if not created in Phase 4)
 
 ---
 
@@ -2259,11 +3082,12 @@ Before marking implementation complete:
 - [ ] Relations defined correctly (Product, InventoryBatch)
 
 ### API
-- [ ] All CRUD endpoints work (getAll, getById, create, update, updateStatus)
+- [ ] All 11 CRUD endpoints work (getAll, getById, getStats, create, update, updateStatus, linkProduct, updateProductLink, getProducts, delete, getCategories)
 - [ ] Permission middleware applied to all endpoints
 - [ ] Validation schemas catch invalid inputs
 - [ ] Monetary values validated as integers
 - [ ] Error handling implemented
+- [ ] Audit logging working with field-level change tracking
 
 ### Permissions
 - [ ] Permissions defined in constants
@@ -2280,30 +3104,48 @@ Before marking implementation complete:
 - [ ] Mobile card view displays correctly
 - [ ] Empty state shows when no data
 
-### Frontend - Create/Edit
-- [ ] Create dialog opens and closes
-- [ ] All form fields work
-- [ ] Validation shows errors
+### Frontend - Create Page
+- [ ] Create page loads with all 6 tabs
+- [ ] Tab navigation works correctly
+- [ ] Tab error indicators show when validation fails
+- [ ] All form fields work (40+ fields across tabs)
+- [ ] Optional sections toggle correctly (secondary contact, accounts contact, bank details)
+- [ ] "Same as business" checkbox works for delivery address
+- [ ] Category add/remove works
+- [ ] Per-tab validation shows field-level errors
+- [ ] Composite validation on submit navigates to first error tab
 - [ ] Monetary fields parse correctly with parseToCents
 - [ ] Success/error toasts display
-- [ ] Edit dialog pre-fills values
-- [ ] formatCentsForInput used for editing monetary values
+- [ ] Redirects to list page on success
 
 ### Frontend - Detail Page
-- [ ] Detail page loads all information
-- [ ] All sections display correctly
+- [ ] Detail page loads all supplier information
+- [ ] Two-column layout displays correctly (2/3 main + 1/3 sidebar)
+- [ ] All section cards display correctly
+- [ ] Edit mode toggle works (view → edit → save/cancel)
+- [ ] Floating action bar appears in edit mode
+- [ ] PermissionGate hides edit button for unauthorized users
 - [ ] Monetary values formatted with formatAUD
-- [ ] Can link products to supplier
-- [ ] Linked products display
+- [ ] Suspend/Activate buttons work with dialogs
+- [ ] Suspension reason validation (min 10 chars)
+- [ ] Performance metrics card displays
+- [ ] Compliance card displays with expiry dates
+- [ ] Suspension info card shows when suspended
+- [ ] Can link products to supplier via LinkProductDialog
+- [ ] Linked products table displays with actions
+- [ ] Recent inventory batches display
 - [ ] Can navigate back to list
 
 ### i18n
 - [ ] All text uses `t()` function (no hardcoded strings)
 - [ ] Translation keys added to ALL 3 language files
-- [ ] English translations complete
+- [ ] English translations complete (90+ keys in supplierDetail namespace)
 - [ ] Chinese (Simplified) translations complete
 - [ ] Chinese (Traditional) translations complete
 - [ ] Language switching works
+- [ ] All validation messages translated
+- [ ] All dialog/modal texts translated
+- [ ] Suspension dialog messages work correctly
 
 ### Money Handling
 - [ ] All monetary values stored as integers (cents)

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Truck, Package, ShoppingBag, DollarSign, PackageCheck, Navigation, Warehouse, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Truck, Package, ShoppingBag, DollarSign, PackageCheck, Navigation, Warehouse, Building2, type LucideIcon } from 'lucide-react';
 import type { Permission } from '@joho-erp/shared';
 
 export interface NavigationItem {
@@ -20,6 +20,13 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     icon: LayoutDashboard,
     path: '/dashboard',
     permission: 'dashboard:view',
+  },
+  {
+    id: 'suppliers',
+    labelKey: 'suppliers',
+    icon: Building2,
+    path: '/suppliers',
+    permission: 'suppliers:view',
   },
   {
     id: 'customers',

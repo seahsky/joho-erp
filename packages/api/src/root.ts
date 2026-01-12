@@ -3,6 +3,7 @@ import { areaRouter } from './routers/area';
 import { auditRouter } from './routers/audit';
 import { categoryRouter } from './routers/category';
 import { customerRouter } from './routers/customer';
+import { supplierRouter } from './routers/supplier';
 import { productRouter } from './routers/product';
 import { orderRouter } from './routers/order';
 import { dashboardRouter } from './routers/dashboard';
@@ -25,6 +26,7 @@ export const appRouter = router({
   audit: auditRouter,
   category: categoryRouter,
   customer: customerRouter,
+  supplier: supplierRouter,
   product: productRouter,
   order: orderRouter,
   dashboard: dashboardRouter,

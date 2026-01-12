@@ -4,6 +4,7 @@ import type { UserRole } from './index';
 export const MODULES = [
   'dashboard',
   'customers',
+  'suppliers',
   'orders',
   'products',
   'inventory',
@@ -29,6 +30,7 @@ export type Module = (typeof MODULES)[number];
 export const MODULE_ACTIONS = {
   dashboard: ['view'] as const,
   customers: ['view', 'create', 'edit', 'delete', 'approve_credit', 'suspend'] as const,
+  suppliers: ['view', 'create', 'edit', 'delete', 'suspend'] as const,
   orders: ['view', 'create', 'edit', 'confirm', 'cancel', 'approve_backorder'] as const,
   products: ['view', 'create', 'edit', 'delete', 'adjust_stock'] as const,
   inventory: ['view', 'adjust', 'export'] as const,
