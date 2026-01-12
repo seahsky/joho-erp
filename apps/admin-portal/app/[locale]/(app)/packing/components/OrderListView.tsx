@@ -329,18 +329,28 @@ export function OrderListView({
         @keyframes orderHighlightPulse {
           0%, 100% {
             box-shadow: 0 0 0 0 transparent;
+            background-color: transparent;
+            border-color: transparent;
+            transform: scale(1);
           }
           25%, 75% {
             box-shadow: 0 0 0 4px hsl(var(--primary) / 0.4);
+            background-color: hsl(var(--primary) / 0.08);
+            border-color: hsl(var(--primary) / 0.6);
+            transform: scale(1.01);
           }
           50% {
             box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3);
+            background-color: hsl(var(--primary) / 0.12);
+            border-color: hsl(var(--primary));
+            transform: scale(1.02);
           }
         }
 
         .order-card-highlight {
-          animation: orderHighlightPulse 1.5s ease-in-out;
+          animation: orderHighlightPulse 2s ease-in-out;
           border-radius: 0.5rem;
+          border: 2px solid transparent;
         }
       `}</style>
     </div>

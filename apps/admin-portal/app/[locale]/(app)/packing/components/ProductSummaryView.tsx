@@ -117,11 +117,12 @@ export function ProductSummaryView({ productSummary, onOrderBadgeClick }: Produc
                             console.log('[ProductSummaryView] Order badge clicked:', order.orderNumber);
                             onOrderBadgeClick?.(order.orderNumber);
                           }}
-                          className="focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full"
+                          className="focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-95 active:opacity-80 rounded-full transition-transform"
+                          aria-label={`Navigate to order ${order.orderNumber}`}
                         >
                           <Badge
                             variant={order.status === 'ready_for_delivery' ? 'success' : 'secondary'}
-                            className="text-xs font-mono cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-offset-1 transition-all"
+                            className="text-xs font-mono cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-offset-1 active:ring-2 active:ring-primary transition-all"
                           >
                             {order.orderNumber} ×{order.quantity}
                           </Badge>
