@@ -146,7 +146,7 @@ export default function NewCustomerPage() {
     }
   };
 
-  const clearCreditError = (field: string) => {
+  const _clearCreditError = (field: string) => {
     if (creditErrors[field]) {
       const newErrors = { ...creditErrors };
       delete newErrors[field];
@@ -576,8 +576,8 @@ export default function NewCustomerPage() {
   };
 
   const validateForm = (): boolean => {
-    const businessValid = validateBusinessInfo();
-    const contactValid = validateContactPerson();
+    const businessValid = _validateBusinessInfo();
+    const contactValid = _validateContactPerson();
     const addressValid = validateAddresses();
     const financialValid = validateFinancialInfo();
     const directorsValid = validateDirectors();
