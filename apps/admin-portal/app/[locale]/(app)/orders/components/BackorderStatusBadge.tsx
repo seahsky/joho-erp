@@ -1,6 +1,13 @@
 'use client';
 
-import { Badge } from '@joho-erp/ui';
+import {
+  Badge,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+} from '@joho-erp/ui';
 import { Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -14,6 +21,7 @@ export type BackorderStatusType =
 export interface BackorderStatusBadgeProps {
   status: BackorderStatusType;
   showIcon?: boolean;
+  compact?: boolean;
   className?: string;
 }
 
@@ -46,9 +54,17 @@ const statusConfig: Record<
   },
 };
 
+const variantBackgroundClasses: Record<string, string> = {
+  secondary: 'bg-secondary text-secondary-foreground',
+  warning: 'bg-warning text-warning-foreground',
+  success: 'bg-success text-success-foreground',
+  destructive: 'bg-destructive text-destructive-foreground',
+};
+
 export function BackorderStatusBadge({
   status,
   showIcon = true,
+  compact = false,
   className,
 }: BackorderStatusBadgeProps) {
   const t = useTranslations('orders.backorder');
@@ -60,6 +76,30 @@ export function BackorderStatusBadge({
 
   const config = statusConfig[status];
   const Icon = config.icon;
+
+  // Compact mode: icon-only with tooltip
+  if (compact) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                'flex items-center justify-center h-6 w-6 rounded-full cursor-help',
+                variantBackgroundClasses[config.variant],
+                className
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <span>{t('label')}: {t(status)}</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <Badge variant={config.variant} className={`flex items-center gap-1 ${className || ''}`}>

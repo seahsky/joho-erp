@@ -637,6 +637,7 @@
       "filterPending": "Show Pending Backorders"
     },
     "backorder": {
+      "label": "Backorder",
       "none": "Normal Order",
       "pending_approval": "Pending Approval",
       "approved": "Approved Backorder",
@@ -2331,6 +2332,7 @@
     "subtitle": "Your complete ERP solution for beef distribution"
   },
   "xeroSync": {
+    "label": "Xero",
     "title": "Xero Sync",
     "subtitle": "Monitor and manage Xero invoice synchronization",
     "loading": "Loading...",

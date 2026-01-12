@@ -1,7 +1,16 @@
 'use client';
 
 import { api } from '@/trpc/client';
-import { Badge, Button, useToast } from '@joho-erp/ui';
+import {
+  Badge,
+  Button,
+  useToast,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+} from '@joho-erp/ui';
 import {
   XCircle,
   Clock,
@@ -16,6 +25,7 @@ import { useTranslations } from 'next-intl';
 interface XeroOrderSyncBadgeProps {
   orderId: string;
   orderStatus: string;
+  compact?: boolean;
 }
 
 interface XeroCustomerSyncBadgeProps {
@@ -23,10 +33,51 @@ interface XeroCustomerSyncBadgeProps {
   creditStatus?: string;
 }
 
+const variantBackgroundClasses: Record<string, string> = {
+  secondary: 'bg-secondary text-secondary-foreground',
+  warning: 'bg-warning text-warning-foreground',
+  success: 'bg-success text-success-foreground',
+  destructive: 'bg-destructive text-destructive-foreground',
+};
+
+function CompactIcon({
+  icon: Icon,
+  variant,
+  tooltipContent,
+  animated = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  variant: 'secondary' | 'success' | 'warning' | 'destructive';
+  tooltipContent: React.ReactNode;
+  animated?: boolean;
+}) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={cn(
+              'flex items-center justify-center h-6 w-6 rounded-full cursor-help',
+              variantBackgroundClasses[variant]
+            )}
+          >
+            <Icon className={cn('h-3.5 w-3.5', animated && 'animate-spin')} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top">{tooltipContent}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 /**
  * Badge showing Xero invoice sync status for an order
  */
-export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeProps) {
+export function XeroOrderSyncBadge({
+  orderId,
+  orderStatus,
+  compact = false,
+}: XeroOrderSyncBadgeProps) {
   const t = useTranslations('xeroSync');
   const { toast } = useToast();
 
@@ -54,6 +105,16 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
   });
 
   if (isLoading) {
+    if (compact) {
+      return (
+        <CompactIcon
+          icon={Loader2}
+          variant="secondary"
+          tooltipContent={<span>{t('label')}: {t('loading')}</span>}
+          animated
+        />
+      );
+    }
     return (
       <Badge variant="secondary">
         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -68,6 +129,15 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
 
   // Order not delivered yet - no invoice expected
   if (orderStatus !== 'delivered' && orderStatus !== 'cancelled') {
+    if (compact) {
+      return (
+        <CompactIcon
+          icon={Clock}
+          variant="secondary"
+          tooltipContent={<span>{t('label')}: {t('awaitingDelivery')}</span>}
+        />
+      );
+    }
     return (
       <Badge variant="secondary" title={t('awaitingDeliveryHint')}>
         <Clock className="h-3 w-3 mr-1" />
@@ -78,6 +148,22 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
 
   // Has sync error
   if (syncStatus.syncError) {
+    if (compact) {
+      return (
+        <CompactIcon
+          icon={XCircle}
+          variant="destructive"
+          tooltipContent={
+            <div className="text-sm">
+              <p className="font-medium">{t('label')}: {t('syncFailed')}</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                {syncStatus.syncError}
+              </p>
+            </div>
+          }
+        />
+      );
+    }
     return (
       <div className="flex items-center gap-2">
         <Badge variant="destructive" title={syncStatus.syncError}>
@@ -106,6 +192,25 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
   if (syncStatus.invoiceId) {
     // Also has credit note (cancelled order)
     if (syncStatus.creditNoteId) {
+      if (compact) {
+        return (
+          <CompactIcon
+            icon={AlertTriangle}
+            variant="warning"
+            tooltipContent={
+              <div className="text-sm">
+                <p className="font-medium">{t('label')}: {t('credited')}</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  {t('invoice')}: {syncStatus.invoiceNumber}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {t('creditNote')}: {syncStatus.creditNoteNumber}
+                </p>
+              </div>
+            }
+          />
+        );
+      }
       return (
         <Badge
           variant="secondary"
@@ -119,6 +224,24 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
     }
 
     // Just has invoice
+    if (compact) {
+      return (
+        <CompactIcon
+          icon={FileText}
+          variant="success"
+          tooltipContent={
+            <div className="text-sm">
+              <p className="font-medium">
+                {t('label')}: {syncStatus.invoiceNumber || t('invoiced')}
+              </p>
+              <p className="text-muted-foreground text-xs mt-1">
+                {t('status')}: {syncStatus.invoiceStatus}
+              </p>
+            </div>
+          }
+        />
+      );
+    }
     return (
       <Badge
         variant="success"
@@ -132,6 +255,15 @@ export function XeroOrderSyncBadge({ orderId, orderStatus }: XeroOrderSyncBadgeP
 
   // Delivered but no invoice yet - allow manual creation
   if (orderStatus === 'delivered') {
+    if (compact) {
+      return (
+        <CompactIcon
+          icon={Clock}
+          variant="secondary"
+          tooltipContent={<span>{t('label')}: {t('notSynced')}</span>}
+        />
+      );
+    }
     return (
       <div className="flex items-center gap-2">
         <Badge variant="secondary">

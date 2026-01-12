@@ -637,6 +637,7 @@
       "filterPending": "显示待审批缺货订单"
     },
     "backorder": {
+      "label": "缺货订单",
       "none": "正常订单",
       "pending_approval": "待审批",
       "approved": "已批准缺货订单",
@@ -2331,6 +2332,7 @@
     "subtitle": "您的牛肉配送完整ERP解决方案"
   },
   "xeroSync": {
+    "label": "Xero",
     "title": "Xero 同步",
     "subtitle": "监控和管理 Xero 发票同步",
     "loading": "加载中...",
