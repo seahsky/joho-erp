@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl, Source, Layer, type MapRef, type MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MapPin, Warehouse } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { WarehouseMarker } from './components/markers/WarehouseMarker';
+import { DeliveryMarker } from './components/markers/DeliveryMarker';
+import { FullscreenControl } from './components/FullscreenControl';
 
 // Driver color palette for multi-route visualization
 const DRIVER_COLORS = [
@@ -80,10 +83,17 @@ export default function DeliveryMap({
   const hasDeliveries = deliveries.length > 0;
   const hasWarehouse = !!warehouseLocation;
 
-  // Sydney CBD coordinates as default center
+  // Animation state for route drawing
+  const [animationProgress, setAnimationProgress] = useState<Record<string, number>>({});
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Melbourne CBD coordinates as default center
   const [viewState, setViewState] = useState({
-    longitude: 151.2093,
-    latitude: -33.8688,
+    longitude: 144.9631,
+    latitude: -37.8136,
     zoom: 12,
   });
 
@@ -111,6 +121,57 @@ export default function DeliveryMap({
       });
     }
   }, [hasDeliveries, hasWarehouse, warehouseLocation, isMapReady]);
+
+  // Animate route drawing when routes change
+  useEffect(() => {
+    if (!isMapReady || (!multiRouteData && !routeData)) return;
+
+    setIsAnimating(true);
+    const routesToAnimate = multiRouteData && multiRouteData.length > 0
+      ? multiRouteData.map((route, index) => route.driverId || `route-${index}`)
+      : ['single-route'];
+
+    // Initialize all routes to 0% progress
+    const initialProgress: Record<string, number> = {};
+    routesToAnimate.forEach(routeKey => {
+      initialProgress[routeKey] = 0;
+    });
+    setAnimationProgress(initialProgress);
+
+    // Animate each route with staggered timing
+    routesToAnimate.forEach((routeKey, index) => {
+      const delay = index * 500; // 500ms delay between each route
+      const duration = 2000; // 2 seconds per route animation
+      const startTime = Date.now() + delay;
+
+      const animate = () => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+
+        if (elapsed < 0) {
+          // Still waiting for delay
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        const progress = Math.min(elapsed / duration, 1);
+
+        setAnimationProgress(prev => ({
+          ...prev,
+          [routeKey]: progress,
+        }));
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else if (index === routesToAnimate.length - 1) {
+          // Last route finished animating
+          setIsAnimating(false);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
+  }, [multiRouteData, routeData, isMapReady]);
 
   // Build interactive layer IDs for route line hover detection
   // NOTE: This useMemo must be called before any early returns to follow React's Rules of Hooks
@@ -140,16 +201,6 @@ export default function DeliveryMap({
     );
   }
 
-  const getMarkerColor = (status: string) => {
-    switch (status) {
-      case 'ready_for_delivery':
-        return 'text-yellow-600';
-      case 'delivered':
-        return 'text-green-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
 
   // Use a public Mapbox token for demo purposes
   // In production, this should be in environment variables
@@ -178,7 +229,14 @@ export default function DeliveryMap({
   };
 
   return (
-    <div className="relative w-full h-[600px] rounded-lg overflow-hidden">
+    <div
+      id="delivery-map-container"
+      className={`relative w-full rounded-lg overflow-hidden transition-all duration-300 ${
+        isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'h-[600px]'
+      }`}
+    >
+      <FullscreenControl onToggle={setIsFullscreen} />
+
       <Map
         ref={mapRef}
         {...viewState}
@@ -200,6 +258,11 @@ export default function DeliveryMap({
             const color = DRIVER_COLORS[index % DRIVER_COLORS.length];
             const routeKey = route.driverId || `route-${index}`;
             const isHovered = hoveredRouteId === routeKey;
+            const progress = animationProgress[routeKey] ?? 1;
+
+            // Animation effect using dash array
+            const dashArray = [2, 1]; // Pattern for dashed line during animation
+            const dashOffset = isAnimating ? (1 - progress) * 3 : 0;
 
             return (
               <Source
@@ -221,8 +284,12 @@ export default function DeliveryMap({
                     paint={{
                       'line-color': color,
                       'line-width': isHovered ? 12 : 8,
-                      'line-opacity': isHovered ? 0.3 : 0.2,
+                      'line-opacity': (isHovered ? 0.3 : 0.2) * progress,
                       'line-blur': isHovered ? 6 : 4,
+                      ...(isAnimating && {
+                        'line-dasharray': dashArray,
+                        'line-dash-offset': dashOffset,
+                      }),
                     }}
                   />
                 )}
@@ -233,7 +300,11 @@ export default function DeliveryMap({
                   paint={{
                     'line-color': color,
                     'line-width': isHovered ? 6 : (isSelected ? 4 : 2),
-                    'line-opacity': isHovered ? 1.0 : (isSelected ? 0.8 : 0.3),
+                    'line-opacity': (isHovered ? 1.0 : (isSelected ? 0.8 : 0.3)) * progress,
+                    ...(isAnimating && {
+                      'line-dasharray': dashArray,
+                      'line-dash-offset': dashOffset,
+                    }),
                   }}
                 />
               </Source>
@@ -243,6 +314,12 @@ export default function DeliveryMap({
           /* Fallback: Single route for backward compatibility */
           (() => {
             const isSingleRouteHovered = hoveredRouteId === '';
+            const progress = animationProgress['single-route'] ?? 1;
+
+            // Animation effect using dash array
+            const dashArray = [2, 1]; // Pattern for dashed line during animation
+            const dashOffset = isAnimating ? (1 - progress) * 3 : 0;
+
             return (
               <Source
                 id="route"
@@ -261,8 +338,12 @@ export default function DeliveryMap({
                   paint={{
                     'line-color': '#FF6B35',
                     'line-width': isSingleRouteHovered ? 12 : 8,
-                    'line-opacity': isSingleRouteHovered ? 0.3 : 0.2,
+                    'line-opacity': (isSingleRouteHovered ? 0.3 : 0.2) * progress,
                     'line-blur': isSingleRouteHovered ? 6 : 4,
+                    ...(isAnimating && {
+                      'line-dasharray': dashArray,
+                      'line-dash-offset': dashOffset,
+                    }),
                   }}
                 />
                 {/* Main route line */}
@@ -272,7 +353,11 @@ export default function DeliveryMap({
                   paint={{
                     'line-color': '#FF6B35',
                     'line-width': isSingleRouteHovered ? 6 : 4,
-                    'line-opacity': isSingleRouteHovered ? 1.0 : 0.8,
+                    'line-opacity': (isSingleRouteHovered ? 1.0 : 0.8) * progress,
+                    ...(isAnimating && {
+                      'line-dasharray': dashArray,
+                      'line-dash-offset': dashOffset,
+                    }),
                   }}
                 />
               </Source>
@@ -287,15 +372,7 @@ export default function DeliveryMap({
             latitude={warehouseLocation.latitude}
             anchor="center"
           >
-            <div className="cursor-pointer transform hover:scale-110 transition-transform">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-600 text-white shadow-lg border-2 border-white">
-                  <Warehouse className="h-6 w-6" />
-                </div>
-                {/* Arrow pointer */}
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
-              </div>
-            </div>
+            <WarehouseMarker isActive={hasDeliveries} />
           </Marker>
         )}
 
@@ -313,27 +390,12 @@ export default function DeliveryMap({
                 setPopupInfo(delivery);
               }}
             >
-              <div className="cursor-pointer transform hover:scale-110 transition-transform">
-                {delivery.deliverySequence ? (
-                  // Numbered marker for sequenced deliveries
-                  <div className="relative">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg border-2 border-white ${
-                      delivery.status === 'delivered' ? 'bg-green-600' :
-                      'bg-orange-500'
-                    }`}>
-                      {delivery.deliverySequence}
-                    </div>
-                    {/* Arrow pointer */}
-                    <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
-                      delivery.status === 'delivered' ? 'border-t-green-600' :
-                      'border-t-orange-500'
-                    }`}></div>
-                  </div>
-                ) : (
-                  // Default pin marker for non-sequenced deliveries
-                  <MapPin className={`h-8 w-8 ${getMarkerColor(delivery.status)} drop-shadow-lg`} fill="currentColor" />
-                )}
-              </div>
+              <DeliveryMarker
+                status={delivery.status}
+                sequence={delivery.deliverySequence}
+                isPriority={false} // TODO: Add priority field to delivery data
+                onClick={() => setPopupInfo(delivery)}
+              />
             </Marker>
           ))}
 
