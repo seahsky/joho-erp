@@ -184,7 +184,7 @@ export function ProductRow({
               productId={product.id}
               productName={product.name}
               currentQuantity={cartQuantity}
-              disabled={!canAddToCart || product.stockStatus === 'out_of_stock'}
+              disabled={!canAddToCart}
             />
           </div>
         </div>

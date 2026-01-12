@@ -286,13 +286,7 @@ export const cartRouter = router({
         });
       }
 
-      // Check stock availability
-      if (product.currentStock < input.quantity) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Insufficient stock for "${product.name}". Please reduce quantity or try again later.`,
-        });
-      }
+      // Stock validation removed - orders with insufficient stock go to pending admin approval
 
       // Get customer-specific pricing
       const customPricing = await prisma.customerPricing.findFirst({
@@ -319,13 +313,7 @@ export const cartRouter = router({
         // Update quantity if item exists
         const newQuantity = existingItem.quantity + input.quantity;
 
-        // Re-check stock for new quantity
-        if (product.currentStock < newQuantity) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Cannot add more "${product.name}". Please reduce quantity or try again later.`,
-          });
-        }
+        // Stock validation removed - orders with insufficient stock go to pending admin approval
 
         // Recalculate subtotal for new quantity
         const newSubtotalMoney = multiplyMoney(priceMoney, newQuantity);
@@ -477,13 +465,7 @@ export const cartRouter = router({
         });
       }
 
-      // Check stock availability for new quantity
-      if (product.currentStock < input.quantity) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Insufficient stock for "${product.name}". Please reduce quantity or try again later.`,
-        });
-      }
+      // Stock validation removed - orders with insufficient stock go to pending admin approval
 
       // Recalculate subtotal using dinero.js
       const priceMoney = createMoney(existingItem.unitPrice);
