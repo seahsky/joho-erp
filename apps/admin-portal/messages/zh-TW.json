@@ -195,6 +195,7 @@
     "searchPlaceholder": "搜尋供應商...",
     "filterByStatus": "按狀態篩選",
     "allStatuses": "所有狀態",
+    "allCategories": "所有類別",
     "stats": {
       "total": "供應商總數",
       "active": "活躍",
@@ -358,12 +359,15 @@
       "description": "您確定要暫停此供應商嗎？他們將不會出現在活躍供應商列表中。",
       "reasonLabel": "暫停原因",
       "reasonPlaceholder": "輸入暫停原因",
-      "confirm": "暫停"
+      "reasonMinLength": "原因必須至少10個字元",
+      "confirm": "暫停",
+      "success": "供應商已成功暫停"
     },
     "confirmActivate": {
       "title": "啟用供應商",
       "description": "您確定要啟用此供應商嗎？",
-      "confirm": "啟用"
+      "confirm": "啟用",
+      "success": "供應商已成功啟用"
     }
   },
   "linkProductDialog": {

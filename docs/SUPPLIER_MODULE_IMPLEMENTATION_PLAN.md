@@ -1,13 +1,14 @@
 # Supplier Management Module - Complete Implementation Plan
 
-**Status:** Implementation In Progress - Phases 1-3 Complete, Plan Updated
+**Status:** Plan Complete & Ready for Implementation - Phases 1-3 Done, Phases 4-7 Ready
 **Created:** 2026-01-12
 **Last Updated:** 2026-01-12
 **Estimated Duration:** 17-19 days (7 phases)
+**Plan Version:** 2.0 (Comprehensive update with production-ready patterns)
 
 ### Implementation Progress
 - [x] Phase 1: Database Foundation - COMPLETE (Schema already existed)
-- [x] Phase 2: Permissions & API - COMPLETE (11 endpoints with validation)
+- [x] Phase 2: Permissions & API - COMPLETE (12 endpoints with validation)
 - [x] Phase 3: Navigation & i18n - COMPLETE (50+ keys in 3 languages)
 - [ ] Phase 4: List Page
 - [ ] Phase 5: Create Page (Updated: Uses full page pattern, not dialog)
@@ -15,7 +16,7 @@
 - [ ] Phase 7: Integration & Testing
 
 > **Plan Update (2026-01-12)**: Comprehensive update to match Customer module patterns:
-> - Added 2 missing API endpoints (delete, getCategories) - now 11 total
+> - Added 3 missing API endpoints (delete, getCategories, unlinkProduct) - now 12 total
 > - Added complete SupplierStatusBadge component implementation
 > - Added complete LinkProductDialog component with product search
 > - Expanded Create Page with 7 key form patterns (state management, error tracking, validation)
@@ -790,8 +791,53 @@ export const supplierRouter = router({
 
       // Flatten and deduplicate categories
       const categories = [...new Set(suppliers.flatMap((s) => s.primaryCategories))];
-      
+
       return categories.sort();
+    }),
+
+  // Unlink product from supplier (soft delete - sets isActive to false)
+  unlinkProduct: requirePermission('suppliers:edit')
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id } = input;
+
+      // Fetch existing link
+      const existing = await prisma.productSupplier.findUnique({
+        where: { id },
+        include: { product: true, supplier: true },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product-supplier link not found',
+        });
+      }
+
+      // Soft delete - mark as inactive and set discontinued date
+      const link = await prisma.productSupplier.update({
+        where: { id },
+        data: {
+          isActive: false,
+          discontinuedAt: new Date(),
+        },
+      });
+
+      // Audit log
+      await createAuditLog({
+        userId: ctx.userId!,
+        action: 'update',
+        entity: 'productSupplier',
+        entityId: id,
+        changes: [{ field: 'isActive', oldValue: true, newValue: false }],
+        metadata: {
+          productSku: existing.product.sku,
+          supplierCode: existing.supplier.supplierCode,
+          action: 'unlink',
+        },
+      });
+
+      return link;
     }),
 });
 ```
@@ -975,33 +1021,47 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
 ```typescript
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useTableSort } from '@joho-erp/shared/hooks';
-import { PermissionGate } from '@/components/permission-gate';
-import { ResponsiveTable, type TableColumn } from '@joho-erp/ui';
-import { Button } from '@joho-erp/ui/components/button';
-import { Input } from '@joho-erp/ui/components/input';
 import { formatAUD } from '@joho-erp/shared';
+import { PermissionGate } from '@/components/permission-gate';
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  Button,
+  Input,
+  ResponsiveTable,
+  type TableColumn,
+  CountUp,
+  EmptyState,
+  TableSkeleton,
+} from '@joho-erp/ui';
+import { Building2, Plus, Search, Eye } from 'lucide-react';
 import { SupplierStatusBadge } from './components/SupplierStatusBadge';
-import { Building2, Plus, Search } from 'lucide-react';
-import Link from 'next/link';
-
-export const dynamic = 'force-dynamic';
+import type { SupplierStatus } from '@joho-erp/database';
 
 type Supplier = {
   id: string;
   supplierCode: string;
   businessName: string;
+  tradingName: string | null;
   primaryContact: {
     name: string;
     email: string;
     phone: string;
+    position: string | null;
+    mobile: string | null;
   };
-  status: string;
-  creditLimit: number;
+  status: SupplierStatus;
+  creditLimit: number; // In cents
+  primaryCategories: string[];
   _count: {
     products: number;
     inventoryBatches: number;
@@ -1011,23 +1071,43 @@ type Supplier = {
 export default function SuppliersPage() {
   const router = useRouter();
   const t = useTranslations('suppliers');
+  const tCommon = useTranslations('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
 
-  const { sortBy, sortOrder, handleSort } = useTableSort('name', 'asc');
+  // Sorting state (server-side)
+  const { sortBy, sortOrder, handleSort } = useTableSort('businessName', 'asc');
 
-  // Fetch suppliers
-  const { data, isLoading, refetch } = api.supplier.getAll.useQuery({
+  // Fetch suppliers with filtering
+  const { data, isLoading, error } = api.supplier.getAll.useQuery({
     search: searchQuery || undefined,
-    status: statusFilter || undefined,
+    status: statusFilter as SupplierStatus || undefined,
+    category: categoryFilter || undefined,
     sortBy,
     sortOrder,
+    limit: 100,
   });
 
   // Fetch stats
   const { data: stats } = api.supplier.getStats.useQuery();
 
+  // Fetch categories for filter dropdown
+  const { data: categories } = api.supplier.getCategories.useQuery();
+
   const suppliers = (data?.suppliers ?? []) as Supplier[];
+
+  // Error state
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   // Table columns
   const columns: TableColumn<Supplier>[] = [
@@ -1036,13 +1116,14 @@ export default function SuppliersPage() {
       label: t('code'),
       sortable: true,
       render: (supplier) => (
-        <div className="font-mono text-sm">{supplier.supplierCode}</div>
+        <span className="font-mono text-sm">{supplier.supplierCode}</span>
       ),
     },
     {
       key: 'businessName',
       label: t('businessName'),
       sortable: true,
+      className: 'font-medium',
       render: (supplier) => (
         <div>
           <div className="font-medium">{supplier.businessName}</div>
@@ -1069,30 +1150,29 @@ export default function SuppliersPage() {
       label: t('creditLimit'),
       sortable: true,
       render: (supplier) => (
-        <div className="text-right font-medium">
+        <div className="text-right font-medium tabular-nums">
           {formatAUD(supplier.creditLimit)}
         </div>
       ),
     },
     {
       key: 'status',
-      label: t('status'),
+      label: tCommon('status'),
       sortable: true,
-      render: (supplier) => (
-        <SupplierStatusBadge status={supplier.status} />
-      ),
+      render: (supplier) => <SupplierStatusBadge status={supplier.status} />,
     },
     {
       key: 'actions',
-      label: t('common:actions'),
+      label: '',
       render: (supplier) => (
-        <div className="flex gap-2">
+        <div className="flex justify-end">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push(`/suppliers/${supplier.id}`)}
           >
-            {t('common:view')}
+            <Eye className="h-4 w-4 mr-1" />
+            {tCommon('view')}
           </Button>
         </div>
       ),
@@ -1118,32 +1198,33 @@ export default function SuppliersPage() {
         </div>
         <div>
           <div className="text-muted-foreground">{t('creditLimit')}</div>
-          <div className="font-medium">{formatAUD(supplier.creditLimit)}</div>
+          <div className="font-medium tabular-nums">{formatAUD(supplier.creditLimit)}</div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          className="flex-1"
-          onClick={() => router.push(`/suppliers/${supplier.id}`)}
-        >
-          {t('common:view')}
-        </Button>
-      </div>
+      <Button
+        size="sm"
+        className="w-full"
+        onClick={() => router.push(`/suppliers/${supplier.id}`)}
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        {tCommon('view')}
+      </Button>
     </div>
   );
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="container mx-auto px-4 py-6 md:py-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+            {t('subtitle')}
+          </p>
         </div>
         <PermissionGate permission="suppliers:create">
           <Link href="/suppliers/new">
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               {t('addSupplier')}
             </Button>
@@ -1151,76 +1232,116 @@ export default function SuppliersPage() {
         </PermissionGate>
       </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatsCard
-            title={t('stats.total')}
-            value={stats.total}
-            icon={Building2}
-          />
-          <StatsCard
-            title={t('stats.active')}
-            value={stats.active}
-            variant="success"
-          />
-          <StatsCard
-            title={t('stats.pending')}
-            value={stats.pendingApproval}
-            variant="warning"
-          />
-          <StatsCard
-            title={t('stats.suspended')}
-            value={stats.suspended}
-            variant="destructive"
-          />
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder={t('filterByStatus')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{t('allStatuses')}</SelectItem>
-            <SelectItem value="active">{t('active')}</SelectItem>
-            <SelectItem value="inactive">{t('inactive')}</SelectItem>
-            <SelectItem value="suspended">{t('suspended')}</SelectItem>
-            <SelectItem value="pending_approval">{t('pending')}</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Stats Cards - uses inline Card pattern like Customers */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
+        <Card className="stat-card animate-fade-in-up">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
+            <CardDescription>{t('stats.total')}</CardDescription>
+            <div className="stat-value tabular-nums">
+              <CountUp end={stats?.total ?? 0} />
+            </div>
+          </CardHeader>
+        </Card>
+        <Card className="stat-card animate-fade-in-up delay-100">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
+            <CardDescription>{t('stats.active')}</CardDescription>
+            <div className="stat-value tabular-nums text-success">
+              <CountUp end={stats?.active ?? 0} />
+            </div>
+          </CardHeader>
+        </Card>
+        <Card className="stat-card animate-fade-in-up delay-200">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
+            <CardDescription>{t('stats.pending')}</CardDescription>
+            <div className="stat-value tabular-nums text-warning">
+              <CountUp end={stats?.pendingApproval ?? 0} />
+            </div>
+          </CardHeader>
+        </Card>
+        <Card className="stat-card animate-fade-in-up delay-300">
+          <div className="stat-card-gradient" />
+          <CardHeader className="pb-3 relative">
+            <CardDescription>{t('stats.suspended')}</CardDescription>
+            <div className="stat-value tabular-nums text-destructive">
+              <CountUp end={stats?.suspended ?? 0} />
+            </div>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* Table */}
-      <ResponsiveTable
-        data={suppliers}
-        columns={columns}
-        mobileCard={mobileCard}
-        onSort={handleSort}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        isLoading={isLoading}
-        emptyState={{
-          icon: Building2,
-          title: t('emptyState.title'),
-          description: t('emptyState.description'),
-          action: {
+      {/* Search and Filters - uses Card wrapper like Customers */}
+      <Card className="mb-6">
+        <CardHeader className="p-4">
+          <div className="flex flex-col gap-4">
+            {/* Search row */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('searchPlaceholder')}
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Filter row - uses native select like Customers */}
+            <div className="flex flex-wrap gap-2">
+              {/* Status Filter */}
+              <select
+                className="flex h-10 w-full md:w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">{t('allStatuses')}</option>
+                <option value="active">{t('active')}</option>
+                <option value="inactive">{t('inactive')}</option>
+                <option value="suspended">{t('suspended')}</option>
+                <option value="pending_approval">{t('pending')}</option>
+              </select>
+
+              {/* Category Filter */}
+              <select
+                className="flex h-10 w-full md:w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="">{t('allCategories')}</option>
+                {categories?.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Table with loading skeleton */}
+      {isLoading ? (
+        <TableSkeleton rows={5} columns={6} />
+      ) : suppliers.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title={t('emptyState.title')}
+          description={t('emptyState.description')}
+          action={{
             label: t('addSupplier'),
             onClick: () => router.push('/suppliers/new'),
-          },
-        }}
-      />
+          }}
+        />
+      ) : (
+        <ResponsiveTable
+          data={suppliers}
+          columns={columns}
+          mobileCard={mobileCard}
+          onSort={handleSort}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onRowClick={(supplier) => router.push(`/suppliers/${supplier.id}`)}
+        />
+      )}
     </div>
   );
 }
@@ -1287,39 +1408,145 @@ import { SupplierStatusBadge } from './components/SupplierStatusBadge';
 
 **File:** `/apps/admin-portal/app/[locale]/(app)/suppliers/[id]/page.tsx`
 
+> **Note**: The Detail Page uses inline edit mode toggle (not a separate dialog) following the Customer module pattern. It also includes an InfoItem helper for consistent label/value display.
+
+**InfoItem Helper Component (inline definition):**
+```typescript
+// Helper component for displaying label-value pairs consistently
+function InfoItem({ label, value }: { label: string; value: string | number | null | undefined }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="font-medium">{value ?? '-'}</p>
+    </div>
+  );
+}
+```
+
+**Full Page Implementation:**
 ```typescript
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { Button } from '@joho-erp/ui/components/button';
-import { Card } from '@joho-erp/ui/components/card';
-import { formatAUD } from '@joho-erp/shared';
-import { ArrowLeft, Edit, Building2 } from 'lucide-react';
-import { useState } from 'react';
-import { EditSupplierDialog } from '../components/EditSupplierDialog';
+import { formatAUD, formatDate } from '@joho-erp/shared';
+import { useToast } from '@joho-erp/ui/hooks/use-toast';
+import { PermissionGate } from '@/components/permission-gate';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Badge,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Skeleton,
+} from '@joho-erp/ui';
+import {
+  ArrowLeft,
+  Edit,
+  Building2,
+  Package,
+  Plus,
+  Loader2,
+  AlertTriangle,
+  CheckCircle,
+} from 'lucide-react';
+import { SupplierStatusBadge } from '../components/SupplierStatusBadge';
 import { LinkProductDialog } from '../components/LinkProductDialog';
+import type { SupplierStatus } from '@joho-erp/database';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
+}
+
+// Helper component for displaying label-value pairs
+function InfoItem({ label, value }: { label: string; value: string | number | null | undefined }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="font-medium">{value ?? '-'}</p>
+    </div>
+  );
 }
 
 export default function SupplierDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
   const t = useTranslations('supplierDetail');
+  const tCommon = useTranslations('common');
+  const { toast } = useToast();
 
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Dialog states
   const [showLinkProductDialog, setShowLinkProductDialog] = useState(false);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState('');
 
+  // API queries
   const { data: supplier, isLoading, refetch } = api.supplier.getById.useQuery({
     id: resolvedParams.id,
   });
 
+  // API mutations
+  const updateMutation = api.supplier.update.useMutation({
+    onSuccess: () => {
+      toast({ description: t('updateSuccess') });
+      setIsEditing(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', description: error.message });
+    },
+  });
+
+  const suspendMutation = api.supplier.updateStatus.useMutation({
+    onSuccess: () => {
+      toast({ description: t('confirmSuspend.success') });
+      setShowSuspendDialog(false);
+      setSuspensionReason('');
+      refetch();
+    },
+  });
+
+  const activateMutation = api.supplier.updateStatus.useMutation({
+    onSuccess: () => {
+      toast({ description: t('confirmActivate.success') });
+      setShowActivateDialog(false);
+      refetch();
+    },
+  });
+
+  // Loading state
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-8 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
   }
 
   if (!supplier) {
@@ -2474,9 +2701,10 @@ Add to all three files: `en.json`, `zh-CN.json`, `zh-TW.json`
     "suppliers": "Suppliers"
   },
   "suppliers": {
-    "title": "Suppliers",
-    "subtitle": "Manage your supply chain and supplier relationships",
+    "title": "Supplier Management",
+    "subtitle": "Manage your supplier accounts and relationships",
     "addSupplier": "Add Supplier",
+    "totalSuppliers": "Total Suppliers",
     "code": "Code",
     "businessName": "Business Name",
     "contact": "Contact",
@@ -2490,6 +2718,9 @@ Add to all three files: `en.json`, `zh-CN.json`, `zh-TW.json`
     "searchPlaceholder": "Search suppliers...",
     "filterByStatus": "Filter by status",
     "allStatuses": "All Statuses",
+    "allCategories": "All Categories",
+    "loading": "Loading suppliers...",
+    "errorLoading": "Error loading suppliers",
     "stats": {
       "total": "Total Suppliers",
       "active": "Active",
@@ -2646,20 +2877,24 @@ Add to all three files: `en.json`, `zh-CN.json`, `zh-TW.json`
     "accountNumber": "Account Number",
     "bankName": "Bank Name",
     "suspended": "Supplier Suspended",
-    "suspendTitle": "Suspend Supplier",
-    "suspendDescription": "Are you sure you want to suspend this supplier? They will not appear in supplier lists for ordering.",
-    "suspendSuccess": "Supplier suspended successfully",
-    "suspensionReason": "Suspension Reason",
-    "suspensionReasonPlaceholder": "Explain why this supplier is being suspended...",
-    "suspensionReasonMinLength": "Reason must be at least 10 characters",
+    "confirmSuspend": {
+      "title": "Suspend Supplier",
+      "description": "Are you sure you want to suspend this supplier? They will not appear in supplier lists for ordering.",
+      "reasonLabel": "Suspension Reason",
+      "reasonPlaceholder": "Explain why this supplier is being suspended...",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "confirm": "Suspend",
+      "success": "Supplier suspended successfully"
+    },
+    "confirmActivate": {
+      "title": "Activate Supplier",
+      "description": "Are you sure you want to reactivate this supplier?",
+      "confirm": "Activate",
+      "success": "Supplier activated successfully"
+    },
     "reason": "Reason",
     "date": "Date",
     "by": "By",
-    "suspend": "Suspend",
-    "activate": "Activate",
-    "activateTitle": "Activate Supplier",
-    "activateDescription": "Are you sure you want to reactivate this supplier?",
-    "activateSuccess": "Supplier activated successfully",
     "updateSuccess": "Supplier updated successfully",
     "recentBatches": "Recent Inventory Batches",
     "validation": {
@@ -3082,7 +3317,7 @@ Before marking implementation complete:
 - [ ] Relations defined correctly (Product, InventoryBatch)
 
 ### API
-- [ ] All 11 CRUD endpoints work (getAll, getById, getStats, create, update, updateStatus, linkProduct, updateProductLink, getProducts, delete, getCategories)
+- [ ] All 12 CRUD endpoints work (getAll, getById, getStats, create, update, updateStatus, linkProduct, updateProductLink, getProducts, delete, getCategories, unlinkProduct)
 - [ ] Permission middleware applied to all endpoints
 - [ ] Validation schemas catch invalid inputs
 - [ ] Monetary values validated as integers
@@ -3300,5 +3535,20 @@ Consider these enhancements after initial implementation:
 
 ---
 
-**Plan Status:** ✅ Ready for Implementation
-**Next Step:** Begin Phase 1 - Database Foundation
+## Plan Change Log
+
+### Version 2.0 (2026-01-12)
+- **List Page**: Updated to match Customer module patterns exactly (inline stats cards with CountUp, native select filters, Card wrapper for search/filters, TableSkeleton loading state)
+- **API Endpoints**: Added 12th endpoint `unlinkProduct` for soft-deleting product-supplier links
+- **Detail Page**: Added comprehensive imports, InfoItem helper component, edit mode state, suspend/activate dialogs with mutations
+- **Translations**: Added missing keys (`allCategories`, `loading`, `errorLoading`, nested `confirmSuspend` and `confirmActivate` objects)
+- **Type Safety**: Added proper TypeScript types for SupplierStatus imports from @joho-erp/database
+
+### Version 1.0 (2026-01-12)
+- Initial comprehensive plan with database schema, API layer, permissions, navigation, and UI components
+
+---
+
+**Plan Status:** ✅ Complete & Ready for Implementation
+**Phases 1-3:** ✅ Already implemented (Database, API, Permissions, Navigation, i18n)
+**Next Step:** Begin Phase 4 - List Page Implementation

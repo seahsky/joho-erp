@@ -195,6 +195,7 @@
     "searchPlaceholder": "Search suppliers...",
     "filterByStatus": "Filter by status",
     "allStatuses": "All Statuses",
+    "allCategories": "All Categories",
     "stats": {
       "total": "Total Suppliers",
       "active": "Active",
@@ -358,12 +359,15 @@
       "description": "Are you sure you want to suspend this supplier? They will not appear in active supplier lists.",
       "reasonLabel": "Suspension Reason",
       "reasonPlaceholder": "Enter reason for suspension",
-      "confirm": "Suspend"
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "confirm": "Suspend",
+      "success": "Supplier suspended successfully"
     },
     "confirmActivate": {
       "title": "Activate Supplier",
       "description": "Are you sure you want to activate this supplier?",
-      "confirm": "Activate"
+      "confirm": "Activate",
+      "success": "Supplier activated successfully"
     }
   },
   "linkProductDialog": {

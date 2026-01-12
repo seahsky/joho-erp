@@ -195,6 +195,7 @@
     "searchPlaceholder": "搜索供应商...",
     "filterByStatus": "按状态筛选",
     "allStatuses": "所有状态",
+    "allCategories": "所有类别",
     "stats": {
       "total": "供应商总数",
       "active": "活跃",
@@ -358,12 +359,15 @@
       "description": "您确定要暂停此供应商吗？他们将不会出现在活跃供应商列表中。",
       "reasonLabel": "暂停原因",
       "reasonPlaceholder": "输入暂停原因",
-      "confirm": "暂停"
+      "reasonMinLength": "原因必须至少10个字符",
+      "confirm": "暂停",
+      "success": "供应商已成功暂停"
     },
     "confirmActivate": {
       "title": "激活供应商",
       "description": "您确定要激活此供应商吗？",
-      "confirm": "激活"
+      "confirm": "激活",
+      "success": "供应商已成功激活"
     }
   },
   "linkProductDialog": {
