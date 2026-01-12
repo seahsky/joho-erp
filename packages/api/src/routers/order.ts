@@ -304,11 +304,13 @@ export const orderRouter = router({
           quantity: item.quantity,
           unitPrice: effectivePrice, // In cents
           subtotal: itemSubtotal, // In cents
+          applyGst: product.applyGst,
+          gstRate: product.gstRate,
         };
       });
 
-      // Calculate totals (10% GST)
-      const totals = calculateOrderTotals(orderItems, 0.1);
+      // Calculate totals using per-product GST settings
+      const totals = calculateOrderTotals(orderItems);
 
       // Check credit limit (exclude pending backorders from calculation)
       const creditLimit = customer.creditApplication.creditLimit; // In cents
@@ -685,11 +687,13 @@ export const orderRouter = router({
           quantity: item.quantity,
           unitPrice: effectivePrice, // In cents
           subtotal: itemSubtotal, // In cents
+          applyGst: product.applyGst,
+          gstRate: product.gstRate,
         };
       });
 
-      // 8. Calculate totals
-      const totals = calculateOrderTotals(orderItems, 0.1);
+      // 8. Calculate totals using per-product GST settings
+      const totals = calculateOrderTotals(orderItems);
 
       // 9. Check credit limit (unless bypassed) - exclude pending backorders from calculation
       if (!input.bypassCreditLimit) {
@@ -1476,11 +1480,13 @@ export const orderRouter = router({
           quantity: item.quantity,
           unitPrice: effectivePrice, // In cents - CURRENT price
           subtotal: itemSubtotal, // In cents
+          applyGst: product.applyGst,
+          gstRate: product.gstRate,
         };
       });
 
-      // Calculate totals with current GST rate (10%)
-      const totals = calculateOrderTotals(newOrderItems, 0.1);
+      // Calculate totals using per-product GST settings
+      const totals = calculateOrderTotals(newOrderItems);
 
       // Validate stock and check if backorder is needed
       const stockValidation = await validateStockWithBackorder(orderItems, products);
@@ -1812,8 +1818,15 @@ export const orderRouter = router({
           return item;
         });
 
-        // Recalculate order totals
-        const newTotals = calculateOrderTotals(updatedItems, 0.1);
+        // Recalculate order totals using per-product GST settings
+        const newTotals = calculateOrderTotals(
+          updatedItems.map((item: any) => ({
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            applyGst: item.applyGst ?? false,
+            gstRate: item.gstRate ?? null,
+          }))
+        );
 
         // Update order with approved quantities and new totals
         const updatedOrder = await prisma.order.update({

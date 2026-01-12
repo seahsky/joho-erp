@@ -36,6 +36,8 @@ type OrderItem = {
   name: string;
   unitPrice: number; // In cents
   subtotal: number; // In cents
+  applyGst: boolean;
+  gstRate: number | null;
 };
 
 export default function CreateOrderOnBehalfPage() {
@@ -111,10 +113,15 @@ export default function CreateOrderOnBehalfPage() {
     },
   });
 
-  // Calculate totals
+  // Calculate totals using per-product GST settings
   const { subtotal, gst, total } = useMemo(() => {
+    const DEFAULT_GST_RATE = 10; // Default GST rate if product has GST enabled but no rate set
     const subtotalCents = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const gstCents = Math.round(subtotalCents * 0.1);
+    const gstCents = orderItems.reduce((sum, item) => {
+      if (!item.applyGst) return sum;
+      const rate = item.gstRate ?? DEFAULT_GST_RATE;
+      return sum + Math.round((item.subtotal * rate) / 100);
+    }, 0);
     const totalCents = subtotalCents + gstCents;
     return {
       subtotal: subtotalCents,
@@ -250,6 +257,8 @@ export default function CreateOrderOnBehalfPage() {
         name: product.name,
         unitPrice: product.basePrice, // In cents
         subtotal: product.basePrice * quantity,
+        applyGst: product.applyGst,
+        gstRate: product.gstRate,
       };
       setOrderItems([...orderItems, newItem]);
     }

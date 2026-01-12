@@ -392,10 +392,14 @@ export const packingRouter = router({
         return orderItem;
       });
 
-      // Recalculate order totals using updated items
+      // Recalculate order totals using per-product GST settings
       const newTotals = calculateOrderTotals(
-        updatedItems.map((i) => ({ quantity: i.quantity, unitPrice: i.unitPrice })),
-        0.1 // 10% GST
+        updatedItems.map((i: any) => ({
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          applyGst: i.applyGst ?? false,
+          gstRate: i.gstRate ?? null,
+        }))
       );
 
       // Calculate new stock level

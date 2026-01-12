@@ -178,8 +178,7 @@ export function checkOrderCutoff(
  * @returns Object with subtotal, taxAmount, and totalAmount in cents
  */
 export function calculateOrderTotals(
-  items: { quantity: number; unitPrice: number }[],
-  taxRate: number
+  items: { quantity: number; unitPrice: number; applyGst: boolean; gstRate: number | null }[]
 ): {
   subtotal: number;
   taxAmount: number;
@@ -187,26 +186,32 @@ export function calculateOrderTotals(
 } {
   // Import money utilities at runtime to avoid circular dependencies
   const { createMoney, multiplyMoney, addMoney, toCents } = require('./money');
+  const { DEFAULT_GST_RATE } = require('./pricing');
 
-  // Calculate subtotal by multiplying each item's price by quantity
+  // Calculate subtotal and GST per item
   let subtotal = createMoney(0);
+  let totalGst = createMoney(0);
 
   for (const item of items) {
     const itemPrice = createMoney(item.unitPrice);
-    const itemTotal = multiplyMoney(itemPrice, item.quantity);
-    subtotal = addMoney(subtotal, itemTotal);
+    const itemSubtotal = multiplyMoney(itemPrice, item.quantity);
+    subtotal = addMoney(subtotal, itemSubtotal);
+
+    // Only apply GST if the product has GST enabled
+    if (item.applyGst) {
+      const rate = item.gstRate ?? DEFAULT_GST_RATE;
+      const gstMultiplier = { amount: Math.round(rate), scale: 2 };
+      const itemGst = multiplyMoney(itemSubtotal, gstMultiplier);
+      totalGst = addMoney(totalGst, itemGst);
+    }
   }
 
-  // Calculate tax amount (e.g., 10% GST)
-  const taxMultiplier = { amount: Math.round(taxRate * 100), scale: 2 };
-  const taxAmount = multiplyMoney(subtotal, taxMultiplier);
-
   // Calculate total
-  const totalAmount = addMoney(subtotal, taxAmount);
+  const totalAmount = addMoney(subtotal, totalGst);
 
   return {
     subtotal: toCents(subtotal),
-    taxAmount: toCents(taxAmount),
+    taxAmount: toCents(totalGst),
     totalAmount: toCents(totalAmount),
   };
 }
