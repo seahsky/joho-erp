@@ -1436,7 +1436,7 @@ export const orderRouter = router({
       // Create a map of product ID to custom pricing
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
-      // Build new order items with CURRENT pricing and stock validation
+      // Build new order items with CURRENT pricing
       const newOrderItems = orderItems.map((item) => {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
@@ -1446,13 +1446,7 @@ export const orderRouter = router({
           });
         }
 
-        // Check stock availability
-        if (product.currentStock < item.quantity) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Requested: ${item.quantity}`,
-          });
-        }
+        // Stock validation removed - orders with insufficient stock go to pending admin approval
 
         // Get effective price using CURRENT pricing (not historical)
         const customPricing = pricingMap.get(product.id);
@@ -1477,6 +1471,11 @@ export const orderRouter = router({
 
       // Calculate totals with current GST rate (10%)
       const totals = calculateOrderTotals(newOrderItems, 0.1);
+
+      // Validate stock and check if backorder is needed
+      const stockValidation = validateStockWithBackorder(orderItems, products);
+      const backorderStatus = stockValidation.requiresBackorder ? 'pending_approval' : 'none';
+      const orderStatus = stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed';
 
       // Validate credit limit
       const creditLimit = customer.creditApplication.creditLimit; // In cents
@@ -1510,75 +1509,85 @@ export const orderRouter = router({
             totalAmount: totals.totalAmount,
             deliveryAddress: originalOrder.deliveryAddress, // Use same delivery address
             requestedDeliveryDate: deliveryDate,
-            status: 'confirmed',
+            status: orderStatus,
             statusHistory: [
               {
-                status: 'confirmed',
+                status: orderStatus,
                 changedAt: new Date(),
                 changedBy: ctx.userId,
                 changedByName: userDetails.changedByName,
                 changedByEmail: userDetails.changedByEmail,
-                notes: `Reordered from order ${originalOrder.orderNumber}`,
+                notes: stockValidation.requiresBackorder
+                  ? `Reordered from order ${originalOrder.orderNumber} - Awaiting approval due to insufficient stock`
+                  : `Reordered from order ${originalOrder.orderNumber}`,
               },
             ],
             orderedAt: new Date(),
             createdBy: ctx.userId,
+
+            // Backorder fields
+            backorderStatus,
+            stockShortfall: stockValidation.requiresBackorder
+              ? stockValidation.stockShortfall
+              : undefined,
           },
         });
 
-        // Reduce stock for all items
-        for (const item of newOrderItems) {
-          const product = products.find((p) => p.id === item.productId);
-          if (!product) continue;
+        // If NOT a backorder, reduce stock immediately
+        if (!stockValidation.requiresBackorder) {
+          for (const item of newOrderItems) {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) continue;
 
-          const previousStock = product.currentStock;
-          const newStock = previousStock - item.quantity;
+            const previousStock = product.currentStock;
+            const newStock = previousStock - item.quantity;
 
-          // Create inventory transaction (sale)
-          const transaction = await tx.inventoryTransaction.create({
-            data: {
-              productId: item.productId,
-              type: 'sale',
-              quantity: -item.quantity,
-              previousStock,
-              newStock,
-              referenceType: 'order',
-              referenceId: createdOrder.id,
-              notes: `Stock reserved for reorder ${orderNumber} (original: ${originalOrder.orderNumber})`,
-              createdBy: ctx.userId,
-            },
-          });
+            // Create inventory transaction (sale)
+            const transaction = await tx.inventoryTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'sale',
+                quantity: -item.quantity,
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: createdOrder.id,
+                notes: `Stock reserved for reorder ${orderNumber} (original: ${originalOrder.orderNumber})`,
+                createdBy: ctx.userId,
+              },
+            });
 
-          // NEW: Consume from batches via FIFO
-          const { consumeStock } = await import('../services/inventory-batch');
-          const result = await consumeStock(
-            item.productId,
-            item.quantity,
-            transaction.id,
-            createdOrder.id,
-            orderNumber,
-            tx
-          );
-
-          // Log expiry warnings if any
-          if (result.expiryWarnings.length > 0) {
-            console.warn(
-              `Expiry warnings for reorder ${orderNumber}:`,
-              result.expiryWarnings
+            // NEW: Consume from batches via FIFO
+            const { consumeStock } = await import('../services/inventory-batch');
+            const result = await consumeStock(
+              item.productId,
+              item.quantity,
+              transaction.id,
+              createdOrder.id,
+              orderNumber,
+              tx
             );
-          }
 
-          // Update product stock
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { currentStock: newStock },
-          });
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for reorder ${orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { currentStock: newStock },
+            });
+          }
         }
 
         return createdOrder;
       });
 
-      // Send order confirmation email
+      // Send appropriate email based on backorder status
       const deliveryAddr = originalOrder.deliveryAddress as {
         street: string;
         suburb: string;
@@ -1586,32 +1595,71 @@ export const orderRouter = router({
         postcode: string;
       };
 
-      await sendOrderConfirmationEmail({
-        customerEmail: customer.contactPerson.email,
-        customerName: customer.businessName,
-        orderNumber: newOrder.orderNumber,
-        orderDate: newOrder.orderedAt,
-        requestedDeliveryDate: deliveryDate,
-        items: newOrderItems.map((item) => ({
-          productName: item.productName,
-          sku: item.sku,
-          quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-        })),
-        subtotal: totals.subtotal,
-        taxAmount: totals.taxAmount,
-        totalAmount: totals.totalAmount,
-        deliveryAddress: {
-          street: deliveryAddr.street,
-          suburb: deliveryAddr.suburb,
-          state: deliveryAddr.state,
-          postcode: deliveryAddr.postcode,
-        },
-      }).catch((error) => {
-        console.error('Failed to send order confirmation email:', error);
-      });
+      if (stockValidation.requiresBackorder) {
+        // Send backorder notification emails
+        const stockShortfallArray = Object.entries(stockValidation.stockShortfall).map(
+          ([productId, data]) => {
+            const product = products.find((p) => p.id === productId);
+            return {
+              productName: product?.name || 'Unknown Product',
+              sku: product?.sku || productId,
+              requested: data.requested,
+              available: data.available,
+              shortfall: data.shortfall,
+              unit: product?.unit || 'unit',
+            };
+          }
+        );
+
+        await sendBackorderSubmittedEmail({
+          customerEmail: customer.contactPerson.email,
+          customerName: customer.businessName,
+          orderNumber: newOrder.orderNumber,
+          orderDate: newOrder.orderedAt,
+          stockShortfall: stockShortfallArray,
+          totalAmount: totals.totalAmount,
+        }).catch((error) => {
+          console.error('Failed to send backorder submitted email:', error);
+        });
+
+        // Notify admin of backorder
+        await sendBackorderAdminNotification({
+          orderNumber: newOrder.orderNumber,
+          customerName: customer.businessName,
+          stockShortfall: stockShortfallArray,
+          totalAmount: totals.totalAmount,
+        }).catch((error) => {
+          console.error('Failed to send backorder admin notification:', error);
+        });
+      } else {
+        // Send regular order confirmation email
+        await sendOrderConfirmationEmail({
+          customerEmail: customer.contactPerson.email,
+          customerName: customer.businessName,
+          orderNumber: newOrder.orderNumber,
+          orderDate: newOrder.orderedAt,
+          requestedDeliveryDate: deliveryDate,
+          items: newOrderItems.map((item) => ({
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+          subtotal: totals.subtotal,
+          taxAmount: totals.taxAmount,
+          totalAmount: totals.totalAmount,
+          deliveryAddress: {
+            street: deliveryAddr.street,
+            suburb: deliveryAddr.suburb,
+            state: deliveryAddr.state,
+            postcode: deliveryAddr.postcode,
+          },
+        }).catch((error) => {
+          console.error('Failed to send order confirmation email:', error);
+        });
+      }
 
       // Send notification to admin
       sendNewOrderNotificationEmail({
@@ -1620,7 +1668,7 @@ export const orderRouter = router({
         totalAmount: totals.totalAmount,
         itemCount: newOrderItems.length,
         deliveryDate,
-        isBackorder: false,
+        isBackorder: stockValidation.requiresBackorder,
       }).catch((error) => {
         console.error('Failed to send admin notification email:', error);
       });
@@ -2246,7 +2294,8 @@ export const orderRouter = router({
         });
       }
 
-      // Re-validate stock availability for non-backorders
+      // Check stock availability for non-backorders and convert to backorder if insufficient
+      let stockValidation: StockValidationResult = { requiresBackorder: false, stockShortfall: {} };
       if (order.backorderStatus === 'none') {
         const orderItems = order.items as Array<{ productId: string; quantity: number }>;
         const productIds = orderItems.map((item) => item.productId);
@@ -2254,14 +2303,63 @@ export const orderRouter = router({
           where: { id: { in: productIds } },
         });
 
-        for (const item of orderItems) {
-          const product = products.find((p) => p.id === item.productId);
-          if (product && product.currentStock < item.quantity) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Required: ${item.quantity}`,
-            });
-          }
+        stockValidation = validateStockWithBackorder(orderItems, products);
+
+        // If stock is insufficient, convert to backorder instead of blocking
+        if (stockValidation.requiresBackorder) {
+          const userDetails = await getUserDetails(ctx.userId);
+
+          // Update order to backorder status
+          const updatedBackorder = await prisma.order.update({
+            where: { id: orderId },
+            data: {
+              backorderStatus: 'pending_approval',
+              stockShortfall: stockValidation.stockShortfall,
+              statusHistory: {
+                push: {
+                  status: 'awaiting_approval',
+                  changedAt: new Date(),
+                  changedBy: ctx.userId,
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
+                  notes: 'Order converted to backorder due to insufficient stock',
+                },
+              },
+            },
+            include: { customer: true },
+          });
+
+          // Send backorder notification
+          const stockShortfallArray = Object.entries(stockValidation.stockShortfall).map(
+            ([productId, data]) => {
+              const product = products.find((p) => p.id === productId);
+              return {
+                productName: product?.name || 'Unknown Product',
+                sku: product?.sku || productId,
+                requested: data.requested,
+                available: data.available,
+                shortfall: data.shortfall,
+                unit: product?.unit || 'unit',
+              };
+            }
+          );
+
+          await sendBackorderSubmittedEmail({
+            customerEmail: updatedBackorder.customer.contactPerson.email,
+            customerName: updatedBackorder.customer.businessName,
+            orderNumber: updatedBackorder.orderNumber,
+            orderDate: updatedBackorder.orderedAt,
+            stockShortfall: stockShortfallArray,
+            totalAmount: updatedBackorder.totalAmount,
+          }).catch((error) => {
+            console.error('Failed to send backorder submitted email:', error);
+          });
+
+          return {
+            ...updatedBackorder,
+            convertedToBackorder: true,
+            message: 'Order converted to backorder due to insufficient stock. Awaiting approval.',
+          };
         }
       }
 
