@@ -127,6 +127,11 @@ export function XeroOrderSyncBadge({
     return null;
   }
 
+  // Hide badge if Xero integration is disabled
+  if (!syncStatus.integrationEnabled) {
+    return null;
+  }
+
   // Order not delivered yet - no invoice expected
   if (orderStatus !== 'delivered' && orderStatus !== 'cancelled') {
     if (compact) {

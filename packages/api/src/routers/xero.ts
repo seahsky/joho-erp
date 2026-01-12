@@ -14,6 +14,7 @@ import {
   getSyncJobs,
   getSyncStats,
 } from '../services/xero-queue';
+import { isXeroIntegrationEnabled } from '../services/xero';
 import { logXeroSyncTrigger, logXeroJobRetry } from '../services/audit';
 
 export const xeroRouter = router({
@@ -231,6 +232,9 @@ export const xeroRouter = router({
   getOrderSyncStatus: requirePermission('settings.xero:view')
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input }) => {
+      // Check if Xero integration is enabled
+      const integrationEnabled = isXeroIntegrationEnabled();
+
       const order = await prisma.order.findUnique({
         where: { id: input.orderId },
         select: { xero: true },
@@ -255,6 +259,7 @@ export const xeroRouter = router({
       } | null;
 
       return {
+        integrationEnabled,
         synced: !!xeroInfo?.invoiceId,
         invoiceId: xeroInfo?.invoiceId || null,
         invoiceNumber: xeroInfo?.invoiceNumber || null,
