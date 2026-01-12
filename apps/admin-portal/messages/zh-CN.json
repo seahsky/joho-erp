@@ -1274,6 +1274,8 @@
       "emailRequired": "电子邮件为必填项",
       "emailInvalid": "无效的电子邮件地址",
       "phoneRequired": "电话为必填项",
+      "phoneInvalid": "请输入有效的澳大利亚电话号码",
+      "mobileInvalid": "请输入有效的澳大利亚手机号码",
       "addressRequired": "地址字段为必填项",
       "streetRequired": "街道地址为必填项",
       "suburbRequired": "郊区为必填项",
@@ -1281,14 +1283,26 @@
       "postcodeRequired": "邮编为必填项",
       "postcodeInvalid": "邮编必须为4位数字",
       "areaTagRequired": "配送区域为必填项",
+      "bsbRequired": "BSB为必填项",
       "bsbInvalid": "BSB必须为6位数字",
-      "creditLimitInvalid": "信用额度必须为正数或零"
+      "creditLimitInvalid": "信用额度必须为正数或零",
+      "familyNameRequired": "姓氏为必填项",
+      "givenNamesRequired": "名字为必填项",
+      "dateOfBirthRequired": "出生日期为必填项",
+      "driverLicenseRequired": "驾驶执照号码为必填项",
+      "licenseExpiryRequired": "执照到期日为必填项",
+      "companyNameRequired": "公司名称为必填项",
+      "contactPersonRequired": "联系人姓名为必填项",
+      "bankNameRequired": "银行名称为必填项",
+      "accountNameRequired": "账户名称为必填项",
+      "accountNumberRequired": "账户号码为必填项"
     },
     "messages": {
       "createSuccess": "客户创建成功！",
       "createError": "创建客户失败",
       "duplicateEmail": "此电子邮件的客户已存在",
-      "duplicateABN": "此ABN的客户已存在"
+      "duplicateABN": "此ABN的客户已存在",
+      "fixValidationErrors": "请在提交前修正验证错误"
     }
   },
   "packing": {

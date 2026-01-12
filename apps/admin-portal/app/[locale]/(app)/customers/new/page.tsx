@@ -115,6 +115,11 @@ export default function NewCustomerPage() {
   // Validation error states
   const [businessErrors, setBusinessErrors] = useState<Record<string, string>>({});
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+  const [creditErrors, setCreditErrors] = useState<Record<string, string>>({});
+  const [financialErrors, setFinancialErrors] = useState<Record<string, string>>({});
+  const [directorErrors, setDirectorErrors] = useState<Record<number, Record<string, string>>>({});
+  const [tradeRefErrors, setTradeRefErrors] = useState<Record<number, Record<string, string>>>({});
 
   // Clear individual field error
   const clearBusinessError = (field: string) => {
@@ -130,6 +135,58 @@ export default function NewCustomerPage() {
       const newErrors = { ...contactErrors };
       delete newErrors[field];
       setContactErrors(newErrors);
+    }
+  };
+
+  const clearAddressError = (field: string) => {
+    if (addressErrors[field]) {
+      const newErrors = { ...addressErrors };
+      delete newErrors[field];
+      setAddressErrors(newErrors);
+    }
+  };
+
+  const clearCreditError = (field: string) => {
+    if (creditErrors[field]) {
+      const newErrors = { ...creditErrors };
+      delete newErrors[field];
+      setCreditErrors(newErrors);
+    }
+  };
+
+  const clearFinancialError = (field: string) => {
+    if (financialErrors[field]) {
+      const newErrors = { ...financialErrors };
+      delete newErrors[field];
+      setFinancialErrors(newErrors);
+    }
+  };
+
+  const clearDirectorError = (index: number, field: string) => {
+    if (directorErrors[index]?.[field]) {
+      const newErrors = { ...directorErrors };
+      const newDirectorErrors = { ...newErrors[index] };
+      delete newDirectorErrors[field];
+      if (Object.keys(newDirectorErrors).length === 0) {
+        delete newErrors[index];
+      } else {
+        newErrors[index] = newDirectorErrors;
+      }
+      setDirectorErrors(newErrors);
+    }
+  };
+
+  const clearTradeRefError = (index: number, field: string) => {
+    if (tradeRefErrors[index]?.[field]) {
+      const newErrors = { ...tradeRefErrors };
+      const newRefErrors = { ...newErrors[index] };
+      delete newRefErrors[field];
+      if (Object.keys(newRefErrors).length === 0) {
+        delete newErrors[index];
+      } else {
+        newErrors[index] = newRefErrors;
+      }
+      setTradeRefErrors(newErrors);
     }
   };
 
@@ -302,8 +359,242 @@ export default function NewCustomerPage() {
     return isValid;
   };
 
+  const validateAddresses = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    // Delivery address (always required)
+    if (!formData.deliveryAddress.street?.trim()) {
+      errors['delivery.street'] = t('validation.streetRequired');
+      isValid = false;
+    }
+
+    if (!formData.deliveryAddress.suburb?.trim()) {
+      errors['delivery.suburb'] = t('validation.suburbRequired');
+      isValid = false;
+    }
+
+    if (!formData.deliveryAddress.postcode?.trim()) {
+      errors['delivery.postcode'] = t('validation.postcodeRequired');
+      isValid = false;
+    } else if (!/^\d{4}$/.test(formData.deliveryAddress.postcode)) {
+      errors['delivery.postcode'] = t('validation.postcodeInvalid');
+      isValid = false;
+    }
+
+    // Conditional billing address
+    if (!sameAsDelivery) {
+      if (!formData.billingAddress.street?.trim()) {
+        errors['billing.street'] = t('validation.streetRequired');
+        isValid = false;
+      }
+
+      if (!formData.billingAddress.suburb?.trim()) {
+        errors['billing.suburb'] = t('validation.suburbRequired');
+        isValid = false;
+      }
+
+      if (!formData.billingAddress.postcode?.trim()) {
+        errors['billing.postcode'] = t('validation.postcodeRequired');
+        isValid = false;
+      } else if (!/^\d{4}$/.test(formData.billingAddress.postcode)) {
+        errors['billing.postcode'] = t('validation.postcodeInvalid');
+        isValid = false;
+      }
+    }
+
+    // Conditional postal address
+    if (!postalSameAsBilling) {
+      if (!formData.postalAddress.street?.trim()) {
+        errors['postal.street'] = t('validation.streetRequired');
+        isValid = false;
+      }
+
+      if (!formData.postalAddress.suburb?.trim()) {
+        errors['postal.suburb'] = t('validation.suburbRequired');
+        isValid = false;
+      }
+
+      if (!formData.postalAddress.postcode?.trim()) {
+        errors['postal.postcode'] = t('validation.postcodeRequired');
+        isValid = false;
+      } else if (!/^\d{4}$/.test(formData.postalAddress.postcode)) {
+        errors['postal.postcode'] = t('validation.postcodeInvalid');
+        isValid = false;
+      }
+    }
+
+    setAddressErrors(errors);
+    return isValid;
+  };
+
+  const validateFinancialInfo = (): boolean => {
+    if (!includeFinancial) {
+      setFinancialErrors({});
+      return true; // Not required if checkbox unchecked
+    }
+
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!formData.financialDetails.bankName?.trim()) {
+      errors.bankName = t('validation.bankNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.financialDetails.accountName?.trim()) {
+      errors.accountName = t('validation.accountNameRequired');
+      isValid = false;
+    }
+
+    if (!formData.financialDetails.bsb?.trim()) {
+      errors.bsb = t('validation.bsbRequired');
+      isValid = false;
+    } else if (!/^\d{6}$/.test(formData.financialDetails.bsb.replace(/-/g, ''))) {
+      errors.bsb = t('validation.bsbInvalid');
+      isValid = false;
+    }
+
+    if (!formData.financialDetails.accountNumber?.trim()) {
+      errors.accountNumber = t('validation.accountNumberRequired');
+      isValid = false;
+    }
+
+    setFinancialErrors(errors);
+    return isValid;
+  };
+
+  const validateDirectors = (): boolean => {
+    if (formData.directors.length === 0) {
+      setDirectorErrors({});
+      return true; // Directors are optional
+    }
+
+    const errors: Record<number, Record<string, string>> = {};
+    let isValid = true;
+
+    formData.directors.forEach((director, index) => {
+      const directorErrs: Record<string, string> = {};
+
+      if (!director.familyName?.trim()) {
+        directorErrs.familyName = t('validation.familyNameRequired');
+        isValid = false;
+      }
+
+      if (!director.givenNames?.trim()) {
+        directorErrs.givenNames = t('validation.givenNamesRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.street?.trim()) {
+        directorErrs['residentialAddress.street'] = t('validation.streetRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.suburb?.trim()) {
+        directorErrs['residentialAddress.suburb'] = t('validation.suburbRequired');
+        isValid = false;
+      }
+
+      if (!director.residentialAddress.postcode?.trim()) {
+        directorErrs['residentialAddress.postcode'] = t('validation.postcodeRequired');
+        isValid = false;
+      } else if (!/^\d{4}$/.test(director.residentialAddress.postcode)) {
+        directorErrs['residentialAddress.postcode'] = t('validation.postcodeInvalid');
+        isValid = false;
+      }
+
+      if (!director.dateOfBirth) {
+        directorErrs.dateOfBirth = t('validation.dateOfBirthRequired');
+        isValid = false;
+      }
+
+      if (!director.driverLicenseNumber?.trim()) {
+        directorErrs.driverLicenseNumber = t('validation.driverLicenseRequired');
+        isValid = false;
+      }
+
+      if (!director.licenseExpiry) {
+        directorErrs.licenseExpiry = t('validation.licenseExpiryRequired');
+        isValid = false;
+      }
+
+      if (Object.keys(directorErrs).length > 0) {
+        errors[index] = directorErrs;
+      }
+    });
+
+    setDirectorErrors(errors);
+    return isValid;
+  };
+
+  const validateTradeReferences = (): boolean => {
+    if (formData.tradeReferences.length === 0) {
+      setTradeRefErrors({});
+      return true; // Trade references are optional
+    }
+
+    const errors: Record<number, Record<string, string>> = {};
+    let isValid = true;
+
+    formData.tradeReferences.forEach((ref, index) => {
+      const refErrs: Record<string, string> = {};
+
+      if (!ref.companyName?.trim()) {
+        refErrs.companyName = t('validation.companyNameRequired');
+        isValid = false;
+      }
+
+      if (!ref.contactPerson?.trim()) {
+        refErrs.contactPerson = t('validation.contactPersonRequired');
+        isValid = false;
+      }
+
+      if (!ref.phone?.trim()) {
+        refErrs.phone = t('validation.phoneRequired');
+        isValid = false;
+      } else if (!validateAustralianPhone(ref.phone)) {
+        refErrs.phone = t('validation.phoneInvalid');
+        isValid = false;
+      }
+
+      if (!ref.email?.trim()) {
+        refErrs.email = t('validation.emailRequired');
+        isValid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ref.email)) {
+        refErrs.email = t('validation.emailInvalid');
+        isValid = false;
+      }
+
+      if (Object.keys(refErrs).length > 0) {
+        errors[index] = refErrs;
+      }
+    });
+
+    setTradeRefErrors(errors);
+    return isValid;
+  };
+
+  const validateForm = (): boolean => {
+    const businessValid = validateBusinessInfo();
+    const contactValid = validateContactPerson();
+    const addressValid = validateAddresses();
+    const financialValid = validateFinancialInfo();
+    const directorsValid = validateDirectors();
+    const referencesValid = validateTradeReferences();
+
+    return businessValid && contactValid && addressValid &&
+           financialValid && directorsValid && referencesValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      alert(t('messages.fixValidationErrors'));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -608,13 +899,17 @@ export default function NewCustomerPage() {
                     placeholder={t('addresses.streetPlaceholder')}
                     required
                     value={formData.deliveryAddress.street}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         deliveryAddress: { ...formData.deliveryAddress, street: e.target.value },
-                      })
-                    }
+                      });
+                      clearAddressError('delivery.street');
+                    }}
                   />
+                  {addressErrors['delivery.street'] && (
+                    <p className="text-sm text-destructive">{addressErrors['delivery.street']}</p>
+                  )}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
@@ -625,13 +920,17 @@ export default function NewCustomerPage() {
                       placeholder={t('addresses.suburbPlaceholder')}
                       required
                       value={formData.deliveryAddress.suburb}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           deliveryAddress: { ...formData.deliveryAddress, suburb: e.target.value },
-                        })
-                      }
+                        });
+                        clearAddressError('delivery.suburb');
+                      }}
                     />
+                    {addressErrors['delivery.suburb'] && (
+                      <p className="text-sm text-destructive">{addressErrors['delivery.suburb']}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="deliveryState">{t('addresses.state')} *</Label>
@@ -665,13 +964,17 @@ export default function NewCustomerPage() {
                       required
                       maxLength={4}
                       value={formData.deliveryAddress.postcode}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           deliveryAddress: { ...formData.deliveryAddress, postcode: e.target.value },
-                        })
-                      }
+                        });
+                        clearAddressError('delivery.postcode');
+                      }}
                     />
+                    {addressErrors['delivery.postcode'] && (
+                      <p className="text-sm text-destructive">{addressErrors['delivery.postcode']}</p>
+                    )}
                   </div>
                 </div>
 
@@ -770,13 +1073,17 @@ export default function NewCustomerPage() {
                         id="billingStreet"
                         required={!sameAsDelivery}
                         value={formData.billingAddress.street}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             billingAddress: { ...formData.billingAddress, street: e.target.value },
-                          })
-                        }
+                          });
+                          clearAddressError('billing.street');
+                        }}
                       />
+                      {addressErrors['billing.street'] && (
+                        <p className="text-sm text-destructive">{addressErrors['billing.street']}</p>
+                      )}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
@@ -786,13 +1093,17 @@ export default function NewCustomerPage() {
                           id="billingSuburb"
                           required={!sameAsDelivery}
                           value={formData.billingAddress.suburb}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               billingAddress: { ...formData.billingAddress, suburb: e.target.value },
-                            })
-                          }
+                            });
+                            clearAddressError('billing.suburb');
+                          }}
                         />
+                        {addressErrors['billing.suburb'] && (
+                          <p className="text-sm text-destructive">{addressErrors['billing.suburb']}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="billingState">{t('addresses.state')} *</Label>
@@ -825,13 +1136,17 @@ export default function NewCustomerPage() {
                           required={!sameAsDelivery}
                           maxLength={4}
                           value={formData.billingAddress.postcode}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               billingAddress: { ...formData.billingAddress, postcode: e.target.value },
-                            })
-                          }
+                            });
+                            clearAddressError('billing.postcode');
+                          }}
                         />
+                        {addressErrors['billing.postcode'] && (
+                          <p className="text-sm text-destructive">{addressErrors['billing.postcode']}</p>
+                        )}
                       </div>
                     </div>
                   </>
@@ -866,13 +1181,17 @@ export default function NewCustomerPage() {
                         id="postalStreet"
                         required={!postalSameAsBilling}
                         value={formData.postalAddress.street}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             postalAddress: { ...formData.postalAddress, street: e.target.value },
-                          })
-                        }
+                          });
+                          clearAddressError('postal.street');
+                        }}
                       />
+                      {addressErrors['postal.street'] && (
+                        <p className="text-sm text-destructive">{addressErrors['postal.street']}</p>
+                      )}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
@@ -882,13 +1201,17 @@ export default function NewCustomerPage() {
                           id="postalSuburb"
                           required={!postalSameAsBilling}
                           value={formData.postalAddress.suburb}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               postalAddress: { ...formData.postalAddress, suburb: e.target.value },
-                            })
-                          }
+                            });
+                            clearAddressError('postal.suburb');
+                          }}
                         />
+                        {addressErrors['postal.suburb'] && (
+                          <p className="text-sm text-destructive">{addressErrors['postal.suburb']}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="postalState">{t('addresses.state')} *</Label>
@@ -921,13 +1244,17 @@ export default function NewCustomerPage() {
                           required={!postalSameAsBilling}
                           maxLength={4}
                           value={formData.postalAddress.postcode}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               postalAddress: { ...formData.postalAddress, postcode: e.target.value },
-                            })
-                          }
+                            });
+                            clearAddressError('postal.postcode');
+                          }}
                         />
+                        {addressErrors['postal.postcode'] && (
+                          <p className="text-sm text-destructive">{addressErrors['postal.postcode']}</p>
+                        )}
                       </div>
                     </div>
                   </>
@@ -1067,17 +1394,29 @@ export default function NewCustomerPage() {
                               <Label>{t('directors.familyName')}</Label>
                               <Input
                                 value={director.familyName}
-                                onChange={(e) => updateDirector(index, 'familyName', e.target.value)}
+                                onChange={(e) => {
+                                  updateDirector(index, 'familyName', e.target.value);
+                                  clearDirectorError(index, 'familyName');
+                                }}
                                 placeholder={t('directors.familyNamePlaceholder')}
                               />
+                              {directorErrors[index]?.['familyName'] && (
+                                <p className="text-sm text-destructive">{directorErrors[index]['familyName']}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t('directors.givenNames')}</Label>
                               <Input
                                 value={director.givenNames}
-                                onChange={(e) => updateDirector(index, 'givenNames', e.target.value)}
+                                onChange={(e) => {
+                                  updateDirector(index, 'givenNames', e.target.value);
+                                  clearDirectorError(index, 'givenNames');
+                                }}
                                 placeholder={t('directors.givenNamesPlaceholder')}
                               />
+                              {directorErrors[index]?.['givenNames'] && (
+                                <p className="text-sm text-destructive">{directorErrors[index]['givenNames']}</p>
+                              )}
                             </div>
                           </div>
 
@@ -1087,8 +1426,14 @@ export default function NewCustomerPage() {
                               <Input
                                 type="date"
                                 value={director.dateOfBirth}
-                                onChange={(e) => updateDirector(index, 'dateOfBirth', e.target.value)}
+                                onChange={(e) => {
+                                  updateDirector(index, 'dateOfBirth', e.target.value);
+                                  clearDirectorError(index, 'dateOfBirth');
+                                }}
                               />
+                              {directorErrors[index]?.['dateOfBirth'] && (
+                                <p className="text-sm text-destructive">{directorErrors[index]['dateOfBirth']}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t('directors.position')}</Label>
@@ -1104,16 +1449,30 @@ export default function NewCustomerPage() {
                             <Label>{t('directors.residentialAddress')}</Label>
                             <Input
                               value={director.residentialAddress.street}
-                              onChange={(e) => updateDirector(index, 'residentialAddress.street', e.target.value)}
+                              onChange={(e) => {
+                                updateDirector(index, 'residentialAddress.street', e.target.value);
+                                clearDirectorError(index, 'residentialAddress.street');
+                              }}
                               placeholder={t('addresses.streetPlaceholder')}
                               className="mb-2"
                             />
+                            {directorErrors[index]?.['residentialAddress.street'] && (
+                              <p className="text-sm text-destructive mb-2">{directorErrors[index]['residentialAddress.street']}</p>
+                            )}
                             <div className="grid gap-2 md:grid-cols-3">
-                              <Input
-                                value={director.residentialAddress.suburb}
-                                onChange={(e) => updateDirector(index, 'residentialAddress.suburb', e.target.value)}
-                                placeholder={t('addresses.suburbPlaceholder')}
-                              />
+                              <div className="space-y-2">
+                                <Input
+                                  value={director.residentialAddress.suburb}
+                                  onChange={(e) => {
+                                    updateDirector(index, 'residentialAddress.suburb', e.target.value);
+                                    clearDirectorError(index, 'residentialAddress.suburb');
+                                  }}
+                                  placeholder={t('addresses.suburbPlaceholder')}
+                                />
+                                {directorErrors[index]?.['residentialAddress.suburb'] && (
+                                  <p className="text-sm text-destructive">{directorErrors[index]['residentialAddress.suburb']}</p>
+                                )}
+                              </div>
                               <select
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 value={director.residentialAddress.state}
@@ -1128,12 +1487,20 @@ export default function NewCustomerPage() {
                                 <option value="NT">NT</option>
                                 <option value="ACT">ACT</option>
                               </select>
-                              <Input
-                                value={director.residentialAddress.postcode}
-                                onChange={(e) => updateDirector(index, 'residentialAddress.postcode', e.target.value)}
-                                placeholder={t('addresses.postcodePlaceholder')}
-                                maxLength={4}
-                              />
+                              <div className="space-y-2">
+                                <Input
+                                  value={director.residentialAddress.postcode}
+                                  onChange={(e) => {
+                                    updateDirector(index, 'residentialAddress.postcode', e.target.value);
+                                    clearDirectorError(index, 'residentialAddress.postcode');
+                                  }}
+                                  placeholder={t('addresses.postcodePlaceholder')}
+                                  maxLength={4}
+                                />
+                                {directorErrors[index]?.['residentialAddress.postcode'] && (
+                                  <p className="text-sm text-destructive">{directorErrors[index]['residentialAddress.postcode']}</p>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -1142,9 +1509,15 @@ export default function NewCustomerPage() {
                               <Label>{t('directors.driverLicenseNumber')}</Label>
                               <Input
                                 value={director.driverLicenseNumber}
-                                onChange={(e) => updateDirector(index, 'driverLicenseNumber', e.target.value)}
+                                onChange={(e) => {
+                                  updateDirector(index, 'driverLicenseNumber', e.target.value);
+                                  clearDirectorError(index, 'driverLicenseNumber');
+                                }}
                                 placeholder={t('directors.driverLicenseNumberPlaceholder')}
                               />
+                              {directorErrors[index]?.['driverLicenseNumber'] && (
+                                <p className="text-sm text-destructive">{directorErrors[index]['driverLicenseNumber']}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t('directors.licenseState')}</Label>
@@ -1168,8 +1541,14 @@ export default function NewCustomerPage() {
                               <Input
                                 type="date"
                                 value={director.licenseExpiry}
-                                onChange={(e) => updateDirector(index, 'licenseExpiry', e.target.value)}
+                                onChange={(e) => {
+                                  updateDirector(index, 'licenseExpiry', e.target.value);
+                                  clearDirectorError(index, 'licenseExpiry');
+                                }}
                               />
+                              {directorErrors[index]?.['licenseExpiry'] && (
+                                <p className="text-sm text-destructive">{directorErrors[index]['licenseExpiry']}</p>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -1219,13 +1598,17 @@ export default function NewCustomerPage() {
                           id="bankName"
                           placeholder={t('financial.bankNamePlaceholder')}
                           value={formData.financialDetails.bankName}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               financialDetails: { ...formData.financialDetails, bankName: e.target.value },
-                            })
-                          }
+                            });
+                            clearFinancialError('bankName');
+                          }}
                         />
+                        {financialErrors.bankName && (
+                          <p className="text-sm text-destructive">{financialErrors.bankName}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="accountName">{t('financial.accountName')}</Label>
@@ -1233,13 +1616,17 @@ export default function NewCustomerPage() {
                           id="accountName"
                           placeholder={t('financial.accountNamePlaceholder')}
                           value={formData.financialDetails.accountName}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               financialDetails: { ...formData.financialDetails, accountName: e.target.value },
-                            })
-                          }
+                            });
+                            clearFinancialError('accountName');
+                          }}
                         />
+                        {financialErrors.accountName && (
+                          <p className="text-sm text-destructive">{financialErrors.accountName}</p>
+                        )}
                       </div>
                     </div>
 
@@ -1251,13 +1638,17 @@ export default function NewCustomerPage() {
                           placeholder={t('financial.bsbPlaceholder')}
                           maxLength={7}
                           value={formData.financialDetails.bsb}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               financialDetails: { ...formData.financialDetails, bsb: e.target.value },
-                            })
-                          }
+                            });
+                            clearFinancialError('bsb');
+                          }}
                         />
+                        {financialErrors.bsb && (
+                          <p className="text-sm text-destructive">{financialErrors.bsb}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="accountNumber">{t('financial.accountNumber')}</Label>
@@ -1265,13 +1656,17 @@ export default function NewCustomerPage() {
                           id="accountNumber"
                           placeholder={t('financial.accountNumberPlaceholder')}
                           value={formData.financialDetails.accountNumber}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setFormData({
                               ...formData,
                               financialDetails: { ...formData.financialDetails, accountNumber: e.target.value },
-                            })
-                          }
+                            });
+                            clearFinancialError('accountNumber');
+                          }}
                         />
+                        {financialErrors.accountNumber && (
+                          <p className="text-sm text-destructive">{financialErrors.accountNumber}</p>
+                        )}
                       </div>
                     </div>
                   </>
@@ -1323,17 +1718,29 @@ export default function NewCustomerPage() {
                               <Label>{t('tradeReferences.companyName')}</Label>
                               <Input
                                 value={reference.companyName}
-                                onChange={(e) => updateTradeReference(index, 'companyName', e.target.value)}
+                                onChange={(e) => {
+                                  updateTradeReference(index, 'companyName', e.target.value);
+                                  clearTradeRefError(index, 'companyName');
+                                }}
                                 placeholder={t('tradeReferences.companyNamePlaceholder')}
                               />
+                              {tradeRefErrors[index]?.['companyName'] && (
+                                <p className="text-sm text-destructive">{tradeRefErrors[index]['companyName']}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t('tradeReferences.contactPerson')}</Label>
                               <Input
                                 value={reference.contactPerson}
-                                onChange={(e) => updateTradeReference(index, 'contactPerson', e.target.value)}
+                                onChange={(e) => {
+                                  updateTradeReference(index, 'contactPerson', e.target.value);
+                                  clearTradeRefError(index, 'contactPerson');
+                                }}
                                 placeholder={t('tradeReferences.contactPersonPlaceholder')}
                               />
+                              {tradeRefErrors[index]?.['contactPerson'] && (
+                                <p className="text-sm text-destructive">{tradeRefErrors[index]['contactPerson']}</p>
+                              )}
                             </div>
                           </div>
 
@@ -1342,18 +1749,30 @@ export default function NewCustomerPage() {
                               <Label>{t('tradeReferences.phone')}</Label>
                               <Input
                                 value={reference.phone}
-                                onChange={(e) => updateTradeReference(index, 'phone', e.target.value)}
+                                onChange={(e) => {
+                                  updateTradeReference(index, 'phone', e.target.value);
+                                  clearTradeRefError(index, 'phone');
+                                }}
                                 placeholder={t('tradeReferences.phonePlaceholder')}
                               />
+                              {tradeRefErrors[index]?.['phone'] && (
+                                <p className="text-sm text-destructive">{tradeRefErrors[index]['phone']}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t('tradeReferences.email')}</Label>
                               <Input
                                 type="email"
                                 value={reference.email}
-                                onChange={(e) => updateTradeReference(index, 'email', e.target.value)}
+                                onChange={(e) => {
+                                  updateTradeReference(index, 'email', e.target.value);
+                                  clearTradeRefError(index, 'email');
+                                }}
                                 placeholder={t('tradeReferences.emailPlaceholder')}
                               />
+                              {tradeRefErrors[index]?.['email'] && (
+                                <p className="text-sm text-destructive">{tradeRefErrors[index]['email']}</p>
+                              )}
                             </div>
                           </div>
                         </CardContent>
