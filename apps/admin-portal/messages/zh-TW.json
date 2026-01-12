@@ -1513,6 +1513,13 @@
       "invalidPin": "PIN碼無效，請重試。",
       "tooManyAttempts": "嘗試次數過多，請等待30秒。",
       "cancel": "取消"
+    },
+    "stockTooltip": {
+      "title": "庫存資訊",
+      "warehouseStock": "倉庫庫存：{count}",
+      "orderQuantity": "本訂單：{count}",
+      "remainingAfter": "訂單後剩餘：{count}",
+      "note": "庫存會在訂單數量更改時更新"
     }
   },
   "settings": {

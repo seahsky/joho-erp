@@ -1507,6 +1507,13 @@
       "invalidPin": "Invalid PIN. Please try again.",
       "tooManyAttempts": "Too many failed attempts. Please wait 30 seconds.",
       "cancel": "Cancel"
+    },
+    "stockTooltip": {
+      "title": "Stock Information",
+      "warehouseStock": "Warehouse stock: {count}",
+      "orderQuantity": "This order: {count}",
+      "remainingAfter": "Remaining after order: {count}",
+      "note": "Stock updates when order quantity changes"
     }
   },
   "settings": {

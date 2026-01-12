@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Input } from '@joho-erp/ui';
+import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Input, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
@@ -694,24 +694,41 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                   </p>
                 </div>
 
-                {/* Stock Indicator */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Package className={`h-3.5 w-3.5 ${
-                    stockStatus === 'out' ? 'text-destructive' :
-                    stockStatus === 'low' ? 'text-warning' :
-                    'text-muted-foreground'
-                  }`} />
-                  <span className={`text-xs font-medium tabular-nums ${
-                    stockStatus === 'out' ? 'text-destructive' :
-                    stockStatus === 'low' ? 'text-warning' :
-                    'text-muted-foreground'
-                  }`}>
-                    {item.currentStock} {t('currentStock')}
-                  </span>
-                  {stockStatus === 'low' && (
-                    <AlertTriangle className="h-3 w-3 text-warning" />
-                  )}
-                </div>
+                {/* Stock Indicator with Tooltip */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 flex-shrink-0 cursor-help">
+                        <Package className={`h-3.5 w-3.5 ${
+                          stockStatus === 'out' ? 'text-destructive' :
+                          stockStatus === 'low' ? 'text-warning' :
+                          'text-muted-foreground'
+                        }`} />
+                        <span className={`text-xs font-medium tabular-nums ${
+                          stockStatus === 'out' ? 'text-destructive' :
+                          stockStatus === 'low' ? 'text-warning' :
+                          'text-muted-foreground'
+                        }`}>
+                          {item.currentStock} {t('currentStock')}
+                        </span>
+                        {stockStatus === 'low' && (
+                          <AlertTriangle className="h-3 w-3 text-warning" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="space-y-1 text-xs">
+                        <p className="font-medium">{t('stockTooltip.title')}</p>
+                        <div className="space-y-0.5 text-muted-foreground">
+                          <p>{t('stockTooltip.warehouseStock', { count: item.currentStock })}</p>
+                          <p>{t('stockTooltip.orderQuantity', { count: item.quantity })}</p>
+                          <p className="font-medium text-foreground">{t('stockTooltip.remainingAfter', { count: item.currentStock - item.quantity })}</p>
+                        </div>
+                        <p className="text-muted-foreground pt-1 border-t">{t('stockTooltip.note')}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Bottom row: Quantity controls */}

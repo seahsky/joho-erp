@@ -1507,6 +1507,13 @@
       "invalidPin": "PIN码无效，请重试。",
       "tooManyAttempts": "尝试次数过多，请等待30秒。",
       "cancel": "取消"
+    },
+    "stockTooltip": {
+      "title": "库存信息",
+      "warehouseStock": "仓库库存：{count}",
+      "orderQuantity": "本订单：{count}",
+      "remainingAfter": "订单后剩余：{count}",
+      "note": "库存会在订单数量更改时更新"
     }
   },
   "settings": {
