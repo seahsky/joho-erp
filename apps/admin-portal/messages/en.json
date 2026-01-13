@@ -175,7 +175,20 @@
     "productsRequiringAttention": "Products requiring attention",
     "threshold": "Threshold:",
     "noLowStockItems": "No low stock items",
-    "allProductsWellStocked": "All products are well stocked"
+    "allProductsWellStocked": "All products are well stocked",
+    "expiringStock": "Expiring Stock",
+    "expired": "expired",
+    "expiringSoon": "expiring soon",
+    "expiringInventory": {
+      "title": "Expiring Inventory",
+      "description": "Products expiring within {days} days or already expired",
+      "expired": "Expired",
+      "expiring": "Expiring Soon",
+      "expiredDays": "Expired {days}d ago",
+      "expiresIn": "Expires in {days}d",
+      "noItems": "No expiring items",
+      "allGood": "All inventory is within safe expiry ranges"
+    }
   },
   "suppliers": {
     "title": "Supplier Management",

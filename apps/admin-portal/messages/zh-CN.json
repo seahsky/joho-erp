@@ -175,7 +175,20 @@
     "productsRequiringAttention": "需要关注的产品",
     "threshold": "阈值：",
     "noLowStockItems": "无低库存商品",
-    "allProductsWellStocked": "所有产品库存充足"
+    "allProductsWellStocked": "所有产品库存充足",
+    "expiringStock": "库存过期",
+    "expired": "已过期",
+    "expiringSoon": "即将过期",
+    "expiringInventory": {
+      "title": "过期库存",
+      "description": "{days}天内过期或已过期的产品",
+      "expired": "已过期",
+      "expiring": "即将过期",
+      "expiredDays": "{days}天前过期",
+      "expiresIn": "{days}天后过期",
+      "noItems": "无过期商品",
+      "allGood": "所有库存都在安全保质期内"
+    }
   },
   "suppliers": {
     "title": "供应商管理",

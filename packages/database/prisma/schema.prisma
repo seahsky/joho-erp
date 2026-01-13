@@ -681,6 +681,7 @@ model Company {
   notificationSettings    NotificationSettings?
   smsSettings             SmsSettings?
   packingSettings         PackingSettings?
+  inventorySettings       InventorySettings?
   logoUrl                 String?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -1116,4 +1117,8 @@ type PackingSettings {
   quantityPinHash         String?             // SHA-256 hash of 4-digit PIN for quantity modifications
   pinUpdatedAt            DateTime?           // When PIN was last changed
   pinUpdatedBy            String?             // User ID who set the PIN
+}
+
+type InventorySettings {
+  expiryAlertDays         Int         @default(7)   // Days before expiry to show alerts
 }

@@ -123,6 +123,84 @@ export const dashboardRouter = router({
       }>;
     }),
 
+  // Get expiring stock items for dashboard alert
+  getExpiringStock: requirePermission('dashboard:view').query(async () => {
+    // Get company inventory settings for threshold
+    const company = await prisma.company.findFirst({
+      select: {
+        inventorySettings: true,
+      },
+    });
+
+    const daysThreshold = company?.inventorySettings?.expiryAlertDays || 7;
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+    const now = new Date();
+
+    // Find all batches that are expired or expiring within threshold
+    const batches = await prisma.inventoryBatch.findMany({
+      where: {
+        expiryDate: {
+          not: null,
+          lte: thresholdDate, // Include both expired and expiring soon
+        },
+        isConsumed: false,
+        quantityRemaining: { gt: 0 },
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            unit: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: { expiryDate: 'asc' }, // Soonest expiry first
+      take: 10, // Limit to 10 for dashboard display
+    });
+
+    // Enrich batches with computed fields
+    const enrichedBatches = batches.map((batch) => {
+      const daysUntilExpiry = Math.ceil(
+        (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const isExpired = batch.expiryDate! < now;
+
+      return {
+        id: batch.id,
+        productId: batch.product.id,
+        productName: batch.product.name,
+        productSku: batch.product.sku,
+        productUnit: batch.product.unit,
+        productCategory: batch.product.category,
+        quantityRemaining: batch.quantityRemaining,
+        expiryDate: batch.expiryDate,
+        daysUntilExpiry,
+        isExpired,
+        costPerUnit: batch.costPerUnit,
+        totalValue: batch.quantityRemaining * batch.costPerUnit,
+      };
+    });
+
+    // Separate expired vs expiring soon
+    const expiredBatches = enrichedBatches.filter((b) => b.isExpired);
+    const expiringSoonBatches = enrichedBatches.filter((b) => !b.isExpired);
+
+    return {
+      batches: enrichedBatches,
+      summary: {
+        totalCount: enrichedBatches.length,
+        expiredCount: expiredBatches.length,
+        expiringSoonCount: expiringSoonBatches.length,
+        totalValue: enrichedBatches.reduce((sum, b) => sum + b.totalValue, 0),
+        thresholdDays: daysThreshold,
+      },
+    };
+  }),
+
   // ============================================================================
   // INVENTORY DASHBOARD ENDPOINTS
   // ============================================================================

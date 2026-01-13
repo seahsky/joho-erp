@@ -175,7 +175,20 @@
     "productsRequiringAttention": "需要關注的產品",
     "threshold": "閾值：",
     "noLowStockItems": "無低庫存商品",
-    "allProductsWellStocked": "所有產品庫存充足"
+    "allProductsWellStocked": "所有產品庫存充足",
+    "expiringStock": "庫存過期",
+    "expired": "已過期",
+    "expiringSoon": "即將過期",
+    "expiringInventory": {
+      "title": "過期庫存",
+      "description": "{days}天內過期或已過期的產品",
+      "expired": "已過期",
+      "expiring": "即將過期",
+      "expiredDays": "{days}天前過期",
+      "expiresIn": "{days}天後過期",
+      "noItems": "無過期商品",
+      "allGood": "所有庫存都在安全保質期內"
+    }
   },
   "suppliers": {
     "title": "供應商管理",

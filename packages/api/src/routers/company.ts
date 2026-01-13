@@ -516,4 +516,79 @@ export const companyRouter = router({
         message: input.removePin ? 'PIN removed successfully' : 'PIN updated successfully',
       };
     }),
+
+  // Get inventory settings
+  getInventorySettings: requireAnyPermission(['settings.company:view', 'inventory:view']).query(
+    async () => {
+      const company = await prisma.company.findFirst({
+        select: {
+          inventorySettings: true,
+        },
+      });
+
+      return {
+        expiryAlertDays: company?.inventorySettings?.expiryAlertDays || 7,
+      };
+    }
+  ),
+
+  // Update inventory settings
+  updateInventorySettings: requirePermission('settings.company:edit')
+    .input(
+      z.object({
+        expiryAlertDays: z.number().int().min(1).max(90),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const company = await prisma.company.findFirst();
+
+      if (!company) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Company not found',
+        });
+      }
+
+      // Track changes for audit
+      const changes: AuditChange[] = [];
+      const oldSettings = company.inventorySettings as { expiryAlertDays?: number } | null;
+      if (oldSettings?.expiryAlertDays !== input.expiryAlertDays) {
+        changes.push({
+          field: 'expiryAlertDays',
+          oldValue: oldSettings?.expiryAlertDays || 7,
+          newValue: input.expiryAlertDays,
+        });
+      }
+
+      const updated = await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          inventorySettings: {
+            expiryAlertDays: input.expiryAlertDays,
+          },
+        },
+      });
+
+      // Audit log
+      await logCompanyProfileUpdate(
+        ctx.userId,
+        undefined,
+        ctx.userRole,
+        ctx.userName,
+        company.id,
+        changes,
+        {
+          businessName: company.businessName,
+          changeType: 'inventory_settings',
+        }
+      ).catch((error) => {
+        console.error('Audit log failed for inventory settings update:', error);
+      });
+
+      return {
+        success: true,
+        message: 'Inventory settings updated successfully',
+        settings: updated.inventorySettings,
+      };
+    }),
 });
