@@ -1069,7 +1069,12 @@
       "vehicleTemperature": "車輛溫度",
       "vehicleTemperatureHint": "可選：交付時的溫度讀數（用於食品安全）",
       "expiryDate": "到期日期",
-      "expiryDateHint": "可選：用於易腐物品"
+      "expiryDateHint": "可選：用於易腐物品",
+      "supplier": "供應商",
+      "supplierPlaceholder": "未選擇供應商（可選）",
+      "supplierSearchPlaceholder": "搜尋供應商...",
+      "supplierHint": "可選：選擇此批次的供應商",
+      "noSuppliersFound": "未找到供應商"
     },
     "types": {
       "stock_received": "收到庫存",

@@ -20,6 +20,7 @@ import {
   History,
   AlertTriangle,
   Search,
+  Truck,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
@@ -98,6 +99,20 @@ export function StockAdjustmentDialog({
   const [stockInDate, setStockInDate] = useState<Date | undefined>(new Date());
   const [mtvNumber, setMtvNumber] = useState('');
   const [vehicleTemperature, setVehicleTemperature] = useState('');
+
+  // Supplier selection state
+  const [supplierId, setSupplierId] = useState<string>('');
+  const [supplierSearch, setSupplierSearch] = useState('');
+
+  // Fetch active suppliers (only when stock_received type)
+  const { data: suppliersData, isLoading: suppliersLoading } = api.supplier.getAll.useQuery(
+    {
+      status: 'active' as const,
+      search: supplierSearch || undefined,
+      limit: 100,
+    },
+    { enabled: adjustmentType === 'stock_received' && open }
+  );
 
   // Fetch stock history
   const { data: historyData, isLoading: historyLoading } = api.product.getStockHistory.useQuery(
@@ -219,6 +234,7 @@ export function StockAdjustmentDialog({
         ...(mtvNumber.trim() && { mtvNumber: mtvNumber.trim() }),
         ...(vehicleTemperature && { vehicleTemperature: parseFloat(vehicleTemperature) }),
         ...(expiryDate && { expiryDate }),
+        ...(supplierId && { supplierId }),
       });
     } else {
       await adjustStockMutation.mutateAsync(baseInput);
@@ -238,6 +254,8 @@ export function StockAdjustmentDialog({
     setStockInDate(new Date());
     setMtvNumber('');
     setVehicleTemperature('');
+    setSupplierId('');
+    setSupplierSearch('');
 
     // Only reset selectedProduct if it wasn't provided as a prop
     if (!product) {
@@ -390,7 +408,7 @@ export function StockAdjustmentDialog({
               id="adjustmentType"
               value={adjustmentType}
               onChange={(e) => setAdjustmentType(e.target.value as AdjustmentType)}
-              className="w-full px-3 py-2 border rounded-md mt-1"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="stock_received">{t('types.stock_received')}</option>
               <option value="stock_count_correction">{t('types.stock_count_correction')}</option>
@@ -407,12 +425,50 @@ export function StockAdjustmentDialog({
 
           {/* Stock Received Specific Fields - Only show for stock_received type */}
           {adjustmentType === 'stock_received' && (
-            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <Package className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-900">
+                <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                   {t('fields.stockReceivedDetails')}
                 </span>
+              </div>
+
+              {/* Supplier - OPTIONAL */}
+              <div>
+                <Label htmlFor="supplier">
+                  {t('fields.supplier')}
+                </Label>
+                <div className="relative mt-1">
+                  <Truck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t('fields.supplierSearchPlaceholder')}
+                    value={supplierSearch}
+                    onChange={(e) => setSupplierSearch(e.target.value)}
+                    className="pl-10 mb-2"
+                  />
+                </div>
+                <select
+                  id="supplier"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={supplierId}
+                  onChange={(e) => setSupplierId(e.target.value)}
+                >
+                  <option value="">{t('fields.supplierPlaceholder')}</option>
+                  {suppliersLoading ? (
+                    <option disabled>{tInventory('productSelector.loading')}</option>
+                  ) : suppliersData?.suppliers.length === 0 ? (
+                    <option disabled>{t('fields.noSuppliersFound')}</option>
+                  ) : (
+                    suppliersData?.suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.supplierCode} - {supplier.businessName}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('fields.supplierHint')}
+                </p>
               </div>
 
               {/* Cost Per Unit - REQUIRED */}
@@ -564,35 +620,35 @@ export function StockAdjustmentDialog({
             <div
               className={`p-3 rounded-lg border ${
                 isNegativeResult
-                  ? 'bg-red-50 border-red-200'
+                  ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
                   : quantityNum > 0
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-orange-50 border-orange-200'
+                    ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+                    : 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {quantityNum > 0 ? (
-                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                   ) : (
-                    <TrendingDown className="h-5 w-5 text-orange-600" />
+                    <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   )}
                   <span className="text-sm font-medium">{t('fields.newStock')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">{selectedProduct.currentStock}</span>
                   <span>{quantityNum >= 0 ? '+' : ''}</span>
-                  <span className={quantityNum >= 0 ? 'text-green-600' : 'text-orange-600'}>
+                  <span className={quantityNum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
                     {quantityNum}
                   </span>
                   <span>=</span>
-                  <span className={`font-bold ${isNegativeResult ? 'text-red-600' : ''}`}>
+                  <span className={`font-bold ${isNegativeResult ? 'text-red-600 dark:text-red-400' : ''}`}>
                     {newStock} {selectedProduct.unit}
                   </span>
                 </div>
               </div>
               {isNegativeResult && (
-                <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
+                <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-sm">
                   <AlertTriangle className="h-4 w-4" />
                   <span>{t('validation.cannotGoNegative')}</span>
                 </div>
@@ -609,7 +665,7 @@ export function StockAdjustmentDialog({
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('fields.notesPlaceholder')}
               rows={3}
-              className="mt-1 w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="mt-1 w-full px-3 py-2 border border-input bg-background text-foreground rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               required
             />
           </div>
@@ -677,7 +733,7 @@ export function StockAdjustmentDialog({
                       </td>
                       <td
                         className={`p-2 text-right font-medium ${
-                          tx.quantity >= 0 ? 'text-green-600' : 'text-orange-600'
+                          tx.quantity >= 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
                         }`}
                       >
                         {tx.quantity >= 0 ? '+' : ''}

@@ -1069,7 +1069,12 @@
       "vehicleTemperature": "Vehicle Temperature",
       "vehicleTemperatureHint": "Optional: Temperature reading at delivery (for food safety)",
       "expiryDate": "Expiry Date",
-      "expiryDateHint": "Optional: For perishable items"
+      "expiryDateHint": "Optional: For perishable items",
+      "supplier": "Supplier",
+      "supplierPlaceholder": "No supplier selected (optional)",
+      "supplierSearchPlaceholder": "Search suppliers...",
+      "supplierHint": "Optional: Select the supplier for this stock receipt",
+      "noSuppliersFound": "No suppliers found"
     },
     "types": {
       "stock_received": "Stock Received",

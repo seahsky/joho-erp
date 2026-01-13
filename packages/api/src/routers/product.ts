@@ -449,6 +449,7 @@ export const productRouter = router({
         stockInDate: z.date().optional(),
         mtvNumber: z.string().max(50).optional(),
         vehicleTemperature: z.number().optional(),
+        supplierId: z.string().optional(), // Optional supplier reference
       })
         .refine(
           (data) => {
@@ -517,7 +518,7 @@ export const productRouter = router({
         )
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature } = input;
+      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
 
       // Get current product
       const product = await prisma.product.findUnique({
@@ -580,6 +581,7 @@ export const productRouter = router({
               stockInDate: stockInDate || null,
               mtvNumber: mtvNumber || null,
               vehicleTemperature: vehicleTemperature || null,
+              supplierId: supplierId || null,
             },
           });
         }
