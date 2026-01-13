@@ -13,7 +13,7 @@ interface MiniCartSheetProps {
 }
 
 export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [currentY, setCurrentY] = React.useState(0);
@@ -92,7 +92,7 @@ export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={t('miniCart.title')}
+        aria-label={t('title')}
       >
         {/* Premium sheet container */}
         <div className={cn(

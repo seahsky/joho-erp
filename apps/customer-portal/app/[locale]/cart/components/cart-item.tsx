@@ -22,7 +22,7 @@ interface CartItemProps {
 }
 
 export function CartItem({ item }: CartItemProps) {
-  const t = useTranslations();
+  const t = useTranslations('cart');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [isEditingQuantity, setIsEditingQuantity] = React.useState(false);
@@ -42,7 +42,7 @@ export function CartItem({ item }: CartItemProps) {
     },
     onError: () => {
       toast({
-        title: t('cart.messages.errorUpdatingQuantity'),
+        title: t('messages.errorUpdatingQuantity'),
         variant: 'destructive',
       });
     },
@@ -51,13 +51,13 @@ export function CartItem({ item }: CartItemProps) {
   const removeItem = api.cart.removeItem.useMutation({
     onSuccess: () => {
       toast({
-        title: t('cart.messages.removedFromCart'),
+        title: t('messages.removedFromCart'),
       });
       void utils.cart.getCart.invalidate();
     },
     onError: () => {
       toast({
-        title: t('cart.messages.errorRemovingItem'),
+        title: t('messages.errorRemovingItem'),
         variant: 'destructive',
       });
     },
@@ -180,7 +180,7 @@ export function CartItem({ item }: CartItemProps) {
                 className="h-11 w-11 text-sm font-semibold"
                 onClick={handleDecreaseBy5}
                 disabled={isPending}
-                aria-label={t('cart.decrementBy5')}
+                aria-label={t('decrementBy5')}
               >
                 {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '-5'}
               </Button>
@@ -209,7 +209,7 @@ export function CartItem({ item }: CartItemProps) {
                   type="button"
                   onClick={handleQuantityClick}
                   className="h-11 w-14 border border-input rounded-md bg-background hover:bg-muted/50 transition-colors flex items-center justify-center font-medium"
-                  title={t('cart.tapToEditQuantity')}
+                  title={t('tapToEditQuantity')}
                 >
                   {item.quantity}
                 </button>
@@ -230,7 +230,7 @@ export function CartItem({ item }: CartItemProps) {
                 className="h-11 w-11 text-sm font-semibold"
                 onClick={handleIncreaseBy5}
                 disabled={isPending}
-                aria-label={t('cart.incrementBy5')}
+                aria-label={t('incrementBy5')}
               >
                 {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '+5'}
               </Button>
@@ -239,7 +239,7 @@ export function CartItem({ item }: CartItemProps) {
             {/* Item Total */}
             <div className="text-right">
               <p className="font-semibold">{formatAUD(item.subtotal)}</p>
-              <Muted className="text-xs">{t('cart.itemTotal')}</Muted>
+              <Muted className="text-xs">{t('itemTotal')}</Muted>
             </div>
 
             {/* Remove Button */}
@@ -251,7 +251,7 @@ export function CartItem({ item }: CartItemProps) {
               className="h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              {t('cart.buttons.removeItem')}
+              {t('buttons.removeItem')}
             </Button>
           </div>
         </div>

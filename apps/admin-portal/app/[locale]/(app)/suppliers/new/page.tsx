@@ -13,6 +13,7 @@ import {
   Input,
   Label,
   Badge,
+  useToast,
 } from '@joho-erp/ui';
 import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -41,16 +42,24 @@ export default function NewSupplierPage() {
   const router = useRouter();
   const t = useTranslations('supplierForm');
   const tCommon = useTranslations('common');
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('business');
 
   const createSupplierMutation = api.supplier.create.useMutation({
     onSuccess: () => {
-      alert(t('messages.createSuccess'));
+      toast({
+        title: t('messages.createSuccess'),
+        variant: 'default',
+      });
       router.push('/suppliers');
     },
     onError: (error: { message?: string }) => {
-      alert(error.message || t('messages.createError'));
+      toast({
+        title: 'Error',
+        description: error.message || t('messages.createError'),
+        variant: 'destructive',
+      });
     },
   });
 
@@ -263,7 +272,11 @@ export default function NewSupplierPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      alert(t('messages.fixValidationErrors'));
+      toast({
+        title: 'Validation Error',
+        description: t('messages.fixValidationErrors'),
+        variant: 'destructive',
+      });
       return;
     }
 

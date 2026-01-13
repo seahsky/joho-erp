@@ -19,7 +19,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 
@@ -54,7 +54,7 @@ export function CustomerPricingSection({
   defaultExpanded = false,
 }: CustomerPricingSectionProps) {
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('productForm');
 
   // Local UI state
   const [customerSearch, setCustomerSearch] = useState('');
@@ -124,8 +124,8 @@ export function CustomerPricingSection({
 
     if (isNaN(percent) || isNaN(bp) || bp <= 0) {
       toast({
-        title: t('productForm.validation.invalidInput'),
-        description: t('productForm.validation.invalidPercentAndPrice'),
+        title: t('validation.invalidInput'),
+        description: t('validation.invalidPercentAndPrice'),
         variant: 'destructive',
       });
       return;
@@ -143,8 +143,8 @@ export function CustomerPricingSection({
     onPricingMapChange(newMap);
     setBulkDiscountPercent('');
     toast({
-      title: t('productForm.messages.discountApplied'),
-      description: t('productForm.messages.percentDiscountApplied', {
+      title: t('messages.discountApplied'),
+      description: t('messages.percentDiscountApplied', {
         percent: percent,
         count: filteredCustomers.length
       }),
@@ -157,8 +157,8 @@ export function CustomerPricingSection({
 
     if (isNaN(amount) || isNaN(bp) || bp <= 0) {
       toast({
-        title: t('productForm.validation.invalidInput'),
-        description: t('productForm.validation.invalidAmountAndPrice'),
+        title: t('validation.invalidInput'),
+        description: t('validation.invalidAmountAndPrice'),
         variant: 'destructive',
       });
       return;
@@ -176,8 +176,8 @@ export function CustomerPricingSection({
     onPricingMapChange(newMap);
     setBulkDiscountAmount('');
     toast({
-      title: t('productForm.messages.discountApplied'),
-      description: t('productForm.messages.amountDiscountApplied', {
+      title: t('messages.discountApplied'),
+      description: t('messages.amountDiscountApplied', {
         amount: amount.toFixed(2),
         count: filteredCustomers.length
       }),
@@ -187,8 +187,8 @@ export function CustomerPricingSection({
   const handleClearAllPricing = () => {
     onPricingMapChange(new Map());
     toast({
-      title: t('productForm.messages.pricingCleared'),
-      description: t('productForm.messages.pricingClearedDescription'),
+      title: t('messages.pricingCleared'),
+      description: t('messages.pricingClearedDescription'),
     });
   };
 
@@ -207,10 +207,10 @@ export function CustomerPricingSection({
         <AccordionTrigger className="text-sm font-semibold">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            {t('productForm.sections.customerPricing')}
+            {t('sections.customerPricing')}
             {selectedCount > 0 && (
               <Badge variant="secondary" className="ml-2">
-                {selectedCount} {t(selectedCount === 1 ? 'productForm.pricing.oneCustomer' : 'productForm.pricing.customers')}
+                {selectedCount} {t(selectedCount === 1 ? 'pricing.oneCustomer' : 'pricing.customers')}
               </Badge>
             )}
           </div>
@@ -219,11 +219,11 @@ export function CustomerPricingSection({
           <div className="space-y-4 pt-2">
             {/* Bulk Actions */}
             <div className="bg-muted p-3 rounded-md space-y-3">
-              <h4 className="text-sm font-medium">{t('productForm.bulkActions.title')}</h4>
+              <h4 className="text-sm font-medium">{t('bulkActions.title')}</h4>
 
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
-                  <Label htmlFor="bulkPercent" className="text-xs">{t('productForm.bulkActions.applyPercentDiscount')}</Label>
+                  <Label htmlFor="bulkPercent" className="text-xs">{t('bulkActions.applyPercentDiscount')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="bulkPercent"
@@ -231,7 +231,7 @@ export function CustomerPricingSection({
                       step="0.1"
                       value={bulkDiscountPercent}
                       onChange={(e) => setBulkDiscountPercent(e.target.value)}
-                      placeholder={t('productForm.bulkActions.percentPlaceholder')}
+                      placeholder={t('bulkActions.percentPlaceholder')}
                       className="w-24"
                       disabled={disabled}
                     />
@@ -243,13 +243,13 @@ export function CustomerPricingSection({
                       disabled={!bulkDiscountPercent || !basePrice || disabled}
                     >
                       <Percent className="h-4 w-4 mr-1" />
-                      {t('productForm.bulkActions.apply')}
+                      {t('bulkActions.apply')}
                     </Button>
                   </div>
                 </div>
 
                 <div className="flex-1">
-                  <Label htmlFor="bulkAmount" className="text-xs">{t('productForm.bulkActions.applyAmountDiscount')}</Label>
+                  <Label htmlFor="bulkAmount" className="text-xs">{t('bulkActions.applyAmountDiscount')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="bulkAmount"
@@ -257,7 +257,7 @@ export function CustomerPricingSection({
                       step="0.01"
                       value={bulkDiscountAmount}
                       onChange={(e) => setBulkDiscountAmount(e.target.value)}
-                      placeholder={t('productForm.bulkActions.amountPlaceholder')}
+                      placeholder={t('bulkActions.amountPlaceholder')}
                       className="w-24"
                       disabled={disabled}
                     />
@@ -269,7 +269,7 @@ export function CustomerPricingSection({
                       disabled={!bulkDiscountAmount || !basePrice || disabled}
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
-                      {t('productForm.bulkActions.apply')}
+                      {t('bulkActions.apply')}
                     </Button>
                   </div>
                 </div>
@@ -281,15 +281,15 @@ export function CustomerPricingSection({
                   onClick={handleClearAllPricing}
                   disabled={selectedCount === 0 || disabled}
                 >
-                  {t('productForm.bulkActions.clearAll')}
+                  {t('bulkActions.clearAll')}
                 </Button>
               </div>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>{selectedCount} {t('productForm.pricing.selected')}</span>
+                <span>{selectedCount} {t('pricing.selected')}</span>
                 {totalSavings > 0 && (
                   <span className="text-green-600 font-medium">
-                    {t('productForm.pricing.totalSavings')}: {formatCurrency(totalSavings)}
+                    {t('pricing.totalSavings')}: {formatAUD(totalSavings)}
                   </span>
                 )}
               </div>
@@ -300,7 +300,7 @@ export function CustomerPricingSection({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t('productForm.pricing.searchPlaceholder')}
+                  placeholder={t('pricing.searchPlaceholder')}
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
                   className="pl-10"
@@ -315,7 +315,7 @@ export function CustomerPricingSection({
                 disabled={disabled}
               >
                 <Tag className="h-4 w-4 mr-1" />
-                {t('productForm.pricing.selectedOnly')}
+                {t('pricing.selectedOnly')}
               </Button>
             </div>
 
@@ -325,17 +325,17 @@ export function CustomerPricingSection({
                 <thead className="bg-muted sticky top-0">
                   <tr>
                     <th className="text-left p-2 w-12"></th>
-                    <th className="text-left p-2">{t('productForm.pricing.customer')}</th>
-                    <th className="text-right p-2">{t('productForm.pricing.basePrice')}</th>
-                    <th className="text-right p-2">{t('productForm.pricing.customPrice')}</th>
-                    <th className="text-right p-2">{t('productForm.pricing.savings')}</th>
+                    <th className="text-left p-2">{t('pricing.customer')}</th>
+                    <th className="text-right p-2">{t('pricing.basePrice')}</th>
+                    <th className="text-right p-2">{t('pricing.customPrice')}</th>
+                    <th className="text-right p-2">{t('pricing.savings')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredCustomers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center p-4 text-muted-foreground">
-                        {t('productForm.pricing.noCustomersFound')}
+                        {t('pricing.noCustomersFound')}
                       </td>
                     </tr>
                   ) : (

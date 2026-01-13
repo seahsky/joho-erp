@@ -45,27 +45,27 @@ export function ProductRow({
   cartQuantity,
   creditStatus: _creditStatus,
 }: ProductRowProps) {
-  const t = useTranslations();
+  const t = useTranslations('products');
 
   const getStockBadge = (stockStatus: StockStatus) => {
     switch (stockStatus) {
       case 'low_stock':
         return (
           <Badge variant="warning" className="text-xs">
-            {t('products.lowStock')}
+            {t('lowStock')}
           </Badge>
         );
       case 'out_of_stock':
         return (
           <Badge variant="destructive" className="text-xs">
-            {t('products.outOfStock')}
+            {t('outOfStock')}
           </Badge>
         );
       case 'in_stock':
       default:
         return (
           <Badge variant="success" className="text-xs">
-            {t('products.inStock')}
+            {t('inStock')}
           </Badge>
         );
     }
@@ -93,7 +93,7 @@ export function ProductRow({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                <span className="text-xs font-medium">{t('products.noImage')}</span>
+                <span className="text-xs font-medium">{t('noImage')}</span>
               </div>
             )}
           </div>
@@ -129,7 +129,7 @@ export function ProductRow({
             {hasCustomPricing && (
               <div className="mt-2 md:hidden">
                 <Badge variant="success" className="text-xs">
-                  {t('products.customPricing')}
+                  {t('customPricing')}
                 </Badge>
               </div>
             )}
@@ -142,11 +142,11 @@ export function ProductRow({
             {formatAUD(displayPrice)}
           </Large>
           <Muted className="text-xs">
-            {product.applyGst ? t('products.gstIncluded') : t('products.perUnit', { unit: product.unit })}
+            {product.applyGst ? t('gstIncluded') : t('perUnit', { unit: product.unit })}
           </Muted>
           {hasCustomPricing && (
             <Badge variant="success" className="text-xs mt-1">
-              {t('products.customPricing')}
+              {t('customPricing')}
             </Badge>
           )}
         </div>
@@ -172,7 +172,7 @@ export function ProductRow({
               {getStockBadge(product.stockStatus)}
               {product.applyGst && (
                 <Muted className="text-xs">
-                  ({t('products.gstIncluded')})
+                  ({t('gstIncluded')})
                 </Muted>
               )}
             </div>

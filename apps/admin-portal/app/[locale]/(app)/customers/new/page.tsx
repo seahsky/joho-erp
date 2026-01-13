@@ -13,6 +13,7 @@ import {
   Input,
   Label,
   AreaBadge,
+  useToast,
 } from '@joho-erp/ui';
 import { ArrowLeft, Loader2, Plus, X, MapPin } from 'lucide-react';
 import Link from 'next/link';
@@ -46,16 +47,24 @@ type TradeReferenceInfo = {
 export default function NewCustomerPage() {
   const router = useRouter();
   const t = useTranslations('customerForm');
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('business');
 
   const createCustomerMutation = api.customer.createCustomer.useMutation({
     onSuccess: () => {
-      alert(t('messages.createSuccess'));
+      toast({
+        title: t('messages.createSuccess'),
+        variant: 'default',
+      });
       router.push('/customers');
     },
     onError: (error: { message?: string }) => {
-      alert(error.message || t('messages.createError'));
+      toast({
+        title: 'Error',
+        description: error.message || t('messages.createError'),
+        variant: 'destructive',
+      });
     },
   });
 
@@ -591,7 +600,11 @@ export default function NewCustomerPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      alert(t('messages.fixValidationErrors'));
+      toast({
+        title: 'Validation Error',
+        description: t('messages.fixValidationErrors'),
+        variant: 'destructive',
+      });
       return;
     }
 

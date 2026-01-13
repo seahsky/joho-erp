@@ -14,6 +14,7 @@ import {
   Button,
   Input,
   Label,
+  useToast,
 } from '@joho-erp/ui';
 import { Loader2, Search } from 'lucide-react';
 
@@ -32,6 +33,7 @@ export function LinkProductDialog({
 }: LinkProductDialogProps) {
   const t = useTranslations('supplierDetail');
   const tCommon = useTranslations('common');
+  const { toast } = useToast();
 
   // Form state
   const [productId, setProductId] = useState('');
@@ -78,7 +80,10 @@ export function LinkProductDialog({
 
   const linkMutation = api.supplier.linkProduct.useMutation({
     onSuccess: () => {
-      alert(t('productLinked'));
+      toast({
+        title: t('productLinked'),
+        variant: 'default',
+      });
       onOpenChange(false);
       onSuccess();
     },
@@ -86,7 +91,11 @@ export function LinkProductDialog({
       if (error.message.includes('already linked')) {
         setErrors({ productId: t('productAlreadyLinked') });
       } else {
-        alert(error.message);
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
       }
     },
   });

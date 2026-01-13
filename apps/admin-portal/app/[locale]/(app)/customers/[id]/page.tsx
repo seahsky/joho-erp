@@ -58,7 +58,7 @@ import {
   Trash2,
   MessageSquare,
 } from 'lucide-react';
-import { formatCurrency, formatDate, DAYS_OF_WEEK, type DayOfWeek } from '@joho-erp/shared';
+import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
 
 interface PageProps {
@@ -562,7 +562,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     {
       key: 'total',
       label: tCommon('total'),
-      render: (order) => formatCurrency(order.totalAmount),
+      render: (order) => formatAUD(order.totalAmount),
     },
   ];
 
@@ -1426,18 +1426,18 @@ export default function CustomerDetailPage({ params }: PageProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">{t('credit.limit')}</span>
-                <span className="font-bold text-lg">{formatCurrency(creditApp.creditLimit)}</span>
+                <span className="font-bold text-lg">{formatAUD(creditApp.creditLimit)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">{t('credit.balance')}</span>
                 <span className="font-medium">
-                  {formatCurrency((customer as { outstandingBalance?: number }).outstandingBalance || 0)}
+                  {formatAUD((customer as { outstandingBalance?: number }).outstandingBalance || 0)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">{t('credit.available')}</span>
                 <span className="font-medium text-success">
-                  {formatCurrency(creditApp.creditLimit - ((customer as { outstandingBalance?: number }).outstandingBalance || 0))}
+                  {formatAUD(creditApp.creditLimit - ((customer as { outstandingBalance?: number }).outstandingBalance || 0))}
                 </span>
               </div>
               {creditApp.paymentTerms && (

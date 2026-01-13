@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PageHeader, PageHeaderSkeleton } from '@/components/page-header';
 
 export default function CartPage() {
-  const t = useTranslations();
+  const t = useTranslations('cart');
   const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
@@ -26,13 +26,13 @@ export default function CartPage() {
   const clearCart = api.cart.clearCart.useMutation({
     onSuccess: () => {
       toast({
-        title: t('cart.messages.cartCleared'),
+        title: t('messages.cartCleared'),
       });
       void utils.cart.getCart.invalidate();
     },
     onError: () => {
       toast({
-        title: t('cart.messages.errorClearingCart'),
+        title: t('messages.errorClearingCart'),
         variant: 'destructive',
       });
     },
@@ -91,7 +91,7 @@ export default function CartPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <PageHeader title={t('cart.title')} subtitle={t('cart.subtitle')} />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
         <div className="container mx-auto px-4 py-6">
           <IllustratedEmptyState
             variant="error"
@@ -112,9 +112,9 @@ export default function CartPage() {
 
   // Checkout progress steps
   const checkoutSteps = [
-    { key: 'cart', icon: CartIcon, label: t('cart.checkoutProgress.step1') },
-    { key: 'review', icon: ClipboardCheck, label: t('cart.checkoutProgress.step2') },
-    { key: 'complete', icon: CheckCircle, label: t('cart.checkoutProgress.step3') },
+    { key: 'cart', icon: CartIcon, label: t('checkoutProgress.step1') },
+    { key: 'review', icon: ClipboardCheck, label: t('checkoutProgress.step2') },
+    { key: 'complete', icon: CheckCircle, label: t('checkoutProgress.step3') },
   ];
   const currentStepIndex = 0; // Cart page is always step 0
 
@@ -123,17 +123,17 @@ export default function CartPage() {
       <ConfirmDialog
         open={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
-        title={t('cart.dialog.clearCartTitle')}
-        description={t('cart.dialog.clearCartDescription')}
-        confirmText={t('cart.dialog.clearCartConfirm')}
+        title={t('dialog.clearCartTitle')}
+        description={t('dialog.clearCartDescription')}
+        confirmText={t('dialog.clearCartConfirm')}
         cancelText={t('common.cancel')}
         onConfirm={handleConfirmClearCart}
         variant="destructive"
       />
       <div className="min-h-screen bg-background">
       <PageHeader
-        title={t('cart.title')}
-        subtitle={t('cart.subtitle')}
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
 
       {/* Checkout Progress Indicator */}
@@ -199,8 +199,8 @@ export default function CartPage() {
               <div className="flex justify-between items-center mb-2">
                 <p className="text-sm text-muted-foreground">
                   {cart.items.length === 1
-                    ? t('cart.itemCount', { count: cart.items.length })
-                    : t('cart.itemCount_plural', { count: cart.items.length })}
+                    ? t('itemCount', { count: cart.items.length })
+                    : t('itemCount_plural', { count: cart.items.length })}
                 </p>
                 <Button
                   variant="ghost"
@@ -210,7 +210,7 @@ export default function CartPage() {
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  {t('cart.buttons.clearCart')}
+                  {t('buttons.clearCart')}
                 </Button>
               </div>
 

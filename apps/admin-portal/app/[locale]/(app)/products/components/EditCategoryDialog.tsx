@@ -45,7 +45,7 @@ export function EditCategoryDialog({
   onSuccess,
 }: EditCategoryDialogProps) {
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('categories');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -76,14 +76,14 @@ export function EditCategoryDialog({
   const updateMutation = api.category.update.useMutation({
     onSuccess: () => {
       toast({
-        title: t('categories.messages.updated'),
+        title: t('messages.updated'),
       });
       onOpenChange(false);
       onSuccess();
     },
     onError: (error) => {
       toast({
-        title: t('categories.messages.updateError'),
+        title: t('messages.updateError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -95,17 +95,17 @@ export function EditCategoryDialog({
     let isValid = true;
 
     if (!name?.trim()) {
-      errors.name = t('categories.validation.nameRequired');
+      errors.name = t('validation.nameRequired');
       isValid = false;
     } else if (name.length > 50) {
-      errors.name = t('categories.validation.nameTooLong');
+      errors.name = t('validation.nameTooLong');
       isValid = false;
     }
 
     if (processingLossPercentage) {
       const lossValue = parseFloat(processingLossPercentage);
       if (isNaN(lossValue) || lossValue < 0 || lossValue > 100) {
-        errors.processingLossPercentage = t('categories.validation.lossPercentageRange');
+        errors.processingLossPercentage = t('validation.lossPercentageRange');
         isValid = false;
       }
     }
@@ -145,15 +145,15 @@ export function EditCategoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('categories.dialog.editTitle')}</DialogTitle>
+          <DialogTitle>{t('dialog.editTitle')}</DialogTitle>
           <DialogDescription>
-            {t('categories.dialog.editDescription')}
+            {t('dialog.editDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">{t('categories.fields.nameRequired')}</Label>
+            <Label htmlFor="edit-name">{t('fields.nameRequired')}</Label>
             <Input
               id="edit-name"
               value={name}
@@ -161,7 +161,7 @@ export function EditCategoryDialog({
                 setName(e.target.value);
                 clearFieldError('name');
               }}
-              placeholder={t('categories.fields.namePlaceholder')}
+              placeholder={t('fields.namePlaceholder')}
               maxLength={50}
             />
             {fieldErrors.name && (
@@ -170,12 +170,12 @@ export function EditCategoryDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-description">{t('categories.fields.description')}</Label>
+            <Label htmlFor="edit-description">{t('fields.description')}</Label>
             <textarea
               id="edit-description"
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder={t('categories.fields.descriptionPlaceholder')}
+              placeholder={t('fields.descriptionPlaceholder')}
               rows={3}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -184,7 +184,7 @@ export function EditCategoryDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-1">
               <Label htmlFor="edit-processingLossPercentage">
-                {t('categories.fields.processingLossPercentage')}
+                {t('fields.processingLossPercentage')}
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -192,7 +192,7 @@ export function EditCategoryDialog({
                     <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>{t('categories.fields.processingLossPercentageTooltip')}</p>
+                    <p>{t('fields.processingLossPercentageTooltip')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -208,14 +208,14 @@ export function EditCategoryDialog({
                 setProcessingLossPercentage(e.target.value);
                 clearFieldError('processingLossPercentage');
               }}
-              placeholder={t('categories.fields.lossPercentagePlaceholder')}
+              placeholder={t('fields.lossPercentagePlaceholder')}
             />
             {fieldErrors.processingLossPercentage && (
               <p className="text-sm text-destructive">{fieldErrors.processingLossPercentage}</p>
             )}
             {processingLossPercentage && !fieldErrors.processingLossPercentage && (
               <p className="text-sm text-muted-foreground">
-                {t('categories.fields.expectedYield')}: {(100 - parseFloat(processingLossPercentage || '0')).toFixed(1)}%
+                {t('fields.expectedYield')}: {(100 - parseFloat(processingLossPercentage || '0')).toFixed(1)}%
               </p>
             )}
           </div>
@@ -227,16 +227,16 @@ export function EditCategoryDialog({
               onCheckedChange={(checked: boolean) => setIsActive(checked)}
             />
             <div className="space-y-0.5">
-              <Label htmlFor="edit-active" className="cursor-pointer">{t('categories.fields.active')}</Label>
+              <Label htmlFor="edit-active" className="cursor-pointer">{t('fields.active')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('categories.fields.activeDescription')}
+                {t('fields.activeDescription')}
               </p>
             </div>
           </div>
 
           {category.productCount > 0 && (
             <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-              {t('categories.info.hasProducts', { count: category.productCount })}
+              {t('info.hasProducts', { count: category.productCount })}
             </p>
           )}
 

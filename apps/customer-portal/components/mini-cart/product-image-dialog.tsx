@@ -23,7 +23,7 @@ export function ProductImageDialog({
   imageUrl,
   productName,
 }: ProductImageDialogProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>

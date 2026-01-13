@@ -14,7 +14,7 @@ import {
 import { Loader2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatCurrency, parseToCents, formatCentsForInput } from '@joho-erp/shared';
+import { formatAUD, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
 type Customer = {
   id: string;
@@ -62,7 +62,7 @@ export function SetPriceDialog({
   products,
   onSuccess,
 }: SetPriceDialogProps) {
-  const t = useTranslations();
+  const t = useTranslations('pricingDialog');
   const [customerId, setCustomerId] = useState(pricing?.customerId || '');
   const [productId, setProductId] = useState(pricing?.productId || '');
   // Convert cents to dollars for display in the input
@@ -202,19 +202,19 @@ export function SetPriceDialog({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {pricing ? t('pricingDialog.title.edit') : t('pricingDialog.title.create')}
+            {pricing ? t('title.edit') : t('title.create')}
           </DialogTitle>
           <DialogDescription>
             {pricing
-              ? t('pricingDialog.description.edit')
-              : t('pricingDialog.description.create')}
+              ? t('description.edit')
+              : t('description.create')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Customer Select */}
           <div>
-            <Label htmlFor="customer">{t('pricingDialog.fields.customer')}</Label>
+            <Label htmlFor="customer">{t('fields.customer')}</Label>
             <select
               id="customer"
               className="w-full px-3 py-2 border rounded-md mt-1"
@@ -226,7 +226,7 @@ export function SetPriceDialog({
               disabled={!!pricing}
               required
             >
-              <option value="">{t('pricingDialog.placeholders.selectCustomer')}</option>
+              <option value="">{t('placeholders.selectCustomer')}</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.businessName}
@@ -238,14 +238,14 @@ export function SetPriceDialog({
             )}
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
-                {t('pricingDialog.messages.cannotChangeCustomer')}
+                {t('messages.cannotChangeCustomer')}
               </p>
             )}
           </div>
 
           {/* Product Select */}
           <div>
-            <Label htmlFor="product">{t('pricingDialog.fields.product')}</Label>
+            <Label htmlFor="product">{t('fields.product')}</Label>
             <select
               id="product"
               className="w-full px-3 py-2 border rounded-md mt-1"
@@ -257,10 +257,10 @@ export function SetPriceDialog({
               disabled={!!pricing}
               required
             >
-              <option value="">{t('pricingDialog.placeholders.selectProduct')}</option>
+              <option value="">{t('placeholders.selectProduct')}</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.sku} - {product.name} ({formatCurrency(product.basePrice)})
+                  {product.sku} - {product.name} ({formatAUD(product.basePrice)})
                 </option>
               ))}
             </select>
@@ -269,7 +269,7 @@ export function SetPriceDialog({
             )}
             {pricing && (
               <p className="text-sm text-muted-foreground mt-1">
-                {t('pricingDialog.messages.cannotChangeProduct')}
+                {t('messages.cannotChangeProduct')}
               </p>
             )}
           </div>
@@ -278,9 +278,9 @@ export function SetPriceDialog({
           {selectedProduct && (
             <div className="bg-muted p-3 rounded-md">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{t('pricingDialog.fields.basePrice')}</span>
+                <span className="text-sm font-medium">{t('fields.basePrice')}</span>
                 <span className="text-lg font-bold">
-                  {formatCurrency(selectedProduct.basePrice)}
+                  {formatAUD(selectedProduct.basePrice)}
                 </span>
               </div>
             </div>
@@ -288,7 +288,7 @@ export function SetPriceDialog({
 
           {/* Custom Price Input */}
           <div>
-            <Label htmlFor="customPrice">{t('pricingDialog.fields.customPrice')}</Label>
+            <Label htmlFor="customPrice">{t('fields.customPrice')}</Label>
             <div className="relative mt-1">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -317,7 +317,7 @@ export function SetPriceDialog({
               <div className="flex items-center gap-2 text-green-700">
                 <TrendingDown className="h-4 w-4" />
                 <span className="font-medium">
-                  {t('pricingDialog.messages.customerSaves', { amount: formatCurrency(discount), percent: discountPct })}
+                  {t('messages.customerSaves', { amount: formatAUD(discount), percent: discountPct })}
                 </span>
               </div>
             </div>
@@ -325,7 +325,7 @@ export function SetPriceDialog({
 
           {/* Effective From Date */}
           <div>
-            <Label htmlFor="effectiveFrom">{t('pricingDialog.fields.effectiveFrom')}</Label>
+            <Label htmlFor="effectiveFrom">{t('fields.effectiveFrom')}</Label>
             <div className="relative mt-1">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -347,7 +347,7 @@ export function SetPriceDialog({
 
           {/* Effective To Date (Optional) */}
           <div>
-            <Label htmlFor="effectiveTo">{t('pricingDialog.fields.effectiveTo')}</Label>
+            <Label htmlFor="effectiveTo">{t('fields.effectiveTo')}</Label>
             <div className="relative mt-1">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -365,7 +365,7 @@ export function SetPriceDialog({
               <p className="text-sm text-destructive mt-1">{fieldErrors.effectiveTo}</p>
             )}
             <p className="text-sm text-muted-foreground mt-1">
-              {t('pricingDialog.messages.noExpiration')}
+              {t('messages.noExpiration')}
             </p>
           </div>
 
@@ -384,13 +384,13 @@ export function SetPriceDialog({
               onClick={() => onOpenChange(false)}
               disabled={setPriceMutation.isPending}
             >
-              {t('pricingDialog.buttons.cancel')}
+              {t('buttons.cancel')}
             </Button>
             <Button type="submit" disabled={setPriceMutation.isPending}>
               {setPriceMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {pricing ? t('pricingDialog.buttons.updatePrice') : t('pricingDialog.buttons.setPrice')}
+              {pricing ? t('buttons.updatePrice') : t('buttons.setPrice')}
             </Button>
           </div>
         </form>

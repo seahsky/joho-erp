@@ -24,7 +24,7 @@ export function InlineQuantityControls({
   disabled,
   className,
 }: InlineQuantityControlsProps) {
-  const t = useTranslations();
+  const t = useTranslations('cart');
   const { toast } = useToast();
   const [isEditing, setIsEditing] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(currentQuantity.toString());
@@ -68,8 +68,8 @@ export function InlineQuantityControls({
     },
     onSuccess: () => {
       toast({
-        title: t('cart.messages.addedToCart'),
-        description: t('cart.messages.productAddedToCart', { productName }),
+        title: t('messages.addedToCart'),
+        description: t('messages.productAddedToCart', { productName }),
       });
     },
     onError: (error, _variables, context) => {
@@ -77,7 +77,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('cart.messages.errorAddingToCart'),
+        title: t('messages.errorAddingToCart'),
         description: error.message,
         variant: 'destructive',
       });
@@ -117,7 +117,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('cart.messages.errorUpdatingQuantity'),
+        title: t('messages.errorUpdatingQuantity'),
         description: error.message,
         variant: 'destructive',
       });
@@ -149,7 +149,7 @@ export function InlineQuantityControls({
     },
     onSuccess: () => {
       toast({
-        title: t('cart.messages.removedFromCart'),
+        title: t('messages.removedFromCart'),
       });
     },
     onError: (error, _variables, context) => {
@@ -157,7 +157,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('cart.messages.errorRemovingItem'),
+        title: t('messages.errorRemovingItem'),
         description: error.message,
         variant: 'destructive',
       });

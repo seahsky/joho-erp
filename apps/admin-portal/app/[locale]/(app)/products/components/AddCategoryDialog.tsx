@@ -33,7 +33,7 @@ export function AddCategoryDialog({
   onSuccess,
 }: AddCategoryDialogProps) {
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('categories');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -52,7 +52,7 @@ export function AddCategoryDialog({
   const createMutation = api.category.create.useMutation({
     onSuccess: () => {
       toast({
-        title: t('categories.messages.created'),
+        title: t('messages.created'),
       });
       resetForm();
       onOpenChange(false);
@@ -60,7 +60,7 @@ export function AddCategoryDialog({
     },
     onError: (error) => {
       toast({
-        title: t('categories.messages.createError'),
+        title: t('messages.createError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -79,17 +79,17 @@ export function AddCategoryDialog({
     let isValid = true;
 
     if (!name?.trim()) {
-      errors.name = t('categories.validation.nameRequired');
+      errors.name = t('validation.nameRequired');
       isValid = false;
     } else if (name.length > 50) {
-      errors.name = t('categories.validation.nameTooLong');
+      errors.name = t('validation.nameTooLong');
       isValid = false;
     }
 
     if (processingLossPercentage) {
       const lossValue = parseFloat(processingLossPercentage);
       if (isNaN(lossValue) || lossValue < 0 || lossValue > 100) {
-        errors.processingLossPercentage = t('categories.validation.lossPercentageRange');
+        errors.processingLossPercentage = t('validation.lossPercentageRange');
         isValid = false;
       }
     }
@@ -130,15 +130,15 @@ export function AddCategoryDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('categories.dialog.addTitle')}</DialogTitle>
+          <DialogTitle>{t('dialog.addTitle')}</DialogTitle>
           <DialogDescription>
-            {t('categories.dialog.addDescription')}
+            {t('dialog.addDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('categories.fields.nameRequired')}</Label>
+            <Label htmlFor="name">{t('fields.nameRequired')}</Label>
             <Input
               id="name"
               value={name}
@@ -146,7 +146,7 @@ export function AddCategoryDialog({
                 setName(e.target.value);
                 clearFieldError('name');
               }}
-              placeholder={t('categories.fields.namePlaceholder')}
+              placeholder={t('fields.namePlaceholder')}
               maxLength={50}
               autoFocus
             />
@@ -156,12 +156,12 @@ export function AddCategoryDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">{t('categories.fields.description')}</Label>
+            <Label htmlFor="description">{t('fields.description')}</Label>
             <textarea
               id="description"
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder={t('categories.fields.descriptionPlaceholder')}
+              placeholder={t('fields.descriptionPlaceholder')}
               rows={3}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -170,7 +170,7 @@ export function AddCategoryDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-1">
               <Label htmlFor="processingLossPercentage">
-                {t('categories.fields.processingLossPercentage')}
+                {t('fields.processingLossPercentage')}
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -178,7 +178,7 @@ export function AddCategoryDialog({
                     <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>{t('categories.fields.processingLossPercentageTooltip')}</p>
+                    <p>{t('fields.processingLossPercentageTooltip')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -194,14 +194,14 @@ export function AddCategoryDialog({
                 setProcessingLossPercentage(e.target.value);
                 clearFieldError('processingLossPercentage');
               }}
-              placeholder={t('categories.fields.lossPercentagePlaceholder')}
+              placeholder={t('fields.lossPercentagePlaceholder')}
             />
             {fieldErrors.processingLossPercentage && (
               <p className="text-sm text-destructive">{fieldErrors.processingLossPercentage}</p>
             )}
             {processingLossPercentage && !fieldErrors.processingLossPercentage && (
               <p className="text-sm text-muted-foreground">
-                {t('categories.fields.expectedYield')}: {(100 - parseFloat(processingLossPercentage || '0')).toFixed(1)}%
+                {t('fields.expectedYield')}: {(100 - parseFloat(processingLossPercentage || '0')).toFixed(1)}%
               </p>
             )}
           </div>
@@ -224,7 +224,7 @@ export function AddCategoryDialog({
                   {t('common.saving')}
                 </>
               ) : (
-                t('categories.buttons.create')
+                t('buttons.create')
               )}
             </Button>
           </DialogFooter>

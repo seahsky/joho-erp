@@ -56,7 +56,7 @@ import { formatAUD } from '@joho-erp/shared';
 type TransactionType = 'sale' | 'adjustment' | 'return' | undefined;
 
 export default function InventoryPage() {
-  const t = useTranslations();
+  const t = useTranslations('inventory');
 
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
@@ -96,13 +96,13 @@ export default function InventoryPage() {
     if (!type) return '';
     switch (type) {
       case 'stock_received':
-        return t('inventory.adjustmentTypes.stock_received');
+        return t('adjustmentTypes.stock_received');
       case 'stock_count_correction':
-        return t('inventory.adjustmentTypes.stock_count_correction');
+        return t('adjustmentTypes.stock_count_correction');
       case 'damaged_goods':
-        return t('inventory.adjustmentTypes.damaged_goods');
+        return t('adjustmentTypes.damaged_goods');
       case 'expired_stock':
-        return t('inventory.adjustmentTypes.expired_stock');
+        return t('adjustmentTypes.expired_stock');
       default:
         return type;
     }
@@ -141,8 +141,8 @@ export default function InventoryPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <H1>{t('inventory.title')}</H1>
-          <Muted className="mt-2">{t('inventory.subtitle')}</Muted>
+          <H1>{t('title')}</H1>
+          <Muted className="mt-2">{t('subtitle')}</Muted>
         </div>
         <div className="flex gap-2">
           <PermissionGate permission="products:adjust_stock">
@@ -154,7 +154,7 @@ export default function InventoryPage() {
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">{t('inventory.adjustStock')}</span>
+              <span className="hidden sm:inline">{t('adjustStock')}</span>
             </Button>
           </PermissionGate>
           <PermissionGate permission="products:adjust_stock">
@@ -163,12 +163,12 @@ export default function InventoryPage() {
               onClick={() => setShowProcessStockDialog(true)}
             >
               <ArrowRightLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">{t('inventory.processStock')}</span>
+              <span className="hidden sm:inline">{t('processStock')}</span>
             </Button>
           </PermissionGate>
           <Button onClick={() => setExportDialogOpen(true)}>
             <Download className="h-4 w-4 mr-2" />
-            {t('inventory.export.export')}
+            {t('export.export')}
           </Button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function InventoryPage() {
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('inventory.totalValue')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalValue')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success">
               <DollarSign className="h-5 w-5" />
             </div>
@@ -187,14 +187,14 @@ export default function InventoryPage() {
             <div className="stat-value tabular-nums text-2xl font-bold">
               {formatAUD(summary?.totalValue || 0)}
             </div>
-            <Small className="text-muted-foreground mt-1">{t('inventory.basedOnCost')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('basedOnCost')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('inventory.totalProducts')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalProducts')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/5 text-primary">
               <Package className="h-5 w-5" />
             </div>
@@ -203,14 +203,14 @@ export default function InventoryPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={summary?.totalProducts || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('inventory.activeProducts')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('activeProducts')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-200">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('inventory.lowStockItems')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('lowStockItems')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -219,14 +219,14 @@ export default function InventoryPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={summary?.lowStockCount || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('inventory.belowThreshold')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('belowThreshold')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-300">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('inventory.outOfStock')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('outOfStock')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
               <PackageX className="h-5 w-5" />
             </div>
@@ -235,7 +235,7 @@ export default function InventoryPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={summary?.outOfStockCount || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('inventory.zeroStock')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('zeroStock')}</Small>
           </CardContent>
         </Card>
       </div>
@@ -243,10 +243,10 @@ export default function InventoryPage() {
       {/* Tabbed Content */}
       <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison')} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="overview">{t('inventory.tabs.overview')}</TabsTrigger>
-          <TabsTrigger value="trends">{t('inventory.tabs.trends')}</TabsTrigger>
-          <TabsTrigger value="turnover">{t('inventory.tabs.turnover')}</TabsTrigger>
-          <TabsTrigger value="comparison">{t('inventory.tabs.comparison')}</TabsTrigger>
+          <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="trends">{t('tabs.trends')}</TabsTrigger>
+          <TabsTrigger value="turnover">{t('tabs.turnover')}</TabsTrigger>
+          <TabsTrigger value="comparison">{t('tabs.comparison')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Existing content */}
@@ -257,9 +257,9 @@ export default function InventoryPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Layers className="h-5 w-5" />
-                  {t('inventory.byCategory')}
+                  {t('byCategory')}
                 </CardTitle>
-                <CardDescription>{t('inventory.categoryBreakdownDesc')}</CardDescription>
+                <CardDescription>{t('categoryBreakdownDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 {categoryLoading ? (
@@ -274,18 +274,18 @@ export default function InventoryPage() {
                         <div>
                           <p className="font-medium">{category.category}</p>
                           <p className="text-sm text-muted-foreground">
-                            {category.productCount} {t('inventory.products')}
+                            {category.productCount} {t('products')}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium tabular-nums">{formatAUD(category.totalValue)}</p>
                           <div className="flex gap-2 justify-end">
                             <Small className="text-muted-foreground">
-                              {category.totalStock} {t('inventory.units')}
+                              {category.totalStock} {t('units')}
                             </Small>
                             {category.lowStockCount > 0 && (
                               <Badge variant="destructive" className="text-xs">
-                                {category.lowStockCount} {t('inventory.lowStock')}
+                                {category.lowStockCount} {t('lowStock')}
                               </Badge>
                             )}
                           </div>
@@ -294,7 +294,7 @@ export default function InventoryPage() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState icon={Package} title={t('inventory.noCategories')} />
+                  <EmptyState icon={Package} title={t('noCategories')} />
                 )}
               </CardContent>
             </Card>
@@ -306,9 +306,9 @@ export default function InventoryPage() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <ArrowDownUp className="h-5 w-5" />
-                      {t('inventory.transactionHistory')}
+                      {t('transactionHistory')}
                     </CardTitle>
-                    <CardDescription>{t('inventory.recentTransactions')}</CardDescription>
+                    <CardDescription>{t('recentTransactions')}</CardDescription>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => refetchTransactions()}>
                     <RefreshCw className="h-4 w-4" />
@@ -319,7 +319,7 @@ export default function InventoryPage() {
                 <div className="relative mt-4">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder={t('inventory.searchPlaceholder')}
+                    placeholder={t('searchPlaceholder')}
                     className="pl-10"
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
@@ -333,28 +333,28 @@ export default function InventoryPage() {
                     size="sm"
                     onClick={() => setTransactionType(undefined)}
                   >
-                    {t('inventory.filters.allTypes')}
+                    {t('filters.allTypes')}
                   </Button>
                   <Button
                     variant={transactionType === 'sale' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setTransactionType('sale')}
                   >
-                    {t('inventory.types.sale')}
+                    {t('types.sale')}
                   </Button>
                   <Button
                     variant={transactionType === 'adjustment' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setTransactionType('adjustment')}
                   >
-                    {t('inventory.types.adjustment')}
+                    {t('types.adjustment')}
                   </Button>
                   <Button
                     variant={transactionType === 'return' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setTransactionType('return')}
                   >
-                    {t('inventory.types.return')}
+                    {t('types.return')}
                   </Button>
                 </div>
               </CardHeader>
@@ -409,7 +409,7 @@ export default function InventoryPage() {
                               size="icon"
                               className="h-8 w-8 hidden sm:flex shrink-0"
                               onClick={() => handleQuickAdjust(tx)}
-                              title={t('inventory.adjustStock')}
+                              title={t('adjustStock')}
                             >
                               <PackagePlus className="h-4 w-4" />
                             </Button>
@@ -419,13 +419,13 @@ export default function InventoryPage() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState icon={ArrowDownUp} title={t('inventory.noTransactions')} />
+                  <EmptyState icon={ArrowDownUp} title={t('noTransactions')} />
                 )}
 
                 {transactionsData && transactionsData.hasMore && (
                   <div className="mt-4 text-center">
                     <Small className="text-muted-foreground">
-                      {t('inventory.showingOf', {
+                      {t('showingOf', {
                         shown: transactionsData.transactions.length,
                         total: transactionsData.totalCount,
                       })}

@@ -26,7 +26,7 @@ export function ExpandableDetails({
   onCollapse,
   product,
 }: ExpandableDetailsProps) {
-  const t = useTranslations();
+  const t = useTranslations('products');
 
   // Calculate discount percentage if custom pricing applies
   const discountPercentage = product.hasCustomPricing && product.effectivePrice
@@ -49,7 +49,7 @@ export function ExpandableDetails({
         {product.description && (
           <div>
             <H4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
-              {t('products.details.description')}
+              {t('details.description')}
             </H4>
             <p className="text-sm text-foreground leading-relaxed">
               {product.description}
@@ -60,7 +60,7 @@ export function ExpandableDetails({
         {!product.description && (
           <div>
             <Muted className="text-sm italic">
-              {t('products.details.noDescription')}
+              {t('details.noDescription')}
             </Muted>
           </div>
         )}
@@ -69,7 +69,7 @@ export function ExpandableDetails({
         {(product.hasCustomPricing || product.applyGst) && (
           <div>
             <H4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">
-              {t('products.details.pricingBreakdown')}
+              {t('details.pricingBreakdown')}
             </H4>
 
             <div className="space-y-2">
@@ -78,7 +78,7 @@ export function ExpandableDetails({
                 <>
                   <div className="flex items-center justify-between">
                     <Muted className="text-sm">
-                      {t('products.details.basePrice')}
+                      {t('details.basePrice')}
                     </Muted>
                     <Muted className="text-sm line-through">
                       {formatAUD(product.basePrice)} / {product.unit}
@@ -87,7 +87,7 @@ export function ExpandableDetails({
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                      {t('products.details.yourPrice')}
+                      {t('details.yourPrice')}
                     </span>
                     <div className="flex items-center gap-2">
                       <Large className="font-bold text-green-700 dark:text-green-400">
@@ -110,7 +110,7 @@ export function ExpandableDetails({
                 <>
                   <div className="flex items-center justify-between">
                     <Muted className="text-sm">
-                      {t('products.details.beforeGst')}
+                      {t('details.beforeGst')}
                     </Muted>
                     <span className="text-sm font-medium">
                       {formatAUD(displayPrice)} / {product.unit}
@@ -119,7 +119,7 @@ export function ExpandableDetails({
 
                   <div className="flex items-center justify-between">
                     <Muted className="text-sm">
-                      {t('products.details.gstRate')} ({product.gstRate || 10}%)
+                      {t('details.gstRate')} ({product.gstRate || 10}%)
                     </Muted>
                     <Muted className="text-sm">
                       +{formatAUD(product.priceWithGst - displayPrice)}
@@ -130,7 +130,7 @@ export function ExpandableDetails({
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold">
-                      {t('products.details.gstIncluded')}
+                      {t('details.gstIncluded')}
                     </span>
                     <Large className="font-bold">
                       {formatAUD(product.priceWithGst)} / {product.unit}
@@ -150,7 +150,7 @@ export function ExpandableDetails({
             onClick={onCollapse}
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
-            {t('products.details.collapse')}
+            {t('details.collapse')}
             <ChevronUp className="h-4 w-4" />
           </Button>
         </div>

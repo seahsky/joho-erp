@@ -108,7 +108,7 @@ function formatTime(date: Date): string {
   }).format(new Date(date));
 }
 
-function formatCurrency(cents: number): string {
+function formatAUD(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
@@ -131,7 +131,7 @@ export function InventoryReportDocument({
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>{t.totalInventoryValue || 'Total Inventory Value'}</Text>
                 <Text style={styles.summaryValue}>
-                  {formatCurrency((data as OverviewData).summary.totalValue)}
+                  {formatAUD((data as OverviewData).summary.totalValue)}
                 </Text>
               </View>
               <View style={styles.summaryItem}>
@@ -168,7 +168,7 @@ export function InventoryReportDocument({
                   <Text style={styles.tableCell}>{cat.name}</Text>
                   <Text style={styles.tableCell}>{cat.productCount}</Text>
                   <Text style={styles.tableCell}>{cat.totalStock.toFixed(1)}</Text>
-                  <Text style={styles.tableCell}>{formatCurrency(cat.totalValue)}</Text>
+                  <Text style={styles.tableCell}>{formatAUD(cat.totalValue)}</Text>
                   <Text style={styles.tableCell}>{cat.lowStockCount}</Text>
                 </View>
               ))}

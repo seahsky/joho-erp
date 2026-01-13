@@ -28,7 +28,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency, formatDate } from '@joho-erp/shared';
+import { formatAUD, formatDate } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { SetPriceDialog } from './components/SetPriceDialog';
 import { BulkImportDialog } from './components/BulkImportDialog';
@@ -61,7 +61,7 @@ type CustomerPricing = {
 };
 
 export default function PricingPage() {
-  const t = useTranslations();
+  const t = useTranslations('pricing');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>();
   const [includeExpired, setIncludeExpired] = useState(false);
@@ -106,7 +106,7 @@ export default function PricingPage() {
   });
 
   const handleDelete = async (pricingId: string) => {
-    if (confirm(t('pricing.messages.deleteConfirm'))) {
+    if (confirm(t('messages.deleteConfirm'))) {
       await deleteMutation.mutateAsync({ pricingId });
     }
   };
@@ -143,7 +143,7 @@ export default function PricingPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col items-center justify-center">
-          <p className="text-destructive text-lg mb-2">{t('pricing.errorLoading')}</p>
+          <p className="text-destructive text-lg mb-2">{t('errorLoading')}</p>
           <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -153,44 +153,44 @@ export default function PricingPage() {
   const columns: TableColumn<CustomerPricing>[] = [
     {
       key: 'customer',
-      label: t('pricing.table.customer'),
+      label: t('table.customer'),
       sortable: true,
       render: (pricing) => (
-        <div className="font-medium">{pricing?.customer?.businessName ?? t('pricing.messages.unknownCustomer')}</div>
+        <div className="font-medium">{pricing?.customer?.businessName ?? t('messages.unknownCustomer')}</div>
       ),
     },
     {
       key: 'product',
-      label: t('pricing.table.product'),
+      label: t('table.product'),
       sortable: true,
       render: (pricing) => (
         <div>
-          <div className="font-medium">{pricing?.product?.name ?? t('pricing.messages.unknownProduct')}</div>
+          <div className="font-medium">{pricing?.product?.name ?? t('messages.unknownProduct')}</div>
           <div className="text-sm text-muted-foreground">{pricing?.product?.sku ?? 'N/A'}</div>
         </div>
       ),
     },
     {
       key: 'basePrice',
-      label: t('pricing.table.basePrice'),
+      label: t('table.basePrice'),
       render: (pricing) => (
         <div className="text-muted-foreground">
-          {pricing?.product?.basePrice ? formatCurrency(pricing.product.basePrice) : 'N/A'}
+          {pricing?.product?.basePrice ? formatAUD(pricing.product.basePrice) : 'N/A'}
         </div>
       ),
     },
     {
       key: 'customPrice',
-      label: t('pricing.table.customPrice'),
+      label: t('table.customPrice'),
       render: (pricing) => (
         <div className="font-semibold text-green-600">
-          {pricing?.customPrice ? formatCurrency(pricing.customPrice) : 'N/A'}
+          {pricing?.customPrice ? formatAUD(pricing.customPrice) : 'N/A'}
         </div>
       ),
     },
     {
       key: 'discount',
-      label: t('pricing.table.savings'),
+      label: t('table.savings'),
       render: (pricing) => {
         const discount = pricing?.effectivePriceInfo?.discount ?? 0;
         const discountPct = pricing?.effectivePriceInfo?.discountPercentage ?? 0;
@@ -198,7 +198,7 @@ export default function PricingPage() {
           <div className="flex items-center gap-1">
             <TrendingDown className="h-4 w-4 text-green-600" />
             <span className="font-medium text-green-600">
-              {formatCurrency(discount)}
+              {formatAUD(discount)}
             </span>
             <span className="text-sm text-muted-foreground">
               ({discountPct.toFixed(1)}%)
@@ -211,32 +211,32 @@ export default function PricingPage() {
     },
     {
       key: 'status',
-      label: t('pricing.table.status'),
+      label: t('table.status'),
       render: (pricing) => {
         if (!pricing?.isValid) {
-          return <Badge variant="secondary">{t('pricing.status.expired')}</Badge>;
+          return <Badge variant="secondary">{t('status.expired')}</Badge>;
         }
         if (pricing?.effectiveTo) {
           const daysUntilExpiry = Math.floor(
             (new Date(pricing.effectiveTo).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           );
           if (daysUntilExpiry <= 7) {
-            return <Badge variant="warning">{t('pricing.status.expiresInDays', { days: daysUntilExpiry })}</Badge>;
+            return <Badge variant="warning">{t('status.expiresInDays', { days: daysUntilExpiry })}</Badge>;
           }
-          return <Badge variant="success">{t('pricing.status.active')}</Badge>;
+          return <Badge variant="success">{t('status.active')}</Badge>;
         }
-        return <Badge variant="success">{t('pricing.status.activeNoExpiry')}</Badge>;
+        return <Badge variant="success">{t('status.activeNoExpiry')}</Badge>;
       },
     },
     {
       key: 'effectiveDates',
-      label: t('pricing.table.effectiveDates'),
+      label: t('table.effectiveDates'),
       render: (pricing) => (
         <div className="text-sm">
-          <div>{t('pricing.table.from')} {pricing?.effectiveFrom ? formatDate(pricing.effectiveFrom) : 'N/A'}</div>
+          <div>{t('table.from')} {pricing?.effectiveFrom ? formatDate(pricing.effectiveFrom) : 'N/A'}</div>
           {pricing?.effectiveTo && (
             <div className="text-muted-foreground">
-              {t('pricing.table.to')} {formatDate(pricing.effectiveTo)}
+              {t('table.to')} {formatDate(pricing.effectiveTo)}
             </div>
           )}
         </div>
@@ -244,7 +244,7 @@ export default function PricingPage() {
     },
     {
       key: 'actions',
-      label: t('pricing.table.actions'),
+      label: t('table.actions'),
       render: (pricing) => (
         <div className="flex items-center gap-2">
           <PermissionGate permission="pricing:edit">
@@ -276,9 +276,9 @@ export default function PricingPage() {
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{t('pricing.title')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
         <p className="text-muted-foreground">
-          {t('pricing.subtitle')}
+          {t('subtitle')}
         </p>
       </div>
 
@@ -286,7 +286,7 @@ export default function PricingPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('pricing.stats.totalPrices')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.totalPrices')}</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -294,29 +294,29 @@ export default function PricingPage() {
               <CountUp end={totalPricings} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('pricing.stats.activeExpired', { active: activePricings, expired: totalPricings - activePricings })}
+              {t('stats.activeExpired', { active: activePricings, expired: totalPricings - activePricings })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('pricing.stats.totalSavings')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.totalSavings')}</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalSavings)}
+              {formatAUD(totalSavings)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('pricing.stats.averagePerRecord')}
+              {t('stats.averagePerRecord')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('pricing.stats.customersWithPricing')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.customersWithPricing')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -326,14 +326,14 @@ export default function PricingPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('pricing.stats.uniqueCustomers')}
+              {t('stats.uniqueCustomers')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('pricing.stats.productsWithPricing')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.productsWithPricing')}</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -343,7 +343,7 @@ export default function PricingPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('pricing.stats.uniqueProducts')}
+              {t('stats.uniqueProducts')}
             </p>
           </CardContent>
         </Card>
@@ -354,22 +354,22 @@ export default function PricingPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('pricing.management.title')}</CardTitle>
+              <CardTitle>{t('management.title')}</CardTitle>
               <CardDescription>
-                {t('pricing.management.description')}
+                {t('management.description')}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <PermissionGate permission="pricing:create">
                 <Button onClick={handleAddNew}>
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('pricing.buttons.addCustomPrice')}
+                  {t('buttons.addCustomPrice')}
                 </Button>
               </PermissionGate>
               <PermissionGate permission="pricing:create">
                 <Button variant="outline" onClick={() => setShowBulkImportDialog(true)}>
                   <Upload className="h-4 w-4 mr-2" />
-                  {t('pricing.buttons.bulkImport')}
+                  {t('buttons.bulkImport')}
                 </Button>
               </PermissionGate>
             </div>
@@ -379,13 +379,13 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* Customer Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">{t('pricing.filters.customer')}</label>
+              <label className="text-sm font-medium mb-2 block">{t('filters.customer')}</label>
               <select
                 className="w-full px-3 py-2 border rounded-md"
                 value={selectedCustomerId || ''}
                 onChange={(e) => setSelectedCustomerId(e.target.value || undefined)}
               >
-                <option value="">{t('pricing.filters.allCustomers')}</option>
+                <option value="">{t('filters.allCustomers')}</option>
                 {customers.map((customer: { id: string; businessName: string }) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.businessName}
@@ -396,13 +396,13 @@ export default function PricingPage() {
 
             {/* Product Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">{t('pricing.filters.product')}</label>
+              <label className="text-sm font-medium mb-2 block">{t('filters.product')}</label>
               <select
                 className="w-full px-3 py-2 border rounded-md"
                 value={selectedProductId || ''}
                 onChange={(e) => setSelectedProductId(e.target.value || undefined)}
               >
-                <option value="">{t('pricing.filters.allProducts')}</option>
+                <option value="">{t('filters.allProducts')}</option>
                 {products.map((product: { id: string; sku: string; name: string }) => (
                   <option key={product.id} value={product.id}>
                     {product.sku} - {product.name}
@@ -420,7 +420,7 @@ export default function PricingPage() {
                   onChange={(e) => setIncludeExpired(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium">{t('pricing.filters.includeExpired')}</span>
+                <span className="text-sm font-medium">{t('filters.includeExpired')}</span>
               </label>
             </div>
           </div>
@@ -435,10 +435,10 @@ export default function PricingPage() {
           ) : pricings.length === 0 ? (
             <EmptyState
               icon={DollarSign}
-              title={t('pricing.messages.noPricing')}
-              description={t('pricing.messages.noPricingDescription')}
+              title={t('messages.noPricing')}
+              description={t('messages.noPricingDescription')}
               action={{
-                label: t('pricing.buttons.addCustomPrice'),
+                label: t('buttons.addCustomPrice'),
                 onClick: handleAddNew,
               }}
             />

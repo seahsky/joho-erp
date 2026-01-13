@@ -7,10 +7,10 @@ import { Package, Users, ShoppingCart, TruckIcon, PackageX, AlertTriangle, Clock
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 
 export default function DashboardPage() {
-  const t = useTranslations();
+  const t = useTranslations('dashboard');
   const router = useRouter();
 
   const { data: stats, isLoading: statsLoading } = api.dashboard.getStats.useQuery();
@@ -102,8 +102,8 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <H1>{t('dashboard.title')}</H1>
-          <Muted className="mt-2">{t('dashboard.subtitle')}</Muted>
+          <H1>{t('title')}</H1>
+          <Muted className="mt-2">{t('subtitle')}</Muted>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('dashboard.totalOrders')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalOrders')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/5 text-primary">
               <ShoppingCart className="h-5 w-5" />
             </div>
@@ -121,14 +121,14 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.totalOrders || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('dashboard.allTime')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('allTime')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('dashboard.pendingOrders')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pendingOrders')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
               <Package className="h-5 w-5" />
             </div>
@@ -137,14 +137,14 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.pendingOrders || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('dashboard.requireProcessing')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('requireProcessing')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-200">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('dashboard.activeCustomers')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('activeCustomers')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success">
               <Users className="h-5 w-5" />
             </div>
@@ -153,14 +153,14 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.totalCustomers || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('dashboard.activeAccounts')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('activeAccounts')}</Small>
           </CardContent>
         </Card>
 
         <Card className="stat-card animate-fade-in-up delay-300">
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('dashboard.activeDeliveries')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('activeDeliveries')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-info/10 text-info">
               <TruckIcon className="h-5 w-5" />
             </div>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={stats?.activeDeliveries || 0} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('dashboard.outForDelivery')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('outForDelivery')}</Small>
           </CardContent>
         </Card>
 
@@ -177,7 +177,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/orders?backorderFilter=pending')}>
           <div className="stat-card-gradient" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-medium">{t('dashboard.pendingBackorders')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pendingBackorders')}</CardTitle>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
               <Clock className="h-5 w-5" />
             </div>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
             <div className="stat-value tabular-nums">
               <CountUp end={pendingBackordersCount} />
             </div>
-            <Small className="text-muted-foreground mt-1">{t('dashboard.backordersAwaitingApproval')}</Small>
+            <Small className="text-muted-foreground mt-1">{t('backordersAwaitingApproval')}</Small>
           </CardContent>
         </Card>
       </div>
@@ -195,8 +195,8 @@ export default function DashboardPage() {
         {/* Recent Orders */}
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle>{t('dashboard.recentOrders')}</CardTitle>
-            <CardDescription>{t('dashboard.latestOrders')}</CardDescription>
+            <CardTitle>{t('recentOrders')}</CardTitle>
+            <CardDescription>{t('latestOrders')}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{order.customerName}</p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
+                      <p className="font-medium">{formatAUD(order.totalAmount)}</p>
                       <StatusBadge status={order.status as StatusType} showIcon={false} />
                     </div>
                   </div>
@@ -216,8 +216,8 @@ export default function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={PackageX}
-                  title={t('dashboard.noRecentOrders')}
-                  description={t('dashboard.ordersWillAppearHere')}
+                  title={t('noRecentOrders')}
+                  description={t('ordersWillAppearHere')}
                 />
               )}
             </div>
@@ -227,8 +227,8 @@ export default function DashboardPage() {
         {/* Low Stock Alert */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>{t('dashboard.lowStockAlerts')}</CardTitle>
-            <CardDescription>{t('dashboard.productsRequiringAttention')}</CardDescription>
+            <CardTitle>{t('lowStockAlerts')}</CardTitle>
+            <CardDescription>{t('productsRequiringAttention')}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
@@ -241,10 +241,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-destructive">
-                        {item.currentStock} {item.unit} {t('dashboard.unitsLeft', { default: 'left' })}
+                        {item.currentStock} {item.unit} {t('unitsLeft', { default: 'left' })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {t('dashboard.threshold')} {item.lowStockThreshold}
+                        {t('threshold')} {item.lowStockThreshold}
                       </p>
                     </div>
                   </div>
@@ -252,8 +252,8 @@ export default function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={AlertTriangle}
-                  title={t('dashboard.noLowStockItems')}
-                  description={t('dashboard.allProductsWellStocked')}
+                  title={t('noLowStockItems')}
+                  description={t('allProductsWellStocked')}
                 />
               )}
             </div>

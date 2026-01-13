@@ -13,7 +13,7 @@ interface CartButtonProps {
 }
 
 export function CartButton({ onClick, className, variant = 'desktop' }: CartButtonProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
   const { data: cart } = api.cart.getCart.useQuery();
   const [isAnimating, setIsAnimating] = React.useState(false);
   const prevCountRef = React.useRef(0);
@@ -31,8 +31,8 @@ export function CartButton({ onClick, className, variant = 'desktop' }: CartButt
   }, [itemCount]);
 
   const ariaLabel = itemCount > 0
-    ? t('miniCart.cartWithItems', { count: itemCount })
-    : t('miniCart.title');
+    ? t('cartWithItems', { count: itemCount })
+    : t('title');
 
   if (variant === 'mobile') {
     return (

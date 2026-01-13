@@ -41,7 +41,7 @@ interface Product {
 type ApiProduct = Product & ProductWithPricing;
 
 export function ProductList() {
-  const t = useTranslations();
+  const t = useTranslations('products');
   const tIllustrated = useTranslations('illustratedEmptyState');
   const locale = useLocale();
   const isMobile = useIsMobile();
@@ -168,11 +168,11 @@ export function ProductList() {
           <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1 flex items-center justify-between gap-4">
             <span className="text-amber-800 dark:text-amber-200 text-sm">
-              {t('products.onboardingRequired')}
+              {t('onboardingRequired')}
             </span>
             <Link href={`/${locale}/onboarding`}>
               <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900">
-                {t('products.completeOnboarding')}
+                {t('completeOnboarding')}
               </Button>
             </Link>
           </div>
@@ -185,7 +185,7 @@ export function ProductList() {
         <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
           <Clock className="h-5 w-5 text-amber-600 flex-shrink-0" />
           <span className="text-amber-800 dark:text-amber-200 text-sm">
-            {t('products.creditPending')}
+            {t('creditPending')}
           </span>
         </div>
       );
@@ -196,7 +196,7 @@ export function ProductList() {
         <div className="flex items-center gap-3 p-4 rounded-lg border border-destructive bg-destructive/10">
           <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
           <span className="text-destructive text-sm">
-            {t('products.creditRejected')}
+            {t('creditRejected')}
           </span>
         </div>
       );
@@ -253,7 +253,7 @@ export function ProductList() {
               <Skeleton className="h-11 w-full rounded-lg" />
             ) : (
               <MobileSearch
-                placeholder={t('products.searchPlaceholder')}
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={setSearchQuery}
                 showFilter={false}

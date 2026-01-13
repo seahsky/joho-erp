@@ -15,7 +15,7 @@ interface StickyCartSummaryProps {
 }
 
 export function StickyCartSummary({ locale, onCartClick, isHidden = false }: StickyCartSummaryProps) {
-  const t = useTranslations();
+  const t = useTranslations('cart');
   const router = useRouter();
   const [animate, setAnimate] = React.useState(false);
 
@@ -207,7 +207,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
         {exceedsCredit && (
           <div className="bg-destructive/10 border-t border-destructive/20 px-4 py-2">
             <p className="text-xs text-destructive font-medium">
-              {t('cart.exceedsCredit')}
+              {t('exceedsCredit')}
             </p>
           </div>
         )}

@@ -20,7 +20,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const t = useTranslations();
+  const t = useTranslations('common');
 
   const quickActions = [
     { id: 1, label: t('quickSearch.actions.newCustomer'), icon: Users, path: '/customers/new' },

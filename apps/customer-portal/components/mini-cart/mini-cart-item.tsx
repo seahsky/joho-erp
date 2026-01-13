@@ -25,7 +25,7 @@ interface MiniCartItemProps {
 }
 
 export function MiniCartItem({ item }: MiniCartItemProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -103,7 +103,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
           )}
           disabled={!item.imageUrl}
-          aria-label={item.imageUrl ? t('miniCart.viewImage') : undefined}
+          aria-label={item.imageUrl ? t('viewImage') : undefined}
         >
           {item.imageUrl ? (
             <Image
@@ -216,7 +216,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
                 )}
                 onClick={handleRemove}
                 disabled={isPending}
-                aria-label={t('miniCart.removeItem')}
+                aria-label={t('removeItem')}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
