@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';

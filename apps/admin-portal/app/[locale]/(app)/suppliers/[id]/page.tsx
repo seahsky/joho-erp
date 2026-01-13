@@ -520,7 +520,7 @@ export default function SupplierDetailPage({ params }: PageProps) {
               </PermissionGate>
             </CardHeader>
             <CardContent>
-              {supplier.products.length === 0 ? (
+              {(supplier.products?.length ?? 0) === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>{t('noLinkedProducts')}</p>
@@ -538,13 +538,13 @@ export default function SupplierDetailPage({ params }: PageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {supplier.products.map((link) => (
+                      {supplier.products?.map((link) => (
                         <tr key={link.id} className="border-b last:border-0">
                           <td className="py-3">
                             <div>
-                              <p className="font-medium">{link.product.name}</p>
+                              <p className="font-medium">{link.product?.name}</p>
                               <p className="text-sm text-muted-foreground font-mono">
-                                {link.product.sku}
+                                {link.product?.sku}
                               </p>
                             </div>
                           </td>

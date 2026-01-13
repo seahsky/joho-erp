@@ -77,9 +77,8 @@ export const areaRouter = router({
       }
 
       // Get next sort order if not provided
-      const sortOrder = input.sortOrder ?? (
-        (await prisma.area.aggregate({ _max: { sortOrder: true } }))._max.sortOrder ?? 0
-      ) + 1;
+      const aggregateResult = await prisma.area.aggregate({ _max: { sortOrder: true } }) as { _max: { sortOrder: number | null } };
+      const sortOrder = input.sortOrder ?? (aggregateResult._max.sortOrder ?? 0) + 1;
 
       return prisma.area.create({
         data: {

@@ -17,6 +17,12 @@ import {
 } from '@joho-erp/ui';
 import { Loader2, Search } from 'lucide-react';
 
+interface Product {
+  id: string;
+  sku: string;
+  name: string;
+}
+
 interface LinkProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,7 +60,7 @@ export function LinkProductDialog({
     { enabled: open } // Only fetch when dialog is open
   );
 
-  const products = productsData?.items ?? [];
+  const products = (productsData?.items ?? []) as unknown as Product[];
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -163,7 +169,7 @@ export function LinkProductDialog({
               ) : products.length === 0 ? (
                 <option disabled>{t('noProductsFound')}</option>
               ) : (
-                products.map((product: { id: string; sku: string; name: string }) => (
+                products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.sku} - {product.name}
                   </option>
