@@ -490,6 +490,10 @@
     "sequence": "順序",
     "noDeliveriesAvailable": "暫無配送",
     "deliveriesWillAppear": "配送準備好後將在此顯示",
+    "selectDate": "選擇配送日期",
+    "packedOn": "打包於 {date}",
+    "showingOrdersPackedOn": "顯示在 {date} 打包的訂單",
+    "noOrdersPackedOnDate": "此日期沒有打包的訂單",
     "searchPlaceholder": "按訂單或客戶搜尋...",
     "filters": {
       "allStatuses": "所有狀態",
@@ -610,7 +614,10 @@
       "notesPlaceholder": "添加關於此配送完成的備註...",
       "confirm": "標記為已送達",
       "completing": "完成中...",
-      "cancel": "取消"
+      "cancel": "取消",
+      "packingDateMismatch": "打包日期不符",
+      "packingDateMismatchDescription": "此訂單於 {packedDate} 打包，不是今天。配送通常應在打包當天進行。",
+      "confirmAdminOverride": "我了解並仍要標記為已配送"
     },
     "messages": {
       "markDeliveredSuccess": "配送已標記為完成",

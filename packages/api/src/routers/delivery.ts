@@ -24,6 +24,20 @@ import {
   logReturnToWarehouse,
 } from '../services/audit';
 
+/**
+ * Helper function to check if an order was packed today.
+ * Used for same-day delivery validation.
+ */
+function isPackedToday(packedAt: Date | null | undefined): boolean {
+  if (!packedAt) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const packed = new Date(packedAt);
+  return packed >= today && packed < tomorrow;
+}
+
 export const deliveryRouter = router({
   // Get all deliveries with filtering and sorting
   getAll: requirePermission('deliveries:view')
@@ -54,10 +68,21 @@ export const deliveryRouter = router({
         };
       }
 
+      // Filter by packing date (when the order was packed), not requested delivery date
+      // This ensures only orders packed on the selected date appear in the delivery list
       if (filters.dateFrom || filters.dateTo) {
-        where.requestedDeliveryDate = {};
-        if (filters.dateFrom) where.requestedDeliveryDate.gte = filters.dateFrom;
-        if (filters.dateTo) where.requestedDeliveryDate.lte = filters.dateTo;
+        where.packing = {
+          is: {
+            packedAt: {},
+          },
+        };
+        if (filters.dateFrom) where.packing.is.packedAt.gte = filters.dateFrom;
+        if (filters.dateTo) {
+          // Add 1 day to dateTo to include all orders packed on that day
+          const endOfDay = new Date(filters.dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          where.packing.is.packedAt.lte = endOfDay;
+        }
       }
 
       // Add search functionality
@@ -119,6 +144,11 @@ export const deliveryRouter = router({
                 deliveryAddress: true,
               },
             },
+            packing: {
+              select: {
+                packedAt: true,
+              },
+            },
           },
         }),
         prisma.order.count({ where }),
@@ -149,6 +179,7 @@ export const deliveryRouter = router({
         driverName: order.delivery?.driverName ?? null,
         driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
         deliveredAt: order.delivery?.deliveredAt,
+        packedAt: order.packing?.packedAt ?? null, // Add packing date for same-day delivery validation
       }));
 
       return {
@@ -165,18 +196,35 @@ export const deliveryRouter = router({
       z.object({
         orderId: z.string(),
         notes: z.string().optional(),
+        adminOverride: z.boolean().optional(), // Allow admin to override same-day delivery check
       })
     )
     .mutation(async ({ input, ctx }) => {
       // Fetch current order to append to statusHistory
       const currentOrder = await prisma.order.findUnique({
         where: { id: input.orderId },
+        include: {
+          packing: {
+            select: {
+              packedAt: true,
+            },
+          },
+        },
       });
 
       if (!currentOrder) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Order not found',
+        });
+      }
+
+      // Same-day delivery validation: orders should be delivered on the same day as packing
+      const packedToday = isPackedToday(currentOrder.packing?.packedAt);
+      if (!packedToday && !input.adminOverride) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'This order was not packed today. Deliveries should occur on the same day as packing.',
         });
       }
 
@@ -220,13 +268,25 @@ export const deliveryRouter = router({
     }),
 
   // Get delivery statistics
+  // readyForDelivery now filters by orders packed today (same-day delivery)
   getStats: requirePermission('deliveries:view').query(async () => {
     const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
     const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
     const [readyForDelivery, deliveredToday] = await Promise.all([
+      // Only count orders that are ready for delivery AND were packed today
       prisma.order.count({
-        where: { status: 'ready_for_delivery' },
+        where: {
+          status: 'ready_for_delivery',
+          packing: {
+            is: {
+              packedAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+          },
+        },
       }),
       prisma.order.count({
         where: {
