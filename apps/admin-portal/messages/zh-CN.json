@@ -490,6 +490,10 @@
     "sequence": "顺序",
     "noDeliveriesAvailable": "暂无配送",
     "deliveriesWillAppear": "配送准备好后将在此显示",
+    "selectDate": "选择配送日期",
+    "packedOn": "打包于 {date}",
+    "showingOrdersPackedOn": "显示在 {date} 打包的订单",
+    "noOrdersPackedOnDate": "此日期没有打包的订单",
     "searchPlaceholder": "按订单或客户搜索...",
     "filters": {
       "allStatuses": "所有状态",
@@ -610,7 +614,10 @@
       "notesPlaceholder": "添加关于此配送完成的备注...",
       "confirm": "标记为已送达",
       "completing": "完成中...",
-      "cancel": "取消"
+      "cancel": "取消",
+      "packingDateMismatch": "打包日期不匹配",
+      "packingDateMismatchDescription": "此订单于 {packedDate} 打包，不是今天。配送通常应在打包当天进行。",
+      "confirmAdminOverride": "我了解并仍要标记为已配送"
     },
     "messages": {
       "markDeliveredSuccess": "配送已标记为完成",

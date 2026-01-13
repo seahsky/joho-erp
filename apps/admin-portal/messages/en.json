@@ -490,6 +490,10 @@
     "sequence": "Sequence",
     "noDeliveriesAvailable": "No deliveries available",
     "deliveriesWillAppear": "Deliveries will appear here when ready",
+    "selectDate": "Select Delivery Date",
+    "packedOn": "Packed on {date}",
+    "showingOrdersPackedOn": "Showing orders packed on {date}",
+    "noOrdersPackedOnDate": "No orders were packed on this date",
     "searchPlaceholder": "Search by order or customer...",
     "filters": {
       "allStatuses": "All Statuses",
@@ -610,7 +614,10 @@
       "notesPlaceholder": "Add any notes about this delivery completion...",
       "confirm": "Mark as Delivered",
       "completing": "Completing...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "packingDateMismatch": "Packing Date Mismatch",
+      "packingDateMismatchDescription": "This order was packed on {packedDate}, not today. Deliveries should normally occur on the same day as packing.",
+      "confirmAdminOverride": "I understand and want to mark as delivered anyway"
     },
     "messages": {
       "markDeliveredSuccess": "Delivery marked as completed",

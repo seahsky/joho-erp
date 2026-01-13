@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType, useToast } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType, useToast, Badge, Input } from '@joho-erp/ui';
+import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock, Calendar } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -30,9 +30,46 @@ export default function DeliveriesPage() {
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
   const [markDeliveredDialog, setMarkDeliveredDialog] = useState<{
     open: boolean;
-    delivery: { id: string; orderId: string; customer: string } | null;
+    delivery: { id: string; orderId: string; customer: string; packedAt?: Date | null } | null;
   }>({ open: false, delivery: null });
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
+
+  // Date selector state for filtering by packing date
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const [deliveryDate, setDeliveryDate] = useState<Date>(today);
+
+  // Date helper functions
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    const utcDate = new Date(Date.UTC(year, month, day));
+
+    return new Intl.DateTimeFormat('en-AU', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC'
+    }).format(utcDate);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [year, month, day] = e.target.value.split('-').map(Number);
+    const newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    setDeliveryDate(newDate);
+  };
+
+  const dateInputValue = useMemo(() => {
+    const year = deliveryDate.getFullYear();
+    const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+    const day = String(deliveryDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, [deliveryDate]);
 
   // Mark Delivered mutation (for admins)
   const markDeliveredMutation = api.delivery.markDelivered.useMutation({
@@ -53,21 +90,23 @@ export default function DeliveriesPage() {
     },
   });
 
-  // Stabilize today's date to prevent infinite re-fetching
-  const todayDateISO = useMemo(() => new Date().toISOString(), []);
+  // Get ISO date string for route optimization query
+  const deliveryDateISO = useMemo(() => deliveryDate.toISOString(), [deliveryDate]);
 
-  // Fetch deliveries from database
+  // Fetch deliveries from database, filtered by packing date
   const { data, isLoading } = api.delivery.getAll.useQuery({
     search: searchQuery || undefined,
     status: statusFilter || undefined,
-    areaId: areaFilter || undefined, // Now uses areaId instead of areaTag
+    areaId: areaFilter || undefined,
+    dateFrom: deliveryDate, // Filter by packing date
+    dateTo: deliveryDate, // Same day filter
     sortBy,
     sortOrder,
   });
 
   // Fetch optimized route data for the map
   const { data: routeData } = api.delivery.getOptimizedRoute.useQuery({
-    deliveryDate: todayDateISO,
+    deliveryDate: deliveryDateISO,
   });
 
   const deliveries = useMemo(() => data?.deliveries || [], [data?.deliveries]);
@@ -191,6 +230,31 @@ export default function DeliveriesPage() {
         </div>
       </div>
 
+      {/* Date Selector - Filter by packing date */}
+      <Card className="mb-4">
+        <CardHeader className="p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-1">
+                  {t('selectDate')}
+                </label>
+                <Input
+                  type="date"
+                  value={dateInputValue}
+                  onChange={handleDateChange}
+                  className="w-auto"
+                />
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {t('showingOrdersPackedOn', { date: formatDate(deliveryDate) })}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Filters */}
       <FilterBar
         showSearchFilter
@@ -245,6 +309,17 @@ export default function DeliveriesPage() {
                     <div>
                       <p className="font-semibold text-sm">{delivery.customer}</p>
                       <p className="text-xs text-muted-foreground">{delivery.orderId}</p>
+                      {delivery.packedAt && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          <Package className="h-3 w-3 mr-1" />
+                          {t('packedOn', {
+                            date: new Date(delivery.packedAt).toLocaleDateString('en-AU', {
+                              month: 'short',
+                              day: 'numeric'
+                            })
+                          })}
+                        </Badge>
+                      )}
                     </div>
                     <StatusBadge status={delivery.status as StatusType} />
                   </div>
@@ -284,6 +359,7 @@ export default function DeliveriesPage() {
                                 id: delivery.id,
                                 orderId: delivery.orderId,
                                 customer: delivery.customer,
+                                packedAt: delivery.packedAt ? new Date(delivery.packedAt) : null,
                               },
                             });
                           }}
@@ -334,7 +410,7 @@ export default function DeliveriesPage() {
 
       {/* Auto-Assign Drivers Dialog */}
       <AutoAssignDialog
-        deliveryDate={todayDateISO}
+        deliveryDate={deliveryDateISO}
         open={autoAssignDialogOpen}
         onOpenChange={setAutoAssignDialogOpen}
         onAssigned={() => {
@@ -348,11 +424,12 @@ export default function DeliveriesPage() {
         delivery={markDeliveredDialog.delivery}
         open={markDeliveredDialog.open}
         onOpenChange={(open) => setMarkDeliveredDialog({ ...markDeliveredDialog, open })}
-        onConfirm={async (notes) => {
+        onConfirm={async (notes, adminOverride) => {
           if (markDeliveredDialog.delivery) {
             await markDeliveredMutation.mutateAsync({
               orderId: markDeliveredDialog.delivery.id,
               notes,
+              adminOverride,
             });
           }
         }}
