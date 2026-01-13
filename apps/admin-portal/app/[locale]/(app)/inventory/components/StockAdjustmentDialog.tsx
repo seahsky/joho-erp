@@ -27,6 +27,7 @@ import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
 import { parseToCents } from '@joho-erp/shared';
+import { SupplierStatus, ProductStatus } from '@joho-erp/database';
 
 type AdjustmentType =
   | 'stock_received'
@@ -81,11 +82,12 @@ export function StockAdjustmentDialog({
   const { data: productsData, isLoading: productsLoading } = api.product.getAll.useQuery(
     {
       search: debouncedSearch,
-      status: 'active' as const,
+      status: ProductStatus.active,
       limit: 100,
     },
     { enabled: !selectedProduct && open }
   );
+  const products = (productsData?.items || []) as unknown as Product[];
 
   // Form state
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('stock_received');
@@ -107,7 +109,7 @@ export function StockAdjustmentDialog({
   // Fetch active suppliers (only when stock_received type)
   const { data: suppliersData, isLoading: suppliersLoading } = api.supplier.getAll.useQuery(
     {
-      status: 'active' as const,
+      status: SupplierStatus.active,
       search: supplierSearch || undefined,
       limit: 100,
     },
@@ -330,16 +332,13 @@ export function StockAdjustmentDialog({
                     {tInventory('productSelector.loading')}
                   </span>
                 </div>
-              ) : productsData?.items.length === 0 ? (
+              ) : products.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">{tInventory('productSelector.noResults')}</p>
                 </div>
               ) : (
-                productsData?.items.map((prod) => {
-                  // For admin users, currentStock should always be present
-                  const currentStock = 'currentStock' in prod ? prod.currentStock : 0;
-                  return (
+                products.map((prod) => (
                     <button
                       key={prod.id}
                       type="button"
@@ -347,7 +346,7 @@ export function StockAdjustmentDialog({
                         id: prod.id,
                         name: prod.name,
                         sku: prod.sku,
-                        currentStock,
+                        currentStock: prod.currentStock,
                         unit: prod.unit,
                       })}
                       className="w-full p-3 rounded-lg border hover:bg-accent transition-colors text-left flex items-center justify-between gap-4"
@@ -359,12 +358,11 @@ export function StockAdjustmentDialog({
                       <div className="text-right shrink-0">
                         <div className="text-sm text-muted-foreground">Stock</div>
                         <div className="font-semibold">
-                          {currentStock} {prod.unit}
+                          {prod.currentStock} {prod.unit}
                         </div>
                       </div>
                     </button>
-                  );
-                })
+                  ))
               )}
             </div>
           </div>

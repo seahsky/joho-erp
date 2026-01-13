@@ -156,14 +156,14 @@ export function ExportDialog({
         const doc = (
           <InventoryReportDocument
             tab={currentTab}
-            data={data}
+            data={data as Parameters<typeof InventoryReportDocument>[0]['data']}
             translations={translations}
           />
         );
         blob = await pdf(doc).toBlob();
         filename = `inventory-${currentTab}-${dateStr}.pdf`;
       } else {
-        blob = generateExcel({ tab: currentTab, data, translations });
+        blob = generateExcel({ tab: currentTab, data: data as Parameters<typeof generateExcel>[0]['data'], translations });
         filename = `inventory-${currentTab}-${dateStr}.xlsx`;
       }
 

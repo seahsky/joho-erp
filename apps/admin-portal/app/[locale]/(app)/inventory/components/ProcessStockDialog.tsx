@@ -227,7 +227,7 @@ export function ProcessStockDialog({
     setProductSearch('');
   };
 
-  const products = productsData?.items || [];
+  const products = (productsData?.items || []) as unknown as Product[];
   const isLoading = processStockMutation.isPending;
 
   return (

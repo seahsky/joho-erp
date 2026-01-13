@@ -201,7 +201,8 @@ export default function AreasPage() {
 
   const utils = api.useUtils();
 
-  const { data: areas, isLoading } = api.area.listWithCounts.useQuery();
+  const { data: areasData, isLoading } = api.area.listWithCounts.useQuery();
+  const areas = (areasData || []) as AreaWithCounts[];
 
   // DnD sensors
   const sensors = useSensors(

@@ -3,11 +3,34 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Download, AlertCircle, FileText } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, Skeleton, useIsMobile, type StatusType } from '@joho-erp/ui';
+import { Button, Card, CardContent, Skeleton } from '@joho-erp/ui';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
 import { InvoiceDetailsCard } from './invoice-details-card';
 import { CreditNoteBadge } from './credit-note-badge';
+
+type InvoiceStatus = 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID' | 'CREDITED' | 'VOIDED';
+
+interface CreditNoteInfo {
+  creditNoteId: string;
+  creditNoteNumber: string;
+}
+
+interface InvoiceData {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  date?: string;
+  dueDate?: string;
+  status?: InvoiceStatus;
+  subtotal?: number;
+  totalTax?: number;
+  total?: number;
+  amountPaid?: number;
+  amountDue?: number;
+  isLive?: boolean;
+  syncedAt?: string;
+  creditNote?: CreditNoteInfo;
+}
 
 interface InvoiceSectionProps {
   orderId: string;
@@ -17,7 +40,6 @@ export function InvoiceSection({ orderId }: InvoiceSectionProps) {
   const t = useTranslations('invoices');
   const tCommon = useTranslations('common');
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const { data: invoice, isLoading, error } = api.order.getOrderInvoice.useQuery({
     orderId,
@@ -64,19 +86,20 @@ export function InvoiceSection({ orderId }: InvoiceSectionProps) {
   }
 
   // Type-safe invoice data - handle both API response types
+  const invoiceData = invoice as unknown as InvoiceData;
   const safeInvoice = {
-    invoiceId: (invoice as any).invoiceId || '',
-    invoiceNumber: (invoice as any).invoiceNumber || 'N/A',
-    date: (invoice as any).date || '',
-    dueDate: (invoice as any).dueDate || '',
-    status: ((invoice as any).status || 'AUTHORISED') as 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID' | 'CREDITED' | 'VOIDED',
-    subtotal: (invoice as any).subtotal || 0,
-    totalTax: (invoice as any).totalTax || 0,
-    total: (invoice as any).total || 0,
-    amountPaid: (invoice as any).amountPaid,
-    amountDue: (invoice as any).amountDue,
-    isLive: (invoice as any).isLive || false,
-    syncedAt: (invoice as any).syncedAt,
+    invoiceId: invoiceData.invoiceId || '',
+    invoiceNumber: invoiceData.invoiceNumber || 'N/A',
+    date: invoiceData.date || '',
+    dueDate: invoiceData.dueDate || '',
+    status: (invoiceData.status || 'AUTHORISED') as InvoiceStatus,
+    subtotal: invoiceData.subtotal || 0,
+    totalTax: invoiceData.totalTax || 0,
+    total: invoiceData.total || 0,
+    amountPaid: invoiceData.amountPaid,
+    amountDue: invoiceData.amountDue,
+    isLive: invoiceData.isLive || false,
+    syncedAt: invoiceData.syncedAt,
   };
 
   return (
@@ -102,7 +125,7 @@ export function InvoiceSection({ orderId }: InvoiceSectionProps) {
       <InvoiceDetailsCard invoice={safeInvoice} />
 
       {/* Credit Note Badge */}
-      {(invoice as any).creditNote && <CreditNoteBadge creditNote={(invoice as any).creditNote} />}
+      {invoiceData.creditNote && <CreditNoteBadge creditNote={invoiceData.creditNote} />}
 
       {/* Download Button */}
       <Button

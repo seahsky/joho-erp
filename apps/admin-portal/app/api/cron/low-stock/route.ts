@@ -18,7 +18,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { prisma } from "@joho-erp/database";
+import { prisma, SystemLogLevel } from "@joho-erp/database";
 import { sendLowStockAlertEmail } from "@joho-erp/api";
 
 // Verify cron secret to prevent unauthorized access
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
     const recentAlert = await prisma.systemLog.findFirst({
       where: {
         service: "low-stock-cron",
-        level: "info",
+        level: SystemLogLevel.info,
         message: { contains: "Low stock alert sent" },
         timestamp: {
           gte: new Date(
@@ -137,7 +137,7 @@ export async function GET(request: Request) {
       // Log successful alert
       await prisma.systemLog.create({
         data: {
-          level: "info",
+          level: SystemLogLevel.info,
           service: "low-stock-cron",
           message: `Low stock alert sent for ${filteredProducts.length} items`,
           context: {

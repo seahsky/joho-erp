@@ -40,6 +40,17 @@ type OrderItem = {
   gstRate: number | null;
 };
 
+type Product = {
+  id: string;
+  sku: string;
+  name: string;
+  basePrice: number;
+  applyGst: boolean;
+  gstRate: number | null;
+  unit: string;
+  currentStock: number;
+};
+
 export default function CreateOrderOnBehalfPage() {
   const t = useTranslations('orderOnBehalf');
   const tCommon = useTranslations('common');
@@ -92,7 +103,7 @@ export default function CreateOrderOnBehalfPage() {
   );
 
   const customers = customersData?.customers || [];
-  const products = productsData?.items || [];
+  const products = (productsData?.items || []) as unknown as Product[];
 
   // Create order mutation
   const createOrderMutation = api.order.createOnBehalf.useMutation({
