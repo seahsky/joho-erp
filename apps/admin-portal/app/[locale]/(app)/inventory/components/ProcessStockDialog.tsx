@@ -33,6 +33,11 @@ interface Product {
   currentStock: number;
   unit: string;
   estimatedLossPercentage?: number | null;
+  categoryRelation?: {
+    id: string;
+    name: string;
+    processingLossPercentage?: number | null;
+  } | null;
 }
 
 interface ProcessStockDialogProps {
@@ -93,14 +98,28 @@ export function ProcessStockDialog({
   const [costPerUnit, setCostPerUnit] = useState('');
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [lossPercentage, setLossPercentage] = useState<string>('0');
 
-  // Calculate output quantity based on target's loss percentage
+  // Set default loss percentage when target product changes
+  useEffect(() => {
+    if (targetProduct) {
+      const defaultLoss =
+        targetProduct.estimatedLossPercentage ??
+        targetProduct.categoryRelation?.processingLossPercentage ??
+        0;
+      setLossPercentage(String(defaultLoss));
+    } else {
+      setLossPercentage('0');
+    }
+  }, [targetProduct]);
+
+  // Calculate output quantity based on loss percentage state
   const calculatedOutput = useMemo(() => {
     if (!quantityToProcess || !targetProduct) return 0;
     const qty = parseFloat(quantityToProcess) || 0;
-    const lossPercentage = targetProduct.estimatedLossPercentage || 0;
-    return parseFloat((qty * (1 - lossPercentage / 100)).toFixed(2));
-  }, [quantityToProcess, targetProduct]);
+    const loss = parseFloat(lossPercentage) || 0;
+    return parseFloat((qty * (1 - loss / 100)).toFixed(2));
+  }, [quantityToProcess, targetProduct, lossPercentage]);
 
   // Validation errors
   const validationErrors = useMemo(() => {
@@ -121,10 +140,15 @@ export function ProcessStockDialog({
     const cost = parseToCents(costPerUnit);
     if (!cost || cost <= 0) errors.push(t('validation.costRequired'));
 
+    const loss = parseFloat(lossPercentage);
+    if (isNaN(loss) || loss < 0 || loss > 100) {
+      errors.push(t('validation.lossPercentageRange'));
+    }
+
     if (calculatedOutput <= 0) errors.push(t('validation.zeroOutput'));
 
     return errors;
-  }, [sourceProduct, targetProduct, quantityToProcess, costPerUnit, calculatedOutput, t]);
+  }, [sourceProduct, targetProduct, quantityToProcess, costPerUnit, lossPercentage, calculatedOutput, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -188,6 +212,7 @@ export function ProcessStockDialog({
     setCostPerUnit('');
     setExpiryDate('');
     setNotes('');
+    setLossPercentage('0');
     setProductSearch('');
     setSelectionMode('none');
   };
@@ -386,10 +411,10 @@ export function ProcessStockDialog({
                   <div className="text-sm">{targetProduct.name}</div>
                 </div>
               </div>
-              {targetProduct.estimatedLossPercentage && (
+              {parseFloat(lossPercentage) > 0 && (
                 <div className="mt-3 text-center text-sm text-muted-foreground">
                   <TrendingDown className="inline h-4 w-4 mr-1" />
-                  {t('preview.loss')}: {targetProduct.estimatedLossPercentage}% =
+                  {t('preview.loss')}: {lossPercentage}% =
                   {(parseFloat(quantityToProcess || '0') - calculatedOutput).toFixed(2)} {targetProduct.unit}
                 </div>
               )}
@@ -420,6 +445,31 @@ export function ProcessStockDialog({
                   )}
                 </div>
 
+                <div>
+                  <Label htmlFor="lossPercentage">{t('fields.lossPercentage')}</Label>
+                  <Input
+                    id="lossPercentage"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={lossPercentage}
+                    onChange={(e) => setLossPercentage(e.target.value)}
+                    placeholder="0"
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {targetProduct?.estimatedLossPercentage != null
+                      ? t('fields.defaultFromProduct')
+                      : targetProduct?.categoryRelation?.processingLossPercentage != null
+                        ? t('fields.defaultFromCategory', { name: targetProduct.categoryRelation.name })
+                        : t('fields.lossPercentageHint')}
+                    {' • '}{t('fields.expectedYield')}: {(100 - (parseFloat(lossPercentage) || 0)).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="costPerUnit">{t('fields.costPerUnit')}</Label>
                   <Input
