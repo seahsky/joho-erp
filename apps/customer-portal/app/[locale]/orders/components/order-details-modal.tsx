@@ -27,12 +27,17 @@ import {
   BottomSheet,
   useIsMobile,
   type StatusType,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@joho-erp/ui';
 import { MapPin, Package, Info, XCircle, Loader2, Camera, CheckCircle, X } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCurrency } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { BackorderStatusBadge } from './BackorderStatusBadge';
+import { InvoiceSection } from './invoice-section';
 import { inferBackorderDecision } from '@joho-erp/shared';
 
 interface OrderItem {
@@ -174,7 +179,13 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
       )}
 
       {order && (
-        <div className="space-y-4">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">{t('title')}</TabsTrigger>
+            <TabsTrigger value="invoice">{tOrders('invoice.title')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-4">
             {/* Order Header */}
             <Card>
               <CardContent className="p-4 space-y-3">
@@ -378,7 +389,12 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                 </Button>
               </div>
             )}
-          </div>
+          </TabsContent>
+
+          <TabsContent value="invoice" className="space-y-4">
+            <InvoiceSection orderId={order.id} />
+          </TabsContent>
+        </Tabs>
         )}
     </>
   );

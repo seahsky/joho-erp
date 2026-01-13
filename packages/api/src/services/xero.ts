@@ -1217,3 +1217,96 @@ export async function createCreditNoteInXero(
     };
   }
 }
+
+
+// ============================================================================
+// Invoice Retrieval for Customers (with Caching)
+// ============================================================================
+
+/**
+ * In-memory cache for invoice data with TTL
+ * Cache key: invoiceId, value: { data: XeroInvoice, expires: timestamp }
+ */
+const invoiceCache = new Map<
+  string,
+  { data: XeroInvoice & { Total?: number; TotalTax?: number; AmountDue?: number; AmountPaid?: number }; expires: number }
+>();
+
+/**
+ * Get cached invoice data or fetch from Xero with caching
+ * Respects XERO_INTEGRATION_ENABLED environment variable
+ * Returns null if invoice not found or integration disabled
+ */
+export async function getCachedInvoice(
+  invoiceId: string
+): Promise<(XeroInvoice & { Total?: number; TotalTax?: number; AmountDue?: number; AmountPaid?: number }) | null> {
+  // Check if Xero integration is enabled
+  if (!isXeroIntegrationEnabled()) {
+    throw new Error('Xero integration is disabled');
+  }
+
+  // Check cache first
+  const cached = invoiceCache.get(invoiceId);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+
+  try {
+    const response = await xeroApiRequest<XeroInvoicesResponse>(`/Invoices/${invoiceId}`);
+
+    if (!response.Invoices || response.Invoices.length === 0) {
+      return null;
+    }
+
+    const invoice = response.Invoices[0];
+
+    // Cache the invoice for 5 minutes
+    invoiceCache.set(invoiceId, {
+      data: invoice as any,
+      expires: Date.now() + 5 * 60 * 1000,
+    });
+
+    return invoice as any;
+  } catch (error) {
+    console.error(`[Xero] Failed to fetch invoice ${invoiceId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get a temporary PDF download URL for an invoice
+ * Respects XERO_INTEGRATION_ENABLED environment variable
+ * Returns null if integration is disabled
+ */
+export async function getInvoicePdfUrl(invoiceId: string): Promise<string | null> {
+  // Check if Xero integration is enabled
+  if (!isXeroIntegrationEnabled()) {
+    return null;
+  }
+
+  try {
+    const response = await xeroApiRequest<{ OnlineInvoices: [{ Url: string }] }>(
+      `/Invoices/${invoiceId}/OnlineInvoice`
+    );
+
+    if (response.OnlineInvoices && response.OnlineInvoices.length > 0) {
+      return response.OnlineInvoices[0].Url;
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`[Xero] Failed to get PDF URL for invoice ${invoiceId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Clear the invoice cache (for testing or manual refresh)
+ */
+export function clearInvoiceCache(invoiceId?: string): void {
+  if (invoiceId) {
+    invoiceCache.delete(invoiceId);
+  } else {
+    invoiceCache.clear();
+  }
+}

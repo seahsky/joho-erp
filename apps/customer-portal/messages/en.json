@@ -307,6 +307,38 @@
       "successMessage": "Your order has been cancelled successfully.",
       "error": "Cancel Failed",
       "cannotCancel": "Only pending orders can be cancelled"
+    },
+    "invoice": {
+      "title": "Invoice"
+    }
+  },
+  "invoices": {
+    "title": "Invoice",
+    "invoiceNumber": "Invoice #",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "AUTHORISED": "Approved",
+      "PAID": "Paid",
+      "CREDITED": "Credited",
+      "VOIDED": "Cancelled"
+    },
+    "downloadPdf": "Download PDF",
+    "noInvoice": "Invoice Not Yet Created",
+    "noInvoiceDescription": "Invoice will be created when your order is delivered",
+    "subtotal": "Subtotal",
+    "gst": "GST (10%)",
+    "amountDue": "Amount Due",
+    "amountPaid": "Amount Paid",
+    "creditNote": "Credit Note Issued",
+    "creditNoteDescription": "A credit note was issued for this cancelled order",
+    "offlineMode": "Offline Mode",
+    "lastUpdated": "Last updated",
+    "errors": {
+      "fetchFailed": "Failed to load invoice",
+      "tryAgain": "Try again"
     }
   },
   "profile": {

@@ -2673,4 +2673,132 @@ export const orderRouter = router({
       hasMinimum: minimumOrderAmount !== null && minimumOrderAmount > 0,
     };
   }),
+
+  /**
+   * Get invoice details for a customer's order
+   * Fetches live data from Xero if available, otherwise returns cached data
+   * Customer can only view their own orders
+   */
+  getOrderInvoice: protectedProcedure
+    .input(z.object({ orderId: z.string().min(1) }))
+    .query(async ({ input, ctx }) => {
+      // Verify customer owns this order
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerId: true,
+          xero: true,
+          delivery: true,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      // Get customer to verify ownership
+      const customer = await prisma.customer.findUnique({
+        where: { clerkUserId: ctx.userId! },
+        select: { id: true },
+      });
+
+      if (!customer || order.customerId !== customer.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      // Check if order has an invoice
+      if (!order.xero?.invoiceId) {
+        return null;
+      }
+
+      // Try to fetch live invoice from Xero
+      try {
+        const { getCachedInvoice } = await import('../services/xero');
+        const liveInvoice = await getCachedInvoice(order.xero.invoiceId);
+
+        if (liveInvoice) {
+          return {
+            invoiceId: liveInvoice.InvoiceID,
+            invoiceNumber: liveInvoice.InvoiceNumber,
+            date: liveInvoice.Date,
+            dueDate: liveInvoice.DueDate,
+            status: liveInvoice.Status,
+            total: liveInvoice.Total || 0,
+            totalTax: liveInvoice.TotalTax || 0,
+            amountDue: liveInvoice.AmountDue,
+            amountPaid: liveInvoice.AmountPaid,
+            isLive: true,
+          };
+        }
+      } catch (error) {
+        // If live fetch fails, fall back to cached data
+        console.error('Failed to fetch live invoice:', error);
+      }
+
+      // Fallback to cached data from order.xero
+      return {
+        invoiceId: order.xero.invoiceId,
+        invoiceNumber: order.xero.invoiceNumber,
+        date: order.delivery?.deliveredAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        dueDate: order.delivery?.deliveredAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        status: order.xero.invoiceStatus || 'AUTHORISED',
+        total: 0,
+        totalTax: 0,
+        isLive: false,
+        syncedAt: order.xero.syncedAt?.toISOString(),
+      };
+    }),
+
+  /**
+   * Get invoice PDF download URL
+   * Returns a temporary URL from Xero for customer to download invoice
+   * Customer can only download invoices for their own orders
+   */
+  getInvoicePdfUrl: protectedProcedure
+    .input(z.object({ orderId: z.string().min(1) }))
+    .query(async ({ input, ctx }) => {
+      // Verify customer owns this order
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: {
+          id: true,
+          customerId: true,
+          xero: true,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      // Get customer to verify ownership
+      const customer = await prisma.customer.findUnique({
+        where: { clerkUserId: ctx.userId! },
+        select: { id: true },
+      });
+
+      if (!customer || order.customerId !== customer.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      // Check if order has an invoice
+      if (!order.xero?.invoiceId) {
+        return null;
+      }
+
+      // Fetch PDF URL from Xero
+      try {
+        const { getInvoicePdfUrl } = await import('../services/xero');
+        const pdfUrl = await getInvoicePdfUrl(order.xero.invoiceId);
+        return pdfUrl;
+      } catch (error) {
+        console.error('Failed to fetch invoice PDF URL:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to generate PDF download link',
+        });
+      }
+    }),
 });

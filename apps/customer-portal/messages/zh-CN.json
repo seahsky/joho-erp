@@ -307,6 +307,38 @@
       "successMessage": "您的订单已成功取消。",
       "error": "取消失败",
       "cannotCancel": "只有待处理订单可以取消"
+    },
+    "invoice": {
+      "title": "发票"
+    }
+  },
+  "invoices": {
+    "title": "发票",
+    "invoiceNumber": "发票号 #",
+    "invoiceDate": "发票日期",
+    "dueDate": "应付日期",
+    "status": {
+      "DRAFT": "草稿",
+      "SUBMITTED": "待审核",
+      "AUTHORISED": "已批准",
+      "PAID": "已支付",
+      "CREDITED": "已记账",
+      "VOIDED": "已取消"
+    },
+    "downloadPdf": "下载 PDF",
+    "noInvoice": "发票尚未生成",
+    "noInvoiceDescription": "订单送达时将生成发票",
+    "subtotal": "小计",
+    "gst": "商品及服务税(10%)",
+    "amountDue": "应付金额",
+    "amountPaid": "已支付金额",
+    "creditNote": "已发出贷项通知单",
+    "creditNoteDescription": "此已取消订单已发出贷项通知单",
+    "offlineMode": "离线模式",
+    "lastUpdated": "最后更新",
+    "errors": {
+      "fetchFailed": "加载发票失败",
+      "tryAgain": "重试"
     }
   },
   "profile": {
