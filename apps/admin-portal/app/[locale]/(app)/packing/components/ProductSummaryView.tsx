@@ -20,6 +20,7 @@ interface ProductSummaryItem {
   productId: string | null | undefined;
   sku: string;
   productName: string;
+  category: 'Beef' | 'Pork' | 'Chicken' | 'Lamb' | 'Processed' | null;
   unit: string;
   totalQuantity: number;
   orders?: OrderReference[];
@@ -100,10 +101,20 @@ export function ProductSummaryView({ productSummary, onOrderBadgeClick }: Produc
                     </span>
                   </div>
 
-                  {/* Product Name */}
-                  <p className="text-xs font-medium mb-2 text-muted-foreground">
-                    {item.productName}
-                  </p>
+                  {/* Product Name and Category */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-xs font-medium text-muted-foreground flex-1 truncate">
+                      {item.productName}
+                    </p>
+                    {item.category && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-medium whitespace-nowrap"
+                      >
+                        {t(`categories.${item.category.toLowerCase()}`)}
+                      </Badge>
+                    )}
+                  </div>
 
                   {/* Order References */}
                   {item.orders && item.orders.length > 0 && (
