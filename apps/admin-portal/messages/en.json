@@ -586,6 +586,22 @@
       "success": "Drivers Auto-Assigned",
       "successMessage": "{count} orders assigned to drivers",
       "error": "Assignment Failed"
+    },
+    "markDeliveredDialog": {
+      "title": "Mark Delivery as Completed",
+      "description": "Confirm that this delivery has been completed",
+      "orderNumber": "Order Number",
+      "customer": "Customer",
+      "noPodWarning": "Note: No proof of delivery has been uploaded for this order",
+      "notesLabel": "Notes (Optional)",
+      "notesPlaceholder": "Add any notes about this delivery completion...",
+      "confirm": "Mark as Delivered",
+      "completing": "Completing...",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "markDeliveredSuccess": "Delivery marked as completed",
+      "markDeliveredError": "Failed to mark delivery as completed"
     }
   },
   "orders": {

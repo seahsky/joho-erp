@@ -586,6 +586,22 @@
       "success": "司機已自動分配",
       "successMessage": "已將 {count} 個訂單分配給司機",
       "error": "分配失敗"
+    },
+    "markDeliveredDialog": {
+      "title": "標記配送完成",
+      "description": "確認此配送已完成",
+      "orderNumber": "訂單編號",
+      "customer": "客戶",
+      "noPodWarning": "注意：此訂單尚未上傳簽收證明",
+      "notesLabel": "備註（可選）",
+      "notesPlaceholder": "添加關於此配送完成的備註...",
+      "confirm": "標記為已送達",
+      "completing": "完成中...",
+      "cancel": "取消"
+    },
+    "messages": {
+      "markDeliveredSuccess": "配送已標記為完成",
+      "markDeliveredError": "標記配送完成失敗"
     }
   },
   "orders": {

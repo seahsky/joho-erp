@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType } from '@joho-erp/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType, useToast } from '@joho-erp/ui';
 import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 import { useTableSort } from '@joho-erp/shared/hooks';
-import { RouteManifestDialog, DriverFilter, AutoAssignDialog } from './components';
+import { RouteManifestDialog, DriverFilter, AutoAssignDialog, MarkDeliveredDialog } from './components';
 import { StatsBar, FilterBar, type StatItem } from '@/components/operations';
 
 // Dynamically import Map component to avoid SSR issues
@@ -19,6 +19,7 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const t = useTranslations('deliveries');
+  const { toast } = useToast();
   const utils = api.useUtils();
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +28,30 @@ export default function DeliveriesPage() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [manifestDialogOpen, setManifestDialogOpen] = useState(false);
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
+  const [markDeliveredDialog, setMarkDeliveredDialog] = useState<{
+    open: boolean;
+    delivery: { id: string; orderId: string; customer: string } | null;
+  }>({ open: false, delivery: null });
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
+
+  // Mark Delivered mutation (for admins)
+  const markDeliveredMutation = api.delivery.markDelivered.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('messages.markDeliveredSuccess'),
+      });
+      void utils.delivery.getAll.invalidate();
+      void utils.delivery.getOptimizedRoute.invalidate();
+      setMarkDeliveredDialog({ open: false, delivery: null });
+    },
+    onError: (error) => {
+      toast({
+        title: t('messages.markDeliveredError'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Stabilize today's date to prevent infinite re-fetching
   const todayDateISO = useMemo(() => new Date().toISOString(), []);
@@ -248,7 +272,23 @@ export default function DeliveriesPage() {
                     </span>
                     {delivery.status === 'ready_for_delivery' && (
                       <PermissionGate permission="deliveries:manage">
-                        <Button size="sm" variant="ghost" className="h-7 text-xs">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent selecting the delivery card
+                            setMarkDeliveredDialog({
+                              open: true,
+                              delivery: {
+                                id: delivery.id,
+                                orderId: delivery.orderId,
+                                customer: delivery.customer,
+                              },
+                            });
+                          }}
+                          disabled={markDeliveredMutation.isPending}
+                        >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           {t('markAsDelivered')}
                         </Button>
@@ -301,6 +341,22 @@ export default function DeliveriesPage() {
           void utils.delivery.getAll.invalidate();
           void utils.delivery.getOptimizedRoute.invalidate();
         }}
+      />
+
+      {/* Mark Delivered Dialog (for admins) */}
+      <MarkDeliveredDialog
+        delivery={markDeliveredDialog.delivery}
+        open={markDeliveredDialog.open}
+        onOpenChange={(open) => setMarkDeliveredDialog({ ...markDeliveredDialog, open })}
+        onConfirm={async (notes) => {
+          if (markDeliveredDialog.delivery) {
+            await markDeliveredMutation.mutateAsync({
+              orderId: markDeliveredDialog.delivery.id,
+              notes,
+            });
+          }
+        }}
+        isSubmitting={markDeliveredMutation.isPending}
       />
     </div>
   );

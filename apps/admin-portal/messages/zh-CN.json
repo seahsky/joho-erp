@@ -586,6 +586,22 @@
       "success": "司机已自动分配",
       "successMessage": "已将 {count} 个订单分配给司机",
       "error": "分配失败"
+    },
+    "markDeliveredDialog": {
+      "title": "标记配送完成",
+      "description": "确认此配送已完成",
+      "orderNumber": "订单编号",
+      "customer": "客户",
+      "noPodWarning": "注意：此订单尚未上传签收证明",
+      "notesLabel": "备注（可选）",
+      "notesPlaceholder": "添加关于此配送完成的备注...",
+      "confirm": "标记为已送达",
+      "completing": "完成中...",
+      "cancel": "取消"
+    },
+    "messages": {
+      "markDeliveredSuccess": "配送已标记为完成",
+      "markDeliveredError": "标记配送完成失败"
     }
   },
   "orders": {
