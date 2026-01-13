@@ -12,6 +12,7 @@ import { CategoryChipBar } from './category-chip-bar';
 import { ProductRow } from './product-row';
 import { MiniCartDrawer } from '@/components/mini-cart/mini-cart-drawer';
 import { MiniCartSheet } from '@/components/mini-cart/mini-cart-sheet';
+import { SimpleCategorySidebar } from '@/components/simple-category-sidebar';
 import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-refresh';
 
 // Product type for customer portal (receives stockStatus/hasStock from API)
@@ -214,31 +215,43 @@ export function ProductList() {
         isHidden={miniCartOpen}
       />
 
-      {/* Main Container */}
-      <div
-        ref={containerRef}
-        className="min-h-screen"
-        {...touchHandlers}
-      >
-        <div className="container mx-auto px-4">
-          {/* Pull-to-refresh indicator (mobile only) */}
-          <div className="md:hidden">
-            <PullToRefreshIndicator
-              pullDistance={pullDistance}
-              threshold={80}
-              isRefreshing={isRefreshing}
-            />
-          </div>
+      {/* Main Layout - Sidebar + Content on desktop */}
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        {!isLoading && isMobile === false && (
+          <SimpleCategorySidebar
+            categories={categoriesWithCounts}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            totalProductCount={totalProducts}
+          />
+        )}
 
-          {/* Category Chip Bar */}
-          {!isLoading && (
-            <CategoryChipBar
-              categories={categoriesWithCounts}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              totalProductCount={totalProducts}
-            />
-          )}
+        {/* Main Container */}
+        <div
+          ref={containerRef}
+          className="flex-1 min-h-screen"
+          {...touchHandlers}
+        >
+          <div className="container mx-auto px-4">
+            {/* Pull-to-refresh indicator (mobile only) */}
+            <div className="md:hidden">
+              <PullToRefreshIndicator
+                pullDistance={pullDistance}
+                threshold={80}
+                isRefreshing={isRefreshing}
+              />
+            </div>
+
+            {/* Category Chip Bar - Mobile only */}
+            {!isLoading && isMobile && (
+              <CategoryChipBar
+                categories={categoriesWithCounts}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                totalProductCount={totalProducts}
+              />
+            )}
 
           {/* Status Banner */}
           {!isLoading && (
@@ -303,6 +316,7 @@ export function ProductList() {
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
 
