@@ -46,6 +46,7 @@ export function EditCategoryDialog({
 }: EditCategoryDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('categories');
+  const tCommon = useTranslations('common');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -246,7 +247,7 @@ export function EditCategoryDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common.cancel')}
+              {tCommon('cancel')}
             </Button>
             <Button
               type="submit"
@@ -255,10 +256,10 @@ export function EditCategoryDialog({
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('common.saving')}
+                  {tCommon('saving')}
                 </>
               ) : (
-                t('common.saveChanges')
+                tCommon('saveChanges')
               )}
             </Button>
           </DialogFooter>

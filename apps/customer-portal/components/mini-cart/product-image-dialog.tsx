@@ -24,6 +24,7 @@ export function ProductImageDialog({
   productName,
 }: ProductImageDialogProps) {
   const t = useTranslations('miniCart');
+  const tProducts = useTranslations('products');
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -48,7 +49,7 @@ export function ProductImageDialog({
             <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg border-2 border-dashed border-muted-foreground/25">
               <div className="text-center">
                 <span className="text-sm font-medium text-muted-foreground">
-                  {t('products.noImage')}
+                  {tProducts('noImage')}
                 </span>
               </div>
             </div>

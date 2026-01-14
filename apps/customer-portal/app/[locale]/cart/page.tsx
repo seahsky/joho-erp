@@ -14,6 +14,8 @@ import { PageHeader, PageHeaderSkeleton } from '@/components/page-header';
 
 export default function CartPage() {
   const t = useTranslations('cart');
+  const tCommon = useTranslations('common');
+  const tIllustrated = useTranslations('illustratedEmptyState');
   const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
@@ -95,11 +97,11 @@ export default function CartPage() {
         <div className="container mx-auto px-4 py-6">
           <IllustratedEmptyState
             variant="error"
-            title={t('illustratedEmptyState.error.title')}
-            description={t('illustratedEmptyState.error.description')}
+            title={tIllustrated('error.title')}
+            description={tIllustrated('error.description')}
             secondaryDescription={error.message}
             primaryAction={{
-              label: t('illustratedEmptyState.error.primaryAction'),
+              label: tIllustrated('error.primaryAction'),
               onClick: () => window.location.reload(),
             }}
           />
@@ -126,7 +128,7 @@ export default function CartPage() {
         title={t('dialog.clearCartTitle')}
         description={t('dialog.clearCartDescription')}
         confirmText={t('dialog.clearCartConfirm')}
-        cancelText={t('common.cancel')}
+        cancelText={tCommon('cancel')}
         onConfirm={handleConfirmClearCart}
         variant="destructive"
       />
@@ -183,11 +185,11 @@ export default function CartPage() {
         {isEmpty ? (
           <IllustratedEmptyState
             variant="empty-cart"
-            title={t('illustratedEmptyState.emptyCart.title')}
-            description={t('illustratedEmptyState.emptyCart.description')}
-            secondaryDescription={t('illustratedEmptyState.emptyCart.secondaryDescription')}
+            title={tIllustrated('emptyCart.title')}
+            description={tIllustrated('emptyCart.description')}
+            secondaryDescription={tIllustrated('emptyCart.secondaryDescription')}
             primaryAction={{
-              label: t('illustratedEmptyState.emptyCart.primaryAction'),
+              label: tIllustrated('emptyCart.primaryAction'),
               onClick: handleContinueShopping,
             }}
           />

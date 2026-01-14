@@ -46,6 +46,7 @@ type Category = {
 
 export function CategoriesTab() {
   const t = useTranslations('categories');
+  const tCommon = useTranslations('common');
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -123,12 +124,12 @@ export function CategoriesTab() {
     },
     {
       key: 'isActive',
-      label: t('common.status'),
+      label: tCommon('status'),
       render: (category) => <StatusBadge status={getStatusFromActive(category.isActive)} showIcon={false} />,
     },
     {
       key: 'actions',
-      label: t('common.actions'),
+      label: tCommon('actions'),
       className: 'text-right',
       render: (category) => (
         <div className="flex justify-end gap-2">
@@ -136,7 +137,7 @@ export function CategoriesTab() {
             <Button
               variant="ghost"
               size="sm"
-              aria-label={t('common.edit')}
+              aria-label={tCommon('edit')}
               onClick={() => {
                 setSelectedCategory(category);
                 setShowEditDialog(true);
@@ -149,7 +150,7 @@ export function CategoriesTab() {
             <Button
               variant="ghost"
               size="sm"
-              aria-label={t('common.delete')}
+              aria-label={tCommon('delete')}
               onClick={() => handleDelete(category)}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
@@ -191,7 +192,7 @@ export function CategoriesTab() {
             }}
           >
             <Edit className="h-4 w-4 mr-1" />
-            {t('common.edit')}
+            {tCommon('edit')}
           </Button>
         </PermissionGate>
         <PermissionGate permission="products:edit">
@@ -202,7 +203,7 @@ export function CategoriesTab() {
             onClick={() => handleDelete(category)}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            {t('common.delete')}
+            {tCommon('delete')}
           </Button>
         </PermissionGate>
       </div>
@@ -323,14 +324,14 @@ export function CategoriesTab() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {categoryToDelete?.productCount && categoryToDelete.productCount > 0
                 ? t('buttons.deactivate')
-                : t('common.delete')}
+                : tCommon('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
