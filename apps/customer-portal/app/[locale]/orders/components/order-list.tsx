@@ -16,6 +16,7 @@ import { usePullToRefresh, PullToRefreshIndicator } from '@/hooks/use-pull-to-re
 
 export function OrderList() {
   const t = useTranslations('orders');
+  const tStatus = useTranslations('statusBadges');
   const _tCommon = useTranslations('common');
   const tIllustrated = useTranslations('illustratedEmptyState');
   const router = useRouter();
@@ -279,7 +280,7 @@ export function OrderList() {
                 : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             }`}
           >
-            {status === 'all' ? t('allOrders') : t(status)}
+            {status === 'all' ? t('allOrders') : tStatus(status)}
           </button>
         ))}
       </div>
