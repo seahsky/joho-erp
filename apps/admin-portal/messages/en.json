@@ -188,6 +188,56 @@
       "expiresIn": "Expires in {days}d",
       "noItems": "No expiring items",
       "allGood": "All inventory is within safe expiry ranges"
+    },
+    "needsAttention": {
+      "title": "Needs Attention",
+      "pendingApproval": "{count} Pending Approval",
+      "backorders": "{count} Backorders",
+      "expiringSoon": "{count} Expiring Soon"
+    },
+    "financialOverview": {
+      "title": "Financial Overview",
+      "todayRevenue": "Today's Revenue",
+      "pendingPayments": "Pending Payments",
+      "monthToDate": "Month to Date",
+      "trend": "Trend",
+      "vsYesterday": "vs yesterday",
+      "vsLastWeek": "vs last week",
+      "vsLastMonth": "vs last month",
+      "overduePayments": "{count} overdue"
+    },
+    "periodSelector": {
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month"
+    },
+    "orderStatus": {
+      "title": "Order Status",
+      "pending": "Pending",
+      "ready": "Ready",
+      "delivering": "Delivering",
+      "completed": "Completed",
+      "viewAll": "View All Orders"
+    },
+    "inventoryHealth": {
+      "title": "Inventory Health",
+      "stockLevel": "Stock Level",
+      "good": "Good",
+      "warning": "Warning",
+      "critical": "Critical",
+      "lowStockItems": "{count} Low Stock Items",
+      "expiringThisWeek": "{count} Expiring This Week",
+      "viewInventory": "View Inventory",
+      "allHealthy": "All inventory is healthy"
+    },
+    "revenueChart": {
+      "title": "Revenue Trend",
+      "last7Days": "Last 7 Days",
+      "last14Days": "Last 14 Days",
+      "last30Days": "Last 30 Days",
+      "totalRevenue": "Total Revenue",
+      "totalOrders": "Total Orders",
+      "dailyAverage": "Daily Average"
     }
   },
   "suppliers": {

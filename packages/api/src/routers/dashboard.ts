@@ -426,4 +426,281 @@ export const dashboardRouter = router({
         hasMore: offset + transactions.length < totalCount,
       };
     }),
+
+
+  // ============================================================================
+  // NEW DASHBOARD REDESIGN ENDPOINTS
+  // ============================================================================
+
+  // Get financial overview with period comparison
+  getFinancialOverview: requirePermission('dashboard:view')
+    .input(
+      z.object({
+        period: z.enum(['today', 'week', 'month']).default('today'),
+      })
+    )
+    .query(async ({ input }) => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Calculate date ranges based on period
+      let currentStart: Date;
+      let currentEnd: Date;
+      let previousStart: Date;
+      let previousEnd: Date;
+
+      switch (input.period) {
+        case 'today':
+          currentStart = today;
+          currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+          previousStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+          previousEnd = today;
+          break;
+        case 'week':
+          // Get start of current week (Monday)
+          const dayOfWeek = today.getDay();
+          const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          currentStart = new Date(today.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
+          currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+          previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+          previousEnd = currentStart;
+          break;
+        case 'month':
+          currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+          previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          previousEnd = currentStart;
+          break;
+      }
+
+      // Query revenue for current and previous periods (excluding cancelled orders)
+      const [currentRevenue, previousRevenue, pendingPayments] = await Promise.all([
+        // Current period revenue
+        prisma.order.aggregate({
+          where: {
+            orderedAt: { gte: currentStart, lt: currentEnd },
+            status: { not: 'cancelled' },
+          },
+          _sum: { totalAmount: true },
+          _count: true,
+        }),
+
+        // Previous period revenue for comparison
+        prisma.order.aggregate({
+          where: {
+            orderedAt: { gte: previousStart, lt: previousEnd },
+            status: { not: 'cancelled' },
+          },
+          _sum: { totalAmount: true },
+        }),
+
+        // Pending payments (orders that are delivered but not yet paid - assuming no payment tracking, we'll use delivered orders)
+        // For now, count orders delivered in last 30 days as proxy for pending AR
+        prisma.order.aggregate({
+          where: {
+            status: 'delivered',
+            updatedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+          },
+          _sum: { totalAmount: true },
+          _count: true,
+        }),
+      ]);
+
+      const current = currentRevenue._sum.totalAmount || 0;
+      const previous = previousRevenue._sum.totalAmount || 0;
+      const percentChange = previous > 0 ? Math.round(((current - previous) / previous) * 100) : 0;
+
+      return {
+        revenue: current, // in cents
+        previousRevenue: previous, // in cents
+        percentChange,
+        orderCount: currentRevenue._count,
+        pendingPayments: pendingPayments._sum.totalAmount || 0, // in cents
+        pendingPaymentsCount: pendingPayments._count,
+        period: input.period,
+      };
+    }),
+
+  // Get order status counts for status cards
+  getOrderStatusCounts: requirePermission('dashboard:view').query(async () => {
+    const counts = await prisma.order.groupBy({
+      by: ['status'],
+      _count: true,
+    });
+
+    // Map to dashboard categories
+    const statusMap: Record<string, number> = {
+      pending: 0,
+      ready: 0,
+      delivering: 0,
+      completed: 0,
+    };
+
+    counts.forEach((item) => {
+      switch (item.status) {
+        case 'awaiting_approval':
+        case 'confirmed':
+          statusMap.pending += item._count;
+          break;
+        case 'packing':
+        case 'ready_for_delivery':
+          statusMap.ready += item._count;
+          break;
+        case 'out_for_delivery':
+          statusMap.delivering += item._count;
+          break;
+        case 'delivered':
+          statusMap.completed += item._count;
+          break;
+        // cancelled orders are excluded
+      }
+    });
+
+    return statusMap;
+  }),
+
+  // Get daily revenue trend for chart
+  getRevenueTrend: requirePermission('dashboard:view')
+    .input(
+      z.object({
+        days: z.number().min(7).max(90).default(7),
+      })
+    )
+    .query(async ({ input }) => {
+      const now = new Date();
+      const startDate = new Date(now.getTime() - input.days * 24 * 60 * 60 * 1000);
+
+      // Use MongoDB aggregation to group by date
+      const result = await prisma.order.aggregateRaw({
+        pipeline: [
+          {
+            $match: {
+              orderedAt: { $gte: { $date: startDate.toISOString() } },
+              status: { $ne: 'cancelled' },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: '%Y-%m-%d', date: '$orderedAt' },
+              },
+              revenue: { $sum: '$totalAmount' },
+              orderCount: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ],
+      });
+
+      // Fill in missing dates with zero revenue
+      const trendData: Array<{ date: string; revenue: number; orderCount: number }> = [];
+      const resultMap = new Map(
+        (result as unknown as Array<{ _id: string; revenue: number; orderCount: number }>).map(
+          (item) => [item._id, item]
+        )
+      );
+
+      for (let i = 0; i < input.days; i++) {
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+        const dateStr = date.toISOString().split('T')[0];
+        const existing = resultMap.get(dateStr);
+        trendData.push({
+          date: dateStr,
+          revenue: existing?.revenue || 0,
+          orderCount: existing?.orderCount || 0,
+        });
+      }
+
+      return trendData;
+    }),
+
+  // Get inventory health summary
+  getInventoryHealth: requirePermission('dashboard:view').query(async () => {
+    // Get company inventory settings for expiry threshold
+    const company = await prisma.company.findFirst({
+      select: { inventorySettings: true },
+    });
+    const expiryDays = company?.inventorySettings?.expiryAlertDays || 7;
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() + expiryDays);
+
+    const [totalProducts, healthyCount, lowStockCount, outOfStockCount, expiringCount] =
+      await Promise.all([
+        // Total active products
+        prisma.product.count({ where: { status: 'active' } }),
+
+        // Healthy stock (above threshold)
+        prisma.product.aggregateRaw({
+          pipeline: [
+            {
+              $match: {
+                status: 'active',
+                lowStockThreshold: { $exists: true, $ne: null },
+                currentStock: { $gt: 0 },
+              },
+            },
+            {
+              $match: {
+                $expr: { $gt: ['$currentStock', '$lowStockThreshold'] },
+              },
+            },
+            { $count: 'count' },
+          ],
+        }).then((res: unknown) => {
+          const data = res as Array<{ count: number }>;
+          return data[0]?.count || 0;
+        }),
+
+        // Low stock count (at or below threshold but not zero)
+        prisma.product.aggregateRaw({
+          pipeline: [
+            {
+              $match: {
+                status: 'active',
+                lowStockThreshold: { $exists: true, $ne: null },
+                currentStock: { $gt: 0 },
+              },
+            },
+            {
+              $match: {
+                $expr: { $lte: ['$currentStock', '$lowStockThreshold'] },
+              },
+            },
+            { $count: 'count' },
+          ],
+        }).then((res: unknown) => {
+          const data = res as Array<{ count: number }>;
+          return data[0]?.count || 0;
+        }),
+
+        // Out of stock count
+        prisma.product.count({
+          where: { status: 'active', currentStock: 0 },
+        }),
+
+        // Expiring inventory batches count
+        prisma.inventoryBatch.count({
+          where: {
+            expiryDate: { not: null, lte: thresholdDate },
+            isConsumed: false,
+            quantityRemaining: { gt: 0 },
+          },
+        }),
+      ]);
+
+    // Calculate health percentage (healthy products / total products with threshold)
+    const productsWithThreshold = healthyCount + lowStockCount;
+    const healthPercentage =
+      productsWithThreshold > 0 ? Math.round((healthyCount / productsWithThreshold) * 100) : 100;
+
+    return {
+      healthPercentage,
+      totalProducts,
+      healthyCount,
+      lowStockCount,
+      outOfStockCount,
+      expiringCount,
+      expiryThresholdDays: expiryDays,
+    };
+  }),
 });

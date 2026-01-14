@@ -188,6 +188,56 @@
       "expiresIn": "{days}天後過期",
       "noItems": "無過期商品",
       "allGood": "所有庫存都在安全保質期內"
+    },
+    "needsAttention": {
+      "title": "需要注意",
+      "pendingApproval": "{count} 待審批",
+      "backorders": "{count} 缺貨訂單",
+      "expiringSoon": "{count} 即將過期"
+    },
+    "financialOverview": {
+      "title": "財務概覽",
+      "todayRevenue": "今日收入",
+      "pendingPayments": "待收款項",
+      "monthToDate": "本月至今",
+      "trend": "趨勢",
+      "vsYesterday": "較昨日",
+      "vsLastWeek": "較上週",
+      "vsLastMonth": "較上月",
+      "overduePayments": "{count} 筆逾期"
+    },
+    "periodSelector": {
+      "today": "今日",
+      "thisWeek": "本週",
+      "thisMonth": "本月"
+    },
+    "orderStatus": {
+      "title": "訂單狀態",
+      "pending": "待處理",
+      "ready": "待配送",
+      "delivering": "配送中",
+      "completed": "已完成",
+      "viewAll": "檢視所有訂單"
+    },
+    "inventoryHealth": {
+      "title": "庫存健康",
+      "stockLevel": "庫存水平",
+      "good": "良好",
+      "warning": "警告",
+      "critical": "緊急",
+      "lowStockItems": "{count} 件低庫存",
+      "expiringThisWeek": "{count} 件本週過期",
+      "viewInventory": "檢視庫存",
+      "allHealthy": "所有庫存健康"
+    },
+    "revenueChart": {
+      "title": "收入趨勢",
+      "last7Days": "最近7天",
+      "last14Days": "最近14天",
+      "last30Days": "最近30天",
+      "totalRevenue": "總收入",
+      "totalOrders": "總訂單",
+      "dailyAverage": "日均"
     }
   },
   "suppliers": {
