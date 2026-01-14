@@ -12,6 +12,7 @@ interface EmptyStateProps {
     onClick: () => void;
   };
   className?: string;
+  size?: 'default' | 'sm';
 }
 
 export function EmptyState({
@@ -20,23 +21,26 @@ export function EmptyState({
   description,
   action,
   className,
+  size = 'default',
 }: EmptyStateProps) {
+  const isSmall = size === 'sm';
+
   return (
-    <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className || ''}`}>
+    <div className={`flex flex-col items-center justify-center ${isSmall ? 'py-6 px-2' : 'py-12 px-4'} text-center ${className || ''}`}>
       {/* Subtle icon background with blur effect */}
-      <div className="relative mb-6">
-        <div className="empty-state-icon-bg" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-border/50 bg-card">
-          <Icon className="h-8 w-8 text-muted-foreground/50" />
+      <div className={`relative ${isSmall ? 'mb-3' : 'mb-6'}`}>
+        {!isSmall && <div className="empty-state-icon-bg" />}
+        <div className={`relative flex items-center justify-center rounded-full border border-border/50 bg-card ${isSmall ? 'h-10 w-10' : 'h-16 w-16'}`}>
+          <Icon className={`text-muted-foreground/50 ${isSmall ? 'h-5 w-5' : 'h-8 w-8'}`} />
         </div>
       </div>
 
       {/* Clear messaging */}
-      <h3 className="text-lg font-semibold text-foreground mb-2">
+      <h3 className={`font-semibold text-foreground ${isSmall ? 'text-sm mb-1' : 'text-lg mb-2'}`}>
         {title}
       </h3>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-sm mb-6">
+        <p className={`text-muted-foreground max-w-sm ${isSmall ? 'text-xs mb-3' : 'text-sm mb-6'}`}>
           {description}
         </p>
       )}

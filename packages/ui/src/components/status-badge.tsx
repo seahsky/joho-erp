@@ -64,6 +64,7 @@ export type StatusType =
 export interface StatusBadgeProps extends Omit<BadgeProps, 'variant'> {
   status: StatusType;
   showIcon?: boolean;
+  size?: 'default' | 'xs';
 }
 
 interface StatusConfig {
@@ -203,17 +204,27 @@ const statusConfig: Record<StatusType, StatusConfig> = {
 export function StatusBadge({
   status,
   showIcon = true,
+  size = 'default',
   className,
   ...props
 }: StatusBadgeProps) {
   const t = useTranslations('statusBadges');
   const config = statusConfig[status];
+  const isXs = size === 'xs';
 
   // Fallback for undefined status
   if (!config) {
     console.warn(`Unknown status: ${status}`);
     return (
-      <Badge variant="secondary" className={cn('flex items-center gap-1', className)} {...props}>
+      <Badge
+        variant="secondary"
+        className={cn(
+          'flex items-center gap-1',
+          isXs && 'text-[10px] px-1.5 py-0 h-4',
+          className
+        )}
+        {...props}
+      >
         <span>{status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
       </Badge>
     );
@@ -225,10 +236,14 @@ export function StatusBadge({
   return (
     <Badge
       variant={config.variant}
-      className={cn('flex items-center gap-1', className)}
+      className={cn(
+        'flex items-center gap-1',
+        isXs && 'text-[10px] px-1.5 py-0 h-4',
+        className
+      )}
       {...props}
     >
-      {showIcon && <Icon className={cn('h-3 w-3', isAnimated && 'animate-spin')} />}
+      {showIcon && <Icon className={cn(isXs ? 'h-2.5 w-2.5' : 'h-3 w-3', isAnimated && 'animate-spin')} />}
       <span>{t(status)}</span>
     </Badge>
   );

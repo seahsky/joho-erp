@@ -263,6 +263,175 @@
     color: hsl(var(--foreground));
   }
 
+  /* Dashboard Stat Bar - Horizontal compact stats display */
+  .dashboard-stat-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    height: 64px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.5);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .dashboard-stat-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1rem;
+    border-left: 3px solid transparent;
+    transition: var(--transition-base);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .dashboard-stat-item:first-child {
+    border-left: none;
+  }
+
+  .dashboard-stat-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: hsl(var(--border) / 0.5);
+  }
+
+  .dashboard-stat-item:hover {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .dashboard-stat-item.accent-primary { border-left-color: hsl(var(--primary)); }
+  .dashboard-stat-item.accent-warning { border-left-color: hsl(var(--warning)); }
+  .dashboard-stat-item.accent-success { border-left-color: hsl(var(--success)); }
+  .dashboard-stat-item.accent-info { border-left-color: hsl(var(--info)); }
+  .dashboard-stat-item.accent-destructive { border-left-color: hsl(var(--destructive)); }
+
+  .dashboard-stat-value {
+    font-size: 1.5rem;
+    font-weight: var(--font-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    color: hsl(var(--foreground));
+  }
+
+  .dashboard-stat-label {
+    font-size: 0.6875rem;
+    font-weight: var(--font-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(var(--muted-foreground));
+    margin-top: 2px;
+  }
+
+  /* Data Card Compact - Scrollable dashboard cards */
+  .data-card-compact {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.5);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .data-card-compact-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid hsl(var(--border) / 0.3);
+    background: hsl(var(--muted) / 0.3);
+  }
+
+  .data-card-compact-title {
+    font-size: 0.8125rem;
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: hsl(var(--foreground));
+  }
+
+  .data-card-compact-badge {
+    font-size: 0.6875rem;
+    font-weight: var(--font-medium);
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+  }
+
+  .data-card-compact-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+
+  .data-card-compact-footer {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    border-top: 1px solid hsl(var(--border) / 0.3);
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  .data-card-compact-footer a,
+  .data-card-compact-footer button {
+    font-size: 0.75rem;
+    font-weight: var(--font-medium);
+    color: hsl(var(--primary));
+    text-decoration: none;
+    transition: var(--transition-base);
+  }
+
+  .data-card-compact-footer a:hover,
+  .data-card-compact-footer button:hover {
+    text-decoration: underline;
+  }
+
+  /* Dense list items for dashboard cards */
+  .list-item-dense {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: calc(var(--radius) - 2px);
+    transition: var(--transition-base);
+    cursor: pointer;
+  }
+
+  .list-item-dense:hover {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .list-item-dense + .list-item-dense {
+    border-top: 1px solid hsl(var(--border) / 0.2);
+  }
+
+  /* Status dots for compact display */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .status-dot-pending { background: hsl(var(--warning)); }
+  .status-dot-processing { background: hsl(var(--info)); }
+  .status-dot-completed { background: hsl(var(--success)); }
+  .status-dot-cancelled { background: hsl(var(--muted-foreground)); }
+  .status-dot-delivered { background: hsl(var(--success)); }
+  .status-dot-expired { background: hsl(var(--destructive)); }
+  .status-dot-expiring { background: hsl(var(--warning)); }
+  .status-dot-low { background: hsl(var(--warning)); }
+  .status-dot-critical { background: hsl(var(--destructive)); }
+
   /* Button Enhancements */
   .btn-enhanced {
     position: relative;
@@ -342,6 +511,29 @@
   .scrollbar-hide {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Slim scrollbar for compact cards */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 
   /* Smooth skeleton loading animation */
