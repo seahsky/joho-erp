@@ -119,7 +119,7 @@ export function FinancialStep({ data, onChange, onNext, onBack }: FinancialStepP
               maxLength={6}
               value={formData.bsb || ''}
               onChange={(e) => updateField('bsb', e.target.value.replace(/\D/g, ''))}
-              placeholder="123456"
+              placeholder={t('placeholders.bsb')}
             />
             {fieldErrors.bsb && (
               <p className="text-sm text-destructive">{fieldErrors.bsb}</p>

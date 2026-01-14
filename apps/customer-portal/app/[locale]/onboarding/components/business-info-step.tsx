@@ -135,7 +135,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
             <Input
               id="abn"
               maxLength={11}
-              placeholder="12345678901"
+              placeholder={t('placeholders.abnFormat')}
               value={formData.abn || ''}
               onChange={(e) =>
                 setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') })
@@ -151,7 +151,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
               <Input
                 id="acn"
                 maxLength={9}
-                placeholder="123456789"
+                placeholder={t('placeholders.acnFormat')}
                 value={formData.acn || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, acn: e.target.value.replace(/\D/g, '') })
@@ -378,7 +378,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
                   const cents = parseToCents(e.target.value) || 0;
                   setFormData({ ...formData, requestedCreditLimit: cents });
                 }}
-                placeholder="e.g., 10000 for $10,000"
+                placeholder={t('placeholders.creditLimitExample')}
               />
               <p className="text-xs text-muted-foreground mt-1">{t('enterAmountHint')}</p>
             </div>
@@ -394,7 +394,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
                   const cents = parseToCents(e.target.value) || 0;
                   setFormData({ ...formData, forecastPurchase: cents });
                 }}
-                placeholder="e.g., 5000 for $5,000"
+                placeholder={t('placeholders.forecastPurchaseExample')}
               />
               <p className="text-xs text-muted-foreground mt-1">{t('enterAmountHint')}</p>
             </div>

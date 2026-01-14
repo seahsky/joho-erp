@@ -665,7 +665,13 @@
       "buttons": {
         "next": "下一步"
       },
-      "enterAmountHint": "請以澳幣輸入金額"
+      "enterAmountHint": "請以澳幣輸入金額",
+      "placeholders": {
+        "abnFormat": "12345678901",
+        "acnFormat": "123456789",
+        "creditLimitExample": "例如，10000 表示 $10,000",
+        "forecastPurchaseExample": "例如，5000 表示 $5,000"
+      }
     },
     "directors": {
       "title": "董事/業主詳情",
@@ -719,6 +725,7 @@
       "placeholders": {
         "bankName": "例如：Commonwealth Bank",
         "accountName": "帳戶持有人姓名",
+        "bsb": "123456",
         "accountNumber": "例如：12345678"
       },
       "validation": {
