@@ -26,6 +26,8 @@ interface MiniCartItemProps {
 
 export function MiniCartItem({ item }: MiniCartItemProps) {
   const t = useTranslations('miniCart');
+  const tCart = useTranslations('cart');
+  const tProducts = useTranslations('products');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -37,7 +39,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
     },
     onError: () => {
       toast({
-        title: t('cart.messages.errorUpdatingQuantity'),
+        title: tCart('messages.errorUpdatingQuantity'),
         variant: 'destructive',
       });
     },
@@ -46,13 +48,13 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
   const removeItem = api.cart.removeItem.useMutation({
     onSuccess: () => {
       toast({
-        title: t('cart.messages.removedFromCart'),
+        title: tCart('messages.removedFromCart'),
       });
       void utils.cart.getCart.invalidate();
     },
     onError: () => {
       toast({
-        title: t('cart.messages.errorRemovingItem'),
+        title: tCart('messages.errorRemovingItem'),
         variant: 'destructive',
       });
     },
@@ -116,7 +118,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-[10px] font-medium text-neutral-400 text-center px-1">
-                {t('products.noImage')}
+                {tProducts('noImage')}
               </span>
             </div>
           )}
@@ -140,7 +142,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
               <>
                 <span className="text-neutral-300">·</span>
                 <Badge variant="success" className="text-[10px] px-1.5 py-0">
-                  {t('products.specialPrice')}
+                  {tProducts('specialPrice')}
                 </Badge>
               </>
             )}
@@ -170,7 +172,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
                 )}
                 onClick={handleDecrease}
                 disabled={item.quantity <= 1 || isPending}
-                aria-label={t('products.decreaseQuantity')}
+                aria-label={tProducts('decreaseQuantity')}
               >
                 <Minus className="h-3.5 w-3.5 text-neutral-600" />
               </Button>
@@ -192,7 +194,7 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
                 )}
                 onClick={handleIncrease}
                 disabled={isPending}
-                aria-label={t('products.increaseQuantity')}
+                aria-label={tProducts('increaseQuantity')}
               >
                 <Plus className="h-3.5 w-3.5 text-neutral-600" />
               </Button>

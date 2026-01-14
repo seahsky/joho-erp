@@ -23,6 +23,7 @@ interface CartItemProps {
 
 export function CartItem({ item }: CartItemProps) {
   const t = useTranslations('cart');
+  const tProducts = useTranslations('products');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [isEditingQuantity, setIsEditingQuantity] = React.useState(false);
@@ -166,7 +167,7 @@ export function CartItem({ item }: CartItemProps) {
             <Muted className="text-sm">SKU: {item.sku}</Muted>
             <div className="mt-2">
               <p className="text-sm font-medium">{formatAUD(item.unitPrice)}</p>
-              <Muted className="text-xs">{t('products.perUnit', { unit: item.unit })}</Muted>
+              <Muted className="text-xs">{tProducts('perUnit', { unit: item.unit })}</Muted>
             </div>
           </div>
 
@@ -190,7 +191,7 @@ export function CartItem({ item }: CartItemProps) {
                 className="h-11 w-11"
                 onClick={handleDecrease}
                 disabled={item.quantity <= 1 || isPending}
-                aria-label={t('products.decreaseQuantity')}
+                aria-label={tProducts('decreaseQuantity')}
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Minus className="h-4 w-4" />}
               </Button>
@@ -220,7 +221,7 @@ export function CartItem({ item }: CartItemProps) {
                 className="h-11 w-11"
                 onClick={handleIncrease}
                 disabled={isPending}
-                aria-label={t('products.increaseQuantity')}
+                aria-label={tProducts('increaseQuantity')}
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               </Button>

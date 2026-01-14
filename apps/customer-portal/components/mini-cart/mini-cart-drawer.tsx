@@ -14,6 +14,7 @@ interface MiniCartDrawerProps {
 
 export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
   const t = useTranslations('miniCart');
+  const tCommon = useTranslations('common');
   useLockBodyScroll(open);
 
   React.useEffect(() => {
@@ -87,7 +88,7 @@ export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
                 'transition-all duration-200',
                 'group'
               )}
-              aria-label={t('common.close')}
+              aria-label={tCommon('close')}
             >
               <X className="h-4 w-4 text-neutral-500 group-hover:text-neutral-700 transition-colors" />
             </Button>

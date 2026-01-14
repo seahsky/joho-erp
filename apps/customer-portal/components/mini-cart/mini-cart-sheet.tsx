@@ -14,6 +14,7 @@ interface MiniCartSheetProps {
 
 export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
   const t = useTranslations('miniCart');
+  const tCommon = useTranslations('common');
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [currentY, setCurrentY] = React.useState(0);
@@ -134,7 +135,7 @@ export function MiniCartSheet({ open, onClose, locale }: MiniCartSheetProps) {
                 'transition-all duration-200',
                 'group'
               )}
-              aria-label={t('common.close')}
+              aria-label={tCommon('close')}
             >
               <X className="h-5 w-5 text-neutral-500 group-hover:text-neutral-700 transition-colors" />
             </Button>

@@ -199,7 +199,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
               !canCheckout && 'opacity-50 cursor-not-allowed'
             )}
           >
-            {t('products.cartSummary.checkout')}
+            {t('cartSummary.checkout')}
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>

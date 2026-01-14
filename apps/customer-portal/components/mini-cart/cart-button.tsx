@@ -14,6 +14,7 @@ interface CartButtonProps {
 
 export function CartButton({ onClick, className, variant = 'desktop' }: CartButtonProps) {
   const t = useTranslations('miniCart');
+  const tNav = useTranslations('navigation');
   const { data: cart } = api.cart.getCart.useQuery();
   const [isAnimating, setIsAnimating] = React.useState(false);
   const prevCountRef = React.useRef(0);
@@ -65,7 +66,7 @@ export function CartButton({ onClick, className, variant = 'desktop' }: CartButt
             </span>
           )}
         </div>
-        <span className="text-xs mt-1 font-medium">{t('navigation.cart')}</span>
+        <span className="text-xs mt-1 font-medium">{tNav('cart')}</span>
       </button>
     );
   }

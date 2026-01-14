@@ -17,6 +17,8 @@ interface MiniCartContentProps {
 
 export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   const t = useTranslations('miniCart');
+  const tCommon = useTranslations('common');
+  const tCart = useTranslations('cart');
   const router = useRouter();
   const { data: cart, isLoading } = api.cart.getCart.useQuery();
   const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
@@ -46,7 +48,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-neutral-200 border-t-[hsl(0,67%,35%)]" />
           <div className="absolute inset-0 animate-ping rounded-full h-10 w-10 border border-[hsl(0,67%,35%)]/20" />
         </div>
-        <p className="mt-5 text-sm text-neutral-500 font-medium">{t('common.loading')}</p>
+        <p className="mt-5 text-sm text-neutral-500 font-medium">{tCommon('loading')}</p>
       </div>
     );
   }
@@ -147,7 +149,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           {/* Total */}
           <div className="flex justify-between items-center">
             <span className="text-base font-semibold text-neutral-900">
-              {t('cart.orderTotal')}
+              {tCart('orderTotal')}
             </span>
             <span className="text-xl font-bold bg-gradient-to-r from-[hsl(0,67%,35%)] to-[hsl(0,50%,35%)] bg-clip-text text-transparent">
               {formatAUD(cart.total)}
@@ -174,7 +176,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
             'border border-destructive/20'
           )}>
             <p className="text-xs text-destructive text-center font-medium">
-              {t('cart.checkoutBlockedWarning')}
+              {tCart('checkoutBlockedWarning')}
             </p>
           </div>
         )}
