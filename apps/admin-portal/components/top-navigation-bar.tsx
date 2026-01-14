@@ -12,6 +12,7 @@ import { QuickSearch } from './quick-search';
 
 export function TopNavigationBar() {
   const t = useTranslations('navigation');
+  const tCommon = useTranslations('common');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -24,14 +25,14 @@ export function TopNavigationBar() {
           <div className="flex items-center gap-2 group cursor-pointer">
             <Image
               src="/logo.png"
-              alt={t('common.brand')}
+              alt={tCommon('brand')}
               width={36}
               height={36}
               className="rounded-lg shadow-sm transition-all group-hover:shadow-md group-hover:scale-105"
             />
             <div className="flex flex-col">
               <span className="font-bold text-base leading-tight tracking-tight text-foreground">
-                {t('common.brand')}
+                {tCommon('brand')}
               </span>
               <span className="text-[10px] leading-tight text-muted-foreground uppercase tracking-wider font-medium">
                 {t('admin')}
@@ -48,7 +49,7 @@ export function TopNavigationBar() {
             className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-transparent hover:border-border group"
           >
             <Search className="w-4 h-4" />
-            <span className="text-sm">{t('common.search')}...</span>
+            <span className="text-sm">{tCommon('search')}...</span>
             <kbd className="hidden lg:inline-flex h-5 px-1.5 items-center gap-1 rounded border border-border bg-background font-mono text-[10px] font-medium text-muted-foreground">
               <span className="text-xs">⌘</span>K
             </kbd>

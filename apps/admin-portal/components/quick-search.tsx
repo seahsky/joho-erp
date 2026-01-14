@@ -20,13 +20,13 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const t = useTranslations('common');
+  const t = useTranslations('quickSearch');
 
   const quickActions = [
-    { id: 1, label: t('quickSearch.actions.newCustomer'), icon: Users, path: '/customers/new' },
-    { id: 2, label: t('quickSearch.actions.newOrder'), icon: ShoppingBag, path: '/orders/new' },
-    { id: 3, label: t('quickSearch.actions.viewAnalytics'), icon: TrendingUp, path: '/analytics' },
-    { id: 4, label: t('quickSearch.actions.inventoryReport'), icon: FileText, path: '/reports/inventory' },
+    { id: 1, label: t('actions.newCustomer'), icon: Users, path: '/customers/new' },
+    { id: 2, label: t('actions.newOrder'), icon: ShoppingBag, path: '/orders/new' },
+    { id: 3, label: t('actions.viewAnalytics'), icon: TrendingUp, path: '/analytics' },
+    { id: 4, label: t('actions.inventoryReport'), icon: FileText, path: '/reports/inventory' },
   ];
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
             <input
               ref={inputRef}
               type="text"
-              placeholder={t('quickSearch.placeholder')}
+              placeholder={t('placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
@@ -85,7 +85,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {t('quickSearch.recent')}
+                      {t('recent')}
                     </h3>
                   </div>
                   <div className="space-y-1">
@@ -109,7 +109,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {t('quickSearch.quickActions')}
+                      {t('quickActions')}
                     </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -137,7 +137,7 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
             {searchQuery && (
               <div className="px-4 py-3">
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  {t('quickSearch.noResults')} &ldquo;{searchQuery}&rdquo;
+                  {t('noResults')} &ldquo;{searchQuery}&rdquo;
                 </p>
               </div>
             )}
@@ -149,16 +149,16 @@ export function QuickSearch({ onClose }: QuickSearchProps) {
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↑</kbd>
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↓</kbd>
-                <span>{t('quickSearch.hints.navigate')}</span>
+                <span>{t('hints.navigate')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">↵</kbd>
-                <span>{t('quickSearch.hints.select')}</span>
+                <span>{t('hints.select')}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono">esc</kbd>
-              <span>{t('quickSearch.hints.close')}</span>
+              <span>{t('hints.close')}</span>
             </div>
           </div>
         </div>

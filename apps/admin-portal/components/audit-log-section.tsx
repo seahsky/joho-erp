@@ -92,10 +92,10 @@ export function AuditLogSection({
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return t('justNow');
-    if (minutes < 60) return t('minutesAgo', { count: minutes });
-    if (hours < 24) return t('hoursAgo', { count: hours });
-    if (days < 7) return t('daysAgo', { count: days });
+    if (minutes < 1) return tAudit('justNow');
+    if (minutes < 60) return tAudit('minutesAgo', { count: minutes });
+    if (hours < 24) return tAudit('hoursAgo', { count: hours });
+    if (days < 7) return tAudit('daysAgo', { count: days });
     return date.toLocaleDateString();
   };
 
