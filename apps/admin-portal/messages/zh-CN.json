@@ -1127,7 +1127,8 @@
     "buttons": {
       "adjustStock": "调整库存",
       "save": "保存调整",
-      "cancel": "取消"
+      "cancel": "取消",
+      "changeProduct": "← 更换产品"
     },
     "validation": {
       "notesRequired": "库存调整需要填写备注",

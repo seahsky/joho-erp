@@ -24,7 +24,7 @@ import {
 import { Search, UserPlus, Check, X, Eye, Mail, Phone, MapPin, CreditCard, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 
@@ -139,7 +139,7 @@ export default function CustomersPage() {
       sortable: true,
       render: (customer) =>
         customer.creditApplication.creditLimit > 0
-          ? formatCurrency(customer.creditApplication.creditLimit)
+          ? formatAUD(customer.creditApplication.creditLimit)
           : '-',
     },
     {
@@ -217,7 +217,7 @@ export default function CustomersPage() {
           <div>
             <p className="text-sm font-medium">
               {customer.creditApplication.creditLimit > 0
-                ? formatCurrency(customer.creditApplication.creditLimit)
+                ? formatAUD(customer.creditApplication.creditLimit)
                 : t('noCredit')}
             </p>
             <StatusBadge status={customer.creditApplication.status as StatusType} showIcon={false} />

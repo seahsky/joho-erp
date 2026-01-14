@@ -24,7 +24,7 @@ import { Search, ShoppingBag, Eye, Package, PackageX, Plus, AlertTriangle } from
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 import { BackorderStatusBadge } from './components/BackorderStatusBadge';
@@ -277,7 +277,7 @@ export default function OrdersPage() {
     {
       key: 'totalAmount',
       label: t('total'),
-      render: (order) => formatCurrency(order.totalAmount), // value is in cents
+      render: (order) => formatAUD(order.totalAmount), // value is in cents
       sortable: true,
     },
     {
@@ -364,7 +364,7 @@ export default function OrdersPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('total')}</p>
-          <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
+          <p className="font-medium">{formatAUD(order.totalAmount)}</p>
         </div>
       </div>
 
@@ -561,7 +561,7 @@ export default function OrdersPage() {
             <div>
               <CardDescription>{t('totalRevenue')}</CardDescription>
               <div className="text-3xl font-bold tabular-nums">
-                {formatCurrency(totalRevenue)}
+                {formatAUD(totalRevenue)}
               </div>
             </div>
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

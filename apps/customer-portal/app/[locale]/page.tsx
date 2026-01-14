@@ -14,17 +14,11 @@ export default async function Home({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  console.log('[Home Page] Component starting with locale:', locale);
 
   let user, t;
   try {
-    console.log('[Home Page] Calling currentUser()...');
     user = await currentUser();
-    console.log('[Home Page] currentUser() succeeded, user:', user?.id || 'no user');
-
-    console.log('[Home Page] Calling getTranslations() with locale:', locale);
     t = await getTranslations({ locale });
-    console.log('[Home Page] getTranslations() succeeded');
   } catch (error) {
     console.error('[Home Page] ERROR:', error);
     throw error;

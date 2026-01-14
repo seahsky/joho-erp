@@ -24,7 +24,7 @@ export function CategoryChipBar({
   onSelectCategory,
   totalProductCount,
 }: CategoryChipBarProps) {
-  const t = useTranslations();
+  const t = useTranslations('products');
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Keyboard navigation support
@@ -59,7 +59,7 @@ export function CategoryChipBar({
           ref={scrollContainerRef}
           className="flex items-center gap-2 overflow-x-auto scrollbar-hide scroll-smooth"
           role="tablist"
-          aria-label={t('products.categoryBar.title')}
+          aria-label={t('categoryBar.title')}
         >
           {/* All Products Chip */}
           <button
@@ -67,7 +67,7 @@ export function CategoryChipBar({
             onKeyDown={(e) => handleKeyDown(e, undefined)}
             role="tab"
             aria-selected={!selectedCategory}
-            aria-label={t('products.categoryBar.allProducts')}
+            aria-label={t('categoryBar.allProducts')}
             className={cn(
               'flex items-center gap-2 px-4 h-10 rounded-full border-2 transition-all duration-200',
               'font-medium text-sm whitespace-nowrap flex-shrink-0',
@@ -77,7 +77,7 @@ export function CategoryChipBar({
                 : 'bg-background border-border hover:border-primary/50 hover:bg-muted/50'
             )}
           >
-            {t('products.categoryBar.allProducts')}
+            {t('categoryBar.allProducts')}
             <span
               className={cn(
                 'px-1.5 py-0.5 rounded-md text-xs font-semibold',
@@ -136,7 +136,7 @@ export function CategoryChipBar({
               onClick={() => onSelectCategory(undefined)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
             >
-              {t('products.categoryBar.clearFilter')}
+              {t('categoryBar.clearFilter')}
             </button>
           </div>
         )}

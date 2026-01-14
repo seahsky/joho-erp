@@ -11,7 +11,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { QuickSearch } from './quick-search';
 
 export function TopNavigationBar() {
-  const t = useTranslations();
+  const t = useTranslations('navigation');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -34,7 +34,7 @@ export function TopNavigationBar() {
                 {t('common.brand')}
               </span>
               <span className="text-[10px] leading-tight text-muted-foreground uppercase tracking-wider font-medium">
-                {t('navigation.admin')}
+                {t('admin')}
               </span>
             </div>
           </div>

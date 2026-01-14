@@ -34,7 +34,7 @@ import {
 } from '@joho-erp/ui';
 import { MapPin, Package, Info, XCircle, Loader2, Camera, CheckCircle, X } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { BackorderStatusBadge } from './BackorderStatusBadge';
 import { InvoiceSection } from './invoice-section';
@@ -247,10 +247,10 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                           SKU: {item.sku} | {item.unit}
                         </Muted>
                         <Muted className="text-sm">
-                          {item.quantity} × {formatCurrency(item.unitPrice)}
+                          {item.quantity} × {formatAUD(item.unitPrice)}
                         </Muted>
                       </div>
-                      <p className="font-semibold">{formatCurrency(item.subtotal)}</p>
+                      <p className="font-semibold">{formatAUD(item.subtotal)}</p>
                     </div>
                   ))}
                 </div>
@@ -262,17 +262,17 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
               <CardContent className="p-4 space-y-2">
                 <div className="flex justify-between">
                   <Muted>{tCommon('subtotal')}</Muted>
-                  <p className="font-medium">{formatCurrency(order.subtotal)}</p>
+                  <p className="font-medium">{formatAUD(order.subtotal)}</p>
                 </div>
                 {order.taxAmount > 0 && (
                   <div className="flex justify-between">
                     <Muted>{tCommon('tax')}</Muted>
-                    <p className="font-medium">{formatCurrency(order.taxAmount)}</p>
+                    <p className="font-medium">{formatAUD(order.taxAmount)}</p>
                   </div>
                 )}
                 <div className="border-t pt-2 flex justify-between">
                   <p className="text-lg font-semibold">{tCommon('total')}</p>
-                  <p className="text-lg font-bold">{formatCurrency(order.totalAmount)}</p>
+                  <p className="text-lg font-bold">{formatAUD(order.totalAmount)}</p>
                 </div>
               </CardContent>
             </Card>

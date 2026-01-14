@@ -42,7 +42,7 @@ export function AddProductDialog({
   onSuccess,
 }: AddProductDialogProps) {
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('productForm');
 
   // Form state
   const [sku, setSku] = useState('');
@@ -84,12 +84,12 @@ export function AddProductDialog({
     onSuccess: () => {
       refetchCategories();
       toast({
-        title: t('productForm.messages.categoryCreated'),
+        title: t('messages.categoryCreated'),
       });
     },
     onError: (error) => {
       toast({
-        title: t('productForm.messages.categoryCreateError'),
+        title: t('messages.categoryCreateError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -153,11 +153,11 @@ export function AddProductDialog({
   const createProductMutation = api.product.create.useMutation({
     onSuccess: (result) => {
       const priceText = result.pricingCount === 1
-        ? t('productForm.messages.customPrice')
-        : t('productForm.messages.customPrices');
+        ? t('messages.customPrice')
+        : t('messages.customPrices');
       toast({
-        title: t('productForm.messages.productCreated'),
-        description: `${t('productForm.messages.productCreatedWith')} ${result.pricingCount} ${priceText}`,
+        title: t('messages.productCreated'),
+        description: `${t('messages.productCreatedWith')} ${result.pricingCount} ${priceText}`,
       });
       handleReset();
       onSuccess();
@@ -165,7 +165,7 @@ export function AddProductDialog({
     },
     onError: (error) => {
       toast({
-        title: t('productForm.messages.errorCreating'),
+        title: t('messages.errorCreating'),
         description: error.message,
         variant: 'destructive',
       });
@@ -191,43 +191,43 @@ export function AddProductDialog({
 
     // SKU validation
     if (!sku?.trim()) {
-      errors.sku = t('productForm.validation.skuRequired');
+      errors.sku = t('validation.skuRequired');
       isValid = false;
     }
 
     // Name validation
     if (!name?.trim()) {
-      errors.name = t('productForm.validation.nameRequired');
+      errors.name = t('validation.nameRequired');
       isValid = false;
     }
 
     // Base price validation
     if (!basePrice?.trim()) {
-      errors.basePrice = t('productForm.validation.basePriceRequired');
+      errors.basePrice = t('validation.basePriceRequired');
       isValid = false;
     } else {
       const basePriceInCents = parseToCents(basePrice);
       if (basePriceInCents === null || basePriceInCents <= 0) {
-        errors.basePrice = t('productForm.validation.basePricePositive');
+        errors.basePrice = t('validation.basePricePositive');
         isValid = false;
       }
     }
 
     // Unit validation (should always have value due to default, but check anyway)
     if (!unit) {
-      errors.unit = t('productForm.validation.unitRequired');
+      errors.unit = t('validation.unitRequired');
       isValid = false;
     }
 
     // Package size validation (if provided)
     if (packageSize && (isNaN(parseFloat(packageSize)) || parseFloat(packageSize) <= 0)) {
-      errors.packageSize = t('productForm.validation.packageSizePositive');
+      errors.packageSize = t('validation.packageSizePositive');
       isValid = false;
     }
 
     // Category validation (optional based on business rules, but good to have)
     if (!categoryId) {
-      errors.categoryId = t('productForm.validation.categoryRequired');
+      errors.categoryId = t('validation.categoryRequired');
       isValid = false;
     }
 
@@ -236,7 +236,7 @@ export function AddProductDialog({
     if (applyGst) {
       gstRateValue = parseFloat(gstRate);
       if (isNaN(gstRateValue) || gstRateValue < 0 || gstRateValue > 100) {
-        errors.gstRate = t('productForm.validation.gstRateRange');
+        errors.gstRate = t('validation.gstRateRange');
         isValid = false;
       }
     }
@@ -246,7 +246,7 @@ export function AddProductDialog({
     if (estimatedLossPercentage) {
       lossPercentage = parseFloat(estimatedLossPercentage);
       if (isNaN(lossPercentage) || lossPercentage < 0 || lossPercentage > 100) {
-        errors.estimatedLossPercentage = t('productForm.validation.lossPercentageRange');
+        errors.estimatedLossPercentage = t('validation.lossPercentageRange');
         isValid = false;
       }
     }
@@ -261,8 +261,8 @@ export function AddProductDialog({
     const validation = validateForm();
     if (!validation.isValid) {
       toast({
-        title: t('productForm.validation.invalidInput'),
-        description: t('productForm.validation.fixErrors'),
+        title: t('validation.invalidInput'),
+        description: t('validation.fixErrors'),
         variant: 'destructive',
       });
       return;
@@ -332,20 +332,20 @@ export function AddProductDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            {t('productForm.dialog.title')}
+            {t('dialog.title')}
           </DialogTitle>
           <DialogDescription>
-            {t('productForm.dialog.description')}
+            {t('dialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Product Info */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">{t('productForm.sections.productDetails')}</h3>
+            <h3 className="text-sm font-semibold">{t('sections.productDetails')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sku">{t('productForm.fields.skuRequired')}</Label>
+                <Label htmlFor="sku">{t('fields.skuRequired')}</Label>
                 <Input
                   id="sku"
                   value={sku}
@@ -353,7 +353,7 @@ export function AddProductDialog({
                     setSku(e.target.value);
                     clearFieldError('sku');
                   }}
-                  placeholder={t('productForm.fields.skuPlaceholder')}
+                  placeholder={t('fields.skuPlaceholder')}
                   required
                 />
                 {fieldErrors.sku && (
@@ -361,7 +361,7 @@ export function AddProductDialog({
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name">{t('productForm.fields.nameRequired')}</Label>
+                <Label htmlFor="name">{t('fields.nameRequired')}</Label>
                 <Input
                   id="name"
                   value={name}
@@ -369,7 +369,7 @@ export function AddProductDialog({
                     setName(e.target.value);
                     clearFieldError('name');
                   }}
-                  placeholder={t('productForm.fields.namePlaceholder')}
+                  placeholder={t('fields.namePlaceholder')}
                   required
                 />
                 {fieldErrors.name && (
@@ -379,17 +379,17 @@ export function AddProductDialog({
             </div>
 
             <div>
-              <Label htmlFor="description">{t('productForm.fields.description')}</Label>
+              <Label htmlFor="description">{t('fields.description')}</Label>
               <Input
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('productForm.fields.descriptionPlaceholder')}
+                placeholder={t('fields.descriptionPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">{t('productForm.fields.category')}</Label>
+              <Label htmlFor="category">{t('fields.category')}</Label>
               <CategorySelect
                 value={categoryId}
                 onChange={(value) => {
@@ -401,12 +401,12 @@ export function AddProductDialog({
                 isCreating={createCategoryMutation.isPending}
                 disabled={createProductMutation.isPending}
                 labels={{
-                  selectCategory: t('productForm.fields.selectCategory'),
-                  createCategory: t('productForm.fields.createCategory'),
-                  searchPlaceholder: t('productForm.fields.searchCategories'),
-                  noCategories: t('productForm.fields.noCategories'),
-                  newCategoryName: t('productForm.fields.newCategoryName'),
-                  creating: t('productForm.fields.creatingCategory'),
+                  selectCategory: t('fields.selectCategory'),
+                  createCategory: t('fields.createCategory'),
+                  searchPlaceholder: t('fields.searchCategories'),
+                  noCategories: t('fields.noCategories'),
+                  newCategoryName: t('fields.newCategoryName'),
+                  creating: t('fields.creatingCategory'),
                 }}
               />
               {fieldErrors.categoryId && (
@@ -417,7 +417,7 @@ export function AddProductDialog({
 
           {/* Product Image */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">{t('productForm.sections.productImage')}</h3>
+            <h3 className="text-sm font-semibold">{t('sections.productImage')}</h3>
             <ProductImageUpload
               value={imageUrl}
               onChange={setImageUrl}
@@ -426,11 +426,11 @@ export function AddProductDialog({
               disabled={createProductMutation.isPending}
               isUploading={isUploading}
               labels={{
-                uploadTitle: t('productForm.image.uploadTitle'),
-                uploadSubtitle: t('productForm.image.uploadSubtitle'),
-                change: t('productForm.image.change'),
-                remove: t('productForm.image.remove'),
-                uploading: t('productForm.image.uploading'),
+                uploadTitle: t('image.uploadTitle'),
+                uploadSubtitle: t('image.uploadSubtitle'),
+                change: t('image.change'),
+                remove: t('image.remove'),
+                uploading: t('image.uploading'),
                 errorInvalidType: t('upload.errorInvalidType'),
                 errorFileTooLarge: t('upload.errorFileTooLarge'),
                 errorUploadFailed: t('upload.errorUploadFailed'),
@@ -441,10 +441,10 @@ export function AddProductDialog({
 
           {/* Inventory Details */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">{t('productForm.sections.inventoryPricing')}</h3>
+            <h3 className="text-sm font-semibold">{t('sections.inventoryPricing')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="unit">{t('productForm.fields.unitRequired')}</Label>
+                <Label htmlFor="unit">{t('fields.unitRequired')}</Label>
                 <select
                   id="unit"
                   value={unit}
@@ -455,10 +455,10 @@ export function AddProductDialog({
                   className="w-full px-3 py-2 border rounded-md"
                   required
                 >
-                  <option value="kg">{t('productForm.units.kg')}</option>
-                  <option value="piece">{t('productForm.units.piece')}</option>
-                  <option value="box">{t('productForm.units.box')}</option>
-                  <option value="carton">{t('productForm.units.carton')}</option>
+                  <option value="kg">{t('units.kg')}</option>
+                  <option value="piece">{t('units.piece')}</option>
+                  <option value="box">{t('units.box')}</option>
+                  <option value="carton">{t('units.carton')}</option>
                 </select>
                 {fieldErrors.unit && (
                   <p className="text-sm text-destructive">{fieldErrors.unit}</p>
@@ -466,7 +466,7 @@ export function AddProductDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="packageSize">{t('productForm.fields.packageSize')}</Label>
+                <Label htmlFor="packageSize">{t('fields.packageSize')}</Label>
                 <Input
                   id="packageSize"
                   type="number"
@@ -476,7 +476,7 @@ export function AddProductDialog({
                     setPackageSize(e.target.value);
                     clearFieldError('packageSize');
                   }}
-                  placeholder={t('productForm.fields.packageSizePlaceholder')}
+                  placeholder={t('fields.packageSizePlaceholder')}
                 />
                 {fieldErrors.packageSize && (
                   <p className="text-sm text-destructive">{fieldErrors.packageSize}</p>
@@ -486,7 +486,7 @@ export function AddProductDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="basePrice">{t('productForm.fields.basePrice')}</Label>
+                <Label htmlFor="basePrice">{t('fields.basePrice')}</Label>
                 <Input
                   id="basePrice"
                   type="number"
@@ -496,7 +496,7 @@ export function AddProductDialog({
                     setBasePrice(e.target.value);
                     clearFieldError('basePrice');
                   }}
-                  placeholder={t('productForm.fields.basePricePlaceholder')}
+                  placeholder={t('fields.basePricePlaceholder')}
                   required
                 />
                 {fieldErrors.basePrice && (
@@ -514,16 +514,16 @@ export function AddProductDialog({
                   onCheckedChange={(checked: boolean) => setApplyGst(checked)}
                 />
                 <Label htmlFor="applyGst" className="cursor-pointer">
-                  {t('productForm.fields.applyGst')}
+                  {t('fields.applyGst')}
                 </Label>
               </div>
               <p className="text-sm text-muted-foreground ml-6">
-                {t('productForm.fields.applyGstDescription')}
+                {t('fields.applyGstDescription')}
               </p>
 
               {applyGst && (
                 <div className="ml-6 w-1/2 space-y-2">
-                  <Label htmlFor="gstRate">{t('productForm.fields.gstRate')}</Label>
+                  <Label htmlFor="gstRate">{t('fields.gstRate')}</Label>
                   <Input
                     id="gstRate"
                     type="number"
@@ -535,7 +535,7 @@ export function AddProductDialog({
                       setGstRate(e.target.value);
                       clearFieldError('gstRate');
                     }}
-                    placeholder={t('productForm.fields.gstRatePlaceholder')}
+                    placeholder={t('fields.gstRatePlaceholder')}
                   />
                   {fieldErrors.gstRate && (
                     <p className="text-sm text-destructive">{fieldErrors.gstRate}</p>
@@ -546,7 +546,7 @@ export function AddProductDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="currentStock">{t('productForm.fields.currentStockReadOnly')}</Label>
+                <Label htmlFor="currentStock">{t('fields.currentStockReadOnly')}</Label>
                 <Input
                   id="currentStock"
                   type="number"
@@ -555,24 +555,24 @@ export function AddProductDialog({
                   className="bg-muted text-muted-foreground cursor-not-allowed"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('productForm.fields.initialStockHint')}
+                  {t('fields.initialStockHint')}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="lowStockThreshold">{t('productForm.fields.lowStockThreshold')}</Label>
+                <Label htmlFor="lowStockThreshold">{t('fields.lowStockThreshold')}</Label>
                 <Input
                   id="lowStockThreshold"
                   type="number"
                   value={lowStockThreshold}
                   onChange={(e) => setLowStockThreshold(e.target.value)}
-                  placeholder={t('productForm.fields.lowStockThresholdPlaceholder')}
+                  placeholder={t('fields.lowStockThresholdPlaceholder')}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="estimatedLossPercentage">{t('productForm.fields.estimatedLossPercentage')}</Label>
+              <Label htmlFor="estimatedLossPercentage">{t('fields.estimatedLossPercentage')}</Label>
               <Input
                 id="estimatedLossPercentage"
                 type="number"
@@ -581,27 +581,27 @@ export function AddProductDialog({
                 max="100"
                 value={estimatedLossPercentage}
                 onChange={(e) => setEstimatedLossPercentage(e.target.value)}
-                placeholder={t('productForm.fields.lossPercentagePlaceholder')}
+                placeholder={t('fields.lossPercentagePlaceholder')}
               />
               {estimatedLossPercentage && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('productForm.fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
+                  {t('fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
                 </p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="status">{t('productForm.fields.status')}</Label>
+                <Label htmlFor="status">{t('fields.status')}</Label>
                 <select
                   id="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'active' | 'discontinued' | 'out_of_stock')}
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="active">{t('productForm.statuses.active')}</option>
-                  <option value="discontinued">{t('productForm.statuses.discontinued')}</option>
-                  <option value="out_of_stock">{t('productForm.statuses.out_of_stock')}</option>
+                  <option value="active">{t('statuses.active')}</option>
+                  <option value="discontinued">{t('statuses.discontinued')}</option>
+                  <option value="out_of_stock">{t('statuses.out_of_stock')}</option>
                 </select>
               </div>
             </div>
@@ -627,13 +627,13 @@ export function AddProductDialog({
               }}
               disabled={createProductMutation.isPending}
             >
-              {t('productForm.buttons.cancel')}
+              {t('buttons.cancel')}
             </Button>
             <Button type="submit" disabled={createProductMutation.isPending}>
               {createProductMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {t('productForm.buttons.createProduct')}
+              {t('buttons.createProduct')}
             </Button>
           </div>
         </form>

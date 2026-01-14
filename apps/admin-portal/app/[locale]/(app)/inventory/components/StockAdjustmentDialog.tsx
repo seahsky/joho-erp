@@ -393,7 +393,7 @@ export function StockAdjustmentDialog({
                   onClick={() => setSelectedProduct(null)}
                   className="text-sm text-primary hover:underline"
                 >
-                  ← Change product
+                  {t('buttons.changeProduct')}
                 </button>
               )}
             </div>

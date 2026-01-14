@@ -31,7 +31,7 @@ import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from '../inventory/components/StockAdjustmentDialog';
 import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useTableSort } from '@joho-erp/shared/hooks';
 import { PermissionGate } from '@/components/permission-gate';
 
@@ -131,7 +131,7 @@ export default function ProductsPage() {
     {
       key: 'basePrice',
       label: t('price'),
-      render: (product) => formatCurrency(product.basePrice), // value is in cents
+      render: (product) => formatAUD(product.basePrice), // value is in cents
       sortable: true,
     },
     {
@@ -212,7 +212,7 @@ export default function ProductsPage() {
         </div>
         <div>
           <p className="text-muted-foreground">{t('price')}</p>
-          <p className="font-medium">{formatCurrency(product.basePrice)}</p>
+          <p className="font-medium">{formatAUD(product.basePrice)}</p>
         </div>
         <div>
           <p className="text-muted-foreground">{t('unit')}</p>
@@ -333,7 +333,7 @@ export default function ProductsPage() {
           <CardHeader className="pb-3 relative">
             <CardDescription>{t('totalInventoryValue')}</CardDescription>
             <div className="stat-value tabular-nums">
-              {formatCurrency(totalValue)}
+              {formatAUD(totalValue)}
             </div>
           </CardHeader>
         </Card>

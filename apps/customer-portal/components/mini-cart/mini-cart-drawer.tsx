@@ -13,7 +13,7 @@ interface MiniCartDrawerProps {
 }
 
 export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
   useLockBodyScroll(open);
 
   React.useEffect(() => {
@@ -60,7 +60,7 @@ export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={t('miniCart.title')}
+        aria-label={t('title')}
       >
         {/* Premium drawer container */}
         <div className={cn(

@@ -1127,7 +1127,8 @@
     "buttons": {
       "adjustStock": "調整庫存",
       "save": "儲存調整",
-      "cancel": "取消"
+      "cancel": "取消",
+      "changeProduct": "← 更換產品"
     },
     "validation": {
       "notesRequired": "庫存調整需要填寫備註",

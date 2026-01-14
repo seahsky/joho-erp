@@ -43,7 +43,7 @@ export function CartSummary({
   locale,
   items = [],
 }: CartSummaryProps) {
-  const t = useTranslations();
+  const t = useTranslations('cart');
   const router = useRouter();
 
   // Calculate GST breakdown
@@ -64,12 +64,12 @@ export function CartSummary({
   return (
     <Card className="sticky top-24 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-background to-muted/20">
       <CardHeader>
-        <H3 className="text-xl">{t('cart.orderSummary')}</H3>
+        <H3 className="text-xl">{t('orderSummary')}</H3>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Subtotal */}
         <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">{t('cart.subtotal')}</span>
+          <span className="text-muted-foreground">{t('subtotal')}</span>
           <span className="font-medium">{formatAUD(subtotalCents)}</span>
         </div>
 
@@ -77,12 +77,12 @@ export function CartSummary({
         {gstCents > 0 && (
           <div className="flex justify-between items-center">
             <div className="flex flex-col gap-0.5">
-              <span className="text-muted-foreground">{t('cart.tax')}</span>
+              <span className="text-muted-foreground">{t('tax')}</span>
               {/* Show breakdown for mixed GST rates */}
               {hasMultipleGstRates && (
                 <span className="text-xs text-muted-foreground">
-                  {gstAppliedCount} {t('cart.gstBreakdown.withGst')} · {gstExemptCount}{' '}
-                  {t('cart.gstBreakdown.exempt')}
+                  {gstAppliedCount} {t('gstBreakdown.withGst')} · {gstExemptCount}{' '}
+                  {t('gstBreakdown.exempt')}
                 </span>
               )}
             </div>
@@ -93,7 +93,7 @@ export function CartSummary({
         <div className="border-t pt-4">
           {/* Total */}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-semibold">{t('cart.orderTotal')}</span>
+            <span className="text-lg font-semibold">{t('orderTotal')}</span>
             <span className="text-2xl font-bold text-primary">{formatAUD(totalCents)}</span>
           </div>
 
@@ -101,7 +101,7 @@ export function CartSummary({
           {creditLimitCents > 0 && (
             <div className="mb-4 p-3 bg-muted rounded-lg">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">{t('cart.availableCredit')}</span>
+                <span className="text-muted-foreground">{t('availableCredit')}</span>
                 <span className="font-medium">{formatAUD(creditLimitCents)}</span>
               </div>
             </div>
@@ -123,7 +123,7 @@ export function CartSummary({
             <div className="mb-4">
               <Badge variant="destructive" className="w-full justify-center py-2">
                 <AlertTriangle className="h-4 w-4 mr-2" />
-                {t('cart.creditLimitWarning')}
+                {t('creditLimitWarning')}
               </Badge>
             </div>
           )}
@@ -136,7 +136,7 @@ export function CartSummary({
             disabled={exceedsCredit}
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
-            {t('cart.buttons.checkout')}
+            {t('buttons.checkout')}
           </Button>
         </div>
       </CardContent>

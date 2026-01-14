@@ -16,7 +16,7 @@ interface MiniCartContentProps {
 }
 
 export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
-  const t = useTranslations();
+  const t = useTranslations('miniCart');
   const router = useRouter();
   const { data: cart, isLoading } = api.cart.getCart.useQuery();
   const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
@@ -65,10 +65,10 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
         </div>
 
         <h3 className="text-lg font-semibold text-neutral-900 mb-1.5 tracking-tight">
-          {t('miniCart.empty')}
+          {t('empty')}
         </h3>
         <p className="text-sm text-neutral-500 text-center mb-7 max-w-[200px] leading-relaxed">
-          {t('miniCart.emptyDescription')}
+          {t('emptyDescription')}
         </p>
 
         <Button
@@ -82,7 +82,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           )}
         >
           <Package className="h-4 w-4" />
-          {t('miniCart.continueShopping')}
+          {t('continueShopping')}
         </Button>
       </div>
     );
@@ -95,13 +95,13 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
       {/* Header with item count */}
       <div className="flex items-center justify-between pb-4 border-b border-neutral-200/80">
         <h2 className="text-xl font-semibold text-neutral-900 tracking-tight">
-          {t('miniCart.title')}
+          {t('title')}
         </h2>
         <span className={cn(
           'text-sm font-medium px-2.5 py-1 rounded-full',
           'bg-neutral-100 text-neutral-600'
         )}>
-          {t('miniCart.items', { count: itemCount })}
+          {t('items', { count: itemCount })}
         </span>
       </div>
 
@@ -132,14 +132,14 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
         <div className="bg-gradient-to-b from-neutral-50 to-neutral-100/50 rounded-xl p-4 mb-4 border border-neutral-200/60">
           {/* Subtotal */}
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-neutral-600">{t('miniCart.subtotal')}</span>
+            <span className="text-sm text-neutral-600">{t('subtotal')}</span>
             <span className="text-sm font-medium text-neutral-800">{formatAUD(cart.subtotal)}</span>
           </div>
 
           {/* GST */}
           {cart.gst > 0 && (
             <div className="flex justify-between items-center mb-3 pb-3 border-b border-neutral-200/60">
-              <span className="text-sm text-neutral-600">{t('miniCart.gst')}</span>
+              <span className="text-sm text-neutral-600">{t('gst')}</span>
               <span className="text-sm font-medium text-neutral-800">{formatAUD(cart.gst)}</span>
             </div>
           )}
@@ -193,7 +193,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            {t('miniCart.checkoutNow')}
+            {t('checkoutNow')}
             <ArrowRight className="h-4 w-4" />
           </Button>
 
@@ -207,7 +207,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
               'transition-all duration-200'
             )}
           >
-            {t('miniCart.viewCart')}
+            {t('viewCart')}
           </Button>
         </div>
       </div>

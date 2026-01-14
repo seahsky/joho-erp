@@ -22,7 +22,7 @@ import {
 } from '@joho-erp/ui';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
-import { formatCurrency, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
+import { formatAUD, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -229,14 +229,14 @@ export default function CreditReviewPage({ params }: PageProps) {
           <p className="text-sm text-muted-foreground">{t('stats.requestedLimit')}</p>
           <p className="text-2xl font-bold">
             {creditApp.requestedCreditLimit
-              ? formatCurrency(creditApp.requestedCreditLimit)
+              ? formatAUD(creditApp.requestedCreditLimit)
               : 'N/A'}
           </p>
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">{t('stats.forecastPurchase')}</p>
           <p className="text-2xl font-bold">
-            {creditApp.forecastPurchase ? formatCurrency(creditApp.forecastPurchase) : 'N/A'}
+            {creditApp.forecastPurchase ? formatAUD(creditApp.forecastPurchase) : 'N/A'}
           </p>
         </Card>
         <Card className="p-4">
@@ -580,7 +580,7 @@ export default function CreditReviewPage({ params }: PageProps) {
                   <>
                     <div className="flex justify-between">
                       <dt className="font-medium text-muted-foreground">{t('fields.creditLimit')}:</dt>
-                      <dd>{formatCurrency(creditApp.creditLimit)}</dd>
+                      <dd>{formatAUD(creditApp.creditLimit)}</dd>
                     </div>
                     <div className="flex justify-between">
                       <dt className="font-medium text-muted-foreground">{t('fields.paymentTerms')}:</dt>
@@ -614,7 +614,7 @@ export default function CreditReviewPage({ params }: PageProps) {
             <AlertDialogDescription>
               {t('confirmDialog.approveDescription', {
                 businessName: customer.businessName,
-                creditLimit: formatCurrency(approveData.creditLimit),
+                creditLimit: formatAUD(approveData.creditLimit),
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>

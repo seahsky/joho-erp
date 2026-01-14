@@ -23,6 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  useToast,
 } from '@joho-erp/ui';
 import {
   ArrowLeft,
@@ -50,6 +51,7 @@ export default function SupplierDetailPage({ params }: PageProps) {
   const router = useRouter();
   const t = useTranslations('supplierDetail');
   const tCommon = useTranslations('common');
+  const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showLinkProductDialog, setShowLinkProductDialog] = useState(false);
@@ -94,35 +96,56 @@ export default function SupplierDetailPage({ params }: PageProps) {
 
   const updateMutation = api.supplier.update.useMutation({
     onSuccess: () => {
-      alert(t('updateSuccess'));
+      toast({
+        title: t('updateSuccess'),
+        variant: 'default',
+      });
       setIsEditing(false);
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
-      alert(error.message);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const suspendMutation = api.supplier.updateStatus.useMutation({
     onSuccess: () => {
-      alert(t('suspendSuccess'));
+      toast({
+        title: t('suspendSuccess'),
+        variant: 'default',
+      });
       setShowSuspendDialog(false);
       setSuspendReason('');
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
-      alert(error.message);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const activateMutation = api.supplier.updateStatus.useMutation({
     onSuccess: () => {
-      alert(t('activateSuccess'));
+      toast({
+        title: t('activateSuccess'),
+        variant: 'default',
+      });
       setShowActivateDialog(false);
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
-      alert(error.message);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 

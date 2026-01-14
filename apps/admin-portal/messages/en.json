@@ -1127,7 +1127,8 @@
     "buttons": {
       "adjustStock": "Adjust Stock",
       "save": "Save Adjustment",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "changeProduct": "← Change product"
     },
     "validation": {
       "notesRequired": "Notes are required for stock adjustments",

@@ -45,7 +45,7 @@ type Category = {
 };
 
 export function CategoriesTab() {
-  const t = useTranslations();
+  const t = useTranslations('categories');
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -59,12 +59,12 @@ export function CategoriesTab() {
     onSuccess: (result) => {
       if (result.deactivated) {
         toast({
-          title: t('categories.messages.deactivated'),
-          description: t('categories.messages.deactivatedDescription'),
+          title: t('messages.deactivated'),
+          description: t('messages.deactivatedDescription'),
         });
       } else {
         toast({
-          title: t('categories.messages.deleted'),
+          title: t('messages.deleted'),
         });
       }
       refetch();
@@ -72,7 +72,7 @@ export function CategoriesTab() {
     },
     onError: (error) => {
       toast({
-        title: t('categories.messages.deleteError'),
+        title: t('messages.deleteError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -106,17 +106,17 @@ export function CategoriesTab() {
   const columns: TableColumn<Category>[] = [
     {
       key: 'name',
-      label: t('categories.fields.name'),
+      label: t('fields.name'),
       className: 'font-medium',
     },
     {
       key: 'description',
-      label: t('categories.fields.description'),
+      label: t('fields.description'),
       render: (category) => category.description || '-',
     },
     {
       key: 'productCount',
-      label: t('categories.fields.productCount'),
+      label: t('fields.productCount'),
       render: (category) => (
         <Badge variant="outline">{category.productCount}</Badge>
       ),
@@ -174,7 +174,7 @@ export function CategoriesTab() {
 
       <div className="flex items-center gap-4 text-sm">
         <div>
-          <span className="text-muted-foreground">{t('categories.fields.productCount')}: </span>
+          <span className="text-muted-foreground">{t('fields.productCount')}: </span>
           <span className="font-medium">{category.productCount}</span>
         </div>
       </div>
@@ -216,21 +216,21 @@ export function CategoriesTab() {
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>{t('categories.stats.total')}</CardDescription>
+            <CardDescription>{t('stats.total')}</CardDescription>
             <div className="stat-value tabular-nums">{categories.length}</div>
           </CardHeader>
         </Card>
         <Card className="stat-card animate-fade-in-up delay-100">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>{t('categories.stats.active')}</CardDescription>
+            <CardDescription>{t('stats.active')}</CardDescription>
             <div className="stat-value tabular-nums text-success">{activeCount}</div>
           </CardHeader>
         </Card>
         <Card className="stat-card animate-fade-in-up delay-200">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
-            <CardDescription>{t('categories.stats.productsAssigned')}</CardDescription>
+            <CardDescription>{t('stats.productsAssigned')}</CardDescription>
             <div className="stat-value tabular-nums">{totalProducts}</div>
           </CardHeader>
         </Card>
@@ -243,7 +243,7 @@ export function CategoriesTab() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('categories.searchPlaceholder')}
+                placeholder={t('searchPlaceholder')}
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -255,7 +255,7 @@ export function CategoriesTab() {
                 onClick={() => setShowAddDialog(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                {t('categories.buttons.add')}
+                {t('buttons.add')}
               </Button>
             </PermissionGate>
           </div>
@@ -268,10 +268,10 @@ export function CategoriesTab() {
           <CardTitle>
             <div className="flex items-center gap-2">
               <FolderTree className="h-5 w-5" />
-              {t('categories.listTitle')}
+              {t('listTitle')}
             </div>
           </CardTitle>
-          <CardDescription>{t('categories.listDescription')}</CardDescription>
+          <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           {isLoading ? (
@@ -286,8 +286,8 @@ export function CategoriesTab() {
           ) : (
             <EmptyState
               icon={FolderTree}
-              title={t('categories.noCategories')}
-              description={searchQuery ? t('categories.adjustSearch') : t('categories.addFirst')}
+              title={t('noCategories')}
+              description={searchQuery ? t('adjustSearch') : t('addFirst')}
             />
           )}
         </CardContent>
@@ -315,11 +315,11 @@ export function CategoriesTab() {
       <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('categories.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
               {categoryToDelete?.productCount && categoryToDelete.productCount > 0
-                ? t('categories.deleteDialog.hasProducts', { count: categoryToDelete.productCount })
-                : t('categories.deleteDialog.confirmation')}
+                ? t('deleteDialog.hasProducts', { count: categoryToDelete.productCount })
+                : t('deleteDialog.confirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -329,7 +329,7 @@ export function CategoriesTab() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {categoryToDelete?.productCount && categoryToDelete.productCount > 0
-                ? t('categories.buttons.deactivate')
+                ? t('buttons.deactivate')
                 : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>

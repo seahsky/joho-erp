@@ -8,7 +8,7 @@ import { Loader2, Search, Calendar, X, ArrowUpDown } from 'lucide-react';
 
 type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc';
 import { api } from '@/trpc/client';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { OrderDetailsModal } from './order-details-modal';
 import { BackorderStatusBadge } from './BackorderStatusBadge';
@@ -307,7 +307,7 @@ export function OrderList() {
                 <p className="text-sm">
                   <span className="font-medium">{order.items.length}</span>{' '}
                   {order.items.length === 1 ? t('itemCount', { count: order.items.length }) : t('itemCount_plural', { count: order.items.length })} •{' '}
-                  <span className="font-semibold">{formatCurrency(order.totalAmount)}</span>
+                  <span className="font-semibold">{formatAUD(order.totalAmount)}</span>
                 </p>
                 {order.status === 'ready_for_delivery' && order.requestedDeliveryDate && (
                   <p className="text-sm text-muted-foreground">
