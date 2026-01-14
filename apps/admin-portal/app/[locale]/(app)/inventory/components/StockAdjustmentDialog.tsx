@@ -27,7 +27,8 @@ import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
 import { parseToCents } from '@joho-erp/shared';
-import { SupplierStatus, ProductStatus } from '@joho-erp/database';
+// Status constants - using string literals to avoid importing Prisma on client
+const ACTIVE_STATUS = 'active' as const;
 
 type AdjustmentType =
   | 'stock_received'
@@ -82,7 +83,7 @@ export function StockAdjustmentDialog({
   const { data: productsData, isLoading: productsLoading } = api.product.getAll.useQuery(
     {
       search: debouncedSearch,
-      status: ProductStatus.active,
+      status: ACTIVE_STATUS,
       limit: 100,
     },
     { enabled: !selectedProduct && open }
@@ -109,7 +110,7 @@ export function StockAdjustmentDialog({
   // Fetch active suppliers (only when stock_received type)
   const { data: suppliersData, isLoading: suppliersLoading } = api.supplier.getAll.useQuery(
     {
-      status: SupplierStatus.active,
+      status: ACTIVE_STATUS,
       search: supplierSearch || undefined,
       limit: 100,
     },
