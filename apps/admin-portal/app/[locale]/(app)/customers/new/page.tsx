@@ -44,12 +44,9 @@ type TradeReferenceInfo = {
   email: string;
 };
 
-const AUSTRALIAN_STATES = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'] as const;
-
 export default function NewCustomerPage() {
   const router = useRouter();
   const t = useTranslations('customerForm');
-  const tStates = useTranslations('australianStates');
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('business');
