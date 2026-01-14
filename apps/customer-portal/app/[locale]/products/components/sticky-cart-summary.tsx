@@ -15,7 +15,8 @@ interface StickyCartSummaryProps {
 }
 
 export function StickyCartSummary({ locale, onCartClick, isHidden = false }: StickyCartSummaryProps) {
-  const t = useTranslations('cart');
+  const t = useTranslations('products');
+  const tCart = useTranslations('cart');
   const router = useRouter();
   const [animate, setAnimate] = React.useState(false);
 
@@ -69,7 +70,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
                 'hover:bg-muted/50 active:scale-95',
                 animate && 'animate-cart-bounce'
               )}
-              aria-label={t('products.cartSummary.viewCart')}
+              aria-label={t('cartSummary.viewCart')}
             >
               <div className="relative">
                 <ShoppingCart className="h-5 w-5" />
@@ -86,7 +87,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
                 )}
               </div>
               <span className="font-medium">
-                {t('products.cartSummary.title')}
+                {t('cartSummary.title')}
               </span>
             </button>
 
@@ -94,7 +95,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
             {cutoffInfo && !cutoffInfo.isAfterCutoff && (
               <div className="flex items-center gap-2 text-sm">
                 <Muted className="text-xs">
-                  {t('products.cartSummary.orderBy', {
+                  {t('cartSummary.orderBy', {
                     time: cutoffInfo.cutoffTime,
                     date: cutoffInfo.nextAvailableDeliveryDate.toLocaleDateString(),
                   })}
@@ -106,7 +107,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
             <div className="flex items-center gap-6">
               {/* Total */}
               <div className="text-right">
-                <Muted className="text-xs">{t('products.cartSummary.total')}</Muted>
+                <Muted className="text-xs">{t('cartSummary.total')}</Muted>
                 <Large className={cn(
                   'font-bold transition-all duration-200',
                   animate && 'scale-110'
@@ -118,7 +119,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
               {/* Credit Available */}
               {cart && (
                 <div className="text-right">
-                  <Muted className="text-xs">{t('products.cartSummary.creditAvailable')}</Muted>
+                  <Muted className="text-xs">{t('cartSummary.creditAvailable')}</Muted>
                   <span className={cn(
                     'font-semibold',
                     exceedsCredit ? 'text-destructive' : 'text-muted-foreground'
@@ -138,7 +139,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
                   !canCheckout && 'opacity-50 cursor-not-allowed'
                 )}
               >
-                {t('products.cartSummary.checkout')}
+                {t('cartSummary.checkout')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -157,7 +158,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
               'active:scale-95',
               animate && 'animate-cart-bounce'
             )}
-            aria-label={t('products.cartSummary.viewCart')}
+            aria-label={t('cartSummary.viewCart')}
           >
             <div className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -182,7 +183,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
               </span>
               {itemCount > 0 && (
                 <Muted className="text-[10px]">
-                  {t('products.cartSummary.items', { count: itemCount })}
+                  {t('cartSummary.items', { count: itemCount })}
                 </Muted>
               )}
             </div>
@@ -207,7 +208,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
         {exceedsCredit && (
           <div className="bg-destructive/10 border-t border-destructive/20 px-4 py-2">
             <p className="text-xs text-destructive font-medium">
-              {t('exceedsCredit')}
+              {tCart('creditLimitWarning')}
             </p>
           </div>
         )}

@@ -24,7 +24,8 @@ export function InlineQuantityControls({
   disabled,
   className,
 }: InlineQuantityControlsProps) {
-  const t = useTranslations('cart');
+  const tCart = useTranslations('cart');
+  const t = useTranslations('products');
   const { toast } = useToast();
   const [isEditing, setIsEditing] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(currentQuantity.toString());
@@ -68,8 +69,8 @@ export function InlineQuantityControls({
     },
     onSuccess: () => {
       toast({
-        title: t('messages.addedToCart'),
-        description: t('messages.productAddedToCart', { productName }),
+        title: tCart('messages.addedToCart'),
+        description: tCart('messages.productAddedToCart', { productName }),
       });
     },
     onError: (error, _variables, context) => {
@@ -77,7 +78,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('messages.errorAddingToCart'),
+        title: tCart('messages.errorAddingToCart'),
         description: error.message,
         variant: 'destructive',
       });
@@ -117,7 +118,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('messages.errorUpdatingQuantity'),
+        title: tCart('messages.errorUpdatingQuantity'),
         description: error.message,
         variant: 'destructive',
       });
@@ -149,7 +150,7 @@ export function InlineQuantityControls({
     },
     onSuccess: () => {
       toast({
-        title: t('messages.removedFromCart'),
+        title: tCart('messages.removedFromCart'),
       });
     },
     onError: (error, _variables, context) => {
@@ -157,7 +158,7 @@ export function InlineQuantityControls({
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
       toast({
-        title: t('messages.errorRemovingItem'),
+        title: tCart('messages.errorRemovingItem'),
         description: error.message,
         variant: 'destructive',
       });
@@ -209,8 +210,8 @@ export function InlineQuantityControls({
         removeItem.mutate({ productId });
       } else {
         toast({
-          title: t('products.quantity.invalid'),
-          description: t('products.quantity.precision'),
+          title: t('quantity.invalid'),
+          description: t('quantity.precision'),
           variant: 'destructive',
         });
         setInputValue(currentQuantity.toString());
@@ -222,8 +223,8 @@ export function InlineQuantityControls({
     // Validate range
     if (newQty > MAX_QUANTITY) {
       toast({
-        title: t('products.quantity.invalid'),
-        description: t('products.quantity.precision'),
+        title: t('quantity.invalid'),
+        description: t('quantity.precision'),
         variant: 'destructive',
       });
       setInputValue(currentQuantity.toString());
@@ -285,14 +286,14 @@ export function InlineQuantityControls({
           onClick={handleAdd5}
           disabled={disabled || isPending}
           className="gap-1.5 px-4"
-          title={t('products.quantity.add')}
+          title={t('quantity.add')}
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Plus className="h-3.5 w-3.5" />
           )}
-          {t('products.quantity.add5')}
+          {t('quantity.add5')}
         </Button>
       </div>
     );
@@ -308,8 +309,8 @@ export function InlineQuantityControls({
           onClick={handleSubtract5}
           disabled={disabled || isPending}
           className="h-9 w-9 p-0"
-          title={t('products.quantity.remove5')}
-          aria-label={t('products.quantity.remove5')}
+          title={t('quantity.remove5')}
+          aria-label={t('quantity.remove5')}
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -326,8 +327,8 @@ export function InlineQuantityControls({
             'hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
-          title={t('products.quantity.edit')}
-          aria-label={t('products.quantity.current', { count: currentQuantity })}
+          title={t('quantity.edit')}
+          aria-label={t('quantity.current', { count: currentQuantity })}
         >
           {currentQuantity}
         </button>
@@ -338,8 +339,8 @@ export function InlineQuantityControls({
           onClick={handleAdd5}
           disabled={disabled || isPending}
           className="h-9 w-9 p-0"
-          title={t('products.quantity.add5')}
-          aria-label={t('products.quantity.add5')}
+          title={t('quantity.add5')}
+          aria-label={t('quantity.add5')}
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -360,8 +361,8 @@ export function InlineQuantityControls({
         onClick={handleSubtract5}
         disabled={disabled || isPending}
         className="h-9 w-9 p-0"
-        title={t('products.quantity.remove5')}
-        aria-label={t('products.quantity.remove5')}
+        title={t('quantity.remove5')}
+        aria-label={t('quantity.remove5')}
       >
         <Minus className="h-3.5 w-3.5" />
       </Button>
@@ -382,7 +383,7 @@ export function InlineQuantityControls({
           disabled && 'opacity-50 cursor-not-allowed'
         )}
         placeholder={currentQuantity.toString()}
-        aria-label={t('products.quantity.precision')}
+        aria-label={t('quantity.precision')}
       />
 
       <Button
@@ -395,8 +396,8 @@ export function InlineQuantityControls({
           'border-green-500 hover:bg-green-50 hover:border-green-600',
           'disabled:border-border disabled:hover:bg-transparent'
         )}
-        title={t('products.quantity.confirm')}
-        aria-label={t('products.quantity.confirm')}
+        title={t('quantity.confirm')}
+        aria-label={t('quantity.confirm')}
       >
         <Check className="h-3.5 w-3.5 text-green-600" />
       </Button>
@@ -407,8 +408,8 @@ export function InlineQuantityControls({
         onClick={handleCancelEdit}
         disabled={disabled || isPending}
         className="h-9 w-9 p-0 hover:bg-muted"
-        title={t('products.quantity.cancel')}
-        aria-label={t('products.quantity.cancel')}
+        title={t('quantity.cancel')}
+        aria-label={t('quantity.cancel')}
       >
         <X className="h-3.5 w-3.5 text-muted-foreground" />
       </Button>
@@ -419,8 +420,8 @@ export function InlineQuantityControls({
         onClick={handleAdd5}
         disabled={disabled || isPending}
         className="h-9 w-9 p-0"
-        title={t('products.quantity.add5')}
-        aria-label={t('products.quantity.add5')}
+        title={t('quantity.add5')}
+        aria-label={t('quantity.add5')}
       >
         <Plus className="h-3.5 w-3.5" />
       </Button>
