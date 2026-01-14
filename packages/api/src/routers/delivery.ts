@@ -379,9 +379,14 @@ export const deliveryRouter = router({
 
       const orders = await prisma.order.findMany({
         where: {
-          requestedDeliveryDate: {
-            gte: startOfDay,
-            lt: endOfDay,
+          // Filter by packing date to match getAll endpoint behavior
+          packing: {
+            is: {
+              packedAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
           },
           status: {
             in: ['ready_for_delivery', 'delivered'],
