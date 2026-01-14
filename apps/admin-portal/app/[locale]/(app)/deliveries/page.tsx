@@ -37,7 +37,7 @@ export default function DeliveriesPage() {
   // Date selector state for filtering by packing date
   const today = useMemo(() => {
     const d = new Date();
-    d.setHours(0, 0, 0, 0);
+    d.setUTCHours(0, 0, 0, 0);
     return d;
   }, []);
   const [deliveryDate, setDeliveryDate] = useState<Date>(today);
@@ -60,14 +60,14 @@ export default function DeliveriesPage() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [year, month, day] = e.target.value.split('-').map(Number);
-    const newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     setDeliveryDate(newDate);
   };
 
   const dateInputValue = useMemo(() => {
-    const year = deliveryDate.getFullYear();
-    const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
-    const day = String(deliveryDate.getDate()).padStart(2, '0');
+    const year = deliveryDate.getUTCFullYear();
+    const month = String(deliveryDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(deliveryDate.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }, [deliveryDate]);
 
