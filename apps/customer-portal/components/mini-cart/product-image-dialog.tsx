@@ -23,7 +23,6 @@ export function ProductImageDialog({
   imageUrl,
   productName,
 }: ProductImageDialogProps) {
-  const t = useTranslations('miniCart');
   const tProducts = useTranslations('products');
 
   return (

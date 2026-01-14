@@ -848,12 +848,21 @@ export default function CustomerDetailPage({ params }: PageProps) {
                   </div>
                   <div>
                     <Label htmlFor="state" className="text-sm text-muted-foreground">{t('address.state')}</Label>
-                    <Input
-                      id="state"
+                    <Select
                       value={editForm.state}
-                      onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
-                      className="mt-1"
-                    />
+                      onValueChange={(value) => setEditForm({ ...editForm, state: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder={t('address.state')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AUSTRALIAN_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {t(`states.${state}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="postcode" className="text-sm text-muted-foreground">{t('address.postcode')}</Label>
