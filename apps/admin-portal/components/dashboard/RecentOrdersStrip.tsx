@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { StatusBadge, Skeleton, type StatusType } from '@joho-erp/ui';
 import { formatAUD } from '@joho-erp/shared';
@@ -22,6 +23,7 @@ interface RecentOrdersStripProps {
 
 export function RecentOrdersStrip({ orders, isLoading }: RecentOrdersStripProps) {
   const router = useRouter();
+  const t = useTranslations('dashboard');
 
   if (isLoading) {
     return (
@@ -42,11 +44,11 @@ export function RecentOrdersStrip({ orders, isLoading }: RecentOrdersStripProps)
     return (
       <div className="recent-orders-strip recent-orders-empty">
         <div className="recent-orders-header">
-          <span className="recent-orders-title">Recent Orders</span>
+          <span className="recent-orders-title">{t('recentOrders')}</span>
         </div>
         <div className="recent-orders-empty-state">
           <PackageX className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">No recent orders</span>
+          <span className="text-sm text-muted-foreground">{t('noRecentOrders')}</span>
         </div>
       </div>
     );
@@ -55,9 +57,9 @@ export function RecentOrdersStrip({ orders, isLoading }: RecentOrdersStripProps)
   return (
     <div className="recent-orders-strip">
       <div className="recent-orders-header">
-        <span className="recent-orders-title">Recent Orders</span>
+        <span className="recent-orders-title">{t('recentOrders')}</span>
         <Link href="/orders" className="recent-orders-view-all">
-          View All <ArrowRight className="h-3 w-3" />
+          {t('viewAll')} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       <div className="recent-orders-list">

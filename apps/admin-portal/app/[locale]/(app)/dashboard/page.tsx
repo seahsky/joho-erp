@@ -33,27 +33,28 @@ export default function DashboardPage() {
     api.dashboard.getRecentOrders.useQuery({ limit: 5 });
   const { data: pendingBackorders } = api.order.getPendingBackorders.useQuery({});
   const { data: expiringStock } = api.dashboard.getExpiringStock.useQuery();
+  const { data: lowStockItems } = api.dashboard.getLowStockItems.useQuery({ limit: 5 });
 
   const isLoading = financialLoading || statusLoading || healthLoading || trendLoading || ordersLoading;
 
-  // Prepare attention items
+  // Prepare attention items (using label-only keys to avoid duplicate count display)
   const attentionItems = [
     {
-      label: t('needsAttention.pendingApproval', { count: statusCounts?.pending || 0 }),
+      label: t('needsAttention.pendingApprovalLabel'),
       count: statusCounts?.pending || 0,
       href: '/orders?status=pending',
       icon: 'pending' as const,
       urgency: (statusCounts?.pending || 0) > 5 ? 'critical' as const : 'warning' as const,
     },
     {
-      label: t('needsAttention.backorders', { count: pendingBackorders?.items.length || 0 }),
+      label: t('needsAttention.backordersLabel'),
       count: pendingBackorders?.items.length || 0,
       href: '/orders?backorderFilter=pending',
       icon: 'backorder' as const,
       urgency: 'warning' as const,
     },
     {
-      label: t('needsAttention.expiringSoon', { count: expiringStock?.summary.totalCount || 0 }),
+      label: t('needsAttention.expiringSoonLabel'),
       count: expiringStock?.summary.totalCount || 0,
       href: '/inventory?expiryFilter=alert',
       icon: 'expiring' as const,
@@ -103,7 +104,9 @@ export default function DashboardPage() {
             <InventoryHealthCard
               healthPercentage={inventoryHealth?.healthPercentage || 0}
               lowStockCount={inventoryHealth?.lowStockCount || 0}
+              lowStockItems={lowStockItems || []}
               expiringCount={inventoryHealth?.expiringCount || 0}
+              expiringItems={expiringStock?.batches || []}
               outOfStockCount={inventoryHealth?.outOfStockCount || 0}
               isLoading={healthLoading}
             />

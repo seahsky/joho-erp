@@ -1042,6 +1042,56 @@
     color: hsl(var(--foreground));
   }
 
+  /* Collapsible Inventory Sections */
+  .inventory-alert-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inventory-alert-details {
+    padding-left: 1.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-left: 0.5rem;
+    margin-top: 0.25rem;
+    border-left: 2px solid hsl(var(--border));
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .inventory-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.5rem;
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--muted) / 0.5);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: var(--transition-base);
+    text-align: left;
+    border: 1px solid transparent;
+  }
+
+  .inventory-detail-item:hover {
+    background: hsl(var(--muted) / 0.8);
+    border-color: hsl(var(--border));
+  }
+
+  .inventory-view-more {
+    font-size: 0.75rem;
+    color: hsl(var(--primary));
+    padding-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .inventory-view-more:hover {
+    text-decoration: underline;
+  }
+
   /* Recent Orders Strip */
   .recent-orders-strip {
     background: hsl(var(--card));

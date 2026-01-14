@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, Clock, Package, Calendar } from 'lucide-react';
 import { Skeleton } from '@joho-erp/ui';
 
@@ -19,6 +20,7 @@ interface AttentionStripProps {
 
 export function AttentionStrip({ items, isLoading }: AttentionStripProps) {
   const router = useRouter();
+  const t = useTranslations('dashboard');
 
   const getIcon = (icon: AttentionItem['icon']) => {
     const icons = {
@@ -61,10 +63,10 @@ export function AttentionStrip({ items, isLoading }: AttentionStripProps) {
       <div className="attention-strip attention-strip-clear">
         <div className="attention-strip-title">
           <AlertCircle className="h-4 w-4 text-success" />
-          <span>All Clear</span>
+          <span>{t('needsAttention.allClear')}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          No items need your attention right now
+          {t('needsAttention.allClearDescription')}
         </div>
       </div>
     );
@@ -74,7 +76,7 @@ export function AttentionStrip({ items, isLoading }: AttentionStripProps) {
     <div className="attention-strip">
       <div className="attention-strip-title">
         <AlertCircle className="h-4 w-4" />
-        <span>Needs Attention</span>
+        <span>{t('needsAttention.title')}</span>
         <span className="attention-strip-count">{activeItems.length}</span>
       </div>
       <div className="attention-strip-items">

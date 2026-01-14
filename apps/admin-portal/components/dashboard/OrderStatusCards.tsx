@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { CountUp, Skeleton } from '@joho-erp/ui';
 import { Clock, PackageCheck, Truck, CheckCircle2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -21,39 +22,40 @@ export function OrderStatusCards({
   isLoading,
 }: OrderStatusCardsProps) {
   const router = useRouter();
+  const t = useTranslations('dashboard');
 
   const cards = [
     {
-      label: 'Pending',
+      label: t('orderStatus.pending'),
       value: pending,
       icon: Clock,
       color: 'warning',
       href: '/orders?status=pending',
-      description: 'Awaiting approval or confirmation',
+      description: t('orderStatus.pendingDescription'),
     },
     {
-      label: 'Ready',
+      label: t('orderStatus.ready'),
       value: ready,
       icon: PackageCheck,
       color: 'info',
       href: '/orders?status=ready',
-      description: 'Packed and ready for delivery',
+      description: t('orderStatus.readyDescription'),
     },
     {
-      label: 'Delivering',
+      label: t('orderStatus.delivering'),
       value: delivering,
       icon: Truck,
       color: 'primary',
       href: '/orders?status=delivering',
-      description: 'Out for delivery',
+      description: t('orderStatus.deliveringDescription'),
     },
     {
-      label: 'Completed',
+      label: t('orderStatus.completed'),
       value: completed,
       icon: CheckCircle2,
       color: 'success',
       href: '/orders?status=delivered',
-      description: 'Successfully delivered',
+      description: t('orderStatus.completedDescription'),
     },
   ];
 
@@ -78,9 +80,9 @@ export function OrderStatusCards({
   return (
     <div className="order-status-section">
       <div className="order-status-header">
-        <span className="order-status-title">Order Status</span>
+        <span className="order-status-title">{t('orderStatus.title')}</span>
         <Link href="/orders" className="order-status-view-all">
-          View All <ArrowRight className="h-3 w-3" />
+          {t('viewAll')} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       <div className="order-status-grid">
@@ -102,17 +104,6 @@ export function OrderStatusCards({
             </button>
           );
         })}
-      </div>
-      {/* Flow indicator */}
-      <div className="order-status-flow">
-        <div className="order-status-flow-line" />
-        <div className="order-status-flow-labels">
-          <span>New</span>
-          <span>→</span>
-          <span>In Progress</span>
-          <span>→</span>
-          <span>Complete</span>
-        </div>
       </div>
     </div>
   );

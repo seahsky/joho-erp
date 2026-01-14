@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Skeleton, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@joho-erp/ui';
 import { formatAUD } from '@joho-erp/shared';
 import { TrendingUp, TrendingDown, Minus, DollarSign, CreditCard, Calendar } from 'lucide-react';
@@ -33,21 +34,22 @@ export function FinancialOverviewBar({
   isLoading,
 }: FinancialOverviewBarProps) {
   const router = useRouter();
+  const t = useTranslations('dashboard');
 
   const getPeriodLabel = (p: Period) => {
     const labels: Record<Period, string> = {
-      today: 'Today',
-      week: 'This Week',
-      month: 'This Month',
+      today: t('periodSelector.today'),
+      week: t('periodSelector.thisWeek'),
+      month: t('periodSelector.thisMonth'),
     };
     return labels[p];
   };
 
   const getComparisonLabel = (p: Period) => {
     const labels: Record<Period, string> = {
-      today: 'vs yesterday',
-      week: 'vs last week',
-      month: 'vs last month',
+      today: t('financialOverview.vsYesterday'),
+      week: t('financialOverview.vsLastWeek'),
+      month: t('financialOverview.vsLastMonth'),
     };
     return labels[p];
   };
@@ -128,10 +130,10 @@ export function FinancialOverviewBar({
           <div className="financial-metric-value">
             {formatAUD(pendingPayments)}
           </div>
-          <div className="financial-metric-label">Pending Payments</div>
+          <div className="financial-metric-label">{t('financialOverview.pendingPayments')}</div>
           {pendingPaymentsCount > 0 && (
             <div className="text-[10px] text-muted-foreground">
-              {pendingPaymentsCount} invoice{pendingPaymentsCount !== 1 ? 's' : ''}
+              {t('financialOverview.invoiceCount', { count: pendingPaymentsCount })}
             </div>
           )}
         </div>
@@ -151,17 +153,17 @@ export function FinancialOverviewBar({
         }}
       >
         <div className="financial-metric-content flex-1">
-          <div className="financial-metric-label mb-1">Revenue Trend (7 days)</div>
+          <div className="financial-metric-label mb-1">{t('revenueChart.days7')}</div>
           <div className="h-12">
             {trendData && trendData.length > 0 ? (
               <RevenueSparkline data={trendData} />
             ) : (
               <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                No data available
+                {t('revenueChart.noData')}
               </div>
             )}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-1">Click to expand</div>
+          <div className="text-[10px] text-muted-foreground mt-1">{t('revenueChart.clickToExpand')}</div>
         </div>
       </div>
 
@@ -169,16 +171,16 @@ export function FinancialOverviewBar({
       <div className="financial-period-selector">
         <div className="flex items-center gap-1 text-muted-foreground mb-1">
           <Calendar className="h-3 w-3" />
-          <span className="text-[10px] uppercase tracking-wide">Period</span>
+          <span className="text-[10px] uppercase tracking-wide">{t('periodSelector.label')}</span>
         </div>
         <Select value={period} onValueChange={(value) => onPeriodChange(value as Period)}>
           <SelectTrigger className="w-32 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="today">{t('periodSelector.today')}</SelectItem>
+            <SelectItem value="week">{t('periodSelector.thisWeek')}</SelectItem>
+            <SelectItem value="month">{t('periodSelector.thisMonth')}</SelectItem>
           </SelectContent>
         </Select>
       </div>

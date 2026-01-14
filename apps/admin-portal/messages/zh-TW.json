@@ -192,8 +192,13 @@
     "needsAttention": {
       "title": "需要注意",
       "pendingApproval": "{count} 待審批",
+      "pendingApprovalLabel": "待審批",
       "backorders": "{count} 缺貨訂單",
-      "expiringSoon": "{count} 即將過期"
+      "backordersLabel": "缺貨訂單",
+      "expiringSoon": "{count} 即將過期",
+      "expiringSoonLabel": "即將過期",
+      "allClear": "全部完成",
+      "allClearDescription": "目前沒有需要處理的項目"
     },
     "financialOverview": {
       "title": "財務概覽",
@@ -204,9 +209,11 @@
       "vsYesterday": "較昨日",
       "vsLastWeek": "較上週",
       "vsLastMonth": "較上月",
-      "overduePayments": "{count} 筆逾期"
+      "overduePayments": "{count} 筆逾期",
+      "invoiceCount": "{count, plural, other {# 張發票}}"
     },
     "periodSelector": {
+      "label": "時間段",
       "today": "今日",
       "thisWeek": "本週",
       "thisMonth": "本月"
@@ -214,9 +221,13 @@
     "orderStatus": {
       "title": "訂單狀態",
       "pending": "待處理",
+      "pendingDescription": "等待審批或確認",
       "ready": "待配送",
+      "readyDescription": "已打包等待配送",
       "delivering": "配送中",
+      "deliveringDescription": "正在配送中",
       "completed": "已完成",
+      "completedDescription": "已成功送達",
       "viewAll": "檢視所有訂單"
     },
     "inventoryHealth": {
@@ -226,18 +237,26 @@
       "warning": "警告",
       "critical": "緊急",
       "lowStockItems": "{count} 件低庫存",
+      "lowStockLabel": "低庫存商品",
       "expiringThisWeek": "{count} 件本週過期",
+      "expiringLabel": "本週過期",
+      "outOfStockLabel": "缺貨商品",
       "viewInventory": "檢視庫存",
-      "allHealthy": "所有庫存健康"
+      "allHealthy": "所有庫存健康",
+      "viewMore": "檢視全部 ({count})",
+      "wellStockedPercentage": "{percentage}% 產品庫存充足"
     },
     "revenueChart": {
       "title": "收入趨勢",
+      "days7": "收入趨勢 (7天)",
       "last7Days": "最近7天",
       "last14Days": "最近14天",
       "last30Days": "最近30天",
       "totalRevenue": "總收入",
       "totalOrders": "總訂單",
-      "dailyAverage": "日均"
+      "dailyAverage": "日均",
+      "noData": "暫無資料",
+      "clickToExpand": "點擊展開"
     }
   },
   "suppliers": {
