@@ -637,7 +637,11 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       <div className="p-4 space-y-1.5">
         {items.map((item, index) => {
           const isPacked = item.packed;
-          const stockStatus = getStockStatus(item.currentStock, item.lowStockThreshold);
+          // Calculate display stock: deduct quantity when item is packed
+          const displayStock = isPacked
+            ? item.currentStock - item.quantity
+            : item.currentStock;
+          const stockStatus = getStockStatus(displayStock, item.lowStockThreshold);
           const isEditing = editingItemId === item.productId;
           const isUpdating = updateItemQuantityMutation.isPending &&
             updateItemQuantityMutation.variables?.productId === item.productId;
@@ -709,7 +713,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                           stockStatus === 'low' ? 'text-warning' :
                           'text-muted-foreground'
                         }`}>
-                          {item.currentStock} {t('currentStock')}
+                          {displayStock} {t('currentStock')}
                         </span>
                         {stockStatus === 'low' && (
                           <AlertTriangle className="h-3 w-3 text-warning" />
@@ -722,9 +726,18 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                         <div className="space-y-0.5 text-muted-foreground">
                           <p>{t('stockTooltip.warehouseStock', { count: item.currentStock })}</p>
                           <p>{t('stockTooltip.orderQuantity', { count: item.quantity })}</p>
-                          <p className="font-medium text-foreground">{t('stockTooltip.remainingAfter', { count: item.currentStock - item.quantity })}</p>
+                          <p className="font-medium text-foreground">
+                            {isPacked
+                              ? t('stockTooltip.packedRemainingStock', { count: displayStock })
+                              : t('stockTooltip.remainingAfter', { count: item.currentStock - item.quantity })}
+                          </p>
                         </div>
-                        <p className="text-muted-foreground pt-1 border-t">{t('stockTooltip.note')}</p>
+                        {isPacked && (
+                          <p className="text-success pt-1 border-t">{t('stockTooltip.itemPacked')}</p>
+                        )}
+                        {!isPacked && (
+                          <p className="text-muted-foreground pt-1 border-t">{t('stockTooltip.note')}</p>
+                        )}
                       </div>
                     </TooltipContent>
                   </Tooltip>

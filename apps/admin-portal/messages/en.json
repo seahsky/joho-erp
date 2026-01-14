@@ -1766,7 +1766,7 @@
     "errorResettingOrder": "Error Resetting Order",
     "paused": "paused",
     "inProgress": "in progress",
-    "currentStock": "stock",
+    "currentStock": "remaining",
     "stockAvailable": "{count} available",
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock",
@@ -1792,7 +1792,9 @@
       "warehouseStock": "Warehouse stock: {count}",
       "orderQuantity": "This order: {count}",
       "remainingAfter": "Remaining after order: {count}",
-      "note": "Stock updates when order quantity changes"
+      "note": "Stock updates when order quantity changes",
+      "packedRemainingStock": "Remaining stock: {count}",
+      "itemPacked": "Item packed - stock deducted"
     }
   },
   "settings": {

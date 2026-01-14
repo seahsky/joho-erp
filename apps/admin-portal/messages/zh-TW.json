@@ -1772,7 +1772,7 @@
     "errorResettingOrder": "重設訂單出錯",
     "paused": "已暫停",
     "inProgress": "進行中",
-    "currentStock": "庫存",
+    "currentStock": "剩餘",
     "stockAvailable": "可用 {count}",
     "lowStock": "庫存不足",
     "outOfStock": "缺貨",
@@ -1798,7 +1798,9 @@
       "warehouseStock": "倉庫庫存：{count}",
       "orderQuantity": "本訂單：{count}",
       "remainingAfter": "訂單後剩餘：{count}",
-      "note": "庫存會在訂單數量更改時更新"
+      "note": "庫存會在訂單數量更改時更新",
+      "packedRemainingStock": "剩餘庫存：{count}",
+      "itemPacked": "已打包 - 庫存已扣除"
     }
   },
   "settings": {

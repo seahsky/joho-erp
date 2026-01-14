@@ -1766,7 +1766,7 @@
     "errorResettingOrder": "重置订单出错",
     "paused": "已暂停",
     "inProgress": "进行中",
-    "currentStock": "库存",
+    "currentStock": "剩余",
     "stockAvailable": "可用 {count}",
     "lowStock": "库存不足",
     "outOfStock": "缺货",
@@ -1792,7 +1792,9 @@
       "warehouseStock": "仓库库存：{count}",
       "orderQuantity": "本订单：{count}",
       "remainingAfter": "订单后剩余：{count}",
-      "note": "库存会在订单数量更改时更新"
+      "note": "库存会在订单数量更改时更新",
+      "packedRemainingStock": "剩余库存：{count}",
+      "itemPacked": "已打包 - 库存已扣除"
     }
   },
   "settings": {
