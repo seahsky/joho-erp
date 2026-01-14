@@ -1535,7 +1535,13 @@
       "deliveryInstructions": "Delivery Instructions (Optional)",
       "deliveryInstructionsPlaceholder": "Enter any special delivery instructions",
       "sameAsDelivery": "Same as delivery address",
-      "sameAsBilling": "Same as billing address"
+      "sameAsBilling": "Same as billing address",
+      "areaTags": {
+        "north": "North",
+        "south": "South",
+        "east": "East",
+        "west": "West"
+      }
     },
     "creditApplication": {
       "title": "Credit Terms & Application",

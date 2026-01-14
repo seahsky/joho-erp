@@ -1535,7 +1535,13 @@
       "deliveryInstructions": "配送说明（可选）",
       "deliveryInstructionsPlaceholder": "输入任何特殊配送说明",
       "sameAsDelivery": "与送货地址相同",
-      "sameAsBilling": "与账单地址相同"
+      "sameAsBilling": "与账单地址相同",
+      "areaTags": {
+        "north": "北部",
+        "south": "南部",
+        "east": "东部",
+        "west": "西部"
+      }
     },
     "creditApplication": {
       "title": "信用条款与申请",
