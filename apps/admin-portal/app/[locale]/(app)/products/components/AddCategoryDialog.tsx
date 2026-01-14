@@ -34,6 +34,7 @@ export function AddCategoryDialog({
 }: AddCategoryDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('categories');
+  const tCommon = useTranslations('common');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -212,7 +213,7 @@ export function AddCategoryDialog({
               variant="outline"
               onClick={() => handleClose(false)}
             >
-              {t('common.cancel')}
+              {tCommon('cancel')}
             </Button>
             <Button
               type="submit"
@@ -221,7 +222,7 @@ export function AddCategoryDialog({
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('common.saving')}
+                  {tCommon('saving')}
                 </>
               ) : (
                 t('buttons.create')

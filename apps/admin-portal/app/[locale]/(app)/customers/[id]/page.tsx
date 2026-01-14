@@ -106,6 +106,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const tCustomers = useTranslations('customers');
   const tCommon = useTranslations('common');
   const tDays = useTranslations('days');
+  const tOrders = useTranslations('orders');
   const router = useRouter();
   const { toast } = useToast();
   const utils = api.useUtils();
@@ -540,13 +541,13 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const orderColumns: TableColumn<Order>[] = [
     {
       key: 'orderNumber',
-      label: t('orders.orderNumber'),
+      label: tOrders('orderNumber'),
       className: 'font-medium',
       render: (order) => `#${order.orderNumber}`,
     },
     {
       key: 'date',
-      label: t('orders.date'),
+      label: tOrders('date'),
       render: (order) => formatDate(order.orderedAt),
     },
     {
@@ -556,7 +557,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     },
     {
       key: 'items',
-      label: t('orders.items'),
+      label: tOrders('items'),
       render: (order) => order.items.length,
     },
     {
@@ -1393,16 +1394,16 @@ export default function CustomerDetailPage({ params }: PageProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                {t('orders.title')}
+                {tOrders('title')}
               </CardTitle>
-              <CardDescription>{t('orders.recentOrders')}</CardDescription>
+              <CardDescription>{tOrders('recentOrders')}</CardDescription>
             </CardHeader>
             <CardContent>
               {orders.length > 0 ? (
                 <ResponsiveTable data={orders} columns={orderColumns} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  {t('orders.noOrders')}
+                  {tOrders('noOrders')}
                 </p>
               )}
             </CardContent>
