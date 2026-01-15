@@ -67,7 +67,7 @@ export function RecentOrdersStrip({ orders, isLoading }: RecentOrdersStripProps)
           <button
             key={order.id}
             className="recent-order-card"
-            onClick={() => router.push(`/orders?orderId=${order.id}`)}
+            onClick={() => router.push(`/orders/${order.id}`)}
           >
             <div className="recent-order-header">
               <span className="recent-order-number">{order.orderNumber}</span>
