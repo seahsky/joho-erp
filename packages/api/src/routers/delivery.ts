@@ -1534,6 +1534,9 @@ export const deliveryRouter = router({
         }
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Assign drivers (round-robin per area)
       const results: { areaId: string; assigned: number; skipped: number }[] = [];
       const driverCounters = new Map<string, number>();
@@ -1567,7 +1570,8 @@ export const deliveryRouter = router({
                   status: order.status,
                   changedAt: new Date(),
                   changedBy: ctx.userId,
-                  changedByName: ctx.userName,
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
                   notes: `Driver auto-assigned: ${driverName}`,
                 },
               },
