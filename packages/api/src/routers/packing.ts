@@ -3,6 +3,31 @@ import { z } from "zod";
 import { router, requirePermission } from "../trpc";
 import { prisma, Prisma } from "@joho-erp/database";
 import { TRPCError } from "@trpc/server";
+import { clerkClient } from "@clerk/nextjs/server";
+
+/**
+ * Get user display name and email for audit trail
+ */
+async function getUserDetails(userId: string | null): Promise<{
+  changedByName: string | null;
+  changedByEmail: string | null;
+}> {
+  if (!userId) {
+    return { changedByName: null, changedByEmail: null };
+  }
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    const changedByName = user.firstName && user.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user.firstName || user.lastName || null;
+    const changedByEmail = user.emailAddresses[0]?.emailAddress || null;
+    return { changedByName, changedByEmail };
+  } catch (error) {
+    console.error('Failed to fetch user details:', error);
+    return { changedByName: null, changedByEmail: null };
+  }
+}
 import type { PackingSessionSummary, PackingOrderCard, ProductSummaryItem } from "../types/packing";
 import {
   optimizeDeliveryRoute,
@@ -406,6 +431,9 @@ export const packingRouter = router({
       // Calculate new stock level
       const newStock = product.currentStock - quantityDiff;
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Perform all updates in a transaction
       await prisma.$transaction(async (tx) => {
         // Create inventory transaction for audit trail
@@ -479,6 +507,8 @@ export const packingRouter = router({
                 status: order.status,
                 changedAt: new Date(),
                 changedBy: ctx.userId || 'system',
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
                 notes: `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity} ${item.unit}`,
               },
             },
@@ -542,6 +572,9 @@ export const packingRouter = router({
         ? [...new Set([...packedItems, input.itemSku])] // Add SKU (deduplicate)
         : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order with packed items and move to packing status if confirmed
       // Also update lastPackedAt/lastPackedBy and clear pausedAt (active packing)
       await prisma.order.update({
@@ -564,6 +597,8 @@ export const packingRouter = router({
               status: 'packing',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: 'Order moved to packing status',
             },
           } : order.statusHistory,
@@ -625,6 +660,9 @@ export const packingRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order to ready_for_delivery
       await prisma.order.update({
         where: {
@@ -642,6 +680,8 @@ export const packingRouter = router({
               status: 'ready_for_delivery',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: input.notes || 'Order packed and ready for delivery',
             },
           },
@@ -758,6 +798,9 @@ export const packingRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       await prisma.order.update({
         where: { id: input.orderId },
         data: {
@@ -771,6 +814,8 @@ export const packingRouter = router({
               status: 'packing',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: `Packing paused. Progress: ${packedItemsCount} items packed`,
             },
           },
@@ -821,6 +866,9 @@ export const packingRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       await prisma.order.update({
         where: { id: input.orderId },
         data: {
@@ -835,6 +883,8 @@ export const packingRouter = router({
               status: 'packing',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: 'Packing resumed',
             },
           },
@@ -892,6 +942,9 @@ export const packingRouter = router({
 
       const packedItemsCount = order.packing?.packedItems?.length ?? 0;
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       await prisma.order.update({
         where: { id: input.orderId },
         data: {
@@ -911,7 +964,9 @@ export const packingRouter = router({
               status: 'confirmed',
               changedAt: new Date(),
               changedBy: ctx.userId || 'system',
-              notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset'}`,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
+              notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset by packer'}`,
             },
           },
         },

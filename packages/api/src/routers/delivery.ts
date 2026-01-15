@@ -26,6 +26,30 @@ import {
 } from '../services/audit';
 
 /**
+ * Get user display name and email for audit trail
+ */
+async function getUserDetails(userId: string | null): Promise<{
+  changedByName: string | null;
+  changedByEmail: string | null;
+}> {
+  if (!userId) {
+    return { changedByName: null, changedByEmail: null };
+  }
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    const changedByName = user.firstName && user.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user.firstName || user.lastName || null;
+    const changedByEmail = user.emailAddresses[0]?.emailAddress || null;
+    return { changedByName, changedByEmail };
+  } catch (error) {
+    console.error('Failed to fetch user details:', error);
+    return { changedByName: null, changedByEmail: null };
+  }
+}
+
+/**
  * Helper function to check if an order was packed today.
  * Used for same-day delivery validation.
  */
@@ -229,6 +253,9 @@ export const deliveryRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       const order = await prisma.order.update({
         where: { id: input.orderId },
         data: {
@@ -243,6 +270,8 @@ export const deliveryRouter = router({
               status: 'delivered',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: input.notes || 'Delivery completed',
             },
           ],
@@ -812,6 +841,9 @@ export const deliveryRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order status
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -827,6 +859,8 @@ export const deliveryRouter = router({
               status: 'out_for_delivery',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: 'Driver started delivery',
             },
           },
@@ -989,6 +1023,9 @@ export const deliveryRouter = router({
         });
       }
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order status
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -1005,6 +1042,8 @@ export const deliveryRouter = router({
               status: 'delivered',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: notes || 'Delivery completed by driver',
             },
           },
@@ -1098,6 +1137,9 @@ export const deliveryRouter = router({
         other: notes || 'Other reason',
       };
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order status back to ready_for_delivery
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -1116,6 +1158,8 @@ export const deliveryRouter = router({
               status: 'ready_for_delivery',
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: `Returned to warehouse: ${reasonTexts[reason]}${notes ? ` - ${notes}` : ''}`,
             },
           },
@@ -1194,6 +1238,9 @@ export const deliveryRouter = router({
       // Get previous driver for audit
       const previousDriverId = order.delivery?.driverId;
 
+      // Get user details for audit trail
+      const userDetails = await getUserDetails(ctx.userId);
+
       // Update order with driver assignment
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -1209,6 +1256,8 @@ export const deliveryRouter = router({
               status: order.status,
               changedAt: new Date(),
               changedBy: ctx.userId,
+              changedByName: userDetails.changedByName,
+              changedByEmail: userDetails.changedByEmail,
               notes: `Driver assigned: ${driverName || driverId}`,
             },
           },
