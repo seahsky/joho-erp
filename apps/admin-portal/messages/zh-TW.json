@@ -2377,6 +2377,10 @@
         "fullEntityId": "完整實體ID",
         "userId": "使用者ID"
       },
+      "justNow": "剛剛",
+      "minutesAgo": "{count} 分鐘前",
+      "hoursAgo": "{count} 小時前",
+      "daysAgo": "{count} 天前",
       "pagination": {
         "page": "第 {page} 頁"
       },
@@ -3208,11 +3212,7 @@
     "noLogs": "此記錄尚無活動記錄。",
     "viewFullHistory": "檢視完整歷史",
     "changes": "變更",
-    "metadata": "詳情",
-    "justNow": "剛剛",
-    "minutesAgo": "{count} 分鐘前",
-    "hoursAgo": "{count} 小時前",
-    "daysAgo": "{count} 天前"
+    "metadata": "詳情"
   },
   "areas": {
     "title": "配送區域",

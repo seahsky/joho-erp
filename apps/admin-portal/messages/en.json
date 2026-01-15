@@ -2371,6 +2371,10 @@
         "fullEntityId": "Full Entity ID",
         "userId": "User ID"
       },
+      "justNow": "Just now",
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count} hr ago",
+      "daysAgo": "{count} days ago",
       "pagination": {
         "page": "Page {page}"
       },
@@ -3202,11 +3206,7 @@
     "noLogs": "No activity recorded for this record yet.",
     "viewFullHistory": "View full history",
     "changes": "Changes",
-    "metadata": "Details",
-    "justNow": "Just now",
-    "minutesAgo": "{count} min ago",
-    "hoursAgo": "{count} hr ago",
-    "daysAgo": "{count} days ago"
+    "metadata": "Details"
   },
   "areas": {
     "title": "Delivery Areas",

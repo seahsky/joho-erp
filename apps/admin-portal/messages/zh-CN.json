@@ -2371,6 +2371,10 @@
         "fullEntityId": "完整实体ID",
         "userId": "用户ID"
       },
+      "justNow": "刚刚",
+      "minutesAgo": "{count} 分钟前",
+      "hoursAgo": "{count} 小时前",
+      "daysAgo": "{count} 天前",
       "pagination": {
         "page": "第 {page} 页"
       },
@@ -3202,11 +3206,7 @@
     "noLogs": "此记录尚无活动记录。",
     "viewFullHistory": "查看完整历史",
     "changes": "更改",
-    "metadata": "详情",
-    "justNow": "刚刚",
-    "minutesAgo": "{count} 分钟前",
-    "hoursAgo": "{count} 小时前",
-    "daysAgo": "{count} 天前"
+    "metadata": "详情"
   },
   "areas": {
     "title": "配送区域",
