@@ -10,7 +10,6 @@ import {
   Button,
   Skeleton,
   useToast,
-  Badge,
   AreaBadge,
   Tooltip,
   TooltipContent,
