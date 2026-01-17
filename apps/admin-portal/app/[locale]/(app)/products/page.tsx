@@ -106,11 +106,6 @@ export default function ProductsPage() {
   const { data: categoriesData } = api.category.getAll.useQuery();
   const categories = categoriesData ?? [];
 
-  // Fetch total inventory value from API based on actual costs
-  const { data: inventoryStats } = api.inventoryStats.getInventoryValueHistory.useQuery({
-    granularity: 'daily',
-  });
-
   // Data from API with fallbacks for loading state
   const productList = (productsData?.items ?? []) as Product[];
   const totalProducts = productsData?.total ?? productList.length;
@@ -143,9 +138,6 @@ export default function ProductsPage() {
   const lowStockProducts = productList.filter(
     (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
   ).length;
-  // Use API value from inventory stats (based on actual batch costs)
-  const totalValue = inventoryStats?.[inventoryStats.length - 1]?.value ?? 0;
-
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -490,7 +482,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="stat-card animate-fade-in-up">
           <div className="stat-card-gradient" />
           <CardHeader className="pb-3 relative">
@@ -515,15 +507,6 @@ export default function ProductsPage() {
             <CardDescription>{t('lowStockAlerts')}</CardDescription>
             <div className="stat-value tabular-nums text-warning">
               <CountUp end={lowStockProducts} />
-            </div>
-          </CardHeader>
-        </Card>
-        <Card className="stat-card animate-fade-in-up delay-300">
-          <div className="stat-card-gradient" />
-          <CardHeader className="pb-3 relative">
-            <CardDescription>{t('totalInventoryValue')}</CardDescription>
-            <div className="stat-value tabular-nums">
-              {formatAUD(totalValue)}
             </div>
           </CardHeader>
         </Card>
