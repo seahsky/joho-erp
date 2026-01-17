@@ -1151,6 +1151,50 @@
       "categoryCreateError": "建立分類失敗"
     }
   },
+  "subproduct": {
+    "dialog": {
+      "title": "新增子產品",
+      "description": "從母產品建立一個具有計算虛擬庫存的衍生產品",
+      "editTitle": "編輯子產品",
+      "editDescription": "修改此從母產品衍生的子產品"
+    },
+    "parentProduct": "母產品",
+    "currentStock": "目前庫存",
+    "inheritedFromParent": "繼承自母產品",
+    "calculatedStockPreview": "計算虛擬庫存",
+    "calculatedStockFormula": "{parentStock} × (1 - {lossPercentage}%) = 計算庫存",
+    "sections": {
+      "subproductDetails": "子產品詳情",
+      "subproductSettings": "子產品設定"
+    },
+    "fields": {
+      "lossPercentageRequired": "損耗百分比 * (%)",
+      "lossPercentagePlaceholder": "例如，15 表示 15% 的損耗",
+      "lossPercentageHelp": "此百分比表示加工過程中損失的材料。虛擬庫存將按母產品庫存 × (1 - 損耗%) 計算。"
+    },
+    "buttons": {
+      "createSubproduct": "建立子產品",
+      "addSubproduct": "新增子產品"
+    },
+    "validation": {
+      "parentRequired": "需要母產品",
+      "lossPercentageRequired": "子產品需要損耗百分比",
+      "lossPercentageRange": "損耗百分比必須在 0 到 99 之間"
+    },
+    "messages": {
+      "subproductCreated": "子產品建立成功",
+      "errorCreating": "建立子產品時發生錯誤",
+      "cannotAdjustStock": "無法直接調整子產品庫存。請改為調整母產品。",
+      "cannotHaveSubproducts": "子產品不能擁有自己的子產品"
+    },
+    "table": {
+      "expandRow": "展開列",
+      "collapseRow": "收合列",
+      "subproductOf": "是以下產品的子產品",
+      "virtualStock": "虛擬庫存",
+      "virtualStockTooltip": "從母產品庫存計算"
+    }
+  },
   "stockAdjustment": {
     "dialog": {
       "title": "調整庫存",

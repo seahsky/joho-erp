@@ -1151,6 +1151,50 @@
       "categoryCreateError": "创建分类失败"
     }
   },
+  "subproduct": {
+    "dialog": {
+      "title": "添加子产品",
+      "description": "从母产品创建一个具有计算虚拟库存的衍生产品",
+      "editTitle": "编辑子产品",
+      "editDescription": "修改此从母产品衍生的子产品"
+    },
+    "parentProduct": "母产品",
+    "currentStock": "当前库存",
+    "inheritedFromParent": "继承自母产品",
+    "calculatedStockPreview": "计算虚拟库存",
+    "calculatedStockFormula": "{parentStock} × (1 - {lossPercentage}%) = 计算库存",
+    "sections": {
+      "subproductDetails": "子产品详情",
+      "subproductSettings": "子产品设置"
+    },
+    "fields": {
+      "lossPercentageRequired": "损耗百分比 * (%)",
+      "lossPercentagePlaceholder": "例如，15 表示 15% 的损耗",
+      "lossPercentageHelp": "此百分比表示加工过程中损失的材料。虚拟库存将按母产品库存 × (1 - 损耗%) 计算。"
+    },
+    "buttons": {
+      "createSubproduct": "创建子产品",
+      "addSubproduct": "添加子产品"
+    },
+    "validation": {
+      "parentRequired": "需要母产品",
+      "lossPercentageRequired": "子产品需要损耗百分比",
+      "lossPercentageRange": "损耗百分比必须在 0 到 99 之间"
+    },
+    "messages": {
+      "subproductCreated": "子产品创建成功",
+      "errorCreating": "创建子产品出错",
+      "cannotAdjustStock": "无法直接调整子产品库存。请改为调整母产品。",
+      "cannotHaveSubproducts": "子产品不能拥有自己的子产品"
+    },
+    "table": {
+      "expandRow": "展开行",
+      "collapseRow": "折叠行",
+      "subproductOf": "是以下产品的子产品",
+      "virtualStock": "虚拟库存",
+      "virtualStockTooltip": "从母产品库存计算"
+    }
+  },
   "stockAdjustment": {
     "dialog": {
       "title": "调整库存",

@@ -396,3 +396,8 @@ export * from './pricing';
  * Export money utilities (dinero.js)
  */
 export * from './money';
+
+/**
+ * Export subproduct utilities
+ */
+export * from './subproduct';

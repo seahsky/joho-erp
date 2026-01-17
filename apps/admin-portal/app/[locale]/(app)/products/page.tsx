@@ -23,12 +23,17 @@ import {
   StatusBadge,
   StockLevelBadge,
   type StatusType,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@joho-erp/ui';
-import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree } from 'lucide-react';
+import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree, GitBranch, ChevronDown, ChevronRight } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
 import { StockAdjustmentDialog } from '../inventory/components/StockAdjustmentDialog';
+import { AddSubproductDialog } from './components/AddSubproductDialog';
 import { CategoriesTab } from './components/CategoriesTab';
 import { useTranslations } from 'next-intl';
 import { formatAUD } from '@joho-erp/shared';
@@ -48,6 +53,10 @@ type Product = {
   lowStockThreshold?: number | null;
   status: 'active' | 'discontinued' | 'out_of_stock';
   imageUrl?: string | null;
+  // Subproduct fields
+  parentProductId?: string | null;
+  estimatedLossPercentage?: number | null;
+  subProducts?: Product[];
 };
 
 const STATUSES = ['active', 'discontinued', 'out_of_stock'] as const;
@@ -63,7 +72,23 @@ export default function ProductsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
+  const [showSubproductDialog, setShowSubproductDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const tSubproduct = useTranslations('subproduct');
+
+  // Toggle expand/collapse for parent products with subproducts
+  const toggleExpanded = (productId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
 
   // Sorting hook
   const { sortBy, sortOrder, handleSort } = useTableSort('name', 'asc');
@@ -89,6 +114,31 @@ export default function ProductsPage() {
   // Data from API with fallbacks for loading state
   const productList = (productsData?.items ?? []) as Product[];
   const totalProducts = productsData?.total ?? productList.length;
+
+  // Flatten product list to include subproducts after their parents when expanded
+  // Products without parentProductId are parent products; subproducts are nested
+  const flattenedProductList = productList.reduce<(Product & { isSubproduct?: boolean; parentName?: string })[]>(
+    (acc, product) => {
+      // Skip subproducts in the main list (they'll be added under their parent)
+      if (product.parentProductId) return acc;
+
+      acc.push(product);
+
+      // Add subproducts if parent is expanded
+      if (product.subProducts && product.subProducts.length > 0 && expandedRows.has(product.id)) {
+        product.subProducts.forEach((subProduct) => {
+          acc.push({
+            ...subProduct,
+            isSubproduct: true,
+            parentName: product.name,
+          });
+        });
+      }
+
+      return acc;
+    },
+    []
+  );
   const activeProducts = productList.filter((p) => p.status === 'active').length;
   const lowStockProducts = productList.filter(
     (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
@@ -109,51 +159,121 @@ export default function ProductsPage() {
 
   // Status and stock badges now use consolidated components
 
-  const columns: TableColumn<Product>[] = [
+  // Extended product type for flattened list
+  type FlatProduct = Product & { isSubproduct?: boolean; parentName?: string };
+
+  const columns: TableColumn<FlatProduct>[] = [
     {
       key: 'sku',
       label: t('sku'),
       className: 'font-medium',
       sortable: true,
+      render: (product: FlatProduct) => {
+        const hasSubproducts = product.subProducts && product.subProducts.length > 0;
+        const isExpanded = expandedRows.has(product.id);
+        const isSubproduct = product.isSubproduct;
+
+        return (
+          <div className="flex items-center gap-2">
+            {/* Expand/collapse button for parents with subproducts */}
+            {hasSubproducts && !isSubproduct && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded(product.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            {/* Indentation for subproducts */}
+            {isSubproduct && (
+              <span className="ml-6 flex items-center gap-1 text-muted-foreground">
+                <GitBranch className="h-3 w-3" />
+              </span>
+            )}
+            {/* Spacer for products without subproducts */}
+            {!hasSubproducts && !isSubproduct && <span className="w-6" />}
+            <span className={isSubproduct ? 'text-muted-foreground' : ''}>{product.sku}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'name',
       label: t('name'),
       className: 'font-medium',
       sortable: true,
+      render: (product: FlatProduct) => (
+        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+          {product.name}
+        </span>
+      ),
     },
     {
       key: 'category',
       label: t('category'),
-      render: (product) => product.category || '-',
+      render: (product: FlatProduct) => (
+        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+          {product.category || '-'}
+        </span>
+      ),
       sortable: true,
     },
     {
       key: 'basePrice',
       label: t('price'),
-      render: (product) => formatAUD(product.basePrice), // value is in cents
+      render: (product: FlatProduct) => (
+        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+          {formatAUD(product.basePrice)}
+        </span>
+      ),
       sortable: true,
     },
     {
       key: 'unit',
       label: t('unit'),
-      render: (product) => String(product.unit).toUpperCase(),
+      render: (product: FlatProduct) => (
+        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+          {String(product.unit).toUpperCase()}
+        </span>
+      ),
     },
     {
       key: 'currentStock',
       label: t('stock'),
-      render: (product) => (
-        <StockLevelBadge
-          currentStock={product.currentStock}
-          lowStockThreshold={product.lowStockThreshold ?? undefined}
-        />
+      render: (product: FlatProduct) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <StockLevelBadge
+                  currentStock={product.currentStock}
+                  lowStockThreshold={product.lowStockThreshold ?? undefined}
+                />
+              </span>
+            </TooltipTrigger>
+            {product.isSubproduct && (
+              <TooltipContent>
+                <p>{tSubproduct('table.virtualStockTooltip')}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       ),
       sortable: true,
     },
     {
       key: 'status',
       label: tCommon('status'),
-      render: (product) => (
+      render: (product: FlatProduct) => (
         <StatusBadge status={product.status as StatusType} showIcon={false} />
       ),
       sortable: true,
@@ -162,103 +282,173 @@ export default function ProductsPage() {
       key: 'actions',
       label: tCommon('actions'),
       className: 'text-right',
-      render: (product) => (
-        <div className="flex justify-end gap-2">
-          <PermissionGate permission="products:adjust_stock">
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={tStock('buttons.adjustStock')}
-              onClick={() => {
-                setSelectedProduct(product);
-                setShowStockDialog(true);
-              }}
-            >
-              <PackagePlus className="h-4 w-4" />
-            </Button>
-          </PermissionGate>
+      render: (product: FlatProduct) => {
+        const isSubproduct = product.isSubproduct || !!product.parentProductId;
+        const canHaveSubproducts = !isSubproduct;
+
+        return (
+          <div className="flex justify-end gap-2">
+            {/* Add Subproduct button - only for parent products */}
+            {canHaveSubproducts && (
+              <PermissionGate permission="products:create">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={tSubproduct('buttons.addSubproduct')}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowSubproductDialog(true);
+                  }}
+                >
+                  <GitBranch className="h-4 w-4" />
+                </Button>
+              </PermissionGate>
+            )}
+            {/* Adjust Stock button - only for parent products (not subproducts) */}
+            {!isSubproduct && (
+              <PermissionGate permission="products:adjust_stock">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={tStock('buttons.adjustStock')}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowStockDialog(true);
+                  }}
+                >
+                  <PackagePlus className="h-4 w-4" />
+                </Button>
+              </PermissionGate>
+            )}
+            <PermissionGate permission="products:edit">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={t('edit')}
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setShowEditDialog(true);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </PermissionGate>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const mobileCard = (product: FlatProduct) => {
+    const isSubproduct = product.isSubproduct || !!product.parentProductId;
+    const hasSubproducts = product.subProducts && product.subProducts.length > 0;
+    const isExpanded = expandedRows.has(product.id);
+
+    return (
+      <div className={`space-y-3 ${isSubproduct ? 'ml-4 border-l-2 border-muted pl-4' : ''}`}>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              {/* Expand/collapse for parents with subproducts */}
+              {hasSubproducts && !isSubproduct && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => toggleExpanded(product.id)}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              {isSubproduct && <GitBranch className="h-3 w-3 text-muted-foreground" />}
+              <h3 className={`font-semibold text-base ${isSubproduct ? 'text-muted-foreground' : ''}`}>
+                {product.name}
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('sku')}: {product.sku}</p>
+            {isSubproduct && (
+              <p className="text-xs text-muted-foreground">{tSubproduct('table.virtualStockTooltip')}</p>
+            )}
+          </div>
+          <StatusBadge status={product.status as StatusType} showIcon={false} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <p className="text-muted-foreground">{t('category')}</p>
+            <p className="font-medium">{product.category || '-'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">{t('price')}</p>
+            <p className="font-medium">{formatAUD(product.basePrice)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">{t('unit')}</p>
+            <p className="font-medium">{product.unit.toUpperCase()}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">{t('stock')}</p>
+            <StockLevelBadge
+              currentStock={product.currentStock}
+              lowStockThreshold={product.lowStockThreshold ?? undefined}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2 border-t flex-wrap">
+          {/* Add Subproduct button - only for parent products */}
+          {!isSubproduct && (
+            <PermissionGate permission="products:create">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setShowSubproductDialog(true);
+                }}
+              >
+                <GitBranch className="h-4 w-4 mr-1" />
+                {tSubproduct('buttons.addSubproduct')}
+              </Button>
+            </PermissionGate>
+          )}
+          {/* Adjust Stock - only for parent products */}
+          {!isSubproduct && (
+            <PermissionGate permission="products:adjust_stock">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setShowStockDialog(true);
+                }}
+              >
+                <PackagePlus className="h-4 w-4 mr-1" />
+                {tStock('buttons.adjustStock')}
+              </Button>
+            </PermissionGate>
+          )}
           <PermissionGate permission="products:edit">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              aria-label={t('edit')}
               onClick={() => {
                 setSelectedProduct(product);
                 setShowEditDialog(true);
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-4 w-4 mr-1" />
+              {t('edit')}
             </Button>
           </PermissionGate>
         </div>
-      ),
-    },
-  ];
-
-  const mobileCard = (product: Product) => (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="font-semibold text-base">{product.name}</h3>
-          <p className="text-sm text-muted-foreground">{t('sku')}: {product.sku}</p>
-        </div>
-<StatusBadge status={product.status as StatusType} showIcon={false} />
       </div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div>
-          <p className="text-muted-foreground">{t('category')}</p>
-          <p className="font-medium">{product.category || '-'}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">{t('price')}</p>
-          <p className="font-medium">{formatAUD(product.basePrice)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">{t('unit')}</p>
-          <p className="font-medium">{product.unit.toUpperCase()}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">{t('stock')}</p>
-          <StockLevelBadge
-            currentStock={product.currentStock}
-            lowStockThreshold={product.lowStockThreshold ?? undefined}
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-2 pt-2 border-t">
-        <PermissionGate permission="products:adjust_stock">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => {
-              setSelectedProduct(product);
-              setShowStockDialog(true);
-            }}
-          >
-            <PackagePlus className="h-4 w-4 mr-1" />
-            {tStock('buttons.adjustStock')}
-          </Button>
-        </PermissionGate>
-        <PermissionGate permission="products:edit">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => {
-              setSelectedProduct(product);
-              setShowEditDialog(true);
-            }}
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            {t('edit')}
-          </Button>
-        </PermissionGate>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
@@ -396,9 +586,9 @@ export default function ProductsPage() {
         <CardContent className="p-4 md:p-6">
           {isLoading ? (
             <TableSkeleton rows={5} columns={8} />
-          ) : productList.length > 0 ? (
+          ) : flattenedProductList.length > 0 ? (
             <ResponsiveTable
-              data={productList}
+              data={flattenedProductList}
               columns={columns}
               mobileCard={mobileCard}
               className="md:border-0"
@@ -449,6 +639,17 @@ export default function ProductsPage() {
           if (!open) setSelectedProduct(null);
         }}
         product={selectedProduct}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Add Subproduct Dialog */}
+      <AddSubproductDialog
+        open={showSubproductDialog}
+        onOpenChange={(open) => {
+          setShowSubproductDialog(open);
+          if (!open) setSelectedProduct(null);
+        }}
+        parentProduct={selectedProduct}
         onSuccess={() => refetch()}
       />
     </div>

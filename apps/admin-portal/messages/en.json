@@ -1151,6 +1151,50 @@
       "categoryCreateError": "Failed to create category"
     }
   },
+  "subproduct": {
+    "dialog": {
+      "title": "Add Subproduct",
+      "description": "Create a derived product from a parent with calculated virtual stock",
+      "editTitle": "Edit Subproduct",
+      "editDescription": "Modify this subproduct derived from a parent product"
+    },
+    "parentProduct": "Parent Product",
+    "currentStock": "Current Stock",
+    "inheritedFromParent": "Inherited from parent",
+    "calculatedStockPreview": "Calculated Virtual Stock",
+    "calculatedStockFormula": "{parentStock} × (1 - {lossPercentage}%) = calculated stock",
+    "sections": {
+      "subproductDetails": "Subproduct Details",
+      "subproductSettings": "Subproduct Settings"
+    },
+    "fields": {
+      "lossPercentageRequired": "Loss Percentage * (%)",
+      "lossPercentagePlaceholder": "e.g., 15 for 15% loss",
+      "lossPercentageHelp": "This percentage represents material lost during processing. Virtual stock will be calculated as parent stock × (1 - loss%)."
+    },
+    "buttons": {
+      "createSubproduct": "Create Subproduct",
+      "addSubproduct": "Add Subproduct"
+    },
+    "validation": {
+      "parentRequired": "Parent product is required",
+      "lossPercentageRequired": "Loss percentage is required for subproducts",
+      "lossPercentageRange": "Loss percentage must be between 0 and 99"
+    },
+    "messages": {
+      "subproductCreated": "Subproduct created successfully",
+      "errorCreating": "Error creating subproduct",
+      "cannotAdjustStock": "Cannot adjust subproduct stock directly. Adjust the parent product instead.",
+      "cannotHaveSubproducts": "Subproducts cannot have their own subproducts"
+    },
+    "table": {
+      "expandRow": "Expand row",
+      "collapseRow": "Collapse row",
+      "subproductOf": "Subproduct of",
+      "virtualStock": "Virtual Stock",
+      "virtualStockTooltip": "Calculated from parent stock"
+    }
+  },
   "stockAdjustment": {
     "dialog": {
       "title": "Adjust Stock",

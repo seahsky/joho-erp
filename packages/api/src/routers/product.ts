@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus } from '@joho-erp/shared';
+import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus, calculateSubproductStock, calculateAllSubproductStocks, isSubproduct } from '@joho-erp/shared';
 import { logProductCreated, logProductUpdated, logStockAdjustment } from '../services/audit';
 import { sortInputSchema, paginationInputSchema } from '../schemas';
 
@@ -20,6 +20,39 @@ const productSortFieldMapping: Record<string, string> = {
   createdAt: 'createdAt',
 };
 
+/**
+ * Helper to recalculate and update all subproduct stocks after parent stock changes.
+ * @param parentId - The parent product ID
+ * @param parentStock - The new parent stock level
+ * @param tx - Optional Prisma transaction client
+ */
+async function updateSubproductStocks(
+  parentId: string,
+  parentStock: number,
+  tx?: any
+): Promise<void> {
+  const db = tx || prisma;
+
+  // Find all subproducts of this parent
+  const subproducts = await db.product.findMany({
+    where: { parentProductId: parentId },
+    select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+  });
+
+  if (subproducts.length === 0) return;
+
+  // Calculate new stocks for all subproducts
+  const updatedStocks = calculateAllSubproductStocks(parentStock, subproducts);
+
+  // Update each subproduct's stock
+  for (const { id, newStock } of updatedStocks) {
+    await db.product.update({
+      where: { id },
+      data: { currentStock: newStock },
+    });
+  }
+}
+
 export const productRouter = router({
   // Get all products (with customer-specific pricing if authenticated customer)
   getAll: protectedProcedure
@@ -30,12 +63,14 @@ export const productRouter = router({
           status: z.enum(['active', 'discontinued', 'out_of_stock']).optional(),
           search: z.string().optional(),
           showAll: z.boolean().optional(), // If true, show all statuses (for admin)
+          includeSubproducts: z.boolean().optional().default(true), // Include nested subproducts (default true)
+          onlyParents: z.boolean().optional().default(true), // Only fetch parent products at top level (default true)
         })
         .merge(sortInputSchema)
         .merge(paginationInputSchema)
     )
     .query(async ({ input, ctx: _ctx }) => {
-      const { page, limit, sortBy, sortOrder, showAll, ...filters } = input;
+      const { page, limit, sortBy, sortOrder, showAll, includeSubproducts, onlyParents, ...filters } = input;
       const where: any = {};
 
       if (filters.categoryId) {
@@ -57,6 +92,12 @@ export const productRouter = router({
         ];
       }
 
+      // By default, only fetch top-level products (not subproducts)
+      // Subproducts will be included nested under their parents
+      if (onlyParents) {
+        where.parentProductId = null;
+      }
+
       // Build orderBy from sort parameters
       const orderBy =
         sortBy && productSortFieldMapping[sortBy]
@@ -76,6 +117,15 @@ export const productRouter = router({
         take: limit,
         include: {
           categoryRelation: true,
+          // Include subproducts nested under their parent
+          ...(includeSubproducts && {
+            subProducts: {
+              include: {
+                categoryRelation: true,
+              },
+              orderBy: { name: 'asc' },
+            },
+          }),
         },
       });
 
@@ -346,6 +396,7 @@ export const productRouter = router({
       // Fetch current product for change tracking
       const currentProduct = await prisma.product.findUnique({
         where: { id: productId },
+        include: { parentProduct: true },
       });
 
       if (!currentProduct) {
@@ -353,6 +404,35 @@ export const productRouter = router({
           code: 'NOT_FOUND',
           message: 'Product not found',
         });
+      }
+
+      // Subproduct-specific restrictions
+      if (isSubproduct(currentProduct)) {
+        // Cannot change unit for subproducts (must match parent)
+        if (updates.unit && updates.unit !== currentProduct.unit) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot change unit for subproducts. Unit must match parent product.',
+          });
+        }
+
+        // Cannot directly change currentStock for subproducts (it's calculated)
+        if (updates.currentStock !== undefined) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot directly change subproduct stock. Adjust the parent product instead.',
+          });
+        }
+
+        // If loss percentage changes, recalculate stock
+        if (updates.estimatedLossPercentage !== undefined &&
+            updates.estimatedLossPercentage !== currentProduct.estimatedLossPercentage &&
+            currentProduct.parentProduct) {
+          updates.currentStock = calculateSubproductStock(
+            currentProduct.parentProduct.currentStock,
+            updates.estimatedLossPercentage ?? 0
+          );
+        }
       }
 
       // Use transaction to update product and pricing atomically
@@ -533,6 +613,14 @@ export const productRouter = router({
         });
       }
 
+      // Reject stock adjustments on subproducts - they have virtual stock from parent
+      if (isSubproduct(product)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot adjust subproduct stock directly. Adjust the parent product instead.',
+        });
+      }
+
       // Calculate new stock level
       const previousStock = product.currentStock;
       const newStock = previousStock + quantity;
@@ -613,6 +701,9 @@ export const productRouter = router({
           where: { id: productId },
           data: { currentStock: newStock },
         });
+
+        // 5. Recalculate all subproduct stocks after parent stock change
+        await updateSubproductStocks(productId, newStock, tx);
 
         return updatedProduct;
       });
@@ -868,6 +959,196 @@ export const productRouter = router({
         transactions,
         totalCount,
         hasMore: offset + transactions.length < totalCount,
+      };
+    }),
+
+  // Admin: Create subproduct (derived from parent product with calculated virtual stock)
+  // NOTE: basePrice and customPrice must be in cents (Int)
+  createSubproduct: requirePermission('products:create')
+    .input(
+      z.object({
+        parentProductId: z.string(), // Required: the parent product ID
+        sku: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string().optional(),
+        categoryId: z.string().optional(), // Can differ from parent
+        basePrice: z.number().int().positive(), // In cents
+        applyGst: z.boolean().default(false),
+        gstRate: z.number().min(0).max(100).optional(),
+        estimatedLossPercentage: z.number().min(0).max(99), // Required: loss percentage 0-99%
+        imageUrl: z.string().url().optional(),
+        // Optional customer-specific pricing
+        customerPricing: z
+          .array(
+            z.object({
+              customerId: z.string(),
+              customPrice: z.number().int().positive(),
+              effectiveFrom: z.date().optional(),
+              effectiveTo: z.date().optional(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { parentProductId, customerPricing, estimatedLossPercentage, ...subproductData } = input;
+
+      // 1. Validate parent product exists
+      const parentProduct = await prisma.product.findUnique({
+        where: { id: parentProductId },
+        include: { subProducts: true },
+      });
+
+      if (!parentProduct) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Parent product not found',
+        });
+      }
+
+      // 2. Validate parent is not itself a subproduct (single-level nesting only)
+      if (isSubproduct(parentProduct)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot create subproduct of a subproduct',
+        });
+      }
+
+      // 3. Check if SKU already exists
+      const existingSku = await prisma.product.findUnique({
+        where: { sku: subproductData.sku },
+      });
+
+      if (existingSku) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'SKU already exists',
+        });
+      }
+
+      // 4. Calculate initial virtual stock from parent
+      const initialStock = calculateSubproductStock(parentProduct.currentStock, estimatedLossPercentage);
+
+      // Use transaction to create subproduct and pricing atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the subproduct
+        const subproduct = await tx.product.create({
+          data: {
+            ...subproductData,
+            parentProductId,
+            estimatedLossPercentage,
+            // Inherit unit from parent (enforced)
+            unit: parentProduct.unit,
+            // Set calculated virtual stock
+            currentStock: initialStock,
+            // Default status
+            status: 'active',
+          },
+        });
+
+        // Create customer pricing records if provided
+        if (customerPricing && customerPricing.length > 0) {
+          await tx.customerPricing.createMany({
+            data: customerPricing.map((cp) => ({
+              productId: subproduct.id,
+              customerId: cp.customerId,
+              customPrice: cp.customPrice,
+              effectiveFrom: cp.effectiveFrom || new Date(),
+              effectiveTo: cp.effectiveTo || null,
+            })),
+          });
+        }
+
+        return {
+          subproduct,
+          pricingCount: customerPricing?.length || 0,
+        };
+      });
+
+      // Log to audit trail
+      await logProductCreated(
+        ctx.userId,
+        undefined,
+        ctx.userRole,
+        ctx.userName,
+        result.subproduct.id,
+        result.subproduct.sku,
+        result.subproduct.name,
+        result.subproduct.basePrice
+      );
+
+      return {
+        product: result.subproduct,
+        pricingCount: result.pricingCount,
+        parentProduct: {
+          id: parentProduct.id,
+          name: parentProduct.name,
+          sku: parentProduct.sku,
+        },
+      };
+    }),
+
+  // Admin: Delete product (with cascade for subproducts)
+  delete: requirePermission('products:delete')
+    .input(z.object({ productId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { productId } = input;
+
+      // Get product with subproducts
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { subProducts: true },
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Product not found',
+        });
+      }
+
+      // Use transaction to delete product and subproducts atomically
+      // MongoDB doesn't support cascade, so we handle it manually
+      await prisma.$transaction(async (tx) => {
+        // 1. Delete all subproducts first
+        if (product.subProducts.length > 0) {
+          // Delete customer pricing for subproducts
+          await tx.customerPricing.deleteMany({
+            where: { productId: { in: product.subProducts.map((sp) => sp.id) } },
+          });
+
+          // Delete subproducts
+          await tx.product.deleteMany({
+            where: { parentProductId: productId },
+          });
+        }
+
+        // 2. Delete customer pricing for the product
+        await tx.customerPricing.deleteMany({
+          where: { productId },
+        });
+
+        // 3. Delete the product
+        await tx.product.delete({
+          where: { id: productId },
+        });
+      });
+
+      // Log to audit trail
+      await logProductUpdated(
+        ctx.userId,
+        undefined,
+        ctx.userRole,
+        ctx.userName,
+        productId,
+        product.sku,
+        [{ field: 'deleted', oldValue: false, newValue: true }]
+      );
+
+      return {
+        success: true,
+        deletedProductId: productId,
+        deletedSubproductsCount: product.subProducts.length,
       };
     }),
 });

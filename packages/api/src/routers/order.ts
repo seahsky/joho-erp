@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma, PrismaClient } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy } from '@joho-erp/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct, calculateAllSubproductStocks } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendBackorderSubmittedEmail,
@@ -46,7 +46,7 @@ interface StockValidationResult {
 
 async function validateStockWithBackorder(
   items: Array<{ productId: string; quantity: number }>,
-  products: Array<{ id: string; name: string; currentStock: number }>,
+  products: Array<{ id: string; name: string; currentStock: number; parentProductId?: string | null; parentProduct?: { id: string; currentStock: number } | null; estimatedLossPercentage?: number | null }>,
   tx?: Omit<
     PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -63,22 +63,71 @@ async function validateStockWithBackorder(
     const product = products.find((p) => p.id === item.productId);
     if (!product) continue;
 
+    // Check if this is a subproduct
+    const productIsSubproduct = isSubproduct(product);
+
+    // For subproducts: calculate parent consumption and check parent stock
+    // For regular products: check direct stock
+    const checkProductId = productIsSubproduct && product.parentProduct
+      ? product.parentProduct.id
+      : item.productId;
+
+    const requiredQuantity = productIsSubproduct
+      ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+      : item.quantity;
+
     // Use batch-aware stock quantity instead of cached currentStock
     // This accounts for expired batches and consumed stock
-    const availableStock = await getAvailableStockQuantity(item.productId, tx);
+    const availableStock = await getAvailableStockQuantity(checkProductId, tx);
 
-    if (availableStock < item.quantity) {
+    if (availableStock < requiredQuantity) {
       // Stock insufficient - backorder needed
       result.requiresBackorder = true;
       result.stockShortfall[item.productId] = {
         requested: item.quantity,
-        available: availableStock,
-        shortfall: item.quantity - availableStock,
+        available: productIsSubproduct
+          ? Math.floor(availableStock * (1 - (product.estimatedLossPercentage ?? 0) / 100)) // Convert back to subproduct terms
+          : availableStock,
+        shortfall: item.quantity - (productIsSubproduct
+          ? Math.floor(availableStock * (1 - (product.estimatedLossPercentage ?? 0) / 100))
+          : availableStock),
       };
     }
   }
 
   return result;
+}
+
+// Helper: Update parent stock and recalculate all subproduct stocks
+async function updateParentAndSubproductStocks(
+  parentId: string,
+  newParentStock: number,
+  tx: any
+): Promise<void> {
+  // Update parent stock
+  await tx.product.update({
+    where: { id: parentId },
+    data: { currentStock: newParentStock },
+  });
+
+  // Find all subproducts of this parent
+  const subproducts = await tx.product.findMany({
+    where: { parentProductId: parentId },
+    select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+  });
+
+  if (subproducts.length === 0) return;
+
+  // Calculate new stocks for all subproducts
+  const updatedStocks = calculateAllSubproductStocks(newParentStock, subproducts);
+
+  // Update each subproduct's stock
+  for (const { id, newStock } of updatedStocks) {
+    await tx.product.update({
+      where: { id },
+      data: { currentStock: newStock },
+    });
+  }
 }
 
 // Helper: Get user display name and email from Clerk
@@ -245,10 +294,11 @@ export const orderRouter = router({
         });
       }
 
-      // Get products and validate stock
+      // Get products and validate stock (include parent product for subproducts)
       const productIds = input.items.map((item) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
+        include: { parentProduct: true },
       });
 
       if (products.length !== input.items.length) {
@@ -419,33 +469,53 @@ export const orderRouter = router({
 
         // If NOT a backorder, reduce stock immediately
         if (!stockValidation.requiresBackorder) {
+          // Track which parent products have been updated to avoid duplicate recalculations
+          const updatedParentIds = new Set<string>();
+
           for (const item of orderItems) {
             const product = products.find((p) => p.id === item.productId);
             if (!product) continue;
 
-            const previousStock = product.currentStock;
-            const newStock = previousStock - item.quantity;
+            // Check if this is a subproduct (has parent)
+            const productIsSubproduct = isSubproduct(product);
+            const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-            // Create inventory transaction (sale)
+            // For subproducts: consume from parent; for regular products: consume directly
+            const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
+            const consumeFromProduct = parentProduct || product;
+
+            // Calculate consumption quantity (for subproducts, account for loss)
+            const consumeQuantity = productIsSubproduct
+              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+              : item.quantity;
+
+            const previousStock = consumeFromProduct.currentStock;
+            const newStock = previousStock - consumeQuantity;
+
+            // Create inventory transaction on the source product (parent for subproducts)
+            const transactionNotes = productIsSubproduct
+              ? `Subproduct order: ${product.name} (${item.quantity}${product.unit}) for order ${orderNumber}`
+              : `Stock reserved for order ${orderNumber}`;
+
             const transaction = await tx.inventoryTransaction.create({
               data: {
-                productId: item.productId,
+                productId: consumeFromProductId,
                 type: 'sale',
-                quantity: -item.quantity,
+                quantity: -consumeQuantity,
                 previousStock,
                 newStock,
                 referenceType: 'order',
                 referenceId: newOrder.id,
-                notes: `Stock reserved for order ${orderNumber}`,
+                notes: transactionNotes,
                 createdBy: ctx.userId,
               },
             });
 
-            // NEW: Consume from batches via FIFO
+            // Consume from batches via FIFO (from parent for subproducts)
             const { consumeStock } = await import('../services/inventory-batch');
             const result = await consumeStock(
-              item.productId,
-              item.quantity,
+              consumeFromProductId,
+              consumeQuantity,
               transaction.id,
               newOrder.id,
               orderNumber,
@@ -461,10 +531,20 @@ export const orderRouter = router({
             }
 
             // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
-            });
+            if (productIsSubproduct && parentProduct) {
+              // Update parent stock and recalculate all sibling subproduct stocks
+              await updateParentAndSubproductStocks(parentProduct.id, newStock, tx);
+              updatedParentIds.add(parentProduct.id);
+            } else {
+              // Regular product: just update its stock
+              await tx.product.update({
+                where: { id: product.id },
+                data: { currentStock: newStock },
+              });
+
+              // If this regular product has subproducts, recalculate their stocks too
+              await updateParentAndSubproductStocks(product.id, newStock, tx);
+            }
           }
         }
 
@@ -625,10 +705,11 @@ export const orderRouter = router({
         });
       }
 
-      // 4. Validate products and check stock
+      // 4. Validate products and check stock (include parent product for subproducts)
       const productIds = input.items.map((item) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
+        include: { parentProduct: true },
       });
 
       if (products.length !== input.items.length) {
@@ -804,33 +885,53 @@ export const orderRouter = router({
 
         // If NOT a backorder, reduce stock immediately
         if (!stockValidation.requiresBackorder) {
+          // Track which parent products have been updated to avoid duplicate recalculations
+          const updatedParentIds = new Set<string>();
+
           for (const item of orderItems) {
             const product = products.find((p) => p.id === item.productId);
             if (!product) continue;
 
-            const previousStock = product.currentStock;
-            const newStock = previousStock - item.quantity;
+            // Check if this is a subproduct (has parent)
+            const productIsSubproduct = isSubproduct(product);
+            const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-            // Create inventory transaction (sale)
+            // For subproducts: consume from parent; for regular products: consume directly
+            const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
+            const consumeFromProduct = parentProduct || product;
+
+            // Calculate consumption quantity (for subproducts, account for loss)
+            const consumeQuantity = productIsSubproduct
+              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+              : item.quantity;
+
+            const previousStock = consumeFromProduct.currentStock;
+            const newStock = previousStock - consumeQuantity;
+
+            // Create inventory transaction on the source product (parent for subproducts)
+            const transactionNotes = productIsSubproduct
+              ? `Subproduct order: ${product.name} (${item.quantity}${product.unit}) for order ${orderNumber} (placed by admin)`
+              : `Stock reserved for order ${orderNumber} (placed by admin)`;
+
             const transaction = await tx.inventoryTransaction.create({
               data: {
-                productId: item.productId,
+                productId: consumeFromProductId,
                 type: 'sale',
-                quantity: -item.quantity,
+                quantity: -consumeQuantity,
                 previousStock,
                 newStock,
                 referenceType: 'order',
                 referenceId: newOrder.id,
-                notes: `Stock reserved for order ${orderNumber} (placed by admin)`,
+                notes: transactionNotes,
                 createdBy: ctx.userId,
               },
             });
 
-            // NEW: Consume from batches via FIFO
+            // Consume from batches via FIFO (from parent for subproducts)
             const { consumeStock } = await import('../services/inventory-batch');
             const result = await consumeStock(
-              item.productId,
-              item.quantity,
+              consumeFromProductId,
+              consumeQuantity,
               transaction.id,
               newOrder.id,
               orderNumber,
@@ -846,10 +947,20 @@ export const orderRouter = router({
             }
 
             // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
-            });
+            if (productIsSubproduct && parentProduct) {
+              // Update parent stock and recalculate all sibling subproduct stocks
+              await updateParentAndSubproductStocks(parentProduct.id, newStock, tx);
+              updatedParentIds.add(parentProduct.id);
+            } else {
+              // Regular product: just update its stock
+              await tx.product.update({
+                where: { id: product.id },
+                data: { currentStock: newStock },
+              });
+
+              // If this regular product has subproducts, recalculate their stocks too
+              await updateParentAndSubproductStocks(product.id, newStock, tx);
+            }
           }
         }
 
@@ -1414,10 +1525,11 @@ export const orderRouter = router({
         quantity: item.quantity,
       }));
 
-      // Get products and validate they still exist and are available
+      // Get products and validate they still exist and are available (include parent for subproducts)
       const productIds = orderItems.map((item) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
+        include: { parentProduct: true },
       });
 
       if (products.length !== orderItems.length) {
@@ -1537,33 +1649,53 @@ export const orderRouter = router({
 
         // If NOT a backorder, reduce stock immediately
         if (!stockValidation.requiresBackorder) {
+          // Track which parent products have been updated to avoid duplicate recalculations
+          const updatedParentIds = new Set<string>();
+
           for (const item of newOrderItems) {
             const product = products.find((p) => p.id === item.productId);
             if (!product) continue;
 
-            const previousStock = product.currentStock;
-            const newStock = previousStock - item.quantity;
+            // Check if this is a subproduct (has parent)
+            const productIsSubproduct = isSubproduct(product);
+            const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-            // Create inventory transaction (sale)
+            // For subproducts: consume from parent; for regular products: consume directly
+            const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
+            const consumeFromProduct = parentProduct || product;
+
+            // Calculate consumption quantity (for subproducts, account for loss)
+            const consumeQuantity = productIsSubproduct
+              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+              : item.quantity;
+
+            const previousStock = consumeFromProduct.currentStock;
+            const newStock = previousStock - consumeQuantity;
+
+            // Create inventory transaction on the source product (parent for subproducts)
+            const transactionNotes = productIsSubproduct
+              ? `Subproduct reorder: ${product.name} (${item.quantity}${product.unit}) for order ${orderNumber} (original: ${originalOrder.orderNumber})`
+              : `Stock reserved for reorder ${orderNumber} (original: ${originalOrder.orderNumber})`;
+
             const transaction = await tx.inventoryTransaction.create({
               data: {
-                productId: item.productId,
+                productId: consumeFromProductId,
                 type: 'sale',
-                quantity: -item.quantity,
+                quantity: -consumeQuantity,
                 previousStock,
                 newStock,
                 referenceType: 'order',
                 referenceId: createdOrder.id,
-                notes: `Stock reserved for reorder ${orderNumber} (original: ${originalOrder.orderNumber})`,
+                notes: transactionNotes,
                 createdBy: ctx.userId,
               },
             });
 
-            // NEW: Consume from batches via FIFO
+            // Consume from batches via FIFO (from parent for subproducts)
             const { consumeStock } = await import('../services/inventory-batch');
             const result = await consumeStock(
-              item.productId,
-              item.quantity,
+              consumeFromProductId,
+              consumeQuantity,
               transaction.id,
               createdOrder.id,
               orderNumber,
@@ -1579,10 +1711,20 @@ export const orderRouter = router({
             }
 
             // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
-            });
+            if (productIsSubproduct && parentProduct) {
+              // Update parent stock and recalculate all sibling subproduct stocks
+              await updateParentAndSubproductStocks(parentProduct.id, newStock, tx);
+              updatedParentIds.add(parentProduct.id);
+            } else {
+              // Regular product: just update its stock
+              await tx.product.update({
+                where: { id: product.id },
+                data: { currentStock: newStock },
+              });
+
+              // If this regular product has subproducts, recalculate their stocks too
+              await updateParentAndSubproductStocks(product.id, newStock, tx);
+            }
           }
         }
 

@@ -17,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@joho-erp/ui';
-import { Loader2, Package, PackagePlus, HelpCircle } from 'lucide-react';
+import { Loader2, Package, PackagePlus, HelpCircle, GitBranch } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatCentsForInput, parseToCents } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -52,6 +52,14 @@ type Product = {
   estimatedLossPercentage?: number | null;
   status: 'active' | 'discontinued' | 'out_of_stock';
   imageUrl?: string | null;
+  // Subproduct fields
+  parentProductId?: string | null;
+  parentProduct?: {
+    id: string;
+    name: string;
+    sku: string;
+    unit: string;
+  } | null;
 };
 
 interface EditProductDialogProps {
@@ -69,6 +77,10 @@ export function EditProductDialog({
 }: EditProductDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('productForm');
+  const tSubproduct = useTranslations('subproduct');
+
+  // Determine if editing a subproduct
+  const isSubproduct = !!product?.parentProductId;
 
   // Form state
   const [sku, setSku] = useState('');
@@ -403,12 +415,23 @@ export function EditProductDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            {t('editDialog.title')}
+            {isSubproduct ? (
+              <GitBranch className="h-5 w-5" />
+            ) : (
+              <Package className="h-5 w-5" />
+            )}
+            {isSubproduct ? tSubproduct('dialog.editTitle') : t('editDialog.title')}
           </DialogTitle>
           <DialogDescription>
-            {t('editDialog.description')}
+            {isSubproduct ? tSubproduct('dialog.editDescription') : t('editDialog.description')}
           </DialogDescription>
+          {/* Show parent product info for subproducts */}
+          {isSubproduct && product?.parentProduct && (
+            <div className="mt-2 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">{tSubproduct('parentProduct')}</p>
+              <p className="font-medium">{product.parentProduct.name} ({product.parentProduct.sku})</p>
+            </div>
+          )}
         </DialogHeader>
 
         <TooltipProvider>
@@ -525,14 +548,18 @@ export function EditProductDialog({
                     setUnit(e.target.value as 'kg' | 'piece' | 'box' | 'carton');
                     clearFieldError('unit');
                   }}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className={`w-full px-3 py-2 border rounded-md ${isSubproduct ? 'bg-muted text-muted-foreground cursor-not-allowed' : ''}`}
                   required
+                  disabled={isSubproduct}
                 >
                   <option value="kg">{t('units.kg')}</option>
                   <option value="piece">{t('units.piece')}</option>
                   <option value="box">{t('units.box')}</option>
                   <option value="carton">{t('units.carton')}</option>
                 </select>
+                {isSubproduct && (
+                  <p className="text-sm text-muted-foreground">{tSubproduct('inheritedFromParent')}</p>
+                )}
                 {fieldErrors.unit && (
                   <p className="text-sm text-destructive">{fieldErrors.unit}</p>
                 )}
@@ -625,19 +652,27 @@ export function EditProductDialog({
                   disabled
                   className="bg-muted text-muted-foreground cursor-not-allowed"
                 />
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('fields.stockAdjustmentHint')}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowStockAdjustment(true)}
-                  className="mt-2"
-                >
-                  <PackagePlus className="mr-2 h-4 w-4" />
-                  {t('buttons.adjustStock')}
-                </Button>
+                {isSubproduct ? (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {tSubproduct('table.virtualStockTooltip')}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('fields.stockAdjustmentHint')}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowStockAdjustment(true)}
+                      className="mt-2"
+                    >
+                      <PackagePlus className="mr-2 h-4 w-4" />
+                      {t('buttons.adjustStock')}
+                    </Button>
+                  </>
+                )}
               </div>
 
               <div>

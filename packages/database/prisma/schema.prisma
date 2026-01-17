@@ -224,6 +224,13 @@ model Product {
   updatedAt           DateTime            @updatedAt
   estimatedLossPercentage Float?          // Optional: 0-100, represents processing loss %
 
+  // Subproduct relationship (self-referential)
+  // parentProductId = null means regular product, set = subproduct
+  // Note: MongoDB requires NoAction for self-relations; cascade handled in application
+  parentProductId     String?             @db.ObjectId
+  parentProduct       Product?            @relation("ProductSubproducts", fields: [parentProductId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subProducts         Product[]           @relation("ProductSubproducts")
+
   // Relations
   inventoryTransactions InventoryTransaction[]
   customerPricing     CustomerPricing[]
@@ -236,6 +243,7 @@ model Product {
   @@index([categoryId])
   @@index([name])
   @@index([currentStock, lowStockThreshold])
+  @@index([parentProductId])
   @@map("products")
 }
 
