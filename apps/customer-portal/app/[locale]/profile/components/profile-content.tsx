@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@joho-erp/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button } from '@joho-erp/ui';
 import {
   Building2,
   User,
@@ -13,160 +13,19 @@ import {
   Settings,
   LogOut,
   Loader2,
-  Edit,
-  X,
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
 import { api } from '@/trpc/client';
-import { useToast } from '@joho-erp/ui';
 
 type UserDisplayData = { firstName: string | null; lastName: string | null } | null;
 
 export function ProfileContent({ user }: { user: UserDisplayData }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
-  const { toast } = useToast();
   const params = useParams();
   const locale = params.locale as string;
 
   const { data: customer, isLoading, error } = api.customer.getProfile.useQuery();
-  const utils = api.useUtils();
-
-  // Edit mode state
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [editForm, setEditForm] = React.useState({
-    phone: '',
-    mobile: '',
-    street: '',
-    suburb: '',
-    state: '',
-    postcode: '',
-    deliveryInstructions: '',
-  });
-  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
-
-  // Initialize form when customer data loads
-  React.useEffect(() => {
-    if (customer) {
-      setEditForm({
-        phone: customer.contactPerson.phone || '',
-        mobile: customer.contactPerson.mobile || '',
-        street: customer.deliveryAddress.street || '',
-        suburb: customer.deliveryAddress.suburb || '',
-        state: customer.deliveryAddress.state || '',
-        postcode: customer.deliveryAddress.postcode || '',
-        deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
-      });
-    }
-  }, [customer]);
-
-  // Update profile mutation
-  const updateProfile = api.customer.updateProfile.useMutation({
-    onSuccess: () => {
-      toast({
-        title: t('edit.success'),
-        description: t('edit.successMessage'),
-        variant: 'default',
-      });
-      setIsEditing(false);
-      utils.customer.getProfile.invalidate();
-    },
-    onError: (error) => {
-      toast({
-        title: t('edit.error'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const clearFieldError = (field: string) => {
-    if (fieldErrors[field]) {
-      const newErrors = { ...fieldErrors };
-      delete newErrors[field];
-      setFieldErrors(newErrors);
-    }
-  };
-
-  const updateField = (field: keyof typeof editForm, value: string) => {
-    setEditForm({ ...editForm, [field]: value });
-    clearFieldError(field);
-  };
-
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    const phoneRegex = /^[0-9\s\-\+\(\)]+$/;
-    let isValid = true;
-
-    // Phone validation
-    if (!editForm.phone?.trim()) {
-      errors.phone = t('edit.validation.phoneRequired');
-      isValid = false;
-    } else if (!phoneRegex.test(editForm.phone)) {
-      errors.phone = t('edit.validation.phoneInvalid');
-      isValid = false;
-    }
-
-    // Mobile validation (optional but must be valid if provided)
-    if (editForm.mobile && !phoneRegex.test(editForm.mobile)) {
-      errors.mobile = t('edit.validation.phoneInvalid');
-      isValid = false;
-    }
-
-    // Street validation
-    if (!editForm.street?.trim()) {
-      errors.street = t('edit.validation.streetRequired');
-      isValid = false;
-    }
-
-    // Suburb validation
-    if (!editForm.suburb?.trim()) {
-      errors.suburb = t('edit.validation.suburbRequired');
-      isValid = false;
-    }
-
-    setFieldErrors(errors);
-    return isValid;
-  };
-
-  const handleSave = () => {
-    if (!validateForm()) {
-      toast({
-        title: t('edit.validationError'),
-        description: t('edit.validationErrorMessage'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    updateProfile.mutate({
-      contactPerson: {
-        phone: editForm.phone,
-        mobile: editForm.mobile,
-      },
-      deliveryAddress: {
-        street: editForm.street,
-        suburb: editForm.suburb,
-        deliveryInstructions: editForm.deliveryInstructions,
-      },
-    });
-  };
-
-  const handleCancel = () => {
-    if (customer) {
-      setEditForm({
-        phone: customer.contactPerson.phone || '',
-        mobile: customer.contactPerson.mobile || '',
-        street: customer.deliveryAddress.street || '',
-        suburb: customer.deliveryAddress.suburb || '',
-        state: customer.deliveryAddress.state || '',
-        postcode: customer.deliveryAddress.postcode || '',
-        deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
-      });
-    }
-    setFieldErrors({});
-    setIsEditing(false);
-  };
 
   // Loading state
   if (isLoading) {
@@ -257,54 +116,21 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
               <p className="text-base">{customer.contactPerson.email}</p>
             </div>
           </div>
-          {isEditing ? (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t('phone')}</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={editForm.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
-                  placeholder={t('phone')}
-                />
-                {fieldErrors.phone && (
-                  <p className="text-sm text-destructive">{fieldErrors.phone}</p>
-                )}
+          <div className="flex items-center gap-3">
+            <Phone className="h-4 w-4 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-muted-foreground">{t('phone')}</p>
+              <p className="text-base">{customer.contactPerson.phone}</p>
+            </div>
+          </div>
+          {customer.contactPerson.mobile && (
+            <div className="flex items-center gap-3">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">{t('mobile')}</p>
+                <p className="text-base">{customer.contactPerson.mobile}</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobile">{t('edit.mobile')}</Label>
-                <Input
-                  id="mobile"
-                  type="tel"
-                  value={editForm.mobile}
-                  onChange={(e) => updateField('mobile', e.target.value)}
-                  placeholder={t('edit.mobile')}
-                />
-                {fieldErrors.mobile && (
-                  <p className="text-sm text-destructive">{fieldErrors.mobile}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">{t('phone')}</p>
-                  <p className="text-base">{customer.contactPerson.phone}</p>
-                </div>
-              </div>
-              {customer.contactPerson.mobile && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">{t('edit.mobile')}</p>
-                    <p className="text-base">{customer.contactPerson.mobile}</p>
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -318,77 +144,19 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {isEditing ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="street">{t('street')}</Label>
-                <Input
-                  id="street"
-                  value={editForm.street}
-                  onChange={(e) => updateField('street', e.target.value)}
-                  placeholder={t('street')}
-                />
-                {fieldErrors.street && (
-                  <p className="text-sm text-destructive">{fieldErrors.street}</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="suburb">{t('suburb')}</Label>
-                  <Input
-                    id="suburb"
-                    value={editForm.suburb}
-                    onChange={(e) => updateField('suburb', e.target.value)}
-                    placeholder={t('suburb')}
-                  />
-                  {fieldErrors.suburb && (
-                    <p className="text-sm text-destructive">{fieldErrors.suburb}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">{t('state')}</Label>
-                  <Input
-                    id="state"
-                    value={editForm.state}
-                    disabled
-                    placeholder={t('state')}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postcode">{t('postcode')}</Label>
-                <Input
-                  id="postcode"
-                  value={editForm.postcode}
-                  disabled
-                  placeholder={t('postcode')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deliveryInstructions">{t('edit.deliveryInstructions')}</Label>
-                <Input
-                  id="deliveryInstructions"
-                  value={editForm.deliveryInstructions}
-                  onChange={(e) => updateField('deliveryInstructions', e.target.value)}
-                  placeholder={t('edit.deliveryInstructions')}
-                />
-              </div>
-            </div>
-          ) : (
-            <div>
-              <p className="text-base">
-                {customer.deliveryAddress.street}
-                <br />
-                {customer.deliveryAddress.suburb} {customer.deliveryAddress.state}{' '}
-                {customer.deliveryAddress.postcode}
+          <div>
+            <p className="text-base">
+              {customer.deliveryAddress.street}
+              <br />
+              {customer.deliveryAddress.suburb} {customer.deliveryAddress.state}{' '}
+              {customer.deliveryAddress.postcode}
+            </p>
+            {customer.deliveryAddress.deliveryInstructions && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {t('deliveryInstructions')}: {customer.deliveryAddress.deliveryInstructions}
               </p>
-              {customer.deliveryAddress.deliveryInstructions && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {t('edit.deliveryInstructions')}: {customer.deliveryAddress.deliveryInstructions}
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -409,44 +177,6 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
           </button>
         </CardContent>
       </Card>
-
-      {/* Edit/Save/Cancel Buttons */}
-      {isEditing ? (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            size="lg"
-            onClick={handleCancel}
-            disabled={updateProfile.isPending}
-          >
-            <X className="h-4 w-4 mr-2" />
-            {tCommon('cancel')}
-          </Button>
-          <Button
-            className="flex-1"
-            size="lg"
-            onClick={handleSave}
-            disabled={updateProfile.isPending}
-          >
-            {updateProfile.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('edit.saving')}
-              </>
-            ) : (
-              <>
-                {tCommon('save')}
-              </>
-            )}
-          </Button>
-        </div>
-      ) : (
-        <Button className="w-full" size="lg" onClick={() => setIsEditing(true)}>
-          <Edit className="h-4 w-4 mr-2" />
-          {t('edit.editProfile')}
-        </Button>
-      )}
 
       {/* Sign Out */}
       <SignOutButton signOutOptions={{ redirectUrl: `/${locale}/sign-in` }}>
