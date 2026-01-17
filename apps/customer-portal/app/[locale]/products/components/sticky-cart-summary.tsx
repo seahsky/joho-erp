@@ -54,7 +54,7 @@ export function StickyCartSummary({ locale, onCartClick, isHidden = false }: Sti
 
   return (
     <div className={cn(
-      "sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border",
+      "sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border",
       isHidden && "opacity-0 pointer-events-none -translate-y-full",
       "transition-all duration-300 ease-out"
     )}>
