@@ -249,19 +249,32 @@ export const dashboardRouter = router({
         return data[0]?.count || 0;
       }),
 
-      // Total inventory value (currentStock * basePrice, in cents)
-      prisma.product.aggregateRaw({
+      // Total inventory value from batch costs (quantityRemaining * costPerUnit, in cents)
+      prisma.inventoryBatch.aggregateRaw({
         pipeline: [
+          // Join with products to filter active products only
           {
-            $match: {
-              status: 'active',
+            $lookup: {
+              from: 'products',
+              localField: 'productId',
+              foreignField: '_id',
+              as: 'product',
             },
           },
+          { $unwind: '$product' },
+          // Filter for active products and non-consumed batches
+          {
+            $match: {
+              'product.status': 'active',
+              isConsumed: false,
+            },
+          },
+          // Calculate batch value and sum
           {
             $group: {
               _id: null,
               totalValue: {
-                $sum: { $multiply: ['$currentStock', '$basePrice'] },
+                $sum: { $multiply: ['$quantityRemaining', '$costPerUnit'] },
               },
             },
           },
