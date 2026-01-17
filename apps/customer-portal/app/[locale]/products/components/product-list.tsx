@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { MobileSearch, Skeleton, cn, IllustratedEmptyState, Button, useIsMobile } from '@joho-erp/ui';
 import { AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
@@ -45,11 +46,33 @@ export function ProductList() {
   const t = useTranslations('products');
   const tIllustrated = useTranslations('illustratedEmptyState');
   const locale = useLocale();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>();
   const [expandedProductId, setExpandedProductId] = React.useState<string | null>(null);
   const [miniCartOpen, setMiniCartOpen] = React.useState(false);
+
+  // Get category from URL and sync with state
+  const categoryFromUrl = searchParams.get('category') || undefined;
+  const [selectedCategory, setSelectedCategoryState] = React.useState<string | undefined>(categoryFromUrl);
+
+  // Sync state when URL changes externally (e.g., browser back/forward)
+  React.useEffect(() => {
+    setSelectedCategoryState(categoryFromUrl);
+  }, [categoryFromUrl]);
+
+  // Update URL when category changes
+  const setSelectedCategory = React.useCallback((category: string | undefined) => {
+    setSelectedCategoryState(category);
+    const params = new URLSearchParams(searchParams.toString());
+    if (category) {
+      params.set('category', category);
+    } else {
+      params.delete('category');
+    }
+    router.replace(`/${locale}/products${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
+  }, [searchParams, router, locale]);
 
   const { data: products, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,

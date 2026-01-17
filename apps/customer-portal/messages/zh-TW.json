@@ -19,7 +19,10 @@
     "myOrders": "我的訂單",
     "profile": "個人資料",
     "cart": "購物車",
-    "tagline": "優質批發"
+    "tagline": "優質批發",
+    "categories": "分類",
+    "allProducts": "全部產品",
+    "browseByCategory": "按分類瀏覽"
   },
   "common": {
     "loading": "載入中...",

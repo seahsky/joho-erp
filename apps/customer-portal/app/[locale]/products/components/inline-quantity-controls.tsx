@@ -340,8 +340,10 @@ export function InlineQuantityControls({
     setCustomQuantity('');
   };
 
-  // State 1: Not in cart (custom input + quick-add button)
+  // State 1: Not in cart (custom input + confirm button + quick-add button)
   if (currentQuantity === 0 && !isEditing) {
+    const hasValidCustomQuantity = customQuantity.trim() !== '' && !isNaN(parseInt(customQuantity, 10)) && parseInt(customQuantity, 10) > 0;
+
     return (
       <div className={cn('flex items-center gap-1.5', className)}>
         <input
@@ -362,6 +364,28 @@ export function InlineQuantityControls({
           placeholder={t('quantity.placeholder')}
           aria-label={t('quantity.enterCustom')}
         />
+        {/* Confirm button - only visible when custom quantity has a valid value */}
+        {hasValidCustomQuantity && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAddCustomQuantity}
+            disabled={disabled || isPending}
+            className={cn(
+              'h-9 w-9 p-0',
+              'border-green-500 hover:bg-green-50 hover:border-green-600',
+              'disabled:border-border disabled:hover:bg-transparent'
+            )}
+            title={t('quantity.confirm')}
+            aria-label={t('quantity.confirm')}
+          >
+            {isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5 text-green-600" />
+            )}
+          </Button>
+        )}
         <Button
           size="sm"
           onClick={handleAdd5}

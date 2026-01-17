@@ -19,7 +19,10 @@
     "myOrders": "我的订单",
     "profile": "个人资料",
     "cart": "购物车",
-    "tagline": "优质批发"
+    "tagline": "优质批发",
+    "categories": "分类",
+    "allProducts": "全部产品",
+    "browseByCategory": "按分类浏览"
   },
   "common": {
     "loading": "加载中...",

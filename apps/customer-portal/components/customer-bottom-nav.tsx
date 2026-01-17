@@ -8,12 +8,14 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { MiniCartSheet, CartButtonStyles } from './mini-cart';
+import { CategorySheet } from './category-sheet';
 
 export function CustomerBottomNav({ locale }: { locale: string }) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
   const { data: cart } = api.cart.getCart.useQuery();
   const [isCartOpen, setIsCartOpen] = React.useState(false);
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = React.useState(false);
   const [isAnimating, setIsAnimating] = React.useState(false);
   const prevCountRef = React.useRef(0);
 
@@ -57,9 +59,9 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
             <span className="text-xs mt-1">{t('home')}</span>
           </Link>
 
-          {/* Products */}
-          <Link
-            href={`/${locale}/products`}
+          {/* Products - Opens Category Sheet */}
+          <button
+            onClick={() => setIsCategorySheetOpen(true)}
             className={cn(
               'flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200',
               isActive(`/${locale}/products`)
@@ -69,7 +71,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
           >
             <Package className="h-6 w-6" />
             <span className="text-xs mt-1">{t('products')}</span>
-          </Link>
+          </button>
 
           {/* Cart - Opens bottom sheet */}
           <button
@@ -136,6 +138,13 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
       <MiniCartSheet
         open={isCartOpen}
         onClose={() => setIsCartOpen(false)}
+        locale={locale}
+      />
+
+      {/* Category Sheet */}
+      <CategorySheet
+        open={isCategorySheetOpen}
+        onClose={() => setIsCategorySheetOpen(false)}
         locale={locale}
       />
     </>

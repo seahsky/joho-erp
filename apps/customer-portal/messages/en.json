@@ -19,7 +19,10 @@
     "myOrders": "My Orders",
     "profile": "Profile",
     "cart": "Cart",
-    "tagline": "Premium Wholesale"
+    "tagline": "Premium Wholesale",
+    "categories": "Categories",
+    "allProducts": "All Products",
+    "browseByCategory": "Browse by Category"
   },
   "common": {
     "loading": "Loading...",
