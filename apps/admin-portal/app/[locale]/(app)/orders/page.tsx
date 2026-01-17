@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -20,7 +20,7 @@ import {
   toast,
   TableSkeleton,
 } from '@joho-erp/ui';
-import { Search, ShoppingBag, Eye, Package, PackageX, Plus, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingBag, Eye, Package, PackageX, Plus, AlertTriangle, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
@@ -78,6 +78,35 @@ export default function OrdersPage() {
   const [selectedConfirmOrder, setSelectedConfirmOrder] = useState<ConfirmOrder | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
+  // Date filter state - default to today
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setUTCHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const [orderDate, setOrderDate] = useState<Date | null>(today);
+
+  // Date input value helper
+  const dateInputValue = useMemo(() => {
+    if (!orderDate) return '';
+    const year = orderDate.getUTCFullYear();
+    const month = String(orderDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(orderDate.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, [orderDate]);
+
+  // Date change handler
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.value) {
+      setOrderDate(null);
+      return;
+    }
+    const [year, month, day] = e.target.value.split('-').map(Number);
+    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    setOrderDate(newDate);
+  };
+
   // Sorting hook
   const { sortBy, sortOrder, handleSort } = useTableSort('orderedAt', 'desc');
 
@@ -87,6 +116,8 @@ export default function OrdersPage() {
     status: statusFilter || undefined,
     areaId: areaFilter || undefined,
     search: searchQuery || undefined,
+    dateFrom: orderDate || undefined,
+    dateTo: orderDate || undefined,
     sortBy,
     sortOrder,
     limit: 100,
@@ -502,6 +533,43 @@ export default function OrdersPage() {
         </Card>
       )}
 
+      {/* Date Filter */}
+      <Card className="mb-6">
+        <CardHeader className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <label htmlFor="order-date" className="text-sm font-medium">
+                {t('selectOrderDate')}
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="order-date"
+                type="date"
+                className="w-full sm:w-auto"
+                value={dateInputValue}
+                onChange={handleDateChange}
+              />
+              {orderDate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOrderDate(null)}
+                >
+                  {t('showAllDates')}
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {orderDate
+                ? t('showingOrdersFor', { date: orderDate.toLocaleDateString() })
+                : t('showingAllDates')}
+            </p>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Search and Filters */}
       <Card className="mb-6">
         <CardHeader className="p-4">
@@ -599,7 +667,7 @@ export default function OrdersPage() {
             <EmptyState
               icon={PackageX}
               title={t('noOrdersFound')}
-              description={searchQuery || statusFilter || areaFilter ? t('adjustFilters') : t('ordersWillAppear')}
+              description={searchQuery || statusFilter || areaFilter || orderDate ? t('adjustFilters') : t('ordersWillAppear')}
             />
           )}
         </CardContent>
