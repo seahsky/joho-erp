@@ -1175,6 +1175,14 @@
       "vehicleTemperatureHint": "Optional: Temperature reading at delivery (for food safety)",
       "expiryDate": "Expiry Date",
       "expiryDateHint": "Optional: For perishable items",
+      "expiryOptions": {
+        "none": "No expiry date",
+        "3d": "3 days",
+        "5d": "5 days",
+        "10d": "10 days",
+        "1M": "1 month",
+        "custom": "Custom date"
+      },
       "supplier": "Supplier",
       "supplierPlaceholder": "No supplier selected (optional)",
       "supplierSearchPlaceholder": "Search suppliers...",
@@ -1248,6 +1256,14 @@
       "costPerUnit": "Cost per Unit (Target)",
       "costPerUnitHint": "Cost per unit for the processed product",
       "expiryDate": "Expiry Date (Optional)",
+      "expiryOptions": {
+        "none": "No expiry date",
+        "3d": "3 days",
+        "5d": "5 days",
+        "10d": "10 days",
+        "1M": "1 month",
+        "custom": "Custom date"
+      },
       "notes": "Notes (Optional)",
       "notesPlaceholder": "Add processing notes..."
     },

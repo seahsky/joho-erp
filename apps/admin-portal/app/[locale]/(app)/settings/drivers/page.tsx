@@ -20,6 +20,7 @@ import { Truck, Save, Loader2, Ban, Circle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 // Area type definition
 interface Area {
@@ -167,7 +168,12 @@ export default function DriverAreasSettingsPage() {
   return (
     <PermissionGate permission="deliveries:manage" fallback={null}>
       <TooltipProvider>
-        <div className="space-y-6">
+        <div className="container mx-auto px-4 py-6 md:py-10">
+          <SettingsPageHeader
+            icon={Truck}
+            titleKey="driverAreas.title"
+            descriptionKey="driverAreas.description"
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

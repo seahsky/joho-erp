@@ -11,7 +11,13 @@ import {
   Input,
   Label,
   Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@joho-erp/ui';
+import { format, addDays, addMonths } from 'date-fns';
 import {
   Loader2,
   Package,
@@ -96,9 +102,32 @@ export function ProcessStockDialog({
   // Form state
   const [quantityToProcess, setQuantityToProcess] = useState('');
   const [costPerUnit, setCostPerUnit] = useState('');
-  const [expiryDate, setExpiryDate] = useState<string>('');
+  const [expirySelection, setExpirySelection] = useState<string>('');
+  const [customExpiryDate, setCustomExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
   const [lossPercentage, setLossPercentage] = useState<string>('0');
+
+  // Calculate actual expiry date from selection
+  const getExpiryDate = (): Date | undefined => {
+    if (!expirySelection || expirySelection === 'none') return undefined;
+    if (expirySelection === 'custom') return customExpiryDate;
+
+    const today = new Date();
+    switch (expirySelection) {
+      case '3d':
+        return addDays(today, 3);
+      case '5d':
+        return addDays(today, 5);
+      case '10d':
+        return addDays(today, 10);
+      case '1M':
+        return addMonths(today, 1);
+      default:
+        return undefined;
+    }
+  };
+
+  const expiryDate = getExpiryDate();
 
   // Set default loss percentage when target product changes
   useEffect(() => {
@@ -200,7 +229,7 @@ export function ProcessStockDialog({
       targetProductId: targetProduct.id,
       quantityToProcess: parseFloat(quantityToProcess),
       costPerUnit: costInCents,
-      expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+      expiryDate: expiryDate || undefined,
       notes: notes.trim() || undefined,
     });
   };
@@ -210,7 +239,8 @@ export function ProcessStockDialog({
     setTargetProduct(null);
     setQuantityToProcess('');
     setCostPerUnit('');
-    setExpiryDate('');
+    setExpirySelection('');
+    setCustomExpiryDate(undefined);
     setNotes('');
     setLossPercentage('0');
     setProductSearch('');
@@ -487,14 +517,33 @@ export function ProcessStockDialog({
               </div>
 
               <div>
-                <Label htmlFor="expiryDate">{t('fields.expiryDate')}</Label>
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  disabled={isLoading}
-                />
+                <Label htmlFor="expirySelection">{t('fields.expiryDate')}</Label>
+                <Select value={expirySelection} onValueChange={setExpirySelection} disabled={isLoading}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={t('fields.expiryOptions.none')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('fields.expiryOptions.none')}</SelectItem>
+                    <SelectItem value="3d">{t('fields.expiryOptions.3d')}</SelectItem>
+                    <SelectItem value="5d">{t('fields.expiryOptions.5d')}</SelectItem>
+                    <SelectItem value="10d">{t('fields.expiryOptions.10d')}</SelectItem>
+                    <SelectItem value="1M">{t('fields.expiryOptions.1M')}</SelectItem>
+                    <SelectItem value="custom">{t('fields.expiryOptions.custom')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Show date picker only for custom selection */}
+                {expirySelection === 'custom' && (
+                  <Input
+                    id="customExpiryDate"
+                    type="date"
+                    value={customExpiryDate ? format(customExpiryDate, 'yyyy-MM-dd') : ''}
+                    min={format(new Date(), 'yyyy-MM-dd')}
+                    onChange={(e) => setCustomExpiryDate(e.target.value ? new Date(e.target.value) : undefined)}
+                    className="mt-2"
+                    disabled={isLoading}
+                  />
+                )}
               </div>
 
               <div>

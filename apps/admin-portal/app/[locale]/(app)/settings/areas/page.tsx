@@ -61,10 +61,9 @@ import {
   TableHeader,
   TableRow,
 } from '@joho-erp/ui';
-import { Plus, Pencil, Trash2, Map, ArrowLeft, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Map, GripVertical } from 'lucide-react';
 import { api } from '@/trpc/client';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 const COLOR_VARIANTS = [
   { value: 'info', label: 'Blue', className: 'bg-blue-100 text-blue-800' },
@@ -189,8 +188,6 @@ export default function AreasPage() {
   const tCommon = useTranslations('common');
   const tColors = useTranslations('areas.colors');
   const { toast } = useToast();
-  const params = useParams();
-  const locale = params.locale as string;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -373,31 +370,17 @@ export default function AreasPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <Link
-          href={`/${locale}/settings`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {tCommon('back')}
-        </Link>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Map className="h-8 w-8 text-muted-foreground" />
-              <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-            </div>
-            <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-              {t('subtitle')}
-            </p>
-          </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('createArea')}
-          </Button>
-        </div>
-      </div>
+      <SettingsPageHeader
+        icon={Map}
+        titleKey="title"
+        descriptionKey="subtitle"
+        namespace="areas"
+      >
+        <Button onClick={openCreateDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t('createArea')}
+        </Button>
+      </SettingsPageHeader>
 
       {/* Areas Table */}
       <Card>

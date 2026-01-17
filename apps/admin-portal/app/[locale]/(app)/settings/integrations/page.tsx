@@ -18,6 +18,7 @@ import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2, RefreshCcw, Chev
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 // Simple Switch component using checkbox
 function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
@@ -163,16 +164,11 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Plug className="h-8 w-8 text-muted-foreground" />
-          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-        </div>
-        <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-          {t('subtitle')}
-        </p>
-      </div>
+      <SettingsPageHeader
+        icon={Plug}
+        titleKey="integrations.title"
+        descriptionKey="integrations.subtitle"
+      />
 
       {/* Content Cards */}
       <div className="space-y-6">

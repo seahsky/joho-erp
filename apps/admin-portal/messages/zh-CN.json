@@ -1175,6 +1175,14 @@
       "vehicleTemperatureHint": "可选：交付时的温度读数（用于食品安全）",
       "expiryDate": "到期日期",
       "expiryDateHint": "可选：用于易腐物品",
+      "expiryOptions": {
+        "none": "无到期日期",
+        "3d": "3天",
+        "5d": "5天",
+        "10d": "10天",
+        "1M": "1个月",
+        "custom": "自定义日期"
+      },
       "supplier": "供应商",
       "supplierPlaceholder": "未选择供应商（可选）",
       "supplierSearchPlaceholder": "搜索供应商...",
@@ -1248,6 +1256,14 @@
       "costPerUnit": "单位成本（目标产品）",
       "costPerUnitHint": "加工产品的单位成本",
       "expiryDate": "有效期（可选）",
+      "expiryOptions": {
+        "none": "无到期日期",
+        "3d": "3天",
+        "5d": "5天",
+        "10d": "10天",
+        "1M": "1个月",
+        "custom": "自定义日期"
+      },
       "notes": "备注（可选）",
       "notesPlaceholder": "添加加工备注..."
     },

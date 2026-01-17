@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatDistanceToNow } from 'date-fns';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 type JobType = 'sync_contact' | 'create_invoice' | 'create_credit_note';
@@ -128,16 +129,12 @@ export default function XeroSyncPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <RefreshCcw className="h-8 w-8 text-muted-foreground" />
-          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-        </div>
-        <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-          {t('subtitle')}
-        </p>
-      </div>
+      <SettingsPageHeader
+        icon={RefreshCcw}
+        titleKey="title"
+        descriptionKey="subtitle"
+        namespace="xeroSync"
+      />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">

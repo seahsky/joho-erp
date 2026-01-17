@@ -9,14 +9,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Button,
   Input,
   Label,
   useToast,
 } from '@joho-erp/ui';
-import { Package, Lock, Loader2, Save, Shield, AlertTriangle, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { Package, Lock, Loader2, Shield, AlertTriangle } from 'lucide-react';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
+import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 
 // Simple Switch component using checkbox styling
 function Switch({
@@ -55,8 +54,6 @@ export default function PackingSettingsPage() {
   const t = useTranslations('settings.packing');
   const { toast } = useToast();
   const utils = api.useUtils();
-  const params = useParams();
-  const locale = params.locale as string;
 
   // PIN state
   const [pinEnabled, setPinEnabled] = useState(false);
@@ -142,6 +139,15 @@ export default function PackingSettingsPage() {
     }
   };
 
+  const handleCancel = () => {
+    // Reset form to original values
+    if (settings) {
+      setPinEnabled(settings.pinConfigured);
+      setNewPin('');
+      setConfirmPin('');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -154,44 +160,20 @@ export default function PackingSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Back Link */}
-      <Link
-        href={`/${locale}/settings`}
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+      <SettingsPageHeader
+        icon={Package}
+        titleKey="packing.title"
+        descriptionKey="packing.subtitle"
       >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        {t('backToSettings')}
-      </Link>
-
-      {/* Header */}
-      <div className="mb-6 md:mb-8 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Package className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-          </div>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            {t('subtitle')}
-          </p>
-        </div>
-
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || updatePinMutation.isPending}
-        >
-          {updatePinMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              {t('saving')}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {t('saveChanges')}
-            </>
-          )}
-        </Button>
-      </div>
+        <FloatingSaveBar
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isSaving={updatePinMutation.isPending}
+          hasChanges={hasChanges}
+          saveLabel={t('saveChanges')}
+          savingLabel={t('saving')}
+        />
+      </SettingsPageHeader>
 
       {/* PIN Security Card */}
       <Card className="max-w-2xl">

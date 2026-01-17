@@ -30,6 +30,7 @@ import {
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 type Role = 'admin' | 'sales' | 'manager' | 'packer' | 'driver';
 
@@ -241,22 +242,16 @@ export default function UserManagementSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
-        <div className="flex items-center gap-3">
-          <Users className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
-              {t('subtitle')}
-            </p>
-          </div>
-        </div>
+      <SettingsPageHeader
+        icon={Users}
+        titleKey="users.title"
+        descriptionKey="users.subtitle"
+      >
         <Button onClick={() => setIsInviteDialogOpen(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           {t('addUser')}
         </Button>
-      </div>
+      </SettingsPageHeader>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">

@@ -11,6 +11,11 @@ import {
   Input,
   Label,
   Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@joho-erp/ui';
 import {
   Loader2,
@@ -25,7 +30,7 @@ import {
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { format } from 'date-fns';
+import { format, addDays, addMonths } from 'date-fns';
 import { parseToCents } from '@joho-erp/shared';
 // Status constants - using string literals to avoid importing Prisma on client
 const ACTIVE_STATUS = 'active' as const;
@@ -97,8 +102,31 @@ export function StockAdjustmentDialog({
 
   // NEW: Stock received specific fields
   const [costPerUnit, setCostPerUnit] = useState('');
-  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
+  const [expirySelection, setExpirySelection] = useState<string>('');
+  const [customExpiryDate, setCustomExpiryDate] = useState<Date | undefined>();
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState('');
+
+  // Calculate actual expiry date from selection
+  const getExpiryDate = (): Date | undefined => {
+    if (!expirySelection || expirySelection === 'none') return undefined;
+    if (expirySelection === 'custom') return customExpiryDate;
+
+    const today = new Date();
+    switch (expirySelection) {
+      case '3d':
+        return addDays(today, 3);
+      case '5d':
+        return addDays(today, 5);
+      case '10d':
+        return addDays(today, 10);
+      case '1M':
+        return addMonths(today, 1);
+      default:
+        return undefined;
+    }
+  };
+
+  const expiryDate = getExpiryDate();
   const [stockInDate, setStockInDate] = useState<Date | undefined>(new Date());
   const [mtvNumber, setMtvNumber] = useState('');
   const [vehicleTemperature, setVehicleTemperature] = useState('');
@@ -252,7 +280,8 @@ export function StockAdjustmentDialog({
 
     // NEW: Reset stock_received fields
     setCostPerUnit('');
-    setExpiryDate(undefined);
+    setExpirySelection('');
+    setCustomExpiryDate(undefined);
     setSupplierInvoiceNumber('');
     setStockInDate(new Date());
     setMtvNumber('');
@@ -576,19 +605,36 @@ export function StockAdjustmentDialog({
                 </p>
               </div>
 
-              {/* Expiry Date - OPTIONAL */}
+              {/* Expiry Date Selection - OPTIONAL */}
               <div>
-                <Label htmlFor="expiryDate">
+                <Label htmlFor="expirySelection">
                   {t('fields.expiryDate')}
                 </Label>
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={expiryDate ? format(expiryDate, 'yyyy-MM-dd') : ''}
-                  min={format(new Date(), 'yyyy-MM-dd')}
-                  onChange={(e) => setExpiryDate(e.target.value ? new Date(e.target.value) : undefined)}
-                  className="mt-1"
-                />
+                <Select value={expirySelection} onValueChange={setExpirySelection}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={t('fields.expiryOptions.none')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('fields.expiryOptions.none')}</SelectItem>
+                    <SelectItem value="3d">{t('fields.expiryOptions.3d')}</SelectItem>
+                    <SelectItem value="5d">{t('fields.expiryOptions.5d')}</SelectItem>
+                    <SelectItem value="10d">{t('fields.expiryOptions.10d')}</SelectItem>
+                    <SelectItem value="1M">{t('fields.expiryOptions.1M')}</SelectItem>
+                    <SelectItem value="custom">{t('fields.expiryOptions.custom')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Show date picker only for custom selection */}
+                {expirySelection === 'custom' && (
+                  <Input
+                    id="customExpiryDate"
+                    type="date"
+                    value={customExpiryDate ? format(customExpiryDate, 'yyyy-MM-dd') : ''}
+                    min={format(new Date(), 'yyyy-MM-dd')}
+                    onChange={(e) => setCustomExpiryDate(e.target.value ? new Date(e.target.value) : undefined)}
+                    className="mt-2"
+                  />
+                )}
                 <p className="text-xs text-muted-foreground mt-1">
                   {t('fields.expiryDateHint')}
                 </p>

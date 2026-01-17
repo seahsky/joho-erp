@@ -13,9 +13,11 @@ import {
   Label,
   useToast,
 } from '@joho-erp/ui';
-import { MessageSquare, Save, Loader2, Send, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Loader2, Send, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DEFAULT_SMS_TEMPLATE, DEFAULT_SMS_SEND_TIME } from '@joho-erp/shared';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
+import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 
 // Simple Switch component using checkbox
 function Switch({
@@ -135,6 +137,15 @@ export default function SmsSettingsPage() {
     });
   };
 
+  const handleCancel = () => {
+    // Reset form to original values
+    if (settings) {
+      setEnabled(settings.enabled ?? false);
+      setMessageTemplate(settings.messageTemplate || DEFAULT_SMS_TEMPLATE);
+      setSendTime(settings.sendTime || DEFAULT_SMS_SEND_TIME);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -150,37 +161,20 @@ export default function SmsSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="mb-6 md:mb-8 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <MessageSquare className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-          </div>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            {t('subtitle')}
-          </p>
-        </div>
-
-        {/* Save Button */}
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || saveMutation.isPending}
-          className="transition-all"
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              {t('saving')}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {t('saveChanges')}
-            </>
-          )}
-        </Button>
-      </div>
+      <SettingsPageHeader
+        icon={MessageSquare}
+        titleKey="sms.title"
+        descriptionKey="sms.subtitle"
+      >
+        <FloatingSaveBar
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isSaving={saveMutation.isPending}
+          hasChanges={hasChanges}
+          saveLabel={t('saveChanges')}
+          savingLabel={t('saving')}
+        />
+      </SettingsPageHeader>
 
       {/* Twilio Not Configured Warning */}
       {!isConfigured && (
@@ -305,13 +299,6 @@ export default function SmsSettingsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Unsaved Changes Indicator */}
-      {hasChanges && (
-        <div className="fixed bottom-6 right-6 bg-warning text-warning-foreground px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
-          {t('unsavedChanges')}
-        </div>
-      )}
     </div>
   );
 }

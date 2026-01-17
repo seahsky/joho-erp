@@ -13,8 +13,10 @@ import {
   Label,
   useToast,
 } from '@joho-erp/ui';
-import { Bell, Save, Loader2, Send } from 'lucide-react';
+import { Bell, Loader2, Send } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
+import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 
 // Simple Switch component using checkbox
 function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
@@ -172,6 +174,24 @@ export default function NotificationSettingsPage() {
     });
   };
 
+  const handleCancel = () => {
+    // Reset form to original values
+    if (settings) {
+      setEmailRecipients(settings.emailRecipients?.join(', ') || '');
+      setOrderNewOrder(settings.orderNotifications?.newOrder ?? true);
+      setOrderConfirmed(settings.orderNotifications?.orderConfirmed ?? true);
+      setOrderDelivered(settings.orderNotifications?.orderDelivered ?? true);
+      setInventoryLowStock(settings.inventoryNotifications?.lowStock ?? true);
+      setInventoryOutOfStock(settings.inventoryNotifications?.outOfStock ?? true);
+      setCustomerNew(settings.customerNotifications?.newCustomer ?? true);
+      setCustomerCreditApp(settings.customerNotifications?.creditApplication ?? true);
+      setCustomerCreditApproved(settings.customerNotifications?.creditApproved ?? true);
+      setQuietHoursEnabled(settings.quietHoursEnabled ?? false);
+      setQuietHoursStart(settings.quietHoursStart || '22:00');
+      setQuietHoursEnd(settings.quietHoursEnd || '08:00');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -185,37 +205,20 @@ export default function NotificationSettingsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="mb-6 md:mb-8 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Bell className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-          </div>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            {t('subtitle')}
-          </p>
-        </div>
-
-        {/* Save Button */}
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || saveMutation.isPending}
-          className="transition-all"
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              {t('saving')}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {t('saveChanges')}
-            </>
-          )}
-        </Button>
-      </div>
+      <SettingsPageHeader
+        icon={Bell}
+        titleKey="notifications.title"
+        descriptionKey="notifications.subtitle"
+      >
+        <FloatingSaveBar
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isSaving={saveMutation.isPending}
+          hasChanges={hasChanges}
+          saveLabel={t('saveChanges')}
+          savingLabel={t('saving')}
+        />
+      </SettingsPageHeader>
 
       {/* Content Cards */}
       <div className="space-y-6">
@@ -414,13 +417,6 @@ export default function NotificationSettingsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Unsaved Changes Indicator */}
-      {hasChanges && (
-        <div className="fixed bottom-6 right-6 bg-warning text-warning-foreground px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
-          {t('unsavedChanges')}
-        </div>
-      )}
     </div>
   );
 }

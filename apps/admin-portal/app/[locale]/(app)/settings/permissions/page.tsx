@@ -17,6 +17,7 @@ import { Shield, Save, RotateCcw, Info, Check, AlertCircle, ShieldAlert } from '
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 export default function PermissionManagementPage() {
   const t = useTranslations('settings.permissions');
@@ -153,17 +154,12 @@ export default function PermissionManagementPage() {
 
   return (
     <PermissionGate permission="settings.users:edit" fallback={accessDeniedFallback}>
-      <div className="space-y-6 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Shield className="w-6 h-6" />
-              {t('title')}
-            </h1>
-            <p className="text-muted-foreground mt-1">{t('description')}</p>
-          </div>
-        <div className="flex gap-2">
+      <div className="container mx-auto px-4 py-6 md:py-10">
+        <SettingsPageHeader
+          icon={Shield}
+          titleKey="permissions.title"
+          descriptionKey="permissions.description"
+        >
           {hasChanges && (
             <>
               <Button variant="outline" onClick={handleDiscardChanges} disabled={isSaving}>
@@ -180,8 +176,7 @@ export default function PermissionManagementPage() {
               </Button>
             </>
           )}
-        </div>
-      </div>
+        </SettingsPageHeader>
 
       {/* Role Selector */}
       <Card>

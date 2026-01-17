@@ -2,23 +2,16 @@
 
 import { UserProfile } from '@clerk/nextjs';
 import { User } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 export default function ProfileSettingsPage() {
-  const t = useTranslations('settings.profile');
-
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6 md:mb-8">
-        <User className="h-8 w-8 text-muted-foreground" />
-        <div>
-          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
-            {t('subtitle')}
-          </p>
-        </div>
-      </div>
+      <SettingsPageHeader
+        icon={User}
+        titleKey="profile.title"
+        descriptionKey="profile.subtitle"
+      />
 
       {/* Clerk UserProfile Component */}
       <div className="flex justify-center">
