@@ -30,7 +30,9 @@ export function InlineQuantityControls({
   const [isEditing, setIsEditing] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(currentQuantity.toString());
   const [isPending, setIsPending] = React.useState(false);
+  const [customQuantity, setCustomQuantity] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const customInputRef = React.useRef<HTMLInputElement>(null);
 
   const utils = api.useUtils();
 
@@ -277,16 +279,96 @@ export function InlineQuantityControls({
     }
   };
 
-  // State 1: Not in cart (just +5 button)
+  // Handlers for custom quantity input (State 1 - not in cart)
+  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty for typing convenience
+    if (value === '') {
+      setCustomQuantity('');
+      return;
+    }
+    // Only allow positive numbers 1-999
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= MAX_QUANTITY) {
+      setCustomQuantity(value);
+    }
+  };
+
+  const handleCustomInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomQuantity();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setCustomQuantity('');
+      customInputRef.current?.blur();
+    }
+  };
+
+  const handleAddCustomQuantity = () => {
+    // Empty input - do nothing
+    if (customQuantity.trim() === '') {
+      return;
+    }
+
+    const qty = parseInt(customQuantity, 10);
+
+    // Invalid or non-positive
+    if (isNaN(qty) || qty <= 0) {
+      toast({
+        title: t('quantity.invalid'),
+        description: t('quantity.enterValidAmount'),
+        variant: 'destructive',
+      });
+      setCustomQuantity('');
+      return;
+    }
+
+    // Exceeds max
+    if (qty > MAX_QUANTITY) {
+      toast({
+        title: t('quantity.invalid'),
+        description: t('quantity.maxExceeded', { max: MAX_QUANTITY }),
+        variant: 'destructive',
+      });
+      setCustomQuantity('');
+      return;
+    }
+
+    // Valid - add to cart
+    addToCart.mutate({ productId, quantity: qty });
+    setCustomQuantity('');
+  };
+
+  // State 1: Not in cart (custom input + quick-add button)
   if (currentQuantity === 0 && !isEditing) {
     return (
-      <div className={cn('flex items-center', className)}>
+      <div className={cn('flex items-center gap-1.5', className)}>
+        <input
+          ref={customInputRef}
+          type="number"
+          value={customQuantity}
+          onChange={handleCustomInputChange}
+          onKeyDown={handleCustomInputKeyDown}
+          disabled={disabled || isPending}
+          min={MIN_QUANTITY}
+          max={MAX_QUANTITY}
+          className={cn(
+            'h-9 w-14 border-2 border-border rounded-md text-center font-medium text-sm',
+            'focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary',
+            'transition-all duration-200 placeholder:text-muted-foreground',
+            disabled && 'opacity-50 cursor-not-allowed'
+          )}
+          placeholder={t('quantity.placeholder')}
+          aria-label={t('quantity.enterCustom')}
+        />
         <Button
           size="sm"
           onClick={handleAdd5}
           disabled={disabled || isPending}
           className="gap-1.5 px-4"
-          title={t('quantity.add')}
+          title={t('quantity.quickAdd5')}
+          aria-label={t('quantity.quickAdd5')}
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

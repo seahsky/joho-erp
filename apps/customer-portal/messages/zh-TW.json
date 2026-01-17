@@ -215,7 +215,12 @@
       "precision": "輸入確切數量 (1-999)",
       "max": "最多 {max} 可用",
       "min": "最少 1 件",
-      "invalid": "無效數量"
+      "invalid": "無效數量",
+      "placeholder": "數量",
+      "enterCustom": "輸入自訂數量",
+      "quickAdd5": "快速加入5件",
+      "enterValidAmount": "請輸入1到999之間的有效數量",
+      "maxExceeded": "數量不能超過{max}"
     },
     "specialPrice": "特價",
     "details": {

@@ -215,7 +215,12 @@
       "precision": "输入确切数量 (1-999)",
       "max": "最多 {max} 可用",
       "min": "最少 1 件",
-      "invalid": "无效数量"
+      "invalid": "无效数量",
+      "placeholder": "数量",
+      "enterCustom": "输入自定义数量",
+      "quickAdd5": "快速添加5件",
+      "enterValidAmount": "请输入1到999之间的有效数量",
+      "maxExceeded": "数量不能超过{max}"
     },
     "specialPrice": "特价",
     "details": {
