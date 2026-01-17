@@ -470,7 +470,16 @@
     "gst": "GST (10%)",
     "removeItem": "移除",
     "cartWithItems": "购物车, {count}件商品",
-    "viewImage": "查看产品图片"
+    "viewImage": "查看产品图片",
+    "deliveryDate": "配送日期",
+    "selectDeliveryDate": "选择配送日期",
+    "sundayNotAvailable": "周日不提供配送服务",
+    "orderPlaced": "订单已提交",
+    "orderSuccess": "您的订单已成功提交",
+    "belowMinimum": "订单低于最低金额",
+    "exceedsCredit": "订单超出信用额度",
+    "completeOnboarding": "请完成注册后再下单",
+    "creditPending": "您的账户正在等待审批"
   },
   "dashboard": {
     "title": "仪表板",

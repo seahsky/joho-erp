@@ -470,7 +470,16 @@
     "gst": "GST (10%)",
     "removeItem": "Remove",
     "cartWithItems": "Shopping cart, {count, plural, one {# item} other {# items}}",
-    "viewImage": "View product image"
+    "viewImage": "View product image",
+    "deliveryDate": "Delivery Date",
+    "selectDeliveryDate": "Select a delivery date",
+    "sundayNotAvailable": "Sunday delivery is not available",
+    "orderPlaced": "Order Placed",
+    "orderSuccess": "Your order has been submitted successfully",
+    "belowMinimum": "Order below minimum amount",
+    "exceedsCredit": "Order exceeds credit limit",
+    "completeOnboarding": "Complete your registration to place orders",
+    "creditPending": "Your account is pending approval"
   },
   "onboarding": {
     "progress": {

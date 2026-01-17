@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button, cn } from '@joho-erp/ui';
-import { ShoppingCart, ArrowRight, Package, Sparkles } from 'lucide-react';
+import { Button, cn, useToast } from '@joho-erp/ui';
+import { ShoppingCart, ArrowRight, Package, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { MiniCartItem } from './mini-cart-item';
@@ -19,26 +19,126 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   const t = useTranslations('miniCart');
   const tCommon = useTranslations('common');
   const tCart = useTranslations('cart');
+  const tDelivery = useTranslations('checkout.deliveryDate');
+  const tCheckout = useTranslations('checkout');
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Core data queries
   const { data: cart, isLoading } = api.cart.getCart.useQuery();
   const { data: cutoffInfo } = api.order.getCutoffInfo.useQuery(undefined, {
     refetchInterval: 60000, // Refresh every minute
   });
+  const { data: customer } = api.customer.getProfile.useQuery();
+  const { data: onboardingStatus } = api.customer.getOnboardingStatus.useQuery();
+  const { data: minimumOrderInfo } = api.order.getMinimumOrderInfo.useQuery();
+
+  // State for delivery date
+  const [deliveryDate, setDeliveryDate] = React.useState<string>('');
+  const [isSundayError, setIsSundayError] = React.useState<boolean>(false);
+
+  // Set default delivery date based on cutoff info
+  React.useEffect(() => {
+    if (cutoffInfo?.nextAvailableDeliveryDate && !deliveryDate) {
+      const nextDate = new Date(cutoffInfo.nextAvailableDeliveryDate);
+      setDeliveryDate(nextDate.toISOString().split('T')[0]);
+    }
+  }, [cutoffInfo, deliveryDate]);
+
+  // Calculate min date for date picker
+  const minDeliveryDate = React.useMemo(() => {
+    if (cutoffInfo?.nextAvailableDeliveryDate) {
+      return new Date(cutoffInfo.nextAvailableDeliveryDate).toISOString().split('T')[0];
+    }
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }, [cutoffInfo]);
+
+  // Clear cart mutation
+  const clearCart = api.cart.clearCart.useMutation();
+
+  // Create order mutation
+  const createOrder = api.order.create.useMutation({
+    onSuccess: () => {
+      clearCart.mutate();
+      toast({
+        title: t('orderPlaced'),
+        description: t('orderSuccess'),
+        variant: 'default',
+      });
+      onClose();
+      router.push(`/${locale}/orders`);
+    },
+    onError: (error) => {
+      toast({
+        title: tCheckout('error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Date change handler
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value;
+    setDeliveryDate(date);
+    if (date) {
+      const selectedDate = new Date(date);
+      setIsSundayError(selectedDate.getDay() === 0);
+    } else {
+      setIsSundayError(false);
+    }
+  };
+
+  // Place order handler
+  const handlePlaceOrder = () => {
+    if (!customer || !cart || cart.items.length === 0) return;
+
+    if (deliveryDate) {
+      const selectedDate = new Date(deliveryDate);
+      if (selectedDate.getDay() === 0) {
+        toast({
+          title: tCheckout('error'),
+          description: tDelivery('sundayNotAvailable'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    const orderItems = cart.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }));
+
+    createOrder.mutate({
+      items: orderItems,
+      requestedDeliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
+    });
+  };
 
   const handleViewCart = () => {
     onClose();
     router.push(`/${locale}/cart`);
   };
 
-  const handleCheckout = () => {
-    onClose();
-    router.push(`/${locale}/checkout`);
-  };
-
   const handleContinueShopping = () => {
     onClose();
     router.push(`/${locale}/products`);
   };
+
+  // Check for blocking conditions
+  const isOnboardingIncomplete = !onboardingStatus?.onboardingComplete;
+  const isCreditPending = onboardingStatus?.creditStatus !== 'approved';
+  const isOrderingBlocked = isOnboardingIncomplete || isCreditPending;
+
+  // Check if order exceeds credit or below minimum
+  const exceedsCredit = cart?.exceedsCredit ?? false;
+  const belowMinimum = React.useMemo(() => {
+    if (!minimumOrderInfo?.hasMinimum || !cart) return false;
+    return cart.total < (minimumOrderInfo.minimumOrderAmount || 0);
+  }, [minimumOrderInfo, cart]);
 
   // Loading state with refined animation
   if (isLoading) {
@@ -91,6 +191,16 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   }
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Determine if place order button should be disabled
+  const isPlaceOrderDisabled =
+    createOrder.isPending ||
+    cart.items.length === 0 ||
+    exceedsCredit ||
+    belowMinimum ||
+    !deliveryDate ||
+    isSundayError ||
+    isOrderingBlocked;
 
   return (
     <div className="flex flex-col h-full">
@@ -157,8 +267,38 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           </div>
         </div>
 
+        {/* Delivery Date Selection */}
+        {!isOrderingBlocked && (
+          <div className="mb-4">
+            <label htmlFor="miniCartDeliveryDate" className="block text-sm font-medium text-neutral-700 mb-1.5">
+              {t('deliveryDate')}
+            </label>
+            <input
+              id="miniCartDeliveryDate"
+              type="date"
+              value={deliveryDate}
+              min={minDeliveryDate}
+              onChange={handleDateChange}
+              className={cn(
+                'w-full px-3 py-2 text-sm rounded-lg border bg-white',
+                'focus:outline-none focus:ring-2 focus:ring-[hsl(0,67%,35%)]/20 focus:border-[hsl(0,67%,35%)]',
+                'transition-all duration-200',
+                isSundayError
+                  ? 'border-destructive text-destructive'
+                  : 'border-neutral-300 text-neutral-900'
+              )}
+            />
+            {isSundayError && (
+              <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {t('sundayNotAvailable')}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Cutoff Reminder */}
-        {cutoffInfo && (
+        {cutoffInfo && !isOrderingBlocked && (
           <CutoffReminder
             cutoffTime={cutoffInfo.cutoffTime}
             isAfterCutoff={cutoffInfo.isAfterCutoff}
@@ -169,14 +309,45 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
         )}
 
         {/* Credit warning */}
-        {cart.exceedsCredit && (
+        {exceedsCredit && (
           <div className={cn(
             'mb-4 p-3 rounded-lg',
             'bg-gradient-to-r from-destructive/10 to-destructive/5',
             'border border-destructive/20'
           )}>
-            <p className="text-xs text-destructive text-center font-medium">
-              {tCart('checkoutBlockedWarning')}
+            <p className="text-xs text-destructive text-center font-medium flex items-center justify-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {t('exceedsCredit')}
+            </p>
+          </div>
+        )}
+
+        {/* Minimum order warning */}
+        {belowMinimum && minimumOrderInfo && (
+          <div className={cn(
+            'mb-4 p-3 rounded-lg',
+            'bg-gradient-to-r from-amber-100/80 to-amber-50',
+            'border border-amber-200'
+          )}>
+            <p className="text-xs text-amber-700 text-center font-medium flex items-center justify-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {t('belowMinimum')} ({formatAUD(minimumOrderInfo.minimumOrderAmount || 0)})
+            </p>
+          </div>
+        )}
+
+        {/* Ordering blocked warning */}
+        {isOrderingBlocked && (
+          <div className={cn(
+            'mb-4 p-3 rounded-lg',
+            'bg-gradient-to-r from-amber-100/80 to-amber-50',
+            'border border-amber-200'
+          )}>
+            <p className="text-xs text-amber-700 text-center font-medium">
+              {isOnboardingIncomplete
+                ? t('completeOnboarding')
+                : t('creditPending')
+              }
             </p>
           </div>
         )}
@@ -184,8 +355,8 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
         {/* Action buttons */}
         <div className="flex flex-col gap-2.5">
           <Button
-            onClick={handleCheckout}
-            disabled={cart.exceedsCredit}
+            onClick={handlePlaceOrder}
+            disabled={isPlaceOrderDisabled}
             className={cn(
               'w-full gap-2.5 h-12 text-[15px] font-semibold',
               'bg-gradient-to-b from-[hsl(0,67%,38%)] to-[hsl(0,67%,30%)]',
@@ -195,8 +366,17 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            {t('checkoutNow')}
-            <ArrowRight className="h-4 w-4" />
+            {createOrder.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {tCheckout('placingOrder')}
+              </>
+            ) : (
+              <>
+                {tCommon('placeOrder')}
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
           </Button>
 
           <Button

@@ -470,7 +470,16 @@
     "gst": "GST (10%)",
     "removeItem": "移除",
     "cartWithItems": "購物車, {count}件商品",
-    "viewImage": "查看產品圖片"
+    "viewImage": "查看產品圖片",
+    "deliveryDate": "配送日期",
+    "selectDeliveryDate": "選擇配送日期",
+    "sundayNotAvailable": "週日不提供配送服務",
+    "orderPlaced": "訂單已提交",
+    "orderSuccess": "您的訂單已成功提交",
+    "belowMinimum": "訂單低於最低金額",
+    "exceedsCredit": "訂單超出信用額度",
+    "completeOnboarding": "請完成註冊後再下單",
+    "creditPending": "您的帳戶正在等待審批"
   },
   "dashboard": {
     "title": "儀表板",

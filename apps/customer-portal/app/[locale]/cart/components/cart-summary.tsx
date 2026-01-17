@@ -44,6 +44,7 @@ export function CartSummary({
   items = [],
 }: CartSummaryProps) {
   const t = useTranslations('cart');
+  const tCommon = useTranslations('common');
   const router = useRouter();
 
   // Calculate GST breakdown
@@ -136,7 +137,7 @@ export function CartSummary({
             disabled={exceedsCredit}
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
-            {t('buttons.checkout')}
+            {tCommon('placeOrder')}
           </Button>
         </div>
       </CardContent>
