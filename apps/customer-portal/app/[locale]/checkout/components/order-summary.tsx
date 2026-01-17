@@ -72,9 +72,15 @@ export function OrderSummary() {
     return tomorrow.toISOString().split('T')[0];
   }, [cutoffInfo]);
 
+  // Clear cart mutation
+  const clearCart = api.cart.clearCart.useMutation();
+
   // Create order mutation
   const createOrder = api.order.create.useMutation({
     onSuccess: () => {
+      // Clear the cart after successful order
+      clearCart.mutate();
+
       toast({
         title: t('orderPlaced'),
         description: t('orderPlacedSuccess'),

@@ -160,10 +160,28 @@ export function CartItem({ item }: CartItemProps) {
   return (
     <Card>
       <CardContent className="p-4">
+        {/* Header row with product name and delete button */}
+        <div className="flex justify-between items-start mb-2">
+          <H4 className="text-base md:text-lg">{item.productName}</H4>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRemove}
+            disabled={removeItem.isPending}
+            className="h-8 w-8 -mt-1 -mr-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            aria-label={t('buttons.removeItem')}
+          >
+            {removeItem.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
         <div className="flex gap-4">
           {/* Product Info */}
           <div className="flex-1">
-            <H4 className="text-base md:text-lg mb-1">{item.productName}</H4>
             <Muted className="text-sm">SKU: {item.sku}</Muted>
             <div className="mt-2">
               <p className="text-sm font-medium">{formatAUD(item.unitPrice)}</p>
@@ -242,18 +260,6 @@ export function CartItem({ item }: CartItemProps) {
               <p className="font-semibold">{formatAUD(item.subtotal)}</p>
               <Muted className="text-xs">{t('itemTotal')}</Muted>
             </div>
-
-            {/* Remove Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRemove}
-              disabled={removeItem.isPending}
-              className="h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              {t('buttons.removeItem')}
-            </Button>
           </div>
         </div>
       </CardContent>
