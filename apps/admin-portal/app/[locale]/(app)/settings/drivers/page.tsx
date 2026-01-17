@@ -22,6 +22,22 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { PermissionGate } from '@/components/permission-gate';
 
+// Area type definition
+interface Area {
+  id: string;
+  name: string;
+  displayName: string;
+  colorVariant: string;
+}
+
+// Driver type definition
+interface Driver {
+  id: string;
+  name: string;
+  email: string;
+  areaIds?: string[];
+}
+
 export default function DriverAreasSettingsPage() {
   const t = useTranslations('settings.driverAreas');
   const { toast } = useToast();
@@ -193,7 +209,7 @@ export default function DriverAreasSettingsPage() {
                     <div className="text-center text-muted-foreground text-xs">
                       {t('none')}
                     </div>
-                    {areas.map((area) => (
+                    {areas.map((area: Area) => (
                       <div key={area.id} className="text-center">
                         <AreaBadge
                           area={{
@@ -252,7 +268,7 @@ export default function DriverAreasSettingsPage() {
                         </div>
 
                         {/* Area options */}
-                        {areas.map((area) => {
+                        {areas.map((area: Area) => {
                           const isSelected = currentAreaId === area.id;
                           const isTakenByOther = isAreaTakenByOther(area.id, driver.id);
                           const takenByName = isTakenByOther
@@ -269,7 +285,7 @@ export default function DriverAreasSettingsPage() {
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>{t('areaTakenBy', { name: takenByName })}</p>
+                                    <p>{t('areaTakenBy', { name: takenByName ?? '' })}</p>
                                   </TooltipContent>
                                 </Tooltip>
                               ) : (
@@ -324,10 +340,10 @@ export default function DriverAreasSettingsPage() {
                       gridTemplateColumns: `repeat(${Math.min(areas.length, 4)}, 1fr)`,
                     }}
                   >
-                    {areas.map((area) => {
+                    {areas.map((area: Area) => {
                       const assignedDriverId = areaToDriverMap.get(area.id);
                       const assignedDriver = assignedDriverId
-                        ? drivers.find((d) => d.id === assignedDriverId)
+                        ? drivers.find((d: Driver) => d.id === assignedDriverId)
                         : null;
 
                       return (
