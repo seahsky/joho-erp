@@ -663,29 +663,168 @@ export const packingRouter = router({
       // Get user details for audit trail
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Update order to ready_for_delivery
-      await prisma.order.update({
-        where: {
-          id: input.orderId,
-        },
-        data: {
-          status: 'ready_for_delivery',
-          packing: {
-            packedAt: new Date(),
-            packedBy: ctx.userId || 'system',
-            notes: input.notes,
+      // Get products for stock reduction (include parent product for subproducts)
+      const productIds = (order.items as any[]).map((item: any) => item.productId).filter(Boolean);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        include: { parentProduct: true },
+      });
+
+      // Create a product map for quick lookup
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
+      // Reduce stock and update order in a transaction
+      await prisma.$transaction(async (tx) => {
+        const { consumeStock } = await import('../services/inventory-batch');
+        const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
+
+        // Track which parent products have been updated to avoid duplicate recalculations
+        const updatedParentIds = new Set<string>();
+
+        for (const item of order.items as any[]) {
+          const product = productMap.get(item.productId);
+          if (!product) continue;
+
+          // Check if this is a subproduct (has parent)
+          const productIsSubproduct = isSubproduct(product);
+          const parentProduct = productIsSubproduct ? product.parentProduct : null;
+
+          // For subproducts: consume from parent; for regular products: consume directly
+          const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
+
+          // Get current stock of the product we're consuming from
+          const consumeFromProduct = parentProduct
+            ? await tx.product.findUnique({ where: { id: parentProduct.id } })
+            : await tx.product.findUnique({ where: { id: product.id } });
+
+          if (!consumeFromProduct) continue;
+
+          // Calculate consumption quantity (for subproducts, account for loss)
+          const consumeQuantity = productIsSubproduct
+            ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+            : item.quantity;
+
+          const previousStock = consumeFromProduct.currentStock;
+          const newStock = previousStock - consumeQuantity;
+
+          if (newStock < 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Required: ${consumeQuantity}`,
+            });
+          }
+
+          // Create inventory transaction on the source product (parent for subproducts)
+          const transactionNotes = productIsSubproduct
+            ? `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${order.orderNumber}`
+            : `Stock consumed at packing for order ${order.orderNumber}`;
+
+          const transaction = await tx.inventoryTransaction.create({
+            data: {
+              productId: consumeFromProductId,
+              type: 'sale',
+              quantity: -consumeQuantity,
+              previousStock,
+              newStock,
+              referenceType: 'order',
+              referenceId: order.id,
+              notes: transactionNotes,
+              createdBy: ctx.userId || 'system',
+            },
+          });
+
+          // Consume from batches via FIFO (from parent for subproducts)
+          const result = await consumeStock(
+            consumeFromProductId,
+            consumeQuantity,
+            transaction.id,
+            order.id,
+            order.orderNumber,
+            tx
+          );
+
+          // Log expiry warnings if any
+          if (result.expiryWarnings.length > 0) {
+            console.warn(
+              `Expiry warnings for order ${order.orderNumber}:`,
+              result.expiryWarnings
+            );
+          }
+
+          // Update product stock
+          if (productIsSubproduct && parentProduct && !updatedParentIds.has(parentProduct.id)) {
+            // Update parent stock
+            await tx.product.update({
+              where: { id: parentProduct.id },
+              data: { currentStock: newStock },
+            });
+
+            // Find all subproducts of this parent and recalculate their stocks
+            const subproducts = await tx.product.findMany({
+              where: { parentProductId: parentProduct.id },
+              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+            });
+
+            if (subproducts.length > 0) {
+              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+              for (const { id, newStock: subStock } of updatedStocks) {
+                await tx.product.update({
+                  where: { id },
+                  data: { currentStock: subStock },
+                });
+              }
+            }
+
+            updatedParentIds.add(parentProduct.id);
+          } else if (!productIsSubproduct) {
+            // Regular product: just update its stock
+            await tx.product.update({
+              where: { id: product.id },
+              data: { currentStock: newStock },
+            });
+
+            // If this regular product has subproducts, recalculate their stocks too
+            const subproducts = await tx.product.findMany({
+              where: { parentProductId: product.id },
+              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+            });
+
+            if (subproducts.length > 0) {
+              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+              for (const { id, newStock: subStock } of updatedStocks) {
+                await tx.product.update({
+                  where: { id },
+                  data: { currentStock: subStock },
+                });
+              }
+            }
+          }
+        }
+
+        // Update order to ready_for_delivery
+        await tx.order.update({
+          where: {
+            id: input.orderId,
           },
-          statusHistory: {
-            push: {
-              status: 'ready_for_delivery',
-              changedAt: new Date(),
-              changedBy: ctx.userId || 'system',
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: input.notes || 'Order packed and ready for delivery',
+          data: {
+            status: 'ready_for_delivery',
+            packing: {
+              packedAt: new Date(),
+              packedBy: ctx.userId || 'system',
+              notes: input.notes,
+            },
+            statusHistory: {
+              push: {
+                status: 'ready_for_delivery',
+                changedAt: new Date(),
+                changedBy: ctx.userId || 'system',
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: input.notes || 'Order packed and ready for delivery',
+              },
             },
           },
-        },
+        });
       });
 
       // Send order ready for delivery email to customer

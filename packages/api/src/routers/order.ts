@@ -467,86 +467,8 @@ export const orderRouter = router({
           },
         });
 
-        // If NOT a backorder, reduce stock immediately
-        if (!stockValidation.requiresBackorder) {
-          // Track which parent products have been updated to avoid duplicate recalculations
-          const updatedParentIds = new Set<string>();
-
-          for (const item of orderItems) {
-            const product = products.find((p) => p.id === item.productId);
-            if (!product) continue;
-
-            // Check if this is a subproduct (has parent)
-            const productIsSubproduct = isSubproduct(product);
-            const parentProduct = productIsSubproduct ? product.parentProduct : null;
-
-            // For subproducts: consume from parent; for regular products: consume directly
-            const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
-            const consumeFromProduct = parentProduct || product;
-
-            // Calculate consumption quantity (for subproducts, account for loss)
-            const consumeQuantity = productIsSubproduct
-              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
-              : item.quantity;
-
-            const previousStock = consumeFromProduct.currentStock;
-            const newStock = previousStock - consumeQuantity;
-
-            // Create inventory transaction on the source product (parent for subproducts)
-            const transactionNotes = productIsSubproduct
-              ? `Subproduct order: ${product.name} (${item.quantity}${product.unit}) for order ${orderNumber}`
-              : `Stock reserved for order ${orderNumber}`;
-
-            const transaction = await tx.inventoryTransaction.create({
-              data: {
-                productId: consumeFromProductId,
-                type: 'sale',
-                quantity: -consumeQuantity,
-                previousStock,
-                newStock,
-                referenceType: 'order',
-                referenceId: newOrder.id,
-                notes: transactionNotes,
-                createdBy: ctx.userId,
-              },
-            });
-
-            // Consume from batches via FIFO (from parent for subproducts)
-            const { consumeStock } = await import('../services/inventory-batch');
-            const result = await consumeStock(
-              consumeFromProductId,
-              consumeQuantity,
-              transaction.id,
-              newOrder.id,
-              orderNumber,
-              tx
-            );
-
-            // Log expiry warnings if any
-            if (result.expiryWarnings.length > 0) {
-              console.warn(
-                `Expiry warnings for order ${orderNumber}:`,
-                result.expiryWarnings
-              );
-            }
-
-            // Update product stock
-            if (productIsSubproduct && parentProduct) {
-              // Update parent stock and recalculate all sibling subproduct stocks
-              await updateParentAndSubproductStocks(parentProduct.id, newStock, tx);
-              updatedParentIds.add(parentProduct.id);
-            } else {
-              // Regular product: just update its stock
-              await tx.product.update({
-                where: { id: product.id },
-                data: { currentStock: newStock },
-              });
-
-              // If this regular product has subproducts, recalculate their stocks too
-              await updateParentAndSubproductStocks(product.id, newStock, tx);
-            }
-          }
-        }
+        // Stock is NOT reduced at order creation
+        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
 
         return newOrder;
       });
@@ -883,86 +805,8 @@ export const orderRouter = router({
           },
         });
 
-        // If NOT a backorder, reduce stock immediately
-        if (!stockValidation.requiresBackorder) {
-          // Track which parent products have been updated to avoid duplicate recalculations
-          const updatedParentIds = new Set<string>();
-
-          for (const item of orderItems) {
-            const product = products.find((p) => p.id === item.productId);
-            if (!product) continue;
-
-            // Check if this is a subproduct (has parent)
-            const productIsSubproduct = isSubproduct(product);
-            const parentProduct = productIsSubproduct ? product.parentProduct : null;
-
-            // For subproducts: consume from parent; for regular products: consume directly
-            const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
-            const consumeFromProduct = parentProduct || product;
-
-            // Calculate consumption quantity (for subproducts, account for loss)
-            const consumeQuantity = productIsSubproduct
-              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
-              : item.quantity;
-
-            const previousStock = consumeFromProduct.currentStock;
-            const newStock = previousStock - consumeQuantity;
-
-            // Create inventory transaction on the source product (parent for subproducts)
-            const transactionNotes = productIsSubproduct
-              ? `Subproduct order: ${product.name} (${item.quantity}${product.unit}) for order ${orderNumber} (placed by admin)`
-              : `Stock reserved for order ${orderNumber} (placed by admin)`;
-
-            const transaction = await tx.inventoryTransaction.create({
-              data: {
-                productId: consumeFromProductId,
-                type: 'sale',
-                quantity: -consumeQuantity,
-                previousStock,
-                newStock,
-                referenceType: 'order',
-                referenceId: newOrder.id,
-                notes: transactionNotes,
-                createdBy: ctx.userId,
-              },
-            });
-
-            // Consume from batches via FIFO (from parent for subproducts)
-            const { consumeStock } = await import('../services/inventory-batch');
-            const result = await consumeStock(
-              consumeFromProductId,
-              consumeQuantity,
-              transaction.id,
-              newOrder.id,
-              orderNumber,
-              tx
-            );
-
-            // Log expiry warnings if any
-            if (result.expiryWarnings.length > 0) {
-              console.warn(
-                `Expiry warnings for order ${orderNumber}:`,
-                result.expiryWarnings
-              );
-            }
-
-            // Update product stock
-            if (productIsSubproduct && parentProduct) {
-              // Update parent stock and recalculate all sibling subproduct stocks
-              await updateParentAndSubproductStocks(parentProduct.id, newStock, tx);
-              updatedParentIds.add(parentProduct.id);
-            } else {
-              // Regular product: just update its stock
-              await tx.product.update({
-                where: { id: product.id },
-                data: { currentStock: newStock },
-              });
-
-              // If this regular product has subproducts, recalculate their stocks too
-              await updateParentAndSubproductStocks(product.id, newStock, tx);
-            }
-          }
-        }
+        // Stock is NOT reduced at order creation
+        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
 
         return newOrder;
       });
@@ -1266,14 +1110,17 @@ export const orderRouter = router({
       // Handle stock restoration when cancelling
       // Only restore stock if:
       // 1. Order is being cancelled
-      // 2. Order had stock reserved (NOT a pending backorder - pending backorders have awaiting_approval status)
+      // 2. Order had stock reduced (stock is now reduced at packing step - ready_for_delivery or later)
+      const packedStatuses = ['ready_for_delivery', 'out_for_delivery', 'delivered'];
       const shouldRestoreStock =
         input.newStatus === 'cancelled' &&
-        currentOrder.status !== 'awaiting_approval';
+        packedStatuses.includes(currentOrder.status);
 
       if (shouldRestoreStock) {
         // Restore stock in a transaction
         const order = await prisma.$transaction(async (tx) => {
+          const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
+
           // Update order status
           const updatedOrder = await tx.order.update({
             where: { id: input.orderId },
@@ -1293,41 +1140,125 @@ export const orderRouter = router({
             },
           });
 
-          // Get current product stock levels
+          // Get products with parent product info for subproduct handling
           const productIds = (currentOrder.items as any[]).map((item: any) => item.productId);
           const products = await tx.product.findMany({
             where: { id: { in: productIds } },
-            select: { id: true, currentStock: true },
+            include: { parentProduct: true },
           });
 
-          // Create a map of current stock levels
-          const stockMap = new Map(products.map((p) => [p.id, p.currentStock]));
+          // Create a map for quick lookup
+          const productMap = new Map(products.map((p) => [p.id, p]));
+
+          // Track which parent products have been updated
+          const updatedParentIds = new Set<string>();
 
           // Restore stock for each item
           for (const item of currentOrder.items as any[]) {
-            const currentStock = stockMap.get(item.productId) || 0;
-            const newStock = currentStock + item.quantity;
+            const product = productMap.get(item.productId);
+            if (!product) continue;
+
+            // Check if this is a subproduct
+            const productIsSubproduct = isSubproduct(product);
+            const parentProduct = productIsSubproduct ? product.parentProduct : null;
+
+            // For subproducts: restore to parent; for regular products: restore directly
+            const restoreToProductId = parentProduct ? parentProduct.id : product.id;
+
+            // Get current stock of the product we're restoring to
+            const restoreToProduct = parentProduct
+              ? await tx.product.findUnique({ where: { id: parentProduct.id } })
+              : await tx.product.findUnique({ where: { id: product.id } });
+
+            if (!restoreToProduct) continue;
+
+            // Calculate restore quantity (for subproducts, account for loss)
+            const restoreQuantity = productIsSubproduct
+              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+              : item.quantity;
+
+            const currentStock = restoreToProduct.currentStock;
+            const newStock = currentStock + restoreQuantity;
 
             // Create inventory transaction (return)
+            const transactionNotes = productIsSubproduct
+              ? `Subproduct stock restored: ${product.name} (${item.quantity}${product.unit}) from cancelled order ${currentOrder.orderNumber}`
+              : `Stock restored from cancelled order ${currentOrder.orderNumber}`;
+
             await tx.inventoryTransaction.create({
               data: {
-                productId: item.productId,
+                productId: restoreToProductId,
                 type: 'return',
-                quantity: item.quantity, // Positive for returns
+                quantity: restoreQuantity, // Positive for returns
                 previousStock: currentStock,
                 newStock,
                 referenceType: 'order',
                 referenceId: input.orderId,
-                notes: `Stock restored from cancelled order ${currentOrder.orderNumber}`,
+                notes: transactionNotes,
                 createdBy: ctx.userId,
               },
             });
 
-            // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
+            // Create a new batch for the returned stock
+            await tx.inventoryBatch.create({
+              data: {
+                productId: restoreToProductId,
+                quantityRemaining: restoreQuantity,
+                initialQuantity: restoreQuantity,
+                costPerUnit: 0, // Unknown cost for returned stock
+                receivedAt: new Date(),
+                notes: `Stock returned from cancelled order ${currentOrder.orderNumber}`,
+              },
             });
+
+            // Update product stock
+            if (productIsSubproduct && parentProduct && !updatedParentIds.has(parentProduct.id)) {
+              // Update parent stock
+              await tx.product.update({
+                where: { id: parentProduct.id },
+                data: { currentStock: newStock },
+              });
+
+              // Recalculate all subproduct stocks
+              const subproducts = await tx.product.findMany({
+                where: { parentProductId: parentProduct.id },
+                select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+              });
+
+              if (subproducts.length > 0) {
+                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+                for (const { id, newStock: subStock } of updatedStocks) {
+                  await tx.product.update({
+                    where: { id },
+                    data: { currentStock: subStock },
+                  });
+                }
+              }
+
+              updatedParentIds.add(parentProduct.id);
+            } else if (!productIsSubproduct) {
+              // Regular product: just update its stock
+              await tx.product.update({
+                where: { id: product.id },
+                data: { currentStock: newStock },
+              });
+
+              // If this regular product has subproducts, recalculate their stocks too
+              const subproducts = await tx.product.findMany({
+                where: { parentProductId: product.id },
+                select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+              });
+
+              if (subproducts.length > 0) {
+                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+                for (const { id, newStock: subStock } of updatedStocks) {
+                  await tx.product.update({
+                    where: { id },
+                    data: { currentStock: subStock },
+                  });
+                }
+              }
+            }
           }
 
           return updatedOrder;
@@ -1403,7 +1334,7 @@ export const orderRouter = router({
         // Send appropriate email based on new status
         switch (input.newStatus) {
           case 'cancelled':
-            // Already handled above in shouldRestoreStock branch, but handle for pending backorders
+            // Send cancellation email for orders not packed yet (no stock to restore)
             await sendOrderCancelledEmail({
               customerEmail: customer.contactPerson.email,
               customerName: customer.businessName,
@@ -2009,76 +1940,8 @@ export const orderRouter = router({
           console.error('Failed to send backorder partial approval email:', error);
         });
 
-        // Reserve approved stock quantities
-        const productIds = updatedItems.map((item: any) => item.productId);
-        const products = await prisma.product.findMany({
-          where: { id: { in: productIds } },
-          select: { id: true, currentStock: true, name: true },
-        });
-
-        // Create inventory transactions and update product stocks with FIFO consumption
-        await prisma.$transaction(async (tx) => {
-          const { consumeStock } = await import('../services/inventory-batch');
-          
-          for (const item of updatedItems) {
-            const product = products.find((p) => p.id === item.productId);
-            if (!product) {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: `Product not found: ${item.productId}`,
-              });
-            }
-
-            const previousStock = product.currentStock;
-            const newStock = previousStock - item.quantity;
-
-            if (newStock < 0) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
-              });
-            }
-
-            // Create inventory transaction
-            const transaction = await tx.inventoryTransaction.create({
-              data: {
-                productId: item.productId,
-                type: 'sale',
-                quantity: -item.quantity,
-                previousStock,
-                newStock,
-                referenceType: 'order',
-                referenceId: orderId,
-                notes: `Backorder partially approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
-                createdBy: ctx.userId,
-              },
-            });
-
-            // Consume from batches via FIFO
-            const result = await consumeStock(
-              item.productId,
-              item.quantity,
-              transaction.id,
-              orderId,
-              order.orderNumber,
-              tx
-            );
-
-            // Log expiry warnings if any
-            if (result.expiryWarnings.length > 0) {
-              console.warn(
-                `Expiry warnings for backorder ${order.orderNumber}:`,
-                result.expiryWarnings
-              );
-            }
-
-            // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
-            });
-          }
-        });
+        // Stock is NOT reduced at backorder approval
+        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
 
         // Log partial backorder approval to audit trail
         await logBackorderApproval(
@@ -2146,76 +2009,8 @@ export const orderRouter = router({
           console.error('Failed to send backorder approved email:', error);
         });
 
-        // Reserve stock quantities
-        const productIds = (order.items as any[]).map((item: any) => item.productId);
-        const products = await prisma.product.findMany({
-          where: { id: { in: productIds } },
-          select: { id: true, currentStock: true, name: true },
-        });
-
-        // Create inventory transactions and update product stocks with FIFO consumption
-        await prisma.$transaction(async (tx) => {
-          const { consumeStock } = await import('../services/inventory-batch');
-          
-          for (const item of order.items as any[]) {
-            const product = products.find((p) => p.id === item.productId);
-            if (!product) {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: `Product not found: ${item.productId}`,
-              });
-            }
-
-            const previousStock = product.currentStock;
-            const newStock = previousStock - item.quantity;
-
-            if (newStock < 0) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Approved: ${item.quantity}`,
-              });
-            }
-
-            // Create inventory transaction
-            const transaction = await tx.inventoryTransaction.create({
-              data: {
-                productId: item.productId,
-                type: 'sale',
-                quantity: -item.quantity,
-                previousStock,
-                newStock,
-                referenceType: 'order',
-                referenceId: orderId,
-                notes: `Backorder fully approved: ${item.quantity} units reserved for order ${order.orderNumber}`,
-                createdBy: ctx.userId,
-              },
-            });
-
-            // Consume from batches via FIFO
-            const result = await consumeStock(
-              item.productId,
-              item.quantity,
-              transaction.id,
-              orderId,
-              order.orderNumber,
-              tx
-            );
-
-            // Log expiry warnings if any
-            if (result.expiryWarnings.length > 0) {
-              console.warn(
-                `Expiry warnings for backorder ${order.orderNumber}:`,
-                result.expiryWarnings
-              );
-            }
-
-            // Update product stock
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { currentStock: newStock },
-            });
-          }
-        });
+        // Stock is NOT reduced at backorder approval
+        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
 
         // Log full backorder approval to audit trail
         await logBackorderApproval(
