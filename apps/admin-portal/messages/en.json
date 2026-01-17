@@ -2847,7 +2847,11 @@
       "suburb": "Suburb",
       "state": "State",
       "postcode": "Postcode",
-      "deliveryInstructions": "Delivery Instructions"
+      "deliveryInstructions": "Delivery Instructions",
+      "area": "Delivery Area",
+      "areaAutoDetect": "Auto-detect from suburb",
+      "assignedTo": "Assigned to",
+      "willAutoAssignTo": "Will be auto-assigned to {area}"
     },
     "billingAddress": {
       "title": "Billing Address",

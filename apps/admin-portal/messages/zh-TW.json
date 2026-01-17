@@ -2853,7 +2853,11 @@
       "suburb": "區/鎮",
       "state": "州",
       "postcode": "郵遞區號",
-      "deliveryInstructions": "配送說明"
+      "deliveryInstructions": "配送說明",
+      "area": "配送區域",
+      "areaAutoDetect": "根據郊區自動偵測",
+      "assignedTo": "已分配至",
+      "willAutoAssignTo": "將自動分配至 {area}"
     },
     "billingAddress": {
       "title": "帳單地址",

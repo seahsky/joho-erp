@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -132,6 +132,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     state: '',
     postcode: '',
     deliveryInstructions: '',
+    areaId: undefined as string | undefined,
     // Business info
     businessName: '',
     tradingName: '',
@@ -175,6 +176,35 @@ export default function CustomerDetailPage({ params }: PageProps) {
     { customerId: resolvedParams.id, limit: 10 },
     { enabled: !!customer }
   );
+
+  // Fetch areas for dropdown
+  const { data: areas } = api.area.list.useQuery();
+
+  // Auto-lookup area by suburb when editing
+  const { data: autoArea, isLoading: isLookingUpArea } = api.area.lookupBySuburb.useQuery(
+    {
+      suburb: editForm.suburb,
+      state: editForm.state,
+      postcode: editForm.postcode,
+    },
+    {
+      enabled:
+        isEditing &&
+        !!editForm.suburb &&
+        editForm.suburb.length > 2 &&
+        !editForm.areaId, // Only lookup if no manual selection
+    }
+  );
+
+  // Auto-select area when lookup returns a result (during editing)
+  useEffect(() => {
+    if (isEditing && autoArea && !editForm.areaId) {
+      setEditForm((prev) => ({
+        ...prev,
+        areaId: autoArea.id,
+      }));
+    }
+  }, [isEditing, autoArea, editForm.areaId]);
 
   // Suspend mutation
   const suspendMutation = api.customer.suspend.useMutation({
@@ -298,6 +328,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
       state: customer.deliveryAddress.state,
       postcode: customer.deliveryAddress.postcode,
       deliveryInstructions: customer.deliveryAddress.deliveryInstructions || '',
+      areaId: customer.deliveryAddress.areaId || undefined,
       // Business info
       businessName: customer.businessName,
       tradingName: customer.tradingName || '',
@@ -351,6 +382,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
         state: editForm.state,
         postcode: editForm.postcode,
         deliveryInstructions: editForm.deliveryInstructions || undefined,
+        areaId: editForm.areaId || undefined,
       },
       businessInfo: {
         businessName: editForm.businessName,
@@ -872,6 +904,53 @@ export default function CustomerDetailPage({ params }: PageProps) {
                       onChange={(e) => setEditForm({ ...editForm, postcode: e.target.value })}
                       className="mt-1"
                     />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="areaId" className="text-sm text-muted-foreground">{t('address.area')}</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <select
+                        id="areaId"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={editForm.areaId ?? ''}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            areaId: e.target.value || undefined,
+                          })
+                        }
+                      >
+                        <option value="">{t('address.areaAutoDetect')}</option>
+                        {areas?.map((area) => (
+                          <option key={area.id} value={area.id}>
+                            {area.displayName}
+                          </option>
+                        ))}
+                      </select>
+                      {isLookingUpArea && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    {editForm.areaId && areas && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                        <MapPin className="h-3 w-3" />
+                        <span>{t('address.assignedTo')}:</span>
+                        <AreaBadge
+                          area={
+                            areas.find((a) => a.id === editForm.areaId) ?? {
+                              name: 'unknown',
+                              displayName: 'Unknown',
+                              colorVariant: 'default',
+                            }
+                          }
+                          className="text-xs"
+                        />
+                      </div>
+                    )}
+                    {!editForm.areaId && autoArea && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {t('address.willAutoAssignTo', { area: autoArea.displayName })}
+                      </p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <Label htmlFor="deliveryInstructions" className="text-sm text-muted-foreground">{t('address.deliveryInstructions')}</Label>

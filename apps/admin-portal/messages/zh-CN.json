@@ -2847,7 +2847,11 @@
       "suburb": "区/镇",
       "state": "州",
       "postcode": "邮编",
-      "deliveryInstructions": "配送说明"
+      "deliveryInstructions": "配送说明",
+      "area": "配送区域",
+      "areaAutoDetect": "根据郊区自动检测",
+      "assignedTo": "已分配至",
+      "willAutoAssignTo": "将自动分配至 {area}"
     },
     "billingAddress": {
       "title": "账单地址",
