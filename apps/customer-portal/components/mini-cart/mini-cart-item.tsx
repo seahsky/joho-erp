@@ -94,6 +94,24 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Delete Button - Top Right */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            'absolute top-2 right-0',
+            'h-7 w-7',
+            'text-neutral-400 hover:text-destructive',
+            'hover:bg-destructive/10',
+            'transition-all duration-200'
+          )}
+          onClick={handleRemove}
+          disabled={isPending}
+          aria-label={t('removeItem')}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+
         {/* Product Image - Clickable */}
         <button
           onClick={() => item.imageUrl && setShowImageDialog(true)}
@@ -200,29 +218,10 @@ export function MiniCartItem({ item }: MiniCartItemProps) {
               </Button>
             </div>
 
-            {/* Subtotal + Remove */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-900 tabular-nums">
-                {formatAUD(item.subtotal)}
-              </span>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'h-8 w-8',
-                  'text-neutral-400 hover:text-destructive',
-                  'hover:bg-destructive/10',
-                  'transition-all duration-200',
-                  !isHovered && 'opacity-0'
-                )}
-                onClick={handleRemove}
-                disabled={isPending}
-                aria-label={t('removeItem')}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* Subtotal */}
+            <span className="text-sm font-semibold text-neutral-900 tabular-nums">
+              {formatAUD(item.subtotal)}
+            </span>
           </div>
         </div>
 
