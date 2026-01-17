@@ -33,7 +33,7 @@ export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
       {/* Backdrop with smooth fade */}
       <div
         className={cn(
-          'fixed inset-0 z-40',
+          'fixed inset-0 z-[60]',
           'bg-gradient-to-br from-black/30 via-black/40 to-black/50',
           'backdrop-blur-[2px]',
           'transition-all duration-500 ease-out',
@@ -46,7 +46,7 @@ export function MiniCartDrawer({ open, onClose, locale }: MiniCartDrawerProps) {
       {/* Drawer with slide animation */}
       <div
         className={cn(
-          'fixed top-0 right-0 bottom-0 z-50',
+          'fixed top-0 right-0 bottom-0 z-[70]',
           'w-[420px] max-w-[92vw]',
           'flex flex-col',
           'transform transition-all duration-500',
