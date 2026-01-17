@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Label,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { Loader2, CheckCircle } from 'lucide-react';
@@ -38,13 +39,27 @@ export function CompleteDeliveryDialog({
   isSubmitting = false,
 }: CompleteDeliveryDialogProps) {
   const t = useTranslations('driver.completeDialog');
+  const tMessages = useTranslations('driver.messages');
+  const { toast } = useToast();
   const [notes, setNotes] = useState('');
 
   if (!delivery) return null;
 
   const handleConfirm = async () => {
-    await onConfirm(notes || undefined);
-    setNotes('');
+    try {
+      await onConfirm(notes || undefined);
+      toast({
+        title: tMessages('completeSuccess'),
+      });
+      setNotes('');
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: tMessages('error'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    }
   };
 
   const hasPOD = delivery.hasProofOfDelivery;

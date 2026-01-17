@@ -1330,7 +1330,10 @@
       "cannotChangeCustomer": "编辑时无法更改客户",
       "cannotChangeProduct": "编辑时无法更改产品",
       "noExpiration": "留空表示永不过期",
-      "customerSaves": "客户节省 {amount}（{percent}% 折扣）"
+      "customerSaves": "客户节省 {amount}（{percent}% 折扣）",
+      "priceSet": "客户价格设置成功",
+      "priceUpdated": "客户价格更新成功",
+      "priceSetError": "设置客户价格失败"
     },
     "buttons": {
       "cancel": "取消",
@@ -1444,6 +1447,11 @@
     "validation": {
       "uploadCsvRequired": "请上传 CSV 文件",
       "csvHeaderRowRequired": "CSV 文件必须至少包含一个标题行和一行数据"
+    },
+    "messages": {
+      "importSuccess": "导入成功",
+      "importPartial": "导入完成但有错误",
+      "importError": "导入失败"
     }
   },
   "creditReview": {
@@ -1874,7 +1882,8 @@
       "description": "修改订单数量需要输入4位PIN码",
       "invalidPin": "PIN码无效，请重试。",
       "tooManyAttempts": "尝试次数过多，请等待30秒。",
-      "cancel": "取消"
+      "cancel": "取消",
+      "pinSuccess": "PIN验证成功"
     },
     "stockTooltip": {
       "title": "库存信息",

@@ -9,6 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { Loader2, MapPin, Package } from 'lucide-react';
@@ -39,8 +40,26 @@ export function StartDeliveryDialog({
   isSubmitting = false,
 }: StartDeliveryDialogProps) {
   const t = useTranslations('driver.startDialog');
+  const tMessages = useTranslations('driver.messages');
+  const { toast } = useToast();
 
   if (!delivery) return null;
+
+  const handleSubmit = async () => {
+    try {
+      await onConfirm();
+      toast({
+        title: tMessages('startSuccess'),
+      });
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: tMessages('error'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +96,7 @@ export function StartDeliveryDialog({
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isSubmitting}>{t('cancel')}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting}>
+          <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {t('confirm')}
           </AlertDialogAction>

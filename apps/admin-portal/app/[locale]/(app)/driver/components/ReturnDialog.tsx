@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Label,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
@@ -44,6 +45,8 @@ export function ReturnDialog({
   isSubmitting = false,
 }: ReturnDialogProps) {
   const t = useTranslations('driver.returnDialog');
+  const tMessages = useTranslations('driver.messages');
+  const { toast } = useToast();
   const [reason, setReason] = useState<ReturnReason | ''>('');
   const [notes, setNotes] = useState('');
 
@@ -51,9 +54,21 @@ export function ReturnDialog({
 
   const handleConfirm = async () => {
     if (!reason) return;
-    await onConfirm(reason, notes || undefined);
-    setReason('');
-    setNotes('');
+    try {
+      await onConfirm(reason, notes || undefined);
+      toast({
+        title: tMessages('returnSuccess'),
+      });
+      setReason('');
+      setNotes('');
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: tMessages('error'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    }
   };
 
   const reasons: ReturnReason[] = [

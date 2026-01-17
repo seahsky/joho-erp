@@ -10,6 +10,7 @@ import {
   Button,
   Input,
   Label,
+  useToast,
 } from '@joho-erp/ui';
 import { Loader2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -63,6 +64,7 @@ export function SetPriceDialog({
   onSuccess,
 }: SetPriceDialogProps) {
   const t = useTranslations('pricingDialog');
+  const { toast } = useToast();
   const [customerId, setCustomerId] = useState(pricing?.customerId || '');
   const [productId, setProductId] = useState(pricing?.productId || '');
   // Convert cents to dollars for display in the input
@@ -115,9 +117,18 @@ export function SetPriceDialog({
 
   const setPriceMutation = api.pricing.setCustomerPrice.useMutation({
     onSuccess: () => {
+      toast({
+        title: pricing ? t('messages.priceUpdated') : t('messages.priceSet'),
+      });
+      onOpenChange(false);
       onSuccess();
     },
     onError: (err) => {
+      toast({
+        title: t('messages.priceSetError'),
+        description: err.message,
+        variant: 'destructive',
+      });
       setError(err.message);
     },
   });

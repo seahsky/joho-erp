@@ -1330,7 +1330,10 @@
       "cannotChangeCustomer": "編輯時無法更改客戶",
       "cannotChangeProduct": "編輯時無法更改產品",
       "noExpiration": "留空表示永不過期",
-      "customerSaves": "客戶節省 {amount}（{percent}% 折扣）"
+      "customerSaves": "客戶節省 {amount}（{percent}% 折扣）",
+      "priceSet": "客戶價格設定成功",
+      "priceUpdated": "客戶價格更新成功",
+      "priceSetError": "設定客戶價格失敗"
     },
     "buttons": {
       "cancel": "取消",
@@ -1444,6 +1447,11 @@
     "validation": {
       "uploadCsvRequired": "請上傳 CSV 檔案",
       "csvHeaderRowRequired": "CSV 檔案必須至少包含一個標題行和一行資料"
+    },
+    "messages": {
+      "importSuccess": "匯入成功",
+      "importPartial": "匯入完成但有錯誤",
+      "importError": "匯入失敗"
     }
   },
   "creditReview": {
@@ -1880,7 +1888,8 @@
       "description": "修改訂單數量需要輸入4位PIN碼",
       "invalidPin": "PIN碼無效，請重試。",
       "tooManyAttempts": "嘗試次數過多，請等待30秒。",
-      "cancel": "取消"
+      "cancel": "取消",
+      "pinSuccess": "PIN驗證成功"
     },
     "stockTooltip": {
       "title": "庫存資訊",

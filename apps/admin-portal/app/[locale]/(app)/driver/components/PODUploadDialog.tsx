@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
+  useToast,
 } from '@joho-erp/ui';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -36,6 +37,8 @@ export function PODUploadDialog({
   isSubmitting = false,
 }: PODUploadDialogProps) {
   const t = useTranslations('driver.podDialog');
+  const tMessages = useTranslations('driver.messages');
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -66,7 +69,17 @@ export function PODUploadDialog({
       // For demonstration, we'll just pass the preview URL
       // In production, replace this with actual R2 upload
       await onUpload(preview, 'photo');
+      toast({
+        title: tMessages('podSuccess'),
+      });
       setPreview(null);
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: tMessages('error'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
     }

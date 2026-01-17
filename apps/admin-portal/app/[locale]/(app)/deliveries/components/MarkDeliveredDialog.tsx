@@ -10,6 +10,7 @@ import {
   Button,
   Label,
   Checkbox,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { Loader2, CheckCircle2, Package, User, AlertTriangle } from 'lucide-react';
@@ -51,6 +52,8 @@ export function MarkDeliveredDialog({
   isSubmitting = false,
 }: MarkDeliveredDialogProps) {
   const t = useTranslations('deliveries.markDeliveredDialog');
+  const tMessages = useTranslations('deliveries.messages');
+  const { toast } = useToast();
   const [notes, setNotes] = useState('');
   const [adminOverride, setAdminOverride] = useState(false);
 
@@ -69,9 +72,21 @@ export function MarkDeliveredDialog({
   }, [delivery?.packedAt, packedToday, adminOverride]);
 
   const handleConfirm = async () => {
-    await onConfirm(notes || undefined, adminOverride || undefined);
-    setNotes(''); // Reset notes after confirm
-    setAdminOverride(false); // Reset override after confirm
+    try {
+      await onConfirm(notes || undefined, adminOverride || undefined);
+      toast({
+        title: tMessages('markDeliveredSuccess'),
+      });
+      setNotes(''); // Reset notes after confirm
+      setAdminOverride(false); // Reset override after confirm
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: tMessages('markDeliveredError'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleOpenChange = (isOpen: boolean) => {

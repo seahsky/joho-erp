@@ -1330,7 +1330,10 @@
       "cannotChangeCustomer": "Customer cannot be changed when editing",
       "cannotChangeProduct": "Product cannot be changed when editing",
       "noExpiration": "Leave empty for no expiration",
-      "customerSaves": "Customer saves {amount} ({percent}% off)"
+      "customerSaves": "Customer saves {amount} ({percent}% off)",
+      "priceSet": "Customer price set successfully",
+      "priceUpdated": "Customer price updated successfully",
+      "priceSetError": "Failed to set customer price"
     },
     "buttons": {
       "cancel": "Cancel",
@@ -1444,6 +1447,11 @@
     "validation": {
       "uploadCsvRequired": "Please upload a CSV file",
       "csvHeaderRowRequired": "CSV must have at least a header row and one data row"
+    },
+    "messages": {
+      "importSuccess": "Import completed successfully",
+      "importPartial": "Import completed with errors",
+      "importError": "Import failed"
     }
   },
   "creditReview": {
@@ -1874,7 +1882,8 @@
       "description": "A 4-digit PIN is required to modify order quantities",
       "invalidPin": "Invalid PIN. Please try again.",
       "tooManyAttempts": "Too many failed attempts. Please wait 30 seconds.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "pinSuccess": "PIN verified successfully"
     },
     "stockTooltip": {
       "title": "Stock Information",

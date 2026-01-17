@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
+  useToast,
 } from '@joho-erp/ui';
 import { Loader2, Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -26,6 +27,7 @@ export function BulkImportDialog({
   onSuccess,
 }: BulkImportDialogProps) {
   const t = useTranslations('bulkImportDialog');
+  const { toast } = useToast();
   const [csvData, setCsvData] = useState('');
   const [error, setError] = useState('');
   const [importResult, setImportResult] = useState<{
@@ -38,12 +40,26 @@ export function BulkImportDialog({
     onSuccess: (result) => {
       setImportResult(result);
       if (result.failed === 0) {
+        toast({
+          title: t('messages.importSuccess'),
+        });
         setTimeout(() => {
+          onOpenChange(false);
           onSuccess();
         }, 2000);
+      } else {
+        toast({
+          title: t('messages.importPartial'),
+          variant: 'destructive',
+        });
       }
     },
     onError: (err) => {
+      toast({
+        title: t('messages.importError'),
+        description: err.message,
+        variant: 'destructive',
+      });
       setError(err.message);
     },
   });

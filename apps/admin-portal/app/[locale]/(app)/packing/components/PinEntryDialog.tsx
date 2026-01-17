@@ -9,6 +9,7 @@ import {
   DialogTitle,
   Button,
   Input,
+  useToast,
 } from '@joho-erp/ui';
 import { Loader2, Lock, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -27,6 +28,7 @@ export function PinEntryDialog({
   isLoading,
 }: PinEntryDialogProps) {
   const t = useTranslations('packing.pinDialog');
+  const { toast } = useToast();
   const [pin, setPin] = useState(['', '', '', '']);
   const [error, setError] = useState<string | null>(null);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -83,12 +85,16 @@ export function PinEntryDialog({
           }, 30000);
         }
       } else {
+        toast({
+          title: t('pinSuccess'),
+        });
         setFailedAttempts(0);
+        onOpenChange(false);
       }
     } finally {
       setIsSubmitting(false);
     }
-  }, [isLockedOut, isSubmitting, onPinSubmit, failedAttempts, t]);
+  }, [isLockedOut, isSubmitting, onPinSubmit, failedAttempts, t, toast, onOpenChange]);
 
   const handlePinChange = useCallback((index: number, value: string) => {
     if (isLockedOut || isSubmitting) return;

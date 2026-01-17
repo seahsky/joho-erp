@@ -2,6 +2,7 @@ import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
 import { TRPCProvider } from './trpc-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@joho-erp/ui';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 
@@ -38,6 +39,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <TRPCProvider>{children}</TRPCProvider>
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>

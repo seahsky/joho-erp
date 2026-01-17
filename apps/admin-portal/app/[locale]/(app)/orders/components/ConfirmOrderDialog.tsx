@@ -14,6 +14,7 @@ import {
   CardTitle,
   CardContent,
   Label,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { formatAUD } from '@joho-erp/shared';
@@ -51,19 +52,34 @@ export function ConfirmOrderDialog({
   isSubmitting = false,
 }: ConfirmOrderDialogProps) {
   const t = useTranslations('orders.confirmDialog');
+  const { toast } = useToast();
 
   const [adminNotes, setAdminNotes] = useState('');
 
   if (!order) return null;
 
   const handleSubmit = async () => {
-    await onConfirm({
-      orderId: order.id,
-      notes: adminNotes || undefined,
-    });
+    try {
+      await onConfirm({
+        orderId: order.id,
+        notes: adminNotes || undefined,
+      });
 
-    // Reset form
-    setAdminNotes('');
+      toast({
+        title: t('success'),
+        description: t('successMessage'),
+      });
+
+      // Reset form and close dialog
+      setAdminNotes('');
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: t('error'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
