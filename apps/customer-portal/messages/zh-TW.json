@@ -22,7 +22,9 @@
     "tagline": "優質批發",
     "categories": "分類",
     "allProducts": "全部產品",
-    "browseByCategory": "按分類瀏覽"
+    "browseByCategory": "按分類瀏覽",
+    "shopByCategory": "按分類選購",
+    "currentCategory": "當前分類"
   },
   "common": {
     "loading": "載入中...",

@@ -22,7 +22,9 @@
     "tagline": "Premium Wholesale",
     "categories": "Categories",
     "allProducts": "All Products",
-    "browseByCategory": "Browse by Category"
+    "browseByCategory": "Browse by Category",
+    "shopByCategory": "Shop by Category",
+    "currentCategory": "Current category"
   },
   "common": {
     "loading": "Loading...",

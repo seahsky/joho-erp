@@ -22,7 +22,9 @@
     "tagline": "优质批发",
     "categories": "分类",
     "allProducts": "全部产品",
-    "browseByCategory": "按分类浏览"
+    "browseByCategory": "按分类浏览",
+    "shopByCategory": "按分类选购",
+    "currentCategory": "当前分类"
   },
   "common": {
     "loading": "加载中...",

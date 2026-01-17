@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Home, Package, ShoppingCart, User, ShoppingBag } from 'lucide-react';
 import { Badge, cn } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { MiniCartSheet, CartButtonStyles } from './mini-cart';
@@ -13,7 +13,11 @@ import { CategorySheet } from './category-sheet';
 export function CustomerBottomNav({ locale }: { locale: string }) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: cart } = api.cart.getCart.useQuery();
+
+  // Get current category from URL search params
+  const currentCategoryId = searchParams.get('category');
   const [isCartOpen, setIsCartOpen] = React.useState(false);
   const [isCategorySheetOpen, setIsCategorySheetOpen] = React.useState(false);
   const [isAnimating, setIsAnimating] = React.useState(false);
@@ -146,6 +150,7 @@ export function CustomerBottomNav({ locale }: { locale: string }) {
         open={isCategorySheetOpen}
         onClose={() => setIsCategorySheetOpen(false)}
         locale={locale}
+        currentCategoryId={currentCategoryId}
       />
     </>
   );

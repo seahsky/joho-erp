@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Truck, DollarSign, HeadphonesIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, LanguageSwitcher } from '@joho-erp/ui';
+import { CategoryGrid } from '@/components/category-grid';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,6 +107,9 @@ export default async function Home({
           </div>
         </div>
       </section>
+
+      {/* Category Grid - Only show for authenticated users */}
+      {user && <CategoryGrid locale={locale} />}
 
       {/* Features Section */}
       <section className="py-12 md:py-20">
