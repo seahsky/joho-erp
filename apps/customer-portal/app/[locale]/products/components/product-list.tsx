@@ -117,8 +117,19 @@ export function ProductList() {
   // Extract unique categories with counts (from ALL in-stock products, not filtered)
   const allInStockProducts = React.useMemo(() => {
     const items = (products?.items || []) as ApiProduct[];
-    return items.filter(p => p.hasStock);
-  }, [products]);
+
+    // Flatten: parents + all their subproducts into single list
+    const allProducts = items.flatMap(product => {
+      // Skip products without stock (subproducts derive stock from parent, so skip those too)
+      if (!product.hasStock) return [];
+
+      const subProducts = ((product as any).subProducts || []) as ApiProduct[];
+      const inStockSubs = subProducts.filter(sub => sub.hasStock);
+      return [product, ...inStockSubs];
+    });
+
+    return allProducts;
+  }, [products]);;
 
   const categoriesWithCounts = React.useMemo(() => {
     if (!categories.length) return [];
