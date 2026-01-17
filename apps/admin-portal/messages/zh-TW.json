@@ -1929,6 +1929,7 @@
     "driverAreas": {
       "title": "司機區域分配",
       "description": "配置司機負責的配送區域以實現自動分配",
+      "exclusiveDescription": "每個司機只能分配到一個區域，每個區域只能有一個司機",
       "driver": "司機",
       "areas": {
         "north": "北區",
@@ -1937,13 +1938,18 @@
         "west": "西區"
       },
       "actions": "操作",
+      "none": "無",
       "noDrivers": "未找到司機。請新增具有司機角色的使用者以分配區域。",
       "noAreas": "未設定配送區域。請先在設定 → 配送區域中建立區域。",
       "summary": "區域概覽",
       "driverSingular": "位司機",
       "driverPlural": "位司機",
       "saveSuccess": "司機區域已更新",
-      "saveError": "更新司機區域失敗"
+      "saveError": "更新司機區域失敗",
+      "areaTakenBy": "已分配給 {name}",
+      "assigned": "已分配",
+      "unassigned": "未分配",
+      "noDriverAssigned": "暫無司機"
     },
     "profile": {
       "title": "個人資料設定",

@@ -1923,6 +1923,7 @@
     "driverAreas": {
       "title": "司机区域分配",
       "description": "配置司机负责的配送区域以实现自动分配",
+      "exclusiveDescription": "每个司机只能分配到一个区域，每个区域只能有一个司机",
       "driver": "司机",
       "areas": {
         "north": "北区",
@@ -1931,13 +1932,18 @@
         "west": "西区"
       },
       "actions": "操作",
+      "none": "无",
       "noDrivers": "未找到司机。请添加具有司机角色的用户以分配区域。",
       "noAreas": "未配置配送区域。请先在设置 → 配送区域中创建区域。",
       "summary": "区域概览",
       "driverSingular": "位司机",
       "driverPlural": "位司机",
       "saveSuccess": "司机区域已更新",
-      "saveError": "更新司机区域失败"
+      "saveError": "更新司机区域失败",
+      "areaTakenBy": "已分配给 {name}",
+      "assigned": "已分配",
+      "unassigned": "未分配",
+      "noDriverAssigned": "暂无司机"
     },
     "profile": {
       "title": "个人资料设置",

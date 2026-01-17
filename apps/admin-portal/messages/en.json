@@ -1923,6 +1923,7 @@
     "driverAreas": {
       "title": "Driver Area Assignments",
       "description": "Configure which drivers serve each delivery area for auto-assignment",
+      "exclusiveDescription": "Each driver can only be assigned to one area, and each area can only have one driver",
       "driver": "Driver",
       "areas": {
         "north": "North",
@@ -1931,13 +1932,18 @@
         "west": "West"
       },
       "actions": "Actions",
+      "none": "None",
       "noDrivers": "No drivers found. Add users with the driver role to assign areas.",
       "noAreas": "No delivery areas configured. Create areas in Settings → Delivery Areas first.",
       "summary": "Area Summary",
       "driverSingular": "driver",
       "driverPlural": "drivers",
       "saveSuccess": "Driver areas updated",
-      "saveError": "Failed to update driver areas"
+      "saveError": "Failed to update driver areas",
+      "areaTakenBy": "Assigned to {name}",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned",
+      "noDriverAssigned": "No driver assigned"
     },
     "profile": {
       "title": "Profile Settings",
