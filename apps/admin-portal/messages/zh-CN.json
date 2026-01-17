@@ -2670,6 +2670,19 @@
     },
     "adjustStock": "调整库存",
     "processStock": "加工库存",
+    "transactionDetail": {
+      "title": "交易详情",
+      "costPerUnit": "单位成本",
+      "expiryDate": "有效期",
+      "createdBy": "操作人",
+      "timestamp": "日期和时间",
+      "notes": "备注",
+      "referenceOrder": "相关订单",
+      "noNotes": "无备注",
+      "viewOrder": "查看订单",
+      "previousStock": "之前库存",
+      "newStock": "新库存"
+    },
     "productSelector": {
       "searchPlaceholder": "按产品名称或SKU搜索...",
       "selectProduct": "选择要调整库存的产品",

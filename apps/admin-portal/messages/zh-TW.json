@@ -2676,6 +2676,19 @@
     },
     "adjustStock": "調整庫存",
     "processStock": "加工庫存",
+    "transactionDetail": {
+      "title": "交易詳情",
+      "costPerUnit": "單位成本",
+      "expiryDate": "有效期",
+      "createdBy": "操作人",
+      "timestamp": "日期和時間",
+      "notes": "備註",
+      "referenceOrder": "相關訂單",
+      "noNotes": "無備註",
+      "viewOrder": "查看訂單",
+      "previousStock": "之前庫存",
+      "newStock": "新庫存"
+    },
     "productSelector": {
       "searchPlaceholder": "按產品名稱或SKU搜尋...",
       "selectProduct": "選擇要調整庫存的產品",

@@ -2670,6 +2670,19 @@
     },
     "adjustStock": "Adjust Stock",
     "processStock": "Process Stock",
+    "transactionDetail": {
+      "title": "Transaction Details",
+      "costPerUnit": "Cost per Unit",
+      "expiryDate": "Expiry Date",
+      "createdBy": "Created By",
+      "timestamp": "Date & Time",
+      "notes": "Notes",
+      "referenceOrder": "Related Order",
+      "noNotes": "No notes provided",
+      "viewOrder": "View Order",
+      "previousStock": "Previous Stock",
+      "newStock": "New Stock"
+    },
     "productSelector": {
       "searchPlaceholder": "Search by product name or SKU...",
       "selectProduct": "Select a product to adjust stock",

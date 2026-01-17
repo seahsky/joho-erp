@@ -46,6 +46,8 @@ import {
   ComparisonAnalytics,
   StockAdjustmentDialog,
   ProcessStockDialog,
+  InventoryTransactionDetailDialog,
+  type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
 import { ExportDialog } from './components/ExportDialog';
@@ -78,6 +80,10 @@ export default function InventoryPage() {
 
   // Process stock dialog state
   const [showProcessStockDialog, setShowProcessStockDialog] = useState(false);
+
+  // Transaction detail dialog state
+  const [selectedTransaction, setSelectedTransaction] = useState<InventoryTransaction | null>(null);
+  const [showTransactionDetail, setShowTransactionDetail] = useState(false);
 
   // API calls
   const { data: summary } = api.dashboard.getInventorySummary.useQuery();
@@ -366,7 +372,11 @@ export default function InventoryPage() {
                     {transactionsData.transactions.map((tx) => (
                       <div
                         key={tx.id}
-                        className="flex items-start justify-between pb-3 border-b last:border-0"
+                        className="flex items-start justify-between pb-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors rounded-md p-2 -mx-2"
+                        onClick={() => {
+                          setSelectedTransaction(tx as InventoryTransaction);
+                          setShowTransactionDetail(true);
+                        }}
                       >
                         <div className="space-y-1">
                           <p className="font-medium">{tx.productName}</p>
@@ -408,7 +418,10 @@ export default function InventoryPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 hidden sm:flex shrink-0"
-                              onClick={() => handleQuickAdjust(tx)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuickAdjust(tx);
+                              }}
                               title={t('adjustStock')}
                             >
                               <PackagePlus className="h-4 w-4" />
@@ -481,6 +494,16 @@ export default function InventoryPage() {
           transactionType,
           productSearch,
         }}
+      />
+
+      {/* Transaction Detail Dialog */}
+      <InventoryTransactionDetailDialog
+        open={showTransactionDetail}
+        onOpenChange={(open) => {
+          setShowTransactionDetail(open);
+          if (!open) setSelectedTransaction(null);
+        }}
+        transaction={selectedTransaction}
       />
     </div>
   );

@@ -434,6 +434,11 @@ export const dashboardRouter = router({
           notes: tx.notes,
           createdBy: tx.createdBy,
           createdAt: tx.createdAt,
+          // Additional fields for transaction detail view
+          costPerUnit: tx.costPerUnit,
+          expiryDate: tx.expiryDate,
+          referenceType: tx.referenceType,
+          referenceId: tx.referenceId,
         })),
         totalCount,
         hasMore: offset + transactions.length < totalCount,
