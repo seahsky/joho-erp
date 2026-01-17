@@ -1343,31 +1343,59 @@ export const deliveryRouter = router({
       }));
     }),
 
-  // Set driver's assigned areas (replaces all existing)
-  // Updated to support dynamic areaIds instead of hardcoded areaTags
+  // Set driver's assigned area (one-to-one relationship enforced)
+  // Each driver can only be assigned to one area, and each area can only have one driver
   setDriverAreas: requirePermission('deliveries:manage')
     .input(
       z.object({
         driverId: z.string(),
-        areaIds: z.array(z.string()), // Dynamic area IDs
+        areaIds: z.array(z.string()).max(1), // Maximum one area per driver
       })
     )
     .mutation(async ({ input }) => {
       const { driverId, areaIds } = input;
 
-      // Delete existing assignments
+      // Enforce one-to-one: only one area per driver
+      if (areaIds.length > 1) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Each driver can only be assigned to one area',
+        });
+      }
+
+      const areaId = areaIds[0] || null;
+
+      // If assigning to an area, check if it's already taken by another driver
+      if (areaId) {
+        const existingAssignment = await prisma.driverAreaAssignment.findFirst({
+          where: {
+            areaId,
+            driverId: { not: driverId }, // Exclude current driver
+            isActive: true,
+          },
+        });
+
+        if (existingAssignment) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This area is already assigned to another driver',
+          });
+        }
+      }
+
+      // Delete existing assignments for this driver
       await prisma.driverAreaAssignment.deleteMany({
         where: { driverId },
       });
 
-      // Create new assignments with areaId references
-      if (areaIds.length > 0) {
-        await prisma.driverAreaAssignment.createMany({
-          data: areaIds.map((areaId) => ({
+      // Create new assignment if an area was selected
+      if (areaId) {
+        await prisma.driverAreaAssignment.create({
+          data: {
             driverId,
             areaId,
             isActive: true,
-          })),
+          },
         });
       }
 
