@@ -437,6 +437,8 @@
     "incrementBy5": "增加5件",
     "decrementBy5": "减少5件",
     "tapToEditQuantity": "点击编辑数量",
+    "confirmQuantity": "确认数量",
+    "cancelEdit": "取消编辑",
     "dialog": {
       "clearCartTitle": "清空购物车",
       "clearCartDescription": "确定要清空购物车中的所有商品吗？此操作无法撤销。",

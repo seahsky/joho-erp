@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Card, CardContent, H4, Muted, useToast, Input } from '@joho-erp/ui';
-import { Loader2, Minus, Plus, Trash2 } from 'lucide-react';
+import { Check, Loader2, Minus, Plus, Trash2, X } from 'lucide-react';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 
@@ -156,6 +156,15 @@ export function CartItem({ item }: CartItemProps) {
     }
   };
 
+  const handleConfirmQuantity = () => {
+    handleQuantityBlur();
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingQuantity(false);
+    setEditQuantity(item.quantity.toString());
+  };
+
   // Item total is already calculated by backend
   return (
     <Card>
@@ -214,15 +223,43 @@ export function CartItem({ item }: CartItemProps) {
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Minus className="h-4 w-4" />}
               </Button>
               {isEditingQuantity ? (
-                <Input
-                  ref={inputRef}
-                  type="number"
-                  value={editQuantity}
-                  onChange={(e) => setEditQuantity(e.target.value)}
-                  onBlur={handleQuantityBlur}
-                  onKeyDown={handleQuantityKeyDown}
-                  className="h-11 w-14 text-center font-medium p-1"
-                />
+                <>
+                  <Input
+                    ref={inputRef}
+                    type="number"
+                    value={editQuantity}
+                    onChange={(e) => setEditQuantity(e.target.value)}
+                    onBlur={handleQuantityBlur}
+                    onKeyDown={handleQuantityKeyDown}
+                    className="h-11 w-14 text-center font-medium p-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 border-green-500 hover:bg-green-50 hover:border-green-600"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleConfirmQuantity}
+                    disabled={isPending || editQuantity === item.quantity.toString()}
+                    aria-label={t('confirmQuantity')}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4 text-green-600" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleCancelEdit}
+                    disabled={isPending}
+                    aria-label={t('cancelEdit')}
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </>
               ) : (
                 <button
                   type="button"

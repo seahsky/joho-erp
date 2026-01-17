@@ -437,6 +437,8 @@
     "incrementBy5": "Add 5 more",
     "decrementBy5": "Remove 5",
     "tapToEditQuantity": "Tap to edit quantity",
+    "confirmQuantity": "Confirm quantity",
+    "cancelEdit": "Cancel edit",
     "dialog": {
       "clearCartTitle": "Clear Shopping Cart",
       "clearCartDescription": "Are you sure you want to remove all items from your cart? This action cannot be undone.",
