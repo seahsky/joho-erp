@@ -946,6 +946,14 @@
     "tabs": {
       "products": "產品",
       "categories": "分類"
+    },
+    "deleteDialog": {
+      "title": "刪除產品",
+      "confirmation": "確定要刪除 \"{name}\" 嗎？此操作無法撤銷。",
+      "hasSubproducts": "確定要刪除 \"{name}\" 嗎？此產品有 {count} 個子產品也將被刪除。此操作無法撤銷。",
+      "success": "產品刪除成功",
+      "successWithSubproducts": "同時刪除了 {count} 個子產品",
+      "error": "刪除產品失敗"
     }
   },
   "categories": {

@@ -74,9 +74,17 @@ export function ProductList() {
     router.replace(`/${locale}/products${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
   }, [searchParams, router, locale]);
 
+  // Query for DISPLAY - filtered by selected category
   const { data: products, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
     categoryId: selectedCategory,
+  });
+
+  // Query for COUNTS - no category filter, returns all products
+  // This ensures category counts remain accurate when a category is selected
+  const { data: allProductsData } = api.product.getAll.useQuery({
+    search: searchQuery || undefined,
+    // No categoryId - returns all categories for accurate counting
   });
 
   const { data: categoriesData } = api.category.getAll.useQuery();
@@ -114,12 +122,9 @@ export function ProductList() {
     return item?.quantity || 0;
   }, [cart?.items]);
 
-  // Extract unique categories with counts (from ALL in-stock products, not filtered)
-  const allInStockProducts = React.useMemo(() => {
-    const items = (products?.items || []) as ApiProduct[];
-
-    // Flatten: parents + all their subproducts into single list
-    const allProducts = items.flatMap(product => {
+  // Helper to flatten products and filter in-stock items
+  const flattenInStockProducts = (items: ApiProduct[]) => {
+    return items.flatMap(product => {
       // Skip products without stock (subproducts derive stock from parent, so skip those too)
       if (!product.hasStock) return [];
 
@@ -127,9 +132,20 @@ export function ProductList() {
       const inStockSubs = subProducts.filter(sub => sub.hasStock);
       return [product, ...inStockSubs];
     });
+  };
 
-    return allProducts;
-  }, [products]);;
+  // Products for COUNTS - from unfiltered query (all categories)
+  // Used for category counts so they remain accurate when a category is selected
+  const allProductsForCounts = React.useMemo(() => {
+    const items = (allProductsData?.items || []) as ApiProduct[];
+    return flattenInStockProducts(items);
+  }, [allProductsData]);
+
+  // Products for DISPLAY - from filtered query (selected category)
+  const allInStockProducts = React.useMemo(() => {
+    const items = (products?.items || []) as ApiProduct[];
+    return flattenInStockProducts(items);
+  }, [products]);
 
   const categoriesWithCounts = React.useMemo(() => {
     if (!categories.length) return [];

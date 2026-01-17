@@ -27,8 +27,17 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  useToast,
 } from '@joho-erp/ui';
-import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree, GitBranch, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Package, Plus, Edit, PackageX, PackagePlus, FolderTree, GitBranch, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { AddProductDialog } from './components/AddProductDialog';
 import { EditProductDialog } from './components/EditProductDialog';
@@ -75,7 +84,29 @@ export default function ProductsPage() {
   const [showSubproductDialog, setShowSubproductDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const tSubproduct = useTranslations('subproduct');
+  const { toast } = useToast();
+
+  const deleteMutation = api.product.delete.useMutation({
+    onSuccess: (result) => {
+      toast({
+        title: t('deleteDialog.success'),
+        description: result.deletedSubproductsCount > 0
+          ? t('deleteDialog.successWithSubproducts', { count: result.deletedSubproductsCount })
+          : undefined,
+      });
+      refetch();
+      setProductToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: t('deleteDialog.error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Toggle expand/collapse for parent products with subproducts
   const toggleExpanded = (productId: string) => {
@@ -88,6 +119,16 @@ export default function ProductsPage() {
       }
       return next;
     });
+  };
+
+  const handleDelete = (product: Product) => {
+    setProductToDelete(product);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      deleteMutation.mutate({ productId: productToDelete.id });
+    }
   };
 
   // Sorting hook
@@ -325,6 +366,16 @@ export default function ProductsPage() {
                 <Edit className="h-4 w-4" />
               </Button>
             </PermissionGate>
+            <PermissionGate permission="products:delete">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={tCommon('delete')}
+                onClick={() => handleDelete(product)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </PermissionGate>
           </div>
         );
       },
@@ -435,6 +486,17 @@ export default function ProductsPage() {
             >
               <Edit className="h-4 w-4 mr-1" />
               {t('edit')}
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="products:delete">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive"
+              onClick={() => handleDelete(product)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {tCommon('delete')}
             </Button>
           </PermissionGate>
         </div>
@@ -635,6 +697,35 @@ export default function ProductsPage() {
         parentProduct={selectedProduct}
         onSuccess={() => refetch()}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!productToDelete} onOpenChange={() => setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {productToDelete?.subProducts && productToDelete.subProducts.length > 0
+                ? t('deleteDialog.hasSubproducts', {
+                    name: productToDelete.name,
+                    count: productToDelete.subProducts.length
+                  })
+                : t('deleteDialog.confirmation', { name: productToDelete?.name ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              {tCommon('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? tCommon('loading') : tCommon('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
