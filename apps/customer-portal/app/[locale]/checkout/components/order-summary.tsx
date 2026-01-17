@@ -72,8 +72,15 @@ export function OrderSummary() {
     return tomorrow.toISOString().split('T')[0];
   }, [cutoffInfo]);
 
+  // TRPC utils for cache invalidation
+  const utils = api.useUtils();
+
   // Clear cart mutation
-  const clearCart = api.cart.clearCart.useMutation();
+  const clearCart = api.cart.clearCart.useMutation({
+    onSuccess: () => {
+      void utils.cart.getCart.invalidate();
+    },
+  });
 
   // Create order mutation
   const createOrder = api.order.create.useMutation({

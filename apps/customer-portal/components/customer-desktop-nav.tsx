@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl';
 import { Home, Package, ShoppingBag, User } from 'lucide-react';
 import { LanguageSwitcher } from '@joho-erp/ui';
 import { CartButton, CartButtonStyles, MiniCartDrawer } from './mini-cart';
-import { CategoryDropdown } from './category-dropdown';
+
 
 interface NavItem {
   href: string;
@@ -74,9 +74,7 @@ export function CustomerDesktopNav({ locale }: { locale: string }) {
               </div>
             </Link>
 
-            {/* Category Dropdown - Desktop */}
-            <CategoryDropdown locale={locale} className="hidden lg:flex" />
-
+            
             {/* Navigation items - centered */}
             <div className="hidden xl:flex items-center gap-2">
               {navItems.map((item) => {
