@@ -6,7 +6,7 @@ export interface Area {
   id: string;
   name: string;           // Lowercase identifier: "north", "east-1"
   displayName: string;    // Human-readable: "North", "East 1"
-  colorVariant: string;   // Badge color: "info", "success", "warning", "default", "secondary"
+  colorVariant: string;   // Badge color: "info", "success", "warning", "default", "secondary", "gray"
   isActive: boolean;
   sortOrder: number;
   createdAt: Date;

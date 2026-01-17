@@ -187,7 +187,7 @@ model Area {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String   @unique  // Lowercase identifier: "north", "east-1", "east-2"
   displayName   String            // Human-readable: "North", "East 1", "East 2"
-  colorVariant  String   @default("default")  // Badge color: "info", "success", "warning", "default", "secondary"
+  colorVariant  String   @default("default")  // Badge color: "info", "success", "warning", "default", "secondary", "gray"
   isActive      Boolean  @default(true)
   sortOrder     Int      @default(0)  // For display ordering
   createdAt     DateTime @default(now())

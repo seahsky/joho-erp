@@ -5,7 +5,7 @@ import { TRPCError } from '@trpc/server';
 
 // Area schema for validation
 const areaNameSchema = z.string().min(1).max(50).regex(/^[a-z0-9-]+$/, 'Must be lowercase letters, numbers, and hyphens only');
-const colorVariantSchema = z.enum(['info', 'success', 'warning', 'default', 'secondary']);
+const colorVariantSchema = z.enum(['info', 'success', 'warning', 'default', 'secondary', 'gray']);
 
 export const areaRouter = router({
   // List all areas (public - used for dropdowns)
