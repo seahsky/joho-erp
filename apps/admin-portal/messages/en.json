@@ -1168,9 +1168,16 @@
       "subproductSettings": "Subproduct Settings"
     },
     "fields": {
+      "lossPercentage": "Loss Percentage (%)",
       "lossPercentageRequired": "Loss Percentage * (%)",
       "lossPercentagePlaceholder": "e.g., 15 for 15% loss",
-      "lossPercentageHelp": "This percentage represents material lost during processing. Virtual stock will be calculated as parent stock × (1 - loss%)."
+      "lossPercentageHelp": "This percentage represents material lost during processing. Virtual stock will be calculated as parent stock × (1 - loss%).",
+      "inheritLossRate": "Use parent's loss rate",
+      "customLossPercentage": "Custom Loss Percentage (%)",
+      "usingParentLossRate": "Using parent's loss rate: {rate}%",
+      "parentHasNoLoss": "Note: Parent product has no loss rate set (0%)",
+      "lossRateInherited": "Inherited",
+      "lossRateCustom": "Custom"
     },
     "buttons": {
       "createSubproduct": "Create Subproduct",

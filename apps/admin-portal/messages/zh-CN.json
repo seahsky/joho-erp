@@ -1168,9 +1168,16 @@
       "subproductSettings": "子产品设置"
     },
     "fields": {
+      "lossPercentage": "损耗百分比 (%)",
       "lossPercentageRequired": "损耗百分比 * (%)",
       "lossPercentagePlaceholder": "例如，15 表示 15% 的损耗",
-      "lossPercentageHelp": "此百分比表示加工过程中损失的材料。虚拟库存将按母产品库存 × (1 - 损耗%) 计算。"
+      "lossPercentageHelp": "此百分比表示加工过程中损失的材料。虚拟库存将按母产品库存 × (1 - 损耗%) 计算。",
+      "inheritLossRate": "使用母产品的损耗率",
+      "customLossPercentage": "自定义损耗百分比 (%)",
+      "usingParentLossRate": "使用母产品损耗率：{rate}%",
+      "parentHasNoLoss": "注意：母产品没有设置损耗率 (0%)",
+      "lossRateInherited": "继承",
+      "lossRateCustom": "自定义"
     },
     "buttons": {
       "createSubproduct": "创建子产品",

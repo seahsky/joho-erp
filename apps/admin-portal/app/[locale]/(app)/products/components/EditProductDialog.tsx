@@ -59,6 +59,7 @@ type Product = {
     name: string;
     sku: string;
     unit: string;
+    estimatedLossPercentage?: number | null;
   } | null;
 };
 
@@ -95,6 +96,7 @@ export function EditProductDialog({
   const [currentStock, setCurrentStock] = useState('0');
   const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [estimatedLossPercentage, setEstimatedLossPercentage] = useState('');
+  const [inheritLossRate, setInheritLossRate] = useState(false);
   const [status, setStatus] = useState<'active' | 'discontinued' | 'out_of_stock'>('active');
 
   // Image state
@@ -160,7 +162,7 @@ export function EditProductDialog({
     }
   };
 
-  const validateForm = (): { isValid: boolean; gstRateValue?: number; lossPercentage?: number } => {
+  const validateForm = (): { isValid: boolean; gstRateValue?: number; lossPercentage?: number | null } => {
     const errors: Record<string, string> = {};
     let isValid = true;
 
@@ -217,8 +219,12 @@ export function EditProductDialog({
     }
 
     // Estimated loss percentage validation
-    let lossPercentage: number | undefined;
-    if (estimatedLossPercentage) {
+    // For subproducts that inherit, use null; otherwise validate the custom value
+    let lossPercentage: number | null | undefined;
+    if (isSubproduct && inheritLossRate) {
+      // Subproduct is inheriting from parent - send null
+      lossPercentage = null;
+    } else if (estimatedLossPercentage) {
       lossPercentage = parseFloat(estimatedLossPercentage);
       if (isNaN(lossPercentage) || lossPercentage < 0 || lossPercentage > 100) {
         errors.estimatedLossPercentage = t('validation.lossPercentageRange');
@@ -245,6 +251,9 @@ export function EditProductDialog({
       setGstRate(product.gstRate?.toString() || '10');
       setCurrentStock(product.currentStock.toString());
       setLowStockThreshold(product.lowStockThreshold?.toString() || '');
+      // For subproducts, null estimatedLossPercentage means inherit from parent
+      const isInheriting = product.parentProductId && product.estimatedLossPercentage === null;
+      setInheritLossRate(!!isInheriting);
       setEstimatedLossPercentage(product.estimatedLossPercentage?.toString() || '');
       setStatus(product.status);
       setImageUrl(product.imageUrl || null);
@@ -687,7 +696,8 @@ export function EditProductDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Loss Percentage - with inheritance toggle for subproducts */}
+            <div className="space-y-3">
               <div className="flex items-center gap-1">
                 <Label htmlFor="estimatedLossPercentage">{t('fields.estimatedLossPercentage')}</Label>
                 <Tooltip>
@@ -699,26 +709,67 @@ export function EditProductDialog({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <Input
-                id="estimatedLossPercentage"
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                value={estimatedLossPercentage}
-                onChange={(e) => {
-                  setEstimatedLossPercentage(e.target.value);
-                  clearFieldError('estimatedLossPercentage');
-                }}
-                placeholder={t('fields.lossPercentagePlaceholder')}
-              />
-              {fieldErrors.estimatedLossPercentage && (
-                <p className="text-sm text-destructive">{fieldErrors.estimatedLossPercentage}</p>
+
+              {/* Inheritance toggle for subproducts */}
+              {isSubproduct && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="inheritLossRate"
+                    checked={inheritLossRate}
+                    onCheckedChange={(checked: boolean) => {
+                      setInheritLossRate(checked);
+                      if (checked) {
+                        clearFieldError('estimatedLossPercentage');
+                      }
+                    }}
+                  />
+                  <Label htmlFor="inheritLossRate" className="cursor-pointer">
+                    {tSubproduct('fields.inheritLossRate')}
+                  </Label>
+                </div>
               )}
-              {estimatedLossPercentage && !fieldErrors.estimatedLossPercentage && (
-                <p className="text-sm text-muted-foreground">
-                  {t('fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
-                </p>
+
+              {/* Show parent's loss rate when inheriting */}
+              {isSubproduct && inheritLossRate && (
+                <div className="ml-6 p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    {tSubproduct('fields.usingParentLossRate', {
+                      rate: product?.parentProduct?.estimatedLossPercentage ?? 0,
+                    })}
+                  </p>
+                  {(product?.parentProduct?.estimatedLossPercentage === null || product?.parentProduct?.estimatedLossPercentage === 0) && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      {tSubproduct('fields.parentHasNoLoss')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Custom loss percentage input */}
+              {(!isSubproduct || !inheritLossRate) && (
+                <div className={isSubproduct ? 'ml-6' : ''}>
+                  <Input
+                    id="estimatedLossPercentage"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={estimatedLossPercentage}
+                    onChange={(e) => {
+                      setEstimatedLossPercentage(e.target.value);
+                      clearFieldError('estimatedLossPercentage');
+                    }}
+                    placeholder={t('fields.lossPercentagePlaceholder')}
+                  />
+                  {fieldErrors.estimatedLossPercentage && (
+                    <p className="text-sm text-destructive">{fieldErrors.estimatedLossPercentage}</p>
+                  )}
+                  {estimatedLossPercentage && !fieldErrors.estimatedLossPercentage && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('fields.expectedYield')}: {(100 - parseFloat(estimatedLossPercentage || '0')).toFixed(1)}%
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus, calculateSubproductStock, calculateAllSubproductStocks, isSubproduct } from '@joho-erp/shared';
+import { getEffectivePrice, buildPrismaOrderBy, getCustomerStockStatus, calculateSubproductStock, calculateAllSubproductStocksWithInheritance, isSubproduct, getEffectiveLossPercentage } from '@joho-erp/shared';
 import { logProductCreated, logProductUpdated, logStockAdjustment } from '../services/audit';
 import { sortInputSchema, paginationInputSchema } from '../schemas';
 
@@ -29,6 +29,7 @@ const productSortFieldMapping: Record<string, string> = {
 async function updateSubproductStocks(
   parentId: string,
   parentStock: number,
+  parentLossPercentage: number | null | undefined,
   tx?: any
 ): Promise<void> {
   const db = tx || prisma;
@@ -41,8 +42,12 @@ async function updateSubproductStocks(
 
   if (subproducts.length === 0) return;
 
-  // Calculate new stocks for all subproducts
-  const updatedStocks = calculateAllSubproductStocks(parentStock, subproducts);
+  // Calculate new stocks for all subproducts with inheritance support
+  const updatedStocks = calculateAllSubproductStocksWithInheritance(
+    parentStock,
+    parentLossPercentage,
+    subproducts
+  );
 
   // Update each subproduct's stock
   for (const { id, newStock } of updatedStocks) {
@@ -424,13 +429,17 @@ export const productRouter = router({
           });
         }
 
-        // If loss percentage changes, recalculate stock
+        // If loss percentage changes (including switching to/from inheritance), recalculate stock
         if (updates.estimatedLossPercentage !== undefined &&
             updates.estimatedLossPercentage !== currentProduct.estimatedLossPercentage &&
             currentProduct.parentProduct) {
+          const effectiveLoss = getEffectiveLossPercentage(
+            updates.estimatedLossPercentage,
+            currentProduct.parentProduct.estimatedLossPercentage
+          );
           updates.currentStock = calculateSubproductStock(
             currentProduct.parentProduct.currentStock,
-            updates.estimatedLossPercentage ?? 0
+            effectiveLoss
           );
         }
       }
@@ -468,6 +477,19 @@ export const productRouter = router({
 
         return { product, pricingCount };
       });
+
+      // Cascade loss percentage changes to inheriting subproducts
+      // This happens when a parent product's loss rate changes
+      if (!isSubproduct(currentProduct) && 
+          updates.estimatedLossPercentage !== undefined &&
+          updates.estimatedLossPercentage !== currentProduct.estimatedLossPercentage) {
+        // Update all inheriting subproducts (those with null estimatedLossPercentage)
+        await updateSubproductStocks(
+          productId,
+          result.product.currentStock,
+          updates.estimatedLossPercentage
+        );
+      }
 
       // Build changes array for audit log
       const changes = Object.keys(updates)
@@ -703,7 +725,7 @@ export const productRouter = router({
         });
 
         // 5. Recalculate all subproduct stocks after parent stock change
-        await updateSubproductStocks(productId, newStock, tx);
+        await updateSubproductStocks(productId, newStock, product.estimatedLossPercentage, tx);
 
         return updatedProduct;
       });
@@ -975,7 +997,7 @@ export const productRouter = router({
         basePrice: z.number().int().positive(), // In cents
         applyGst: z.boolean().default(false),
         gstRate: z.number().min(0).max(100).optional(),
-        estimatedLossPercentage: z.number().min(0).max(99), // Required: loss percentage 0-99%
+        estimatedLossPercentage: z.number().min(0).max(99).nullish(), // Optional: loss percentage 0-99% (null = inherit from parent)
         imageUrl: z.string().url().optional(),
         // Optional customer-specific pricing
         customerPricing: z
@@ -1026,8 +1048,12 @@ export const productRouter = router({
         });
       }
 
-      // 4. Calculate initial virtual stock from parent
-      const initialStock = calculateSubproductStock(parentProduct.currentStock, estimatedLossPercentage);
+      // 4. Calculate initial virtual stock from parent using effective loss percentage
+      const effectiveLossPercentage = getEffectiveLossPercentage(
+        estimatedLossPercentage,
+        parentProduct.estimatedLossPercentage
+      );
+      const initialStock = calculateSubproductStock(parentProduct.currentStock, effectiveLossPercentage);
 
       // Use transaction to create subproduct and pricing atomically
       const result = await prisma.$transaction(async (tx) => {

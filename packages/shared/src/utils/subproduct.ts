@@ -108,6 +108,47 @@ export function isValidLossPercentage(lossPercentage: number): boolean {
 }
 
 /**
+ * Get the effective loss percentage for a subproduct, considering inheritance.
+ *
+ * If the subproduct has null for estimatedLossPercentage, it inherits from the parent.
+ * Otherwise, it uses its own custom value.
+ *
+ * @param subproductLoss - The subproduct's own loss percentage (null = inherit)
+ * @param parentLoss - The parent product's loss percentage
+ * @returns The effective loss percentage to use
+ *
+ * @example
+ * // Subproduct inherits from parent
+ * getEffectiveLossPercentage(null, 15) // Returns 15
+ *
+ * // Subproduct uses custom value
+ * getEffectiveLossPercentage(10, 15) // Returns 10
+ */
+export function getEffectiveLossPercentage(
+  subproductLoss: number | null | undefined,
+  parentLoss: number | null | undefined
+): number {
+  // If subproduct has a custom value, use it
+  if (subproductLoss !== null && subproductLoss !== undefined) {
+    return subproductLoss;
+  }
+  // Otherwise inherit from parent, defaulting to 0 if parent has no loss
+  return parentLoss ?? 0;
+}
+
+/**
+ * Check if a subproduct is using an inherited loss rate from its parent.
+ *
+ * @param subproductLoss - The subproduct's own loss percentage (null = inherited)
+ * @returns True if the subproduct is inheriting its loss rate
+ */
+export function isUsingInheritedLossRate(
+  subproductLoss: number | null | undefined
+): boolean {
+  return subproductLoss === null || subproductLoss === undefined;
+}
+
+/**
  * Format a validation error message for insufficient parent stock when ordering subproducts.
  *
  * @param orderQuantity - Quantity of subproduct being ordered
@@ -154,6 +195,34 @@ export function calculateAllSubproductStocks(
     return {
       id: subproduct.id,
       newStock: calculateSubproductStock(parentStock, lossPercentage),
+    };
+  });
+}
+
+/**
+ * Calculate updated stock values for multiple subproducts with loss rate inheritance support.
+ *
+ * This function considers whether each subproduct is using its own loss percentage
+ * or inheriting from the parent.
+ *
+ * @param parentStock - New stock level of the parent product
+ * @param parentLossPercentage - Parent product's loss percentage (for inheritance)
+ * @param subproducts - Array of subproducts with loss percentages
+ * @returns Array of objects with subproduct id and new calculated stock
+ */
+export function calculateAllSubproductStocksWithInheritance(
+  parentStock: number,
+  parentLossPercentage: number | null | undefined,
+  subproducts: SubproductForStockCalc[]
+): Array<{ id: string; newStock: number }> {
+  return subproducts.map((subproduct) => {
+    const effectiveLoss = getEffectiveLossPercentage(
+      subproduct.estimatedLossPercentage,
+      parentLossPercentage
+    );
+    return {
+      id: subproduct.id,
+      newStock: calculateSubproductStock(parentStock, effectiveLoss),
     };
   });
 }
