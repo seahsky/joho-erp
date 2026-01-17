@@ -42,6 +42,11 @@ interface Product {
 // Type for API response items (cast to Product since customers always get transformed data)
 type ApiProduct = Product & ProductWithPricing;
 
+// Type for product with subproducts from API
+interface ProductWithSubProducts extends ApiProduct {
+  subProducts?: ApiProduct[];
+}
+
 export function ProductList() {
   const t = useTranslations('products');
   const tIllustrated = useTranslations('illustratedEmptyState');
@@ -123,12 +128,12 @@ export function ProductList() {
   }, [cart?.items]);
 
   // Helper to flatten products and filter in-stock items
-  const flattenInStockProducts = (items: ApiProduct[]) => {
+  const flattenInStockProducts = (items: ProductWithSubProducts[]) => {
     return items.flatMap(product => {
       // Skip products without stock (subproducts derive stock from parent, so skip those too)
       if (!product.hasStock) return [];
 
-      const subProducts = ((product as any).subProducts || []) as ApiProduct[];
+      const subProducts = product.subProducts || [];
       const inStockSubs = subProducts.filter(sub => sub.hasStock);
       return [product, ...inStockSubs];
     });
@@ -137,21 +142,23 @@ export function ProductList() {
   // Products for COUNTS - from unfiltered query (all categories)
   // Used for category counts so they remain accurate when a category is selected
   const allProductsForCounts = React.useMemo(() => {
-    const items = (allProductsData?.items || []) as ApiProduct[];
+    const items = (allProductsData?.items || []) as unknown as ProductWithSubProducts[];
     return flattenInStockProducts(items);
   }, [allProductsData]);
 
   // Products for DISPLAY - from filtered query (selected category)
   const allInStockProducts = React.useMemo(() => {
-    const items = (products?.items || []) as ApiProduct[];
+    const items = (products?.items || []) as unknown as ProductWithSubProducts[];
     return flattenInStockProducts(items);
   }, [products]);
 
+  // Category counts use allProductsForCounts (unfiltered) so counts stay accurate
+  // when a category is selected
   const categoriesWithCounts = React.useMemo(() => {
     if (!categories.length) return [];
 
     const counts = new Map<string, number>();
-    allInStockProducts.forEach(p => {
+    allProductsForCounts.forEach(p => {
       if (p.categoryId) {
         counts.set(p.categoryId, (counts.get(p.categoryId) || 0) + 1);
       }
@@ -163,13 +170,11 @@ export function ProductList() {
       count: counts.get(category.id) || 0,
       disabled: (counts.get(category.id) || 0) === 0,
     }));
-  }, [allInStockProducts, categories]);
+  }, [allProductsForCounts, categories]);
 
-  // Filter products by selected category (from pre-computed in-stock products)
-  const inStockProducts = React.useMemo(() => {
-    if (!selectedCategory) return allInStockProducts;
-    return allInStockProducts.filter(p => p.categoryId === selectedCategory);
-  }, [allInStockProducts, selectedCategory]);
+  // Products for display - already filtered by category via the query
+  // No additional filtering needed since the API query handles category filtering
+  const inStockProducts = allInStockProducts;
 
   const handleProductExpand = (productId: string) => {
     setExpandedProductId(prev => prev === productId ? null : productId);
@@ -207,7 +212,8 @@ export function ProductList() {
     );
   }
 
-  const totalProducts = allInStockProducts.length;
+  // Total products count uses unfiltered data for accurate "All Products" count
+  const totalProducts = allProductsForCounts.length;
 
   // Render warning banner based on onboarding/credit status
   const renderStatusBanner = () => {
