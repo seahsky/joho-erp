@@ -172,10 +172,16 @@ export const productRouter = router({
 
       // If customer exists, fetch their custom pricing
       if (customerId) {
+        // Collect all product IDs including subproducts for pricing lookup
+        const allProductIds = products.flatMap((p) => [
+          p.id,
+          ...(p.subProducts?.map((sub: any) => sub.id) || [])
+        ]);
+
         const customerPricings = await prisma.customerPricing.findMany({
           where: {
             customerId,
-            productId: { in: products.map((p) => p.id) },
+            productId: { in: allProductIds },
           },
         });
 
@@ -187,8 +193,21 @@ export const productRouter = router({
           // Pass GST options from product to calculate GST-inclusive price
           const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
           const priceInfo = getEffectivePrice(product.basePrice, customPricing, gstOptions);
-          const fullProduct = { ...product, ...priceInfo };
 
+          // Transform subProducts if present
+          const transformedSubProducts = product.subProducts?.map((sub: any) => {
+            const subCustomPricing = pricingMap.get(sub.id);
+            const subGstOptions = { applyGst: sub.applyGst, gstRate: sub.gstRate };
+            const subPriceInfo = getEffectivePrice(sub.basePrice, subCustomPricing, subGstOptions);
+            const fullSub = { ...sub, ...subPriceInfo };
+            return isCustomer ? transformForCustomer(fullSub) : fullSub;
+          });
+
+          const fullProduct = {
+            ...product,
+            ...priceInfo,
+            ...(transformedSubProducts && { subProducts: transformedSubProducts })
+          };
           return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
         });
 
@@ -199,7 +218,19 @@ export const productRouter = router({
       const items = products.map((product) => {
         // Pass GST options from product to calculate GST-inclusive price
         const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
-        const fullProduct = { ...product, ...getEffectivePrice(product.basePrice, undefined, gstOptions) };
+
+        // Transform subProducts if present (no customer pricing in this branch)
+        const transformedSubProducts = product.subProducts?.map((sub: any) => {
+          const subGstOptions = { applyGst: sub.applyGst, gstRate: sub.gstRate };
+          const fullSub = { ...sub, ...getEffectivePrice(sub.basePrice, undefined, subGstOptions) };
+          return isCustomer ? transformForCustomer(fullSub) : fullSub;
+        });
+
+        const fullProduct = {
+          ...product,
+          ...getEffectivePrice(product.basePrice, undefined, gstOptions),
+          ...(transformedSubProducts && { subProducts: transformedSubProducts })
+        };
         return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
       });
 
