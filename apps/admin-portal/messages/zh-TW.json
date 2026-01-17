@@ -1902,6 +1902,9 @@
       "areas": "配送區域",
       "areasDescription": "管理可配置的配送區域和分區"
     },
+    "common": {
+      "backToSettings": "返回設定"
+    },
     "packing": {
       "title": "包裝設定",
       "subtitle": "配置包裝工作流程和安全選項",

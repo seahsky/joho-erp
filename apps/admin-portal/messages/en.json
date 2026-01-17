@@ -1896,6 +1896,9 @@
       "areas": "Delivery Areas",
       "areasDescription": "Manage configurable delivery areas and zones"
     },
+    "common": {
+      "backToSettings": "Back to Settings"
+    },
     "packing": {
       "title": "Packing Settings",
       "subtitle": "Configure packing workflow and security options",
