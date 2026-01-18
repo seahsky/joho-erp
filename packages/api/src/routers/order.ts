@@ -915,9 +915,9 @@ export const orderRouter = router({
       }
 
       if (filters.dateFrom || filters.dateTo) {
-        where.orderedAt = {};
-        if (filters.dateFrom) where.orderedAt.gte = filters.dateFrom;
-        if (filters.dateTo) where.orderedAt.lte = filters.dateTo;
+        where.requestedDeliveryDate = {};
+        if (filters.dateFrom) where.requestedDeliveryDate.gte = filters.dateFrom;
+        if (filters.dateTo) where.requestedDeliveryDate.lte = filters.dateTo;
       }
 
       // Add search functionality
