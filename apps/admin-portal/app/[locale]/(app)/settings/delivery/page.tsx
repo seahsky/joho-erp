@@ -28,6 +28,14 @@ import {
   useToast,
 } from '@joho-erp/ui';
 
+/** Geocode search result from Mapbox API */
+interface GeocodeResult {
+  address: string;
+  latitude: number;
+  longitude: number;
+  relevance: number;
+}
+
 export default function DeliverySettingsPage() {
   const t = useTranslations('settings.delivery');
   const tCommon = useTranslations('common');
@@ -47,8 +55,7 @@ export default function DeliverySettingsPage() {
 
   // UI state
   const [addressSearch, setAddressSearch] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -139,8 +146,7 @@ export default function DeliverySettingsPage() {
   };
 
   // Select geocoded result
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const selectResult = (result: any) => {
+  const selectResult = (result: GeocodeResult) => {
     const parts = result.address.split(',');
     setStreet(parts[0]?.trim() || '');
     setSuburb(parts[1]?.trim() || '');

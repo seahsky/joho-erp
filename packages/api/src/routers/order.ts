@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
-import { prisma, Prisma, type OrderItem, type Product } from '@joho-erp/database';
+import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
 import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
@@ -851,8 +851,7 @@ export const orderRouter = router({
         });
       }
 
-      // Dynamic query building - uses any for optional filter flexibility
-      const where: Prisma.OrderWhereInput = { customerId: customer.id };
+      const where: any = { customerId: customer.id };
 
       if (input.status) {
         where.status = input.status;
@@ -904,7 +903,7 @@ export const orderRouter = router({
     )
     .query(async ({ input }) => {
       const { page, limit, sortBy, sortOrder, search, ...filters } = input;
-      const where: Prisma.OrderWhereInput = {};
+      const where: any = {};
 
       if (filters.status) where.status = filters.status;
       if (filters.customerId) where.customerId = filters.customerId;
