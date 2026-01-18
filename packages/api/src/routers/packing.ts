@@ -409,13 +409,8 @@ export const packingRouter = router({
         });
       }
 
-      // If increasing quantity, validate stock availability
-      if (quantityDiff > 0 && product.currentStock < quantityDiff) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Insufficient stock. Only ${product.currentStock} ${item.unit} available.`,
-        });
-      }
+      // Stock validation is performed inside the transaction with fresh data
+      // to prevent race conditions
 
       // Calculate new subtotal for this item using dinero.js
       const unitPriceMoney = createMoney(item.unitPrice);
@@ -444,14 +439,13 @@ export const packingRouter = router({
         }))
       );
 
-      // Calculate new stock level
-      const newStock = product.currentStock - quantityDiff;
+      // Stock calculation now happens inside the transaction with fresh data
 
       // Get user details for audit trail
       const userDetails = await getUserDetails(ctx.userId);
 
       // Perform all updates in a transaction
-      await prisma.$transaction(async (tx) => {
+      const actualNewStock = await prisma.$transaction(async (tx) => {
         // Re-check stockConsumed inside transaction to prevent race condition
         const freshOrder = await tx.order.findUnique({
           where: { id: orderId },
@@ -472,6 +466,31 @@ export const packingRouter = router({
           });
         }
 
+        // Re-fetch product inside transaction for accurate stock check
+        const freshProduct = await tx.product.findUnique({
+          where: { id: productId },
+          select: { id: true, currentStock: true, name: true, parentProductId: true },
+          // Include parent product for subproduct handling if needed in the future
+        });
+
+        if (!freshProduct) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Product not found',
+          });
+        }
+
+        // Validate stock availability with fresh data inside transaction
+        if (quantityDiff > 0 && freshProduct.currentStock < quantityDiff) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Insufficient stock. Available: ${freshProduct.currentStock}, Required increase: ${quantityDiff}`,
+          });
+        }
+
+        // Calculate new stock level with fresh data
+        const freshNewStock = freshProduct.currentStock - quantityDiff;
+
         // Create inventory transaction for audit trail
         const transaction = await tx.inventoryTransaction.create({
           data: {
@@ -479,8 +498,8 @@ export const packingRouter = router({
             type: 'adjustment',
             adjustmentType: 'packing_adjustment',
             quantity: -quantityDiff, // Negative when reducing stock (increasing order qty)
-            previousStock: product.currentStock,
-            newStock,
+            previousStock: freshProduct.currentStock,
+            newStock: freshNewStock,
             referenceType: 'order',
             referenceId: orderId,
             notes: `Packing quantity adjustment for order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit}`,
@@ -524,10 +543,10 @@ export const packingRouter = router({
           });
         }
 
-        // Update product stock
+        // Update product stock with fresh calculated value
         await tx.product.update({
           where: { id: productId },
-          data: { currentStock: newStock },
+          data: { currentStock: freshNewStock },
         });
 
         // Update order with new items and totals
@@ -550,6 +569,9 @@ export const packingRouter = router({
             },
           },
         });
+
+        // Return the fresh stock value for use in response
+        return freshNewStock;
       });
 
       // Audit log - HIGH: Quantity changes during packing must be tracked
@@ -567,7 +589,7 @@ export const packingRouter = router({
         success: true,
         oldQuantity,
         newQuantity,
-        newStock,
+        newStock: actualNewStock,
         newSubtotal,
         newOrderTotal: newTotals.totalAmount,
       };
@@ -739,9 +761,23 @@ export const packingRouter = router({
         // Create a product map for quick lookup
         const productMap = new Map(products.map((p) => [p.id, p]));
 
-        // Track which parent products have been updated to avoid duplicate recalculations
-        const updatedParentIds = new Set<string>();
+        // ============================================================================
+        // PHASE 1: Aggregate consumption per parent product
+        // This ensures that if an order has multiple subproducts from the same parent,
+        // the parent stock is updated ONCE with the TOTAL consumption
+        // ============================================================================
+        const parentConsumptions = new Map<string, {
+          totalConsumption: number;
+          items: Array<{ product: any; item: any; consumeQuantity: number }>;
+        }>();
 
+        const regularProductItems: Array<{
+          product: any;
+          item: any;
+          consumeQuantity: number;
+        }> = [];
+
+        // First pass: categorize and aggregate
         for (const item of freshOrder.items as any[]) {
           const product = productMap.get(item.productId);
           
@@ -751,29 +787,134 @@ export const packingRouter = router({
             continue;
           }
 
-          // Check if this is a subproduct (has parent)
           const productIsSubproduct = isSubproduct(product);
           const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-          // For subproducts: consume from parent; for regular products: consume directly
-          const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
-
-          // Get current stock of the product we're consuming from (FRESH data inside tx)
-          const consumeFromProduct = parentProduct
-            ? await tx.product.findUnique({ where: { id: parentProduct.id } })
-            : await tx.product.findUnique({ where: { id: product.id } });
-
-          if (!consumeFromProduct) continue;
-
-          // Calculate consumption quantity (for subproducts, account for loss)
           const consumeQuantity = productIsSubproduct
             ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
             : item.quantity;
 
-          const previousStock = consumeFromProduct.currentStock;
+          if (productIsSubproduct && parentProduct) {
+            const existing = parentConsumptions.get(parentProduct.id) || {
+              totalConsumption: 0,
+              items: [],
+            };
+            existing.totalConsumption += consumeQuantity;
+            existing.items.push({ product, item, consumeQuantity });
+            parentConsumptions.set(parentProduct.id, existing);
+          } else {
+            regularProductItems.push({ product, item, consumeQuantity });
+          }
+        }
+
+        // ============================================================================
+        // PHASE 2: Process parent products with aggregated totals
+        // Each subproduct gets its own inventory transaction for audit trail,
+        // but the parent stock is only updated ONCE with the total
+        // ============================================================================
+        for (const [parentId, { totalConsumption, items }] of parentConsumptions) {
+          const parentProduct = await tx.product.findUnique({ where: { id: parentId } });
+          if (!parentProduct) continue;
+
+          const previousStock = parentProduct.currentStock;
+          const newStock = previousStock - totalConsumption;
+
+          // Validate stock availability with aggregated total
+          if (newStock < 0) {
+            const itemNames = items.map(i => i.product.name).join(', ');
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient stock for parent ${parentProduct.name}. Available: ${previousStock}, Required: ${totalConsumption} (for subproducts: ${itemNames})`,
+            });
+          }
+
+          // Create individual inventory transactions for each subproduct (detailed audit trail)
+          for (const { product, item, consumeQuantity } of items) {
+            const transactionNotes = `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${freshOrder.orderNumber}`;
+
+            const transaction = await tx.inventoryTransaction.create({
+              data: {
+                productId: parentId,
+                type: 'sale',
+                quantity: -consumeQuantity,
+                previousStock,
+                newStock: previousStock - consumeQuantity, // Individual item's view
+                referenceType: 'order',
+                referenceId: freshOrder.id,
+                notes: transactionNotes,
+                createdBy: ctx.userId || 'system',
+              },
+            });
+
+            // Consume from batches via FIFO (from parent for subproducts)
+            try {
+              const result = await consumeStock(
+                parentId,
+                consumeQuantity,
+                transaction.id,
+                freshOrder.id,
+                freshOrder.orderNumber,
+                tx
+              );
+
+              // Log expiry warnings if any
+              if (result.expiryWarnings.length > 0) {
+                console.warn(
+                  `Expiry warnings for order ${freshOrder.orderNumber}:`,
+                  result.expiryWarnings
+                );
+              }
+            } catch (stockError) {
+              console.error(`Stock consumption failed for order ${freshOrder.orderNumber}, product ${product.id}:`, stockError);
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Failed to consume stock for ${product.name}. Transaction rolled back. Please retry.`,
+              });
+            }
+          }
+
+          // Update parent stock ONCE with total consumption using atomic condition check
+          const parentUpdateResult = await tx.product.updateMany({
+            where: { id: parentId, currentStock: previousStock },
+            data: { currentStock: newStock },
+          });
+
+          if (parentUpdateResult.count === 0) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: `Stock for ${parentProduct.name} modified concurrently. Please retry.`,
+            });
+          }
+
+          // Find all subproducts of this parent and recalculate their stocks ONCE
+          const subproducts = await tx.product.findMany({
+            where: { parentProductId: parentId },
+            select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+          });
+
+          if (subproducts.length > 0) {
+            const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+            for (const { id, newStock: subStock } of updatedStocks) {
+              await tx.product.update({
+                where: { id },
+                data: { currentStock: subStock },
+              });
+            }
+          }
+        }
+
+        // ============================================================================
+        // PHASE 3: Process regular (non-subproduct) products
+        // ============================================================================
+        for (const { product, item, consumeQuantity } of regularProductItems) {
+          // Get current stock FRESH inside transaction
+          const freshProduct = await tx.product.findUnique({ where: { id: product.id } });
+          if (!freshProduct) continue;
+
+          const previousStock = freshProduct.currentStock;
           const newStock = previousStock - consumeQuantity;
 
-          // Validate stock availability with fresh data
+          // Validate stock availability
           if (newStock < 0) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
@@ -781,14 +922,12 @@ export const packingRouter = router({
             });
           }
 
-          // Create inventory transaction on the source product (parent for subproducts)
-          const transactionNotes = productIsSubproduct
-            ? `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${freshOrder.orderNumber}`
-            : `Stock consumed at packing for order ${freshOrder.orderNumber}`;
+          // Create inventory transaction
+          const transactionNotes = `Stock consumed at packing for order ${freshOrder.orderNumber}`;
 
           const transaction = await tx.inventoryTransaction.create({
             data: {
-              productId: consumeFromProductId,
+              productId: product.id,
               type: 'sale',
               quantity: -consumeQuantity,
               previousStock,
@@ -800,10 +939,10 @@ export const packingRouter = router({
             },
           });
 
-          // Consume from batches via FIFO (from parent for subproducts)
+          // Consume from batches via FIFO
           try {
             const result = await consumeStock(
-              consumeFromProductId,
+              product.id,
               consumeQuantity,
               transaction.id,
               freshOrder.id,
@@ -826,59 +965,25 @@ export const packingRouter = router({
             });
           }
 
-          // Update product stock with atomic condition check for parent products
-          if (productIsSubproduct && parentProduct && !updatedParentIds.has(parentProduct.id)) {
-            // Use atomic update with currentStock condition to prevent race conditions
-            const parentUpdateResult = await tx.product.updateMany({
-              where: { id: parentProduct.id, currentStock: previousStock },
-              data: { currentStock: newStock },
-            });
+          // Update product stock
+          await tx.product.update({
+            where: { id: product.id },
+            data: { currentStock: newStock },
+          });
 
-            if (parentUpdateResult.count === 0) {
-              throw new TRPCError({
-                code: 'CONFLICT',
-                message: `Stock for ${parentProduct.name} modified concurrently. Please retry.`,
+          // If this regular product has subproducts, recalculate their stocks too
+          const subproducts = await tx.product.findMany({
+            where: { parentProductId: product.id },
+            select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+          });
+
+          if (subproducts.length > 0) {
+            const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+            for (const { id, newStock: subStock } of updatedStocks) {
+              await tx.product.update({
+                where: { id },
+                data: { currentStock: subStock },
               });
-            }
-
-            // Find all subproducts of this parent and recalculate their stocks
-            const subproducts = await tx.product.findMany({
-              where: { parentProductId: parentProduct.id },
-              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-            });
-
-            if (subproducts.length > 0) {
-              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-              for (const { id, newStock: subStock } of updatedStocks) {
-                await tx.product.update({
-                  where: { id },
-                  data: { currentStock: subStock },
-                });
-              }
-            }
-
-            updatedParentIds.add(parentProduct.id);
-          } else if (!productIsSubproduct) {
-            // Regular product: just update its stock
-            await tx.product.update({
-              where: { id: product.id },
-              data: { currentStock: newStock },
-            });
-
-            // If this regular product has subproducts, recalculate their stocks too
-            const subproducts = await tx.product.findMany({
-              where: { parentProductId: product.id },
-              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-            });
-
-            if (subproducts.length > 0) {
-              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-              for (const { id, newStock: subStock } of updatedStocks) {
-                await tx.product.update({
-                  where: { id },
-                  data: { currentStock: subStock },
-                });
-              }
             }
           }
         }
@@ -1179,11 +1284,20 @@ export const packingRouter = router({
         });
       }
 
-      // Only allow resetting orders that are in 'packing', 'confirmed', or 'ready_for_delivery' status
-      if (!['packing', 'confirmed', 'ready_for_delivery'].includes(order.status)) {
+      // Check stockConsumed flag first - cannot reset after stock has been consumed
+      if (order.stockConsumed) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Only orders in packing, confirmed, or ready_for_delivery status can be reset',
+          message: 'Cannot reset order after stock has been consumed. To modify this order, please cancel it and create a new order.',
+        });
+      }
+
+      // Only allow resetting orders that are in 'packing' or 'confirmed' status
+      // ready_for_delivery is no longer allowed because stock has been consumed at that point
+      if (!['packing', 'confirmed'].includes(order.status)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only orders in packing or confirmed status can be reset',
         });
       }
 
