@@ -44,16 +44,10 @@ interface StockValidationResult {
   stockShortfall: Record<string, { requested: number; available: number; shortfall: number }>;
 }
 
-async function validateStockWithBackorder(
+function validateStockWithBackorder(
   items: Array<{ productId: string; quantity: number }>,
-  products: Array<{ id: string; name: string; currentStock: number; parentProductId?: string | null; parentProduct?: { id: string; currentStock: number } | null; estimatedLossPercentage?: number | null }>,
-  tx?: Omit<
-    PrismaClient,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >
-): Promise<StockValidationResult> {
-  const { getAvailableStockQuantity } = await import('../services/inventory-batch');
-
+  products: Array<{ id: string; name: string; currentStock: number; parentProductId?: string | null; parentProduct?: { id: string; currentStock: number } | null; estimatedLossPercentage?: number | null }>
+): StockValidationResult {
   const result: StockValidationResult = {
     requiresBackorder: false,
     stockShortfall: {},
@@ -68,17 +62,15 @@ async function validateStockWithBackorder(
 
     // For subproducts: calculate parent consumption and check parent stock
     // For regular products: check direct stock
-    const checkProductId = productIsSubproduct && product.parentProduct
-      ? product.parentProduct.id
-      : item.productId;
-
     const requiredQuantity = productIsSubproduct
       ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
       : item.quantity;
 
-    // Use batch-aware stock quantity instead of cached currentStock
-    // This accounts for expired batches and consumed stock
-    const availableStock = await getAvailableStockQuantity(checkProductId, tx);
+    // Use currentStock from products array - this is what customers see and is the authoritative stock level
+    // Note: currentStock is kept in sync with batch operations via adjustStock, packing, etc.
+    const availableStock = productIsSubproduct && product.parentProduct
+      ? product.parentProduct.currentStock
+      : product.currentStock;
 
     if (availableStock < requiredQuantity) {
       // Stock insufficient - backorder needed
@@ -320,7 +312,7 @@ export const orderRouter = router({
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
       // Validate stock and check if backorder is needed
-      const stockValidation = await validateStockWithBackorder(input.items, products);
+      const stockValidation = validateStockWithBackorder(input.items, products);
 
       // Build order items with prices (using customer-specific pricing if available)
       const orderItems = input.items.map((item) => {
@@ -652,7 +644,7 @@ export const orderRouter = router({
       const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
 
       // 6. Validate stock and check if backorder is needed
-      const stockValidation = await validateStockWithBackorder(input.items, products);
+      const stockValidation = validateStockWithBackorder(input.items, products);
 
       // 7. Build order items with prices
       const orderItems = input.items.map((item) => {
@@ -1520,7 +1512,7 @@ export const orderRouter = router({
       const totals = calculateOrderTotals(newOrderItems);
 
       // Validate stock and check if backorder is needed
-      const stockValidation = await validateStockWithBackorder(orderItems, products);
+      const stockValidation = validateStockWithBackorder(orderItems, products);
       const orderStatus = stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed';
 
       // Validate credit limit
@@ -2249,7 +2241,7 @@ export const orderRouter = router({
           where: { id: { in: productIds } },
         });
 
-        stockValidation = await validateStockWithBackorder(orderItems, products);
+        stockValidation = validateStockWithBackorder(orderItems, products);
 
         // If stock is insufficient, convert to backorder instead of blocking
         if (stockValidation.requiresBackorder) {
