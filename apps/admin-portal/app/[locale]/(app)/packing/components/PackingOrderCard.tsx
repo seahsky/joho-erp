@@ -91,6 +91,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         title: t('orderReady'),
         description: t('orderReadyDescription'),
       });
+      // Invalidate all getOrderDetails queries to refetch updated stock levels across all orders
+      utils.packing.getOrderDetails.invalidate();
       // Trigger parent refetch to update order list
       onOrderUpdated();
     },
