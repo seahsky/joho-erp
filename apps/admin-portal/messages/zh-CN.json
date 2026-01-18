@@ -2784,7 +2784,8 @@
       "overview": "概览",
       "trends": "趋势",
       "turnover": "周转率",
-      "comparison": "对比分析"
+      "comparison": "对比分析",
+      "stockCounts": "库存盘点"
     },
     "stats": {
       "periods": {
@@ -2829,6 +2830,29 @@
         "lastPeriod": "上期",
         "change": "变化"
       }
+    },
+    "stockCounts": {
+      "title": "库存盘点",
+      "description": "所有产品的当前库存水平",
+      "searchPlaceholder": "按名称或SKU搜索...",
+      "filterAll": "全部",
+      "filterLowStock": "低库存",
+      "filterOutOfStock": "缺货",
+      "filterHealthy": "正常",
+      "columns": {
+        "productName": "产品名称",
+        "sku": "SKU",
+        "currentStock": "当前库存",
+        "unit": "单位",
+        "lowStockThreshold": "低库存阈值",
+        "status": "状态"
+      },
+      "status": {
+        "healthy": "正常",
+        "lowStock": "低库存",
+        "outOfStock": "缺货"
+      },
+      "emptyState": "未找到产品"
     },
     "export": {
       "export": "导出",

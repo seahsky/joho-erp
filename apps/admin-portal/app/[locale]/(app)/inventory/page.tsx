@@ -47,6 +47,7 @@ import {
   StockAdjustmentDialog,
   ProcessStockDialog,
   InventoryTransactionDetailDialog,
+  StockCountsTable,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
@@ -68,7 +69,7 @@ export default function InventoryPage() {
 
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison'>('overview');
+  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts'>('overview');
 
   // Stock adjustment state
   const [showStockDialog, setShowStockDialog] = useState(false);
@@ -250,12 +251,13 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabbed Content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison')} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts')} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="trends">{t('tabs.trends')}</TabsTrigger>
           <TabsTrigger value="turnover">{t('tabs.turnover')}</TabsTrigger>
           <TabsTrigger value="comparison">{t('tabs.comparison')}</TabsTrigger>
+          <TabsTrigger value="stockCounts">{t('tabs.stockCounts')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Existing content */}
@@ -479,6 +481,11 @@ export default function InventoryPage() {
         {/* Comparison Tab - New analytics */}
         <TabsContent value="comparison">
           <ComparisonAnalytics />
+        </TabsContent>
+
+        {/* Stock Counts Tab - Product stock levels */}
+        <TabsContent value="stockCounts">
+          <StockCountsTable />
         </TabsContent>
       </Tabs>
 

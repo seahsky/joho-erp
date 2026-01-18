@@ -2790,7 +2790,8 @@
       "overview": "概覽",
       "trends": "趨勢",
       "turnover": "週轉率",
-      "comparison": "對比分析"
+      "comparison": "對比分析",
+      "stockCounts": "庫存盤點"
     },
     "stats": {
       "periods": {
@@ -2835,6 +2836,29 @@
         "lastPeriod": "上期",
         "change": "變化"
       }
+    },
+    "stockCounts": {
+      "title": "庫存盤點",
+      "description": "所有產品的當前庫存水平",
+      "searchPlaceholder": "按名稱或SKU搜尋...",
+      "filterAll": "全部",
+      "filterLowStock": "低庫存",
+      "filterOutOfStock": "缺貨",
+      "filterHealthy": "正常",
+      "columns": {
+        "productName": "產品名稱",
+        "sku": "SKU",
+        "currentStock": "當前庫存",
+        "unit": "單位",
+        "lowStockThreshold": "低庫存閾值",
+        "status": "狀態"
+      },
+      "status": {
+        "healthy": "正常",
+        "lowStock": "低庫存",
+        "outOfStock": "缺貨"
+      },
+      "emptyState": "未找到產品"
     },
     "export": {
       "export": "匯出",

@@ -7,3 +7,4 @@ export { StockAdjustmentDialog } from './StockAdjustmentDialog';
 export { ProcessStockDialog } from './ProcessStockDialog';
 export { InventoryTransactionDetailDialog } from './InventoryTransactionDetailDialog';
 export type { InventoryTransaction } from './InventoryTransactionDetailDialog';
+export { StockCountsTable } from './StockCountsTable';

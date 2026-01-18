@@ -25,7 +25,7 @@ type DataScope = 'current' | 'all';
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentTab: 'overview' | 'trends' | 'turnover' | 'comparison';
+  currentTab: 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts';
   currentFilters: {
     transactionType?: 'sale' | 'adjustment' | 'return';
     productSearch?: string;
@@ -50,9 +50,13 @@ export function ExportDialog({
 
   const useCurrentFilters = dataScope === 'current';
 
+  // Map stockCounts to overview for export (stockCounts export not yet implemented)
+  const exportTab: 'overview' | 'trends' | 'turnover' | 'comparison' =
+    currentTab === 'stockCounts' ? 'overview' : currentTab;
+
   const { data, isLoading } = api.inventory.export.getData.useQuery(
     {
-      tab: currentTab,
+      tab: exportTab,
       useCurrentFilters,
       filters: useCurrentFilters ? currentFilters : undefined,
     },
@@ -155,16 +159,16 @@ export function ExportDialog({
       if (format === 'pdf') {
         const doc = (
           <InventoryReportDocument
-            tab={currentTab}
+            tab={exportTab}
             data={data as Parameters<typeof InventoryReportDocument>[0]['data']}
             translations={translations}
           />
         );
         blob = await pdf(doc).toBlob();
-        filename = `inventory-${currentTab}-${dateStr}.pdf`;
+        filename = `inventory-${exportTab}-${dateStr}.pdf`;
       } else {
-        blob = generateExcel({ tab: currentTab, data: data as Parameters<typeof generateExcel>[0]['data'], translations });
-        filename = `inventory-${currentTab}-${dateStr}.xlsx`;
+        blob = generateExcel({ tab: exportTab, data: data as Parameters<typeof generateExcel>[0]['data'], translations });
+        filename = `inventory-${exportTab}-${dateStr}.xlsx`;
       }
 
       // Download file
@@ -195,7 +199,7 @@ export function ExportDialog({
     } finally {
       setIsGenerating(false);
     }
-  }, [data, format, currentTab, getTranslations, onOpenChange, t, toast]);
+  }, [data, format, exportTab, getTranslations, onOpenChange, t, toast]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -2784,7 +2784,8 @@
       "overview": "Overview",
       "trends": "Trends",
       "turnover": "Turnover",
-      "comparison": "Comparison"
+      "comparison": "Comparison",
+      "stockCounts": "Stock Counts"
     },
     "stats": {
       "periods": {
@@ -2829,6 +2830,29 @@
         "lastPeriod": "Last Period",
         "change": "Change"
       }
+    },
+    "stockCounts": {
+      "title": "Stock Counts",
+      "description": "Current stock levels for all products",
+      "searchPlaceholder": "Search by name or SKU...",
+      "filterAll": "All",
+      "filterLowStock": "Low Stock",
+      "filterOutOfStock": "Out of Stock",
+      "filterHealthy": "Healthy",
+      "columns": {
+        "productName": "Product Name",
+        "sku": "SKU",
+        "currentStock": "Current Stock",
+        "unit": "Unit",
+        "lowStockThreshold": "Low Stock Threshold",
+        "status": "Status"
+      },
+      "status": {
+        "healthy": "Healthy",
+        "lowStock": "Low Stock",
+        "outOfStock": "Out of Stock"
+      },
+      "emptyState": "No products found"
     },
     "export": {
       "export": "Export",
