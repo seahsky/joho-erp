@@ -9,7 +9,18 @@ import {
   Badge,
   Button,
 } from '@joho-erp/ui';
-import { ArrowRight, ExternalLink, Package, Calendar, User, FileText, DollarSign } from 'lucide-react';
+import {
+  ArrowRight,
+  ExternalLink,
+  Package,
+  Calendar,
+  User,
+  FileText,
+  DollarSign,
+  Truck,
+  Building2,
+  Thermometer,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatAUD } from '@joho-erp/shared';
 import Link from 'next/link';
@@ -33,6 +44,13 @@ export interface InventoryTransaction {
   expiryDate?: string | Date | null;
   referenceType?: 'order' | 'manual' | null;
   referenceId?: string | null;
+  // Stock receipt fields from InventoryBatch
+  stockInDate?: string | Date | null;
+  supplierInvoiceNumber?: string | null;
+  mtvNumber?: string | null;
+  vehicleTemperature?: number | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
 }
 
 interface InventoryTransactionDetailDialogProps {
@@ -202,6 +220,61 @@ export function InventoryTransactionDetailDialog({
               </span>
             </div>
           </div>
+
+          {/* Stock Receipt Details (only for stock_received adjustments) */}
+          {transaction.adjustmentType === 'stock_received' &&
+            (transaction.stockInDate ||
+              transaction.supplierName ||
+              transaction.supplierInvoiceNumber ||
+              transaction.mtvNumber ||
+              transaction.vehicleTemperature != null) && (
+              <div className="pt-4 border-t space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  {tDetail('stockReceiptDetails')}
+                </h4>
+
+                {transaction.stockInDate && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{tDetail('stockInDate')}:</span>
+                    <span className="font-medium">{formatExpiryDate(transaction.stockInDate)}</span>
+                  </div>
+                )}
+
+                {transaction.supplierName && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{tDetail('supplier')}:</span>
+                    <span className="font-medium">{transaction.supplierName}</span>
+                  </div>
+                )}
+
+                {transaction.supplierInvoiceNumber && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{tDetail('invoiceNumber')}:</span>
+                    <span className="font-medium">{transaction.supplierInvoiceNumber}</span>
+                  </div>
+                )}
+
+                {transaction.mtvNumber && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Truck className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{tDetail('mtvNumber')}:</span>
+                    <span className="font-medium">{transaction.mtvNumber}</span>
+                  </div>
+                )}
+
+                {transaction.vehicleTemperature != null && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Thermometer className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{tDetail('vehicleTemperature')}:</span>
+                    <span className="font-medium">{transaction.vehicleTemperature}°C</span>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Order Reference Link */}
           {transaction.referenceType === 'order' && transaction.referenceId && (

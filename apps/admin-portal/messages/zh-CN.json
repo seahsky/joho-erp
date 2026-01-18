@@ -2753,7 +2753,13 @@
       "noNotes": "无备注",
       "viewOrder": "查看订单",
       "previousStock": "之前库存",
-      "newStock": "新库存"
+      "newStock": "新库存",
+      "stockReceiptDetails": "入库详情",
+      "stockInDate": "入库日期",
+      "supplier": "供应商",
+      "invoiceNumber": "发票号码",
+      "mtvNumber": "MTV编号",
+      "vehicleTemperature": "车辆温度"
     },
     "productSelector": {
       "searchPlaceholder": "按产品名称或SKU搜索...",

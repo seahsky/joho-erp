@@ -735,7 +735,13 @@ export const packingRouter = router({
         }
 
         // Prepare order data to return after transaction
-        const txOrderData = {
+        const txOrderData: {
+          orderNumber: string;
+          customerEmail: string;
+          customerName: string;
+          deliveryDate: Date;
+          alreadyCompleted?: boolean;
+        } = {
           orderNumber: freshOrder.orderNumber,
           customerEmail: freshOrder.customer.contactPerson.email,
           customerName: freshOrder.customer.businessName,
@@ -1000,6 +1006,21 @@ export const packingRouter = router({
         });
 
         if (updateResult.count === 0) {
+          // Check if this is because the operation already succeeded (idempotent case)
+          const recheckOrder = await tx.order.findUnique({
+            where: { id: input.orderId },
+            select: { stockConsumed: true, status: true },
+          });
+
+          if (recheckOrder?.stockConsumed && recheckOrder.status === 'ready_for_delivery') {
+            // Operation already completed successfully - return success (idempotent)
+            // This handles duplicate requests (e.g., double-click, network retry)
+            // Skip secondary update (packing info, status history) to avoid duplicates
+            txOrderData.alreadyCompleted = true;
+            return txOrderData;
+          }
+
+          // Genuine conflict - another process modified the order
           throw new TRPCError({ 
             code: 'CONFLICT', 
             message: 'Order modified concurrently. Please retry.' 
@@ -1033,7 +1054,8 @@ export const packingRouter = router({
       });
 
       // Send order ready for delivery email to customer (after transaction success)
-      if (orderData) {
+      // Skip email and audit if this was a duplicate request that already completed
+      if (orderData && !orderData.alreadyCompleted) {
         await sendOrderReadyForDeliveryEmail({
           customerEmail: orderData.customerEmail,
           customerName: orderData.customerName,

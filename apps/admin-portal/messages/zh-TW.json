@@ -2759,7 +2759,13 @@
       "noNotes": "無備註",
       "viewOrder": "查看訂單",
       "previousStock": "之前庫存",
-      "newStock": "新庫存"
+      "newStock": "新庫存",
+      "stockReceiptDetails": "入庫詳情",
+      "stockInDate": "入庫日期",
+      "supplier": "供應商",
+      "invoiceNumber": "發票號碼",
+      "mtvNumber": "MTV編號",
+      "vehicleTemperature": "車輛溫度"
     },
     "productSelector": {
       "searchPlaceholder": "按產品名稱或SKU搜尋...",

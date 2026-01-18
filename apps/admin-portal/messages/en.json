@@ -2753,7 +2753,13 @@
       "noNotes": "No notes provided",
       "viewOrder": "View Order",
       "previousStock": "Previous Stock",
-      "newStock": "New Stock"
+      "newStock": "New Stock",
+      "stockReceiptDetails": "Stock Receipt Details",
+      "stockInDate": "Stock In Date",
+      "supplier": "Supplier",
+      "invoiceNumber": "Invoice Number",
+      "mtvNumber": "MTV Number",
+      "vehicleTemperature": "Vehicle Temperature"
     },
     "productSelector": {
       "searchPlaceholder": "Search by product name or SKU...",

@@ -418,6 +418,21 @@ export const dashboardRouter = router({
         prisma.inventoryTransaction.count({ where }),
       ]);
 
+      // Fetch related InventoryBatch records for stock_received transactions
+      const stockReceivedTxIds = transactions
+        .filter((tx) => tx.adjustmentType === 'stock_received')
+        .map((tx) => tx.id);
+
+      const batches =
+        stockReceivedTxIds.length > 0
+          ? await prisma.inventoryBatch.findMany({
+              where: { receiveTransactionId: { in: stockReceivedTxIds } },
+              include: { supplier: true },
+            })
+          : [];
+
+      const batchByTxId = new Map(batches.map((b) => [b.receiveTransactionId, b]));
+
       return {
         transactions: transactions.map((tx) => ({
           id: tx.id,
@@ -438,6 +453,13 @@ export const dashboardRouter = router({
           expiryDate: tx.expiryDate,
           referenceType: tx.referenceType,
           referenceId: tx.referenceId,
+          // Stock receipt fields from InventoryBatch
+          stockInDate: batchByTxId.get(tx.id)?.stockInDate ?? null,
+          supplierInvoiceNumber: batchByTxId.get(tx.id)?.supplierInvoiceNumber ?? null,
+          mtvNumber: batchByTxId.get(tx.id)?.mtvNumber ?? null,
+          vehicleTemperature: batchByTxId.get(tx.id)?.vehicleTemperature ?? null,
+          supplierId: batchByTxId.get(tx.id)?.supplierId ?? null,
+          supplierName: batchByTxId.get(tx.id)?.supplier?.businessName ?? null,
         })),
         totalCount,
         hasMore: offset + transactions.length < totalCount,
