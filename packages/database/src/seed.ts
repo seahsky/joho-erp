@@ -1437,18 +1437,18 @@ async function seed() {
       });
     }
 
-    // Create some adjustment transactions for discontinued products (damaged goods write-off)
+    // Create some adjustment transactions for discontinued products (stock write-off)
     const discontinuedProducts = createdProducts.filter(p => p.status === 'discontinued');
     for (const product of discontinuedProducts) {
       inventoryTransactions.push({
         productId: product.id,
         type: 'adjustment' as InventoryTransactionType,
-        adjustmentType: 'damaged_goods' as AdjustmentType,
+        adjustmentType: 'stock_write_off' as AdjustmentType,
         quantity: -10,
         previousStock: product.currentStock + 10,
         newStock: product.currentStock,
         referenceType: 'manual' as InventoryReferenceType,
-        notes: `Stock adjustment for ${product.name} - product discontinued, damaged goods written off`,
+        notes: `Stock adjustment for ${product.name} - product discontinued, stock written off`,
         createdBy: 'admin_user',
         createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       });

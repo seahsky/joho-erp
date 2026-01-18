@@ -108,8 +108,7 @@ enum InventoryTransactionType {
 enum AdjustmentType {
   stock_received          // Adding stock from supplier delivery
   stock_count_correction  // Fixing discrepancy from stocktake
-  damaged_goods           // Writing off damaged inventory
-  expired_stock           // Writing off expired inventory
+  stock_write_off         // Writing off damaged or expired inventory
   packing_adjustment      // Quantity adjusted during packing
 }
 

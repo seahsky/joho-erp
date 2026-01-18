@@ -569,10 +569,10 @@ export const productRouter = router({
         adjustmentType: z.enum([
           'stock_received',
           'stock_count_correction',
-          'damaged_goods',
-          'expired_stock',
+          'stock_write_off',
         ]),
-        quantity: z.number(), // Positive to add, negative to reduce
+        quantity: z.number().optional(), // Positive to add, negative to reduce (optional for stock_count_correction with targetStockLevel)
+        targetStockLevel: z.number().int().min(0).optional(), // For stock_count_correction: the actual stock count from stocktake
         notes: z.string().min(1, 'Notes are required'),
         // NEW: Required for stock_received
         costPerUnit: z.number().int().positive().optional(), // In cents
@@ -649,9 +649,35 @@ export const productRouter = router({
             path: ['vehicleTemperature'],
           }
         )
+        .refine(
+          (data) => {
+            // For stock_received and stock_write_off, quantity is required
+            if (data.adjustmentType === 'stock_received' || data.adjustmentType === 'stock_write_off') {
+              return data.quantity !== undefined;
+            }
+            return true;
+          },
+          {
+            message: 'quantity is required for this adjustment type',
+            path: ['quantity'],
+          }
+        )
+        .refine(
+          (data) => {
+            // For stock_count_correction, either quantity or targetStockLevel must be provided
+            if (data.adjustmentType === 'stock_count_correction') {
+              return data.quantity !== undefined || data.targetStockLevel !== undefined;
+            }
+            return true;
+          },
+          {
+            message: 'Either quantity or targetStockLevel is required for stock count correction',
+            path: ['quantity'],
+          }
+        )
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
+      const { productId, adjustmentType, quantity: inputQuantity, targetStockLevel, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
 
       // Get current product
       const product = await prisma.product.findUnique({
@@ -673,8 +699,16 @@ export const productRouter = router({
         });
       }
 
-      // Calculate new stock level
+      // Calculate quantity - for stock_count_correction, use targetStockLevel if provided
       const previousStock = product.currentStock;
+      let quantity: number;
+      if (adjustmentType === 'stock_count_correction' && targetStockLevel !== undefined) {
+        // Calculate the difference needed to reach target
+        quantity = targetStockLevel - previousStock;
+      } else {
+        // Use the provided quantity (guaranteed by validation refinements)
+        quantity = inputQuantity!;
+      }
       const newStock = previousStock + quantity;
 
       // Prevent negative stock
@@ -847,7 +881,7 @@ export const productRouter = router({
           data: {
             productId: sourceProductId,
             type: 'adjustment',
-            adjustmentType: 'damaged_goods', // Using damaged_goods as proxy for processing
+            adjustmentType: 'packing_adjustment', // Processing/transformation adjustment
             quantity: -quantityToProcess,
             previousStock: sourceProduct.currentStock,
             newStock: sourceProduct.currentStock - quantityToProcess,
@@ -926,7 +960,7 @@ export const productRouter = router({
       await Promise.all([
         logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, sourceProductId, {
           sku: sourceProduct.sku,
-          adjustmentType: 'damaged_goods',
+          adjustmentType: 'packing_adjustment',
           previousStock: sourceProduct.currentStock,
           newStock: sourceProduct.currentStock - quantityToProcess,
           quantity: -quantityToProcess,

@@ -105,10 +105,10 @@ export default function InventoryPage() {
         return t('adjustmentTypes.stock_received');
       case 'stock_count_correction':
         return t('adjustmentTypes.stock_count_correction');
-      case 'damaged_goods':
-        return t('adjustmentTypes.damaged_goods');
-      case 'expired_stock':
-        return t('adjustmentTypes.expired_stock');
+      case 'stock_write_off':
+        return t('adjustmentTypes.stock_write_off');
+      case 'packing_adjustment':
+        return t('adjustmentTypes.packing_adjustment');
       default:
         return type;
     }

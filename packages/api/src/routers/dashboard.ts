@@ -354,7 +354,7 @@ export const dashboardRouter = router({
         dateTo: z.date().optional(),
         type: z.enum(['sale', 'adjustment', 'return']).optional(),
         adjustmentType: z
-          .enum(['stock_received', 'stock_count_correction', 'damaged_goods', 'expired_stock'])
+          .enum(['stock_received', 'stock_count_correction', 'stock_write_off', 'packing_adjustment'])
           .optional(),
         productId: z.string().optional(),
         search: z.string().optional(),

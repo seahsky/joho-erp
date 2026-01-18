@@ -82,7 +82,7 @@ export type ProductUnit = 'kg' | 'piece' | 'box' | 'carton';
 export type InventoryTransactionType = 'sale' | 'adjustment' | 'return';
 
 // Adjustment Type (for manual stock changes)
-export type AdjustmentType = 'stock_received' | 'stock_count_correction' | 'damaged_goods' | 'expired_stock';
+export type AdjustmentType = 'stock_received' | 'stock_count_correction' | 'stock_write_off' | 'packing_adjustment';
 
 // Proof of Delivery Type
 export type PODType = 'signature' | 'photo';
