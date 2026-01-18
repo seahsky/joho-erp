@@ -451,6 +451,12 @@
       "title": "啟用供應商",
       "description": "您確定要啟用此供應商嗎？",
       "confirm": "啟用"
+    },
+    "updateSuccess": "供應商已更新",
+    "suspendSuccess": "供應商已暫停",
+    "activateSuccess": "供應商已啟用",
+    "validation": {
+      "abnInvalid": "無效的 ABN - 校驗和驗證失敗"
     }
   },
   "linkProductDialog": {
@@ -1507,7 +1513,8 @@
     },
     "validation": {
       "uploadCsvRequired": "請上傳 CSV 檔案",
-      "csvHeaderRowRequired": "CSV 檔案必須至少包含一個標題行和一行資料"
+      "csvHeaderRowRequired": "CSV 檔案必須至少包含一個標題行和一行資料",
+      "abnWarnings": "發現無效的 ABN"
     },
     "messages": {
       "importSuccess": "匯入成功",
@@ -2093,7 +2100,10 @@
       "settingsSavedDescription": "您的公司資料已更新",
       "saveError": "儲存公司資料失敗",
       "validationError": "請填寫所有必填欄位",
-      "loading": "載入公司資料中..."
+      "loading": "載入公司資料中...",
+      "validation": {
+        "abnInvalid": "無效的 ABN - 校驗和驗證失敗"
+      }
     },
     "integrations": {
       "title": "整合",
@@ -3080,7 +3090,9 @@
       "cancel": "取消",
       "updateSuccess": "客戶已更新",
       "updateSuccessMessage": "客戶資訊已成功儲存。",
-      "updateError": "更新失敗"
+      "updateError": "更新失敗",
+      "validationError": "驗證錯誤",
+      "abnInvalid": "無效的 ABN - 校驗和驗證失敗"
     },
     "validation": {
       "abnLength": "ABN必須為11位數字",
