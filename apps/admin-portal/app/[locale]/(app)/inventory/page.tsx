@@ -56,12 +56,14 @@ import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
 
 type TransactionType = 'sale' | 'adjustment' | 'return' | undefined;
+type AdjustmentTypeFilter = 'stock_received' | undefined;
 
 export default function InventoryPage() {
   const t = useTranslations('inventory');
 
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
+  const [adjustmentTypeFilter, setAdjustmentTypeFilter] = useState<AdjustmentTypeFilter>(undefined);
   const [productSearch, setProductSearch] = useState('');
 
   // Export dialog state
@@ -91,6 +93,7 @@ export default function InventoryPage() {
   const { data: transactionsData, isLoading: transactionsLoading, refetch: refetchTransactions } =
     api.dashboard.getInventoryTransactions.useQuery({
       type: transactionType,
+      adjustmentType: adjustmentTypeFilter,
       search: productSearch || undefined,
       limit: 20,
     });
@@ -361,6 +364,18 @@ export default function InventoryPage() {
                     onClick={() => setTransactionType('return')}
                   >
                     {t('types.return')}
+                  </Button>
+                  <div className="w-px h-6 bg-border mx-1" />
+                  <Button
+                    variant={adjustmentTypeFilter === 'stock_received' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() =>
+                      setAdjustmentTypeFilter(
+                        adjustmentTypeFilter === 'stock_received' ? undefined : 'stock_received'
+                      )
+                    }
+                  >
+                    {t('filters.stockIn')}
                   </Button>
                 </div>
               </CardHeader>

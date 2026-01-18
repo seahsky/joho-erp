@@ -2729,7 +2729,8 @@
       "type": "Type",
       "allTypes": "All Types",
       "adjustmentType": "Adjustment Type",
-      "allAdjustments": "All Adjustments"
+      "allAdjustments": "All Adjustments",
+      "stockIn": "Stock In"
     },
     "types": {
       "sale": "Sale",

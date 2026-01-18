@@ -2729,7 +2729,8 @@
       "type": "类型",
       "allTypes": "所有类型",
       "adjustmentType": "调整类型",
-      "allAdjustments": "所有调整"
+      "allAdjustments": "所有调整",
+      "stockIn": "入库"
     },
     "types": {
       "sale": "销售",

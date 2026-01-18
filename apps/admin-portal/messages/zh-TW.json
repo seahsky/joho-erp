@@ -2735,7 +2735,8 @@
       "type": "類型",
       "allTypes": "所有類型",
       "adjustmentType": "調整類型",
-      "allAdjustments": "所有調整"
+      "allAdjustments": "所有調整",
+      "stockIn": "入庫"
     },
     "types": {
       "sale": "銷售",
