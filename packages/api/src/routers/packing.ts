@@ -990,18 +990,18 @@ export const packingRouter = router({
           console.warn(`Order ${freshOrder.orderNumber}: Skipped deleted products:`, missingProducts);
         }
 
-        // Atomic update with version check for optimistic locking
+        // Atomic update with stockConsumed check for idempotency
+        // Note: version check removed - stockConsumed: false provides sufficient guard
+        // and avoids MongoDB transaction quirks with updateMany WHERE evaluation
         const updateResult = await tx.order.updateMany({
           where: { 
             id: input.orderId, 
-            version: freshOrder.version,
             stockConsumed: false,
           },
           data: {
             status: 'ready_for_delivery',
             stockConsumed: true,
             stockConsumedAt: new Date(),
-            version: { increment: 1 },
           },
         });
 
