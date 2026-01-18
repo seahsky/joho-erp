@@ -1006,48 +1006,6 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
             </AlertDialog>
           </div>
         )}
-
-        {/* Reset only for ready_for_delivery orders */}
-        {isReadyForDelivery && (
-          <div className="flex justify-center">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                  {t('resetOrder')}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('resetOrderTitle')}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('resetOrderDescription', {
-                      packedCount: packedCount,
-                      orderNumber: order.orderNumber
-                    })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleResetOrder}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {resetOrderMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      t('confirmReset')
-                    )}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
       </div>
 
       {/* Custom Animations */}
