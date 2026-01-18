@@ -1103,10 +1103,11 @@ export const orderRouter = router({
       // Only restore stock if:
       // 1. Order is being cancelled
       // 2. Order had stock reduced (stock is now reduced at packing step - ready_for_delivery or later)
-      const packedStatuses = ['ready_for_delivery', 'out_for_delivery', 'delivered'];
+      // Use stockConsumed flag instead of status-based check for stock restoration
+      // This is more reliable as stockConsumed is only set after markOrderReady succeeds
       const shouldRestoreStock =
         input.newStatus === 'cancelled' &&
-        packedStatuses.includes(currentOrder.status);
+        currentOrder.stockConsumed === true;
 
       if (shouldRestoreStock) {
         // Restore stock in a transaction
@@ -1845,6 +1846,53 @@ export const orderRouter = router({
 
       // Get user details for status history
       const userDetails = await getUserDetails(ctx.userId);
+
+      // Re-check stock availability before approving (stock may have changed since order was placed)
+      const { isSubproduct, calculateParentConsumption } = await import('@joho-erp/shared');
+      const productIds = (order.items as any[]).map((item: any) => item.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        include: { parentProduct: true },
+      });
+
+      const shortfalls: Record<string, { requested: number; available: number }> = {};
+
+      for (const item of order.items as any[]) {
+        const product = products.find((p) => p.id === item.productId);
+        if (!product) continue;
+
+        // Check if this is a subproduct (has parent)
+        const productIsSubproduct = isSubproduct(product);
+        const consumeFrom = productIsSubproduct ? product.parentProduct : product;
+        
+        if (!consumeFrom) continue;
+
+        // Calculate consumption quantity (for subproducts, account for loss)
+        const consumeQty = productIsSubproduct
+          ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+          : item.quantity;
+
+        if (consumeFrom.currentStock < consumeQty) {
+          shortfalls[item.productId] = { 
+            requested: consumeQty, 
+            available: consumeFrom.currentStock 
+          };
+        }
+      }
+
+      if (Object.keys(shortfalls).length > 0) {
+        const shortfallDetails = Object.entries(shortfalls)
+          .map(([productId, { requested, available }]) => {
+            const product = products.find((p) => p.id === productId);
+            return `${product?.name || productId}: need ${requested}, have ${available}`;
+          })
+          .join('; ');
+        
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Insufficient stock for some items. Stock may have changed since order was placed. ${shortfallDetails}`,
+        });
+      }
 
       // Determine if this is a partial approval
       const isPartialApproval = approvedQuantities && Object.keys(approvedQuantities).length > 0;

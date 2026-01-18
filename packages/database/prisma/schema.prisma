@@ -441,6 +441,11 @@ model Order {
   reviewedBy              String?             // Admin who approved/rejected
   reviewedAt              DateTime?           // When backorder was reviewed
 
+  // Stock consumption tracking (for idempotent packing workflow)
+  stockConsumed           Boolean             @default(false)  // True after markOrderReady succeeds
+  stockConsumedAt         DateTime?                            // When stock was consumed
+  version                 Int                 @default(0)      // Optimistic locking for concurrent updates
+
   // Relations
   customer                Customer            @relation(fields: [customerId], references: [id])
 

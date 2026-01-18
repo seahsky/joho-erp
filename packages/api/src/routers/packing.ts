@@ -363,6 +363,22 @@ export const packingRouter = router({
         });
       }
 
+      // Block if stock already consumed (order marked ready)
+      if (order.stockConsumed) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot adjust quantities after order has been marked ready for delivery.',
+        });
+      }
+
+      // Block if not in editable status
+      if (!['confirmed', 'packing'].includes(order.status)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot adjust quantities when order is in '${order.status}' status. Order must be in confirmed or packing status.`,
+        });
+      }
+
       // Find the item in the order
       const itemIndex = order.items.findIndex((item) => item.productId === productId);
       if (itemIndex === -1) {
@@ -436,6 +452,26 @@ export const packingRouter = router({
 
       // Perform all updates in a transaction
       await prisma.$transaction(async (tx) => {
+        // Re-check stockConsumed inside transaction to prevent race condition
+        const freshOrder = await tx.order.findUnique({
+          where: { id: orderId },
+          select: { stockConsumed: true, status: true },
+        });
+
+        if (freshOrder?.stockConsumed) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Order was marked ready concurrently. Cannot adjust quantities.',
+          });
+        }
+
+        if (freshOrder && !['confirmed', 'packing'].includes(freshOrder.status)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Order status changed to '${freshOrder.status}'. Cannot adjust quantities.`,
+          });
+        }
+
         // Create inventory transaction for audit trail
         const transaction = await tx.inventoryTransaction.create({
           data: {
@@ -636,54 +672,84 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-        include: {
-          customer: true,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Validate that order is in packing status
-      if (order.status !== 'packing' && order.status !== 'confirmed') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Order must be in confirmed or packing status',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (can be done outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Get products for stock reduction (include parent product for subproducts)
-      const productIds = (order.items as any[]).map((item: any) => item.productId).filter(Boolean);
-      const products = await prisma.product.findMany({
-        where: { id: { in: productIds } },
-        include: { parentProduct: true },
-      });
+      // Import shared utilities
+      const { consumeStock } = await import('../services/inventory-batch');
+      const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
 
-      // Create a product map for quick lookup
-      const productMap = new Map(products.map((p) => [p.id, p]));
+      // Store order data for email/audit after transaction
+      let orderData: { 
+        orderNumber: string; 
+        customerEmail: string; 
+        customerName: string; 
+        deliveryDate: Date;
+      } | null = null;
+
+      // Track missing products for logging
+      const missingProducts: string[] = [];
 
       // Reduce stock and update order in a transaction
       await prisma.$transaction(async (tx) => {
-        const { consumeStock } = await import('../services/inventory-batch');
-        const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
+        // Fetch order INSIDE transaction for fresh data
+        const freshOrder = await tx.order.findUnique({
+          where: { id: input.orderId },
+          include: { customer: true },
+        });
+
+        if (!freshOrder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Idempotency check - prevent double stock consumption
+        if (freshOrder.stockConsumed) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Stock already consumed for this order. This operation has already been completed.',
+          });
+        }
+
+        // Validate order status
+        if (freshOrder.status !== 'packing' && freshOrder.status !== 'confirmed') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Order is in '${freshOrder.status}' status, cannot mark ready. Must be in confirmed or packing status.`,
+          });
+        }
+
+        // Store order data for use after transaction
+        orderData = {
+          orderNumber: freshOrder.orderNumber,
+          customerEmail: freshOrder.customer.contactPerson.email,
+          customerName: freshOrder.customer.businessName,
+          deliveryDate: freshOrder.requestedDeliveryDate,
+        };
+
+        // Get products INSIDE transaction for fresh data
+        const productIds = (freshOrder.items as any[]).map((item: any) => item.productId).filter(Boolean);
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          include: { parentProduct: true },
+        });
+
+        // Create a product map for quick lookup
+        const productMap = new Map(products.map((p) => [p.id, p]));
 
         // Track which parent products have been updated to avoid duplicate recalculations
         const updatedParentIds = new Set<string>();
 
-        for (const item of order.items as any[]) {
+        for (const item of freshOrder.items as any[]) {
           const product = productMap.get(item.productId);
-          if (!product) continue;
+          
+          // Handle deleted products - log and skip
+          if (!product) {
+            missingProducts.push(`${item.productName} (${item.sku})`);
+            continue;
+          }
 
           // Check if this is a subproduct (has parent)
           const productIsSubproduct = isSubproduct(product);
@@ -692,7 +758,7 @@ export const packingRouter = router({
           // For subproducts: consume from parent; for regular products: consume directly
           const consumeFromProductId = parentProduct ? parentProduct.id : product.id;
 
-          // Get current stock of the product we're consuming from
+          // Get current stock of the product we're consuming from (FRESH data inside tx)
           const consumeFromProduct = parentProduct
             ? await tx.product.findUnique({ where: { id: parentProduct.id } })
             : await tx.product.findUnique({ where: { id: product.id } });
@@ -707,6 +773,7 @@ export const packingRouter = router({
           const previousStock = consumeFromProduct.currentStock;
           const newStock = previousStock - consumeQuantity;
 
+          // Validate stock availability with fresh data
           if (newStock < 0) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
@@ -716,8 +783,8 @@ export const packingRouter = router({
 
           // Create inventory transaction on the source product (parent for subproducts)
           const transactionNotes = productIsSubproduct
-            ? `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${order.orderNumber}`
-            : `Stock consumed at packing for order ${order.orderNumber}`;
+            ? `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${freshOrder.orderNumber}`
+            : `Stock consumed at packing for order ${freshOrder.orderNumber}`;
 
           const transaction = await tx.inventoryTransaction.create({
             data: {
@@ -727,37 +794,52 @@ export const packingRouter = router({
               previousStock,
               newStock,
               referenceType: 'order',
-              referenceId: order.id,
+              referenceId: freshOrder.id,
               notes: transactionNotes,
               createdBy: ctx.userId || 'system',
             },
           });
 
           // Consume from batches via FIFO (from parent for subproducts)
-          const result = await consumeStock(
-            consumeFromProductId,
-            consumeQuantity,
-            transaction.id,
-            order.id,
-            order.orderNumber,
-            tx
-          );
-
-          // Log expiry warnings if any
-          if (result.expiryWarnings.length > 0) {
-            console.warn(
-              `Expiry warnings for order ${order.orderNumber}:`,
-              result.expiryWarnings
+          try {
+            const result = await consumeStock(
+              consumeFromProductId,
+              consumeQuantity,
+              transaction.id,
+              freshOrder.id,
+              freshOrder.orderNumber,
+              tx
             );
+
+            // Log expiry warnings if any
+            if (result.expiryWarnings.length > 0) {
+              console.warn(
+                `Expiry warnings for order ${freshOrder.orderNumber}:`,
+                result.expiryWarnings
+              );
+            }
+          } catch (stockError) {
+            console.error(`Stock consumption failed for order ${freshOrder.orderNumber}, product ${product.id}:`, stockError);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Failed to consume stock for ${product.name}. Transaction rolled back. Please retry.`,
+            });
           }
 
-          // Update product stock
+          // Update product stock with atomic condition check for parent products
           if (productIsSubproduct && parentProduct && !updatedParentIds.has(parentProduct.id)) {
-            // Update parent stock
-            await tx.product.update({
-              where: { id: parentProduct.id },
+            // Use atomic update with currentStock condition to prevent race conditions
+            const parentUpdateResult = await tx.product.updateMany({
+              where: { id: parentProduct.id, currentStock: previousStock },
               data: { currentStock: newStock },
             });
+
+            if (parentUpdateResult.count === 0) {
+              throw new TRPCError({
+                code: 'CONFLICT',
+                message: `Stock for ${parentProduct.name} modified concurrently. Please retry.`,
+              });
+            }
 
             // Find all subproducts of this parent and recalculate their stocks
             const subproducts = await tx.product.findMany({
@@ -801,13 +883,37 @@ export const packingRouter = router({
           }
         }
 
-        // Update order to ready_for_delivery
-        await tx.order.update({
-          where: {
-            id: input.orderId,
+        // Log warning for missing products
+        if (missingProducts.length > 0) {
+          console.warn(`Order ${freshOrder.orderNumber}: Skipped deleted products:`, missingProducts);
+        }
+
+        // Atomic update with version check for optimistic locking
+        const updateResult = await tx.order.updateMany({
+          where: { 
+            id: input.orderId, 
+            version: freshOrder.version,
+            stockConsumed: false,
           },
           data: {
             status: 'ready_for_delivery',
+            stockConsumed: true,
+            stockConsumedAt: new Date(),
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({ 
+            code: 'CONFLICT', 
+            message: 'Order modified concurrently. Please retry.' 
+          });
+        }
+
+        // Update packing info and status history separately (these fields require update, not updateMany)
+        await tx.order.update({
+          where: { id: input.orderId },
+          data: {
             packing: {
               packedAt: new Date(),
               packedBy: ctx.userId || 'system',
@@ -827,23 +933,25 @@ export const packingRouter = router({
         });
       });
 
-      // Send order ready for delivery email to customer
-      await sendOrderReadyForDeliveryEmail({
-        customerEmail: order.customer.contactPerson.email,
-        customerName: order.customer.businessName,
-        orderNumber: order.orderNumber,
-        deliveryDate: order.requestedDeliveryDate,
-      }).catch((error) => {
-        console.error('Failed to send order ready for delivery email:', error);
-      });
+      // Send order ready for delivery email to customer (after transaction success)
+      if (orderData) {
+        await sendOrderReadyForDeliveryEmail({
+          customerEmail: orderData.customerEmail,
+          customerName: orderData.customerName,
+          orderNumber: orderData.orderNumber,
+          deliveryDate: orderData.deliveryDate,
+        }).catch((error) => {
+          console.error('Failed to send order ready for delivery email:', error);
+        });
 
-      // Audit log - HIGH: Ready for delivery must be tracked
-      await logOrderReadyForDelivery(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
-        packedBy: ctx.userId || 'system',
-      }).catch((error) => {
-        console.error('Audit log failed for mark order ready:', error);
-      });
+        // Audit log - HIGH: Ready for delivery must be tracked
+        await logOrderReadyForDelivery(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
+          orderNumber: orderData.orderNumber,
+          packedBy: ctx.userId || 'system',
+        }).catch((error) => {
+          console.error('Audit log failed for mark order ready:', error);
+        });
+      }
 
       return { success: true };
     }),
