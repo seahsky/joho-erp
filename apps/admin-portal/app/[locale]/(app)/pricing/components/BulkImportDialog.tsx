@@ -13,7 +13,7 @@ import {
 import { Loader2, Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { parseToCents } from '@joho-erp/shared';
+import { parseToCents, validateABN } from '@joho-erp/shared';
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -92,6 +92,7 @@ export function BulkImportDialog({
       effectiveFrom?: Date;
       effectiveTo?: Date;
     }> = [];
+    const warnings: string[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map((v) => v.trim());
@@ -101,12 +102,28 @@ export function BulkImportDialog({
         row[header] = values[index];
       });
 
+      const customerAbn = row['customer_abn'] || row['abn'];
+
+      // Validate ABN checksum
+      if (customerAbn && !validateABN(customerAbn)) {
+        warnings.push(`Row ${i + 1}: Invalid ABN checksum for "${customerAbn}"`);
+        continue; // Skip rows with invalid ABNs
+      }
+
       data.push({
-        customerAbn: row['customer_abn'] || row['abn'],
+        customerAbn,
         productSku: row['product_sku'] || row['sku'],
         customPrice: parseToCents(row['custom_price'] || row['price']) || 0,
         effectiveFrom: row['effective_from'] ? new Date(row['effective_from']) : undefined,
         effectiveTo: row['effective_to'] ? new Date(row['effective_to']) : undefined,
+      });
+    }
+
+    if (warnings.length > 0) {
+      toast({
+        title: t('validation.abnWarnings'),
+        description: warnings.slice(0, 3).join('; ') + (warnings.length > 3 ? `... and ${warnings.length - 3} more` : ''),
+        variant: 'destructive',
       });
     }
 

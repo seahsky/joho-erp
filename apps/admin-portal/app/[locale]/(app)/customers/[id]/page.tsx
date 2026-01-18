@@ -58,7 +58,7 @@ import {
   Trash2,
   MessageSquare,
 } from 'lucide-react';
-import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek } from '@joho-erp/shared';
+import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek, validateABN } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
 
 interface PageProps {
@@ -366,6 +366,16 @@ export default function CustomerDetailPage({ params }: PageProps) {
   };
 
   const handleSaveEdit = () => {
+    // Validate ABN if provided
+    if (editForm.abn && !validateABN(editForm.abn)) {
+      toast({
+        title: t('edit.validationError'),
+        description: t('edit.abnInvalid'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Build the mutation payload
     const payload: Parameters<typeof updateMutation.mutate>[0] = {
       customerId: resolvedParams.id,

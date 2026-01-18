@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, requirePermission, requireAnyPermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
+import { validateABN } from '@joho-erp/shared';
 import * as xeroService from '../services/xero';
 import { createHash } from 'crypto';
 import {
@@ -50,7 +51,7 @@ export const companyRouter = router({
     .input(
       z.object({
         businessName: z.string().min(1, 'Business name is required'),
-        abn: z.string().min(11, 'Valid ABN is required'),
+        abn: z.string().length(11).refine(validateABN, 'Invalid ABN checksum'),
         address: z.object({
           street: z.string().min(1, 'Street address is required'),
           suburb: z.string().min(1, 'Suburb is required'),

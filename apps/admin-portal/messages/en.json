@@ -451,6 +451,12 @@
       "title": "Activate Supplier",
       "description": "Are you sure you want to activate this supplier?",
       "confirm": "Activate"
+    },
+    "updateSuccess": "Supplier Updated",
+    "suspendSuccess": "Supplier Suspended",
+    "activateSuccess": "Supplier Activated",
+    "validation": {
+      "abnInvalid": "Invalid ABN - checksum validation failed"
     }
   },
   "linkProductDialog": {
@@ -1507,7 +1513,8 @@
     },
     "validation": {
       "uploadCsvRequired": "Please upload a CSV file",
-      "csvHeaderRowRequired": "CSV must have at least a header row and one data row"
+      "csvHeaderRowRequired": "CSV must have at least a header row and one data row",
+      "abnWarnings": "Invalid ABN(s) Found"
     },
     "messages": {
       "importSuccess": "Import completed successfully",
@@ -2087,7 +2094,10 @@
       "settingsSavedDescription": "Your company profile has been updated",
       "saveError": "Failed to save company profile",
       "validationError": "Please fill in all required fields",
-      "loading": "Loading company profile..."
+      "loading": "Loading company profile...",
+      "validation": {
+        "abnInvalid": "Invalid ABN - checksum validation failed"
+      }
     },
     "integrations": {
       "title": "Integrations",
@@ -3074,7 +3084,9 @@
       "cancel": "Cancel",
       "updateSuccess": "Customer Updated",
       "updateSuccessMessage": "Customer details have been saved successfully.",
-      "updateError": "Update Failed"
+      "updateError": "Update Failed",
+      "validationError": "Validation Error",
+      "abnInvalid": "Invalid ABN - checksum validation failed"
     },
     "validation": {
       "abnLength": "ABN must be 11 digits",

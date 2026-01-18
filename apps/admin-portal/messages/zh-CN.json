@@ -451,6 +451,12 @@
       "title": "激活供应商",
       "description": "您确定要激活此供应商吗？",
       "confirm": "激活"
+    },
+    "updateSuccess": "供应商已更新",
+    "suspendSuccess": "供应商已暂停",
+    "activateSuccess": "供应商已激活",
+    "validation": {
+      "abnInvalid": "无效的 ABN - 校验和验证失败"
     }
   },
   "linkProductDialog": {
@@ -1507,7 +1513,8 @@
     },
     "validation": {
       "uploadCsvRequired": "请上传 CSV 文件",
-      "csvHeaderRowRequired": "CSV 文件必须至少包含一个标题行和一行数据"
+      "csvHeaderRowRequired": "CSV 文件必须至少包含一个标题行和一行数据",
+      "abnWarnings": "发现无效的 ABN"
     },
     "messages": {
       "importSuccess": "导入成功",
@@ -2087,7 +2094,10 @@
       "settingsSavedDescription": "您的公司资料已更新",
       "saveError": "保存公司资料失败",
       "validationError": "请填写所有必填字段",
-      "loading": "加载公司资料中..."
+      "loading": "加载公司资料中...",
+      "validation": {
+        "abnInvalid": "无效的 ABN - 校验和验证失败"
+      }
     },
     "integrations": {
       "title": "集成",
@@ -3074,7 +3084,9 @@
       "cancel": "取消",
       "updateSuccess": "客户已更新",
       "updateSuccessMessage": "客户信息已成功保存。",
-      "updateError": "更新失败"
+      "updateError": "更新失败",
+      "validationError": "验证错误",
+      "abnInvalid": "无效的 ABN - 校验和验证失败"
     },
     "validation": {
       "abnLength": "ABN必须为11位数字",

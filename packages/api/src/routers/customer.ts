@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { paginatePrismaQuery, buildPrismaOrderBy } from '@joho-erp/shared';
+import { paginatePrismaQuery, buildPrismaOrderBy, validateABN } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendCreditApprovedEmail,
@@ -99,7 +99,7 @@ export const customerRouter = router({
         accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']),
         businessName: z.string().min(1),
         tradingName: z.string().optional(),
-        abn: z.string().length(11),
+        abn: z.string().length(11).refine(validateABN, 'Invalid ABN checksum'),
         acn: z.string().length(9).optional(),
         contactPerson: z.object({
           firstName: z.string().min(1),
@@ -533,7 +533,7 @@ export const customerRouter = router({
         accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']),
         businessName: z.string().min(1),
         tradingName: z.string().optional(),
-        abn: z.string().length(11),
+        abn: z.string().length(11).refine(validateABN, 'Invalid ABN checksum'),
         acn: z.string().length(9).optional(),
 
         // Contact Person
@@ -996,7 +996,7 @@ export const customerRouter = router({
           .object({
             businessName: z.string().min(1).optional(),
             tradingName: z.string().nullable().optional(),
-            abn: z.string().length(11).optional(),
+            abn: z.string().length(11).refine(validateABN, 'Invalid ABN checksum').optional(),
             acn: z.string().length(9).nullable().optional(),
             accountType: z.enum(['sole_trader', 'partnership', 'company', 'other']).optional(),
           })

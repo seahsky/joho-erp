@@ -4,7 +4,7 @@ import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatAUD, formatCentsForInput, parseToCents } from '@joho-erp/shared';
+import { formatAUD, formatCentsForInput, parseToCents, validateABN } from '@joho-erp/shared';
 import {
   Card,
   CardContent,
@@ -190,6 +190,16 @@ export default function SupplierDetailPage({ params }: PageProps) {
 
   const handleSaveEdit = () => {
     if (!editForm) return;
+
+    // Validate ABN if provided
+    if (editForm.abn && !validateABN(editForm.abn)) {
+      toast({
+        title: 'Error',
+        description: t('validation.abnInvalid'),
+        variant: 'destructive',
+      });
+      return;
+    }
 
     updateMutation.mutate({
       id: resolvedParams.id,

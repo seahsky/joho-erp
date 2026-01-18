@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma, SupplierStatus, PaymentMethod, AustralianState } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { paginatePrismaQuery, buildPrismaOrderBy } from '@joho-erp/shared';
+import { paginatePrismaQuery, buildPrismaOrderBy, validateABN } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import { createAuditLog, type AuditChange } from '../services/audit';
 
@@ -35,7 +35,7 @@ const createSupplierSchema = z.object({
   supplierCode: z.string().min(1, 'Supplier code is required'),
   businessName: z.string().min(1, 'Business name is required'),
   tradingName: z.string().optional(),
-  abn: z.string().optional(),
+  abn: z.string().length(11).refine(validateABN, 'Invalid ABN checksum').optional(),
   acn: z.string().optional(),
   primaryContact: supplierContactSchema,
   secondaryContact: supplierContactSchema.optional(),

@@ -16,6 +16,7 @@ import {
 } from '@joho-erp/ui';
 import { Building2, Loader2, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { validateABN } from '@joho-erp/shared';
 import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 
@@ -111,6 +112,14 @@ export default function CompanySettingsPage() {
   }, [businessName, abn, street, suburb, state, postcode, firstName, lastName, email, phone, mobile, bankName, accountName, bsb, accountNumber, settings]);
 
   const handleSave = async () => {
+    if (!validateABN(abn)) {
+      toast({
+        title: t('saveError'),
+        description: t('validation.abnInvalid'),
+        variant: 'destructive',
+      });
+      return;
+    }
     await saveMutation.mutateAsync({
       businessName,
       abn,

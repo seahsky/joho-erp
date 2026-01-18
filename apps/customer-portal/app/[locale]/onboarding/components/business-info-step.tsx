@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent } from '@joho-erp/ui';
 import { Building2, User, MapPin, CreditCard } from 'lucide-react';
-import { parseToCents } from '@joho-erp/shared';
+import { parseToCents, validateABN } from '@joho-erp/shared';
 import type { BusinessInfo } from '../page';
 
 interface BusinessInfoStepProps {
@@ -27,7 +27,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
 
     if (!formData.accountType) newErrors.accountType = t('validation.accountTypeRequired');
     if (!formData.businessName) newErrors.businessName = t('validation.businessNameRequired');
-    if (!formData.abn || formData.abn.length !== 11) {
+    if (!formData.abn || !validateABN(formData.abn)) {
       newErrors.abn = t('validation.abnInvalid');
     }
     if (formData.accountType === 'company' && (!formData.acn || formData.acn.length !== 9)) {
