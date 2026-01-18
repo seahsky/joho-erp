@@ -525,7 +525,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   const isPaused = order.isPaused ?? false;
   const hasProgress = packedCount > 0;
-  const isReadyForDelivery = order.status === 'ready_for_delivery';
+  const isReadyForDelivery = orderDetails.status === 'ready_for_delivery';
 
   return (
     <div className={`bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${

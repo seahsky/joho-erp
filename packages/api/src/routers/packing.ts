@@ -1287,6 +1287,9 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Import shared utilities for subproduct stock calculation
+      const { calculateAllSubproductStocks } = await import('@joho-erp/shared');
+
       const order = await prisma.order.findUnique({
         where: {
           id: input.orderId,
@@ -1300,20 +1303,11 @@ export const packingRouter = router({
         });
       }
 
-      // Check stockConsumed flag first - cannot reset after stock has been consumed
-      if (order.stockConsumed) {
+      // Allow resetting orders that are in 'packing', 'confirmed', or 'ready_for_delivery' status
+      if (!['packing', 'confirmed', 'ready_for_delivery'].includes(order.status)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Cannot reset order after stock has been consumed. To modify this order, please cancel it and create a new order.',
-        });
-      }
-
-      // Only allow resetting orders that are in 'packing' or 'confirmed' status
-      // ready_for_delivery is no longer allowed because stock has been consumed at that point
-      if (!['packing', 'confirmed'].includes(order.status)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only orders in packing or confirmed status can be reset',
+          message: 'Only orders in packing, confirmed, or ready_for_delivery status can be reset',
         });
       }
 
@@ -1322,37 +1316,126 @@ export const packingRouter = router({
       // Get user details for audit trail
       const userDetails = await getUserDetails(ctx.userId);
 
-      await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          status: 'confirmed',
-          packing: {
-            packedAt: null,
-            packedBy: null,
-            notes: null,
-            packingSequence: order.packing?.packingSequence ?? null,
-            packedItems: [],
-            lastPackedAt: null,
-            lastPackedBy: null,
-            pausedAt: null,
-          },
-          statusHistory: {
-            push: {
-              status: 'confirmed',
-              changedAt: new Date(),
-              changedBy: ctx.userId || 'system',
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. Reason: ${input.reason || 'Manual reset by packer'}`,
+      // Use transaction for stock reversal if needed
+      await prisma.$transaction(async (tx) => {
+        // If stock was consumed (ready_for_delivery), reverse the stock consumption
+        if (order.stockConsumed) {
+          // Find all sale transactions for this order
+          const saleTransactions = await tx.inventoryTransaction.findMany({
+            where: {
+              referenceType: 'order',
+              referenceId: input.orderId,
+              type: 'sale',
+            },
+          });
+
+          // Group by productId to aggregate quantities consumed
+          const productConsumptions = new Map<string, number>();
+          for (const txn of saleTransactions) {
+            const current = productConsumptions.get(txn.productId) || 0;
+            // Sale transactions have negative quantities, so we take the absolute value
+            productConsumptions.set(txn.productId, current + Math.abs(txn.quantity));
+          }
+
+          // Restore stock for each product
+          for (const [productId, quantity] of productConsumptions) {
+            const product = await tx.product.findUnique({ where: { id: productId } });
+            if (!product) continue;
+
+            const previousStock = product.currentStock;
+            const newStock = previousStock + quantity;
+
+            // Create reversal transaction (adjustment type: packing_adjustment)
+            await tx.inventoryTransaction.create({
+              data: {
+                productId,
+                type: 'adjustment',
+                adjustmentType: 'packing_adjustment',
+                quantity: quantity, // Positive to add back
+                previousStock,
+                newStock,
+                referenceType: 'order',
+                referenceId: input.orderId,
+                notes: `Stock restored from packing reset: Order ${order.orderNumber}`,
+                createdBy: ctx.userId || 'system',
+              },
+            });
+
+            // Create new batch for returned stock
+            await tx.inventoryBatch.create({
+              data: {
+                productId,
+                quantityRemaining: quantity,
+                initialQuantity: quantity,
+                costPerUnit: 0, // Unknown cost for returned stock
+                receivedAt: new Date(),
+                notes: `Stock returned from packing reset: Order ${order.orderNumber}`,
+              },
+            });
+
+            // Update product stock
+            await tx.product.update({
+              where: { id: productId },
+              data: { currentStock: newStock },
+            });
+
+            // Recalculate subproduct stocks if this is a parent product
+            const subproducts = await tx.product.findMany({
+              where: { parentProductId: productId },
+              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+            });
+
+            if (subproducts.length > 0) {
+              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+              for (const { id, newStock: subStock } of updatedStocks) {
+                await tx.product.update({
+                  where: { id },
+                  data: { currentStock: subStock },
+                });
+              }
+            }
+          }
+        }
+
+        // Reset order fields
+        await tx.order.update({
+          where: { id: input.orderId },
+          data: {
+            status: 'confirmed',
+            stockConsumed: false,
+            stockConsumedAt: null,
+            packing: {
+              packedAt: null,
+              packedBy: null,
+              notes: null,
+              packingSequence: order.packing?.packingSequence ?? null,
+              packedItems: [],
+              lastPackedAt: null,
+              lastPackedBy: null,
+              pausedAt: null,
+            },
+            statusHistory: {
+              push: {
+                status: 'confirmed',
+                changedAt: new Date(),
+                changedBy: ctx.userId || 'system',
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. ${
+                  order.stockConsumed ? 'Stock consumption reversed. ' : ''
+                }Reason: ${input.reason || 'Manual reset by packer'}`,
+              },
             },
           },
-        },
+        });
       });
 
       // Audit log - MEDIUM: Packing reset tracked
       await logPackingOrderReset(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
         orderNumber: order.orderNumber,
-        reason: input.reason,
+        reason: order.stockConsumed
+          ? `${input.reason || 'Manual reset'} (stock consumption reversed)`
+          : input.reason,
       }).catch((error) => {
         console.error('Audit log failed for reset order:', error);
       });
