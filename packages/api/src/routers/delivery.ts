@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
@@ -169,11 +168,7 @@ export const deliveryRouter = router({
                 deliveryAddress: true,
               },
             },
-            packing: {
-              select: {
-                packedAt: true,
-              },
-            },
+            // Note: packing is an embedded type, automatically included in the order document
           },
         }),
         prisma.order.count({ where }),
@@ -185,8 +180,8 @@ export const deliveryRouter = router({
         orderId: order.orderNumber,
         customer: order.customerName,
         address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
-        latitude: order.customer?.deliveryAddress?.latitude ?? null,
-        longitude: order.customer?.deliveryAddress?.longitude ?? null,
+        latitude: (order.customer?.deliveryAddress as { latitude?: number | null } | undefined)?.latitude ?? null,
+        longitude: (order.customer?.deliveryAddress as { longitude?: number | null } | undefined)?.longitude ?? null,
         areaName: order.deliveryAddress.areaName,
         status: order.status,
         estimatedTime:
@@ -226,15 +221,9 @@ export const deliveryRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       // Fetch current order to append to statusHistory
+      // Note: packing is an embedded type, automatically included in the order document
       const currentOrder = await prisma.order.findUnique({
         where: { id: input.orderId },
-        include: {
-          packing: {
-            select: {
-              packedAt: true,
-            },
-          },
-        },
       });
 
       if (!currentOrder) {

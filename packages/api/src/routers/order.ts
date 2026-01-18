@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
-import { prisma, PrismaClient } from '@joho-erp/database';
+import { prisma, Prisma, type OrderItem, type Product } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct, calculateAllSubproductStocks } from '@joho-erp/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendBackorderSubmittedEmail,
@@ -88,38 +87,6 @@ function validateStockWithBackorder(
   }
 
   return result;
-}
-
-// Helper: Update parent stock and recalculate all subproduct stocks
-async function updateParentAndSubproductStocks(
-  parentId: string,
-  newParentStock: number,
-  tx: any
-): Promise<void> {
-  // Update parent stock
-  await tx.product.update({
-    where: { id: parentId },
-    data: { currentStock: newParentStock },
-  });
-
-  // Find all subproducts of this parent
-  const subproducts = await tx.product.findMany({
-    where: { parentProductId: parentId },
-    select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-  });
-
-  if (subproducts.length === 0) return;
-
-  // Calculate new stocks for all subproducts
-  const updatedStocks = calculateAllSubproductStocks(newParentStock, subproducts);
-
-  // Update each subproduct's stock
-  for (const { id, newStock } of updatedStocks) {
-    await tx.product.update({
-      where: { id },
-      data: { currentStock: newStock },
-    });
-  }
 }
 
 // Helper: Get user display name and email from Clerk
@@ -884,7 +851,8 @@ export const orderRouter = router({
         });
       }
 
-      const where: any = { customerId: customer.id };
+      // Dynamic query building - uses any for optional filter flexibility
+      const where: Prisma.OrderWhereInput = { customerId: customer.id };
 
       if (input.status) {
         where.status = input.status;
@@ -936,7 +904,7 @@ export const orderRouter = router({
     )
     .query(async ({ input }) => {
       const { page, limit, sortBy, sortOrder, search, ...filters } = input;
-      const where: any = {};
+      const where: Prisma.OrderWhereInput = {};
 
       if (filters.status) where.status = filters.status;
       if (filters.customerId) where.customerId = filters.customerId;
@@ -1251,7 +1219,7 @@ export const orderRouter = router({
           // ============================================================================
           // PHASE 3: Process regular (non-subproduct) products
           // ============================================================================
-          for (const { product, item, restoreQuantity } of regularProductItems) {
+          for (const { product, restoreQuantity } of regularProductItems) {
             // Get current stock FRESH inside transaction
             const freshProduct = await tx.product.findUnique({ where: { id: product.id } });
             if (!freshProduct) continue;

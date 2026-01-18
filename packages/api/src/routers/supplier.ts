@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma, SupplierStatus, PaymentMethod, AustralianState } from '@joho-erp/database';

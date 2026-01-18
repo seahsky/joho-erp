@@ -3,7 +3,6 @@
  *
  * Provides endpoints for managing and monitoring Xero sync jobs.
  */
-// @ts-nocheck
 
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';

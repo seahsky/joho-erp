@@ -5,7 +5,6 @@
  * When a packer opens the packing interface, a session is created.
  * If the session is inactive for 30 minutes, orders are reverted to 'confirmed' status.
  */
-// @ts-nocheck
 
 import { prisma } from "@joho-erp/database";
 

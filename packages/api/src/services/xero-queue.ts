@@ -5,7 +5,6 @@
  * Jobs are processed immediately when triggered (no background polling).
  * Failed jobs can be manually retried via the admin API.
  */
-// @ts-nocheck
 
 import { prisma } from '@joho-erp/database';
 import type { XeroSyncJob, XeroSyncJobType, XeroSyncJobStatus } from '@joho-erp/database';

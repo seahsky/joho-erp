@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from "zod";
 import { router, requirePermission } from "../trpc";
 import { prisma, Prisma } from "@joho-erp/database";
@@ -701,19 +700,11 @@ export const packingRouter = router({
       const { consumeStock } = await import('../services/inventory-batch');
       const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
 
-      // Store order data for email/audit after transaction
-      let orderData: { 
-        orderNumber: string; 
-        customerEmail: string; 
-        customerName: string; 
-        deliveryDate: Date;
-      } | null = null;
-
       // Track missing products for logging
       const missingProducts: string[] = [];
 
-      // Reduce stock and update order in a transaction
-      await prisma.$transaction(async (tx) => {
+      // Reduce stock and update order in a transaction, returning order data for email/audit
+      const orderData = await prisma.$transaction(async (tx) => {
         // Fetch order INSIDE transaction for fresh data
         const freshOrder = await tx.order.findUnique({
           where: { id: input.orderId },
@@ -743,8 +734,8 @@ export const packingRouter = router({
           });
         }
 
-        // Store order data for use after transaction
-        orderData = {
+        // Prepare order data to return after transaction
+        const txOrderData = {
           orderNumber: freshOrder.orderNumber,
           customerEmail: freshOrder.customer.contactPerson.email,
           customerName: freshOrder.customer.businessName,
@@ -906,7 +897,7 @@ export const packingRouter = router({
         // ============================================================================
         // PHASE 3: Process regular (non-subproduct) products
         // ============================================================================
-        for (const { product, item, consumeQuantity } of regularProductItems) {
+        for (const { product, consumeQuantity } of regularProductItems) {
           // Get current stock FRESH inside transaction
           const freshProduct = await tx.product.findUnique({ where: { id: product.id } });
           if (!freshProduct) continue;
@@ -1036,6 +1027,9 @@ export const packingRouter = router({
             },
           },
         });
+
+        // Return order data for use after transaction
+        return txOrderData;
       });
 
       // Send order ready for delivery email to customer (after transaction success)

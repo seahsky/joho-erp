@@ -96,6 +96,14 @@ export default function OrdersPage() {
     return `${year}-${month}-${day}`;
   }, [orderDate]);
 
+  // End of day timestamp for date filtering (23:59:59.999 UTC)
+  const orderDateEnd = useMemo(() => {
+    if (!orderDate) return null;
+    const endOfDay = new Date(orderDate.getTime());
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    return endOfDay;
+  }, [orderDate]);
+
   // Date change handler
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.value) {
@@ -117,7 +125,7 @@ export default function OrdersPage() {
     areaId: areaFilter || undefined,
     search: searchQuery || undefined,
     dateFrom: orderDate || undefined,
-    dateTo: orderDate || undefined,
+    dateTo: orderDateEnd || undefined,
     sortBy,
     sortOrder,
     limit: 100,

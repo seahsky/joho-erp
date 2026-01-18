@@ -2,7 +2,6 @@
  * Route Optimizer Service
  * Business logic for calculating delivery routes and packing sequences
  */
-// @ts-nocheck
 
 import { prisma } from "@joho-erp/database";
 import {

@@ -1,5 +1,4 @@
-// @ts-nocheck
-// Seed validation file - type checking disabled for utility scripts with dynamic Prisma operations
+// Seed validation utilities
 import { prisma } from './prisma';
 
 /**

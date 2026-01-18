@@ -175,7 +175,7 @@ export function formatInsufficientStockError(
  */
 export interface SubproductForStockCalc {
   id: string;
-  parentProductId: string;
+  parentProductId: string | null;  // Nullable to match Prisma type (subproducts always have this set, but Prisma doesn't narrow)
   estimatedLossPercentage: number | null;
 }
 
