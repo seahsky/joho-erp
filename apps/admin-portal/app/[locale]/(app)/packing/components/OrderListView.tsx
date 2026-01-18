@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Filter, Package2, PauseCircle, Truck } from 'lucide-react';
+import { Package2, PauseCircle, Truck } from 'lucide-react';
 import { PackingOrderCard } from './PackingOrderCard';
+import { AreaLabelFilter } from './AreaLabelFilter';
 import { Card, CardContent, Button, Badge } from '@joho-erp/ui';
 
 interface OrderListViewProps {
@@ -31,6 +32,8 @@ interface OrderListViewProps {
   onOrderUpdated: () => void;
   focusedOrderNumber?: string | null;
   onClearFocus?: () => void;
+  areaId?: string;
+  onAreaChange?: (areaId: string) => void;
 }
 
 // Group orders by driver for multi-driver packing
@@ -45,10 +48,11 @@ export function OrderListView({
   deliveryDate: _deliveryDate,
   onOrderUpdated,
   focusedOrderNumber,
-  onClearFocus
+  onClearFocus,
+  areaId = '',
+  onAreaChange
 }: OrderListViewProps) {
   const t = useTranslations('packing');
-  const [areaFilter, setAreaFilter] = useState<string>('all');
 
   // Memoize the clear focus callback to avoid unnecessary effect re-runs
   const stableClearFocus = useCallback(() => {
@@ -59,16 +63,13 @@ export function OrderListView({
   useEffect(() => {
     if (!focusedOrderNumber) return;
 
-    // Check if order is in current filter - if not, reset filter
+    // Check if order is in current list - if not in view but we have an area filter, reset it
     const orderInOrders = orders.some(o => o.orderNumber === focusedOrderNumber);
-    const orderInFiltered = areaFilter === 'all'
-      ? orderInOrders
-      : orders.some(o => o.orderNumber === focusedOrderNumber && o.areaName === areaFilter);
 
-    if (orderInOrders && !orderInFiltered) {
-      setAreaFilter('all');
-      // Don't return - let the retry mechanism handle finding the element
-      // after the filter resets and the DOM updates
+    if (!orderInOrders && areaId && onAreaChange) {
+      // Order might be filtered out by area - reset area filter to show all
+      onAreaChange('');
+      // Let the retry mechanism handle finding the element after the filter resets
     }
 
     let attempts = 0;
@@ -104,18 +105,10 @@ export function OrderListView({
       if (scrollTimer) clearTimeout(scrollTimer);
       if (highlightTimer) clearTimeout(highlightTimer);
     };
-  }, [focusedOrderNumber, orders, areaFilter, stableClearFocus]);
-
-  // Get unique area names (filter out null values)
-  const areaNames = Array.from(new Set(orders.map((o) => o.areaName).filter((name): name is string => name !== null))).sort();
-
-  // Filter orders by area
-  const filteredByArea = areaFilter === 'all'
-    ? orders
-    : orders.filter((o) => o.areaName === areaFilter);
+  }, [focusedOrderNumber, orders, areaId, onAreaChange, stableClearFocus]);
 
   // Sort orders: move ready_for_delivery orders to the bottom
-  const filteredOrders = [...filteredByArea].sort((a, b) => {
+  const sortedOrders = [...orders].sort((a, b) => {
     if (a.status === 'ready_for_delivery' && b.status !== 'ready_for_delivery') return 1;
     if (a.status !== 'ready_for_delivery' && b.status === 'ready_for_delivery') return -1;
     return 0; // Preserve original order for same status
@@ -125,7 +118,7 @@ export function OrderListView({
   const driverGroups = useMemo<DriverGroup[]>(() => {
     const groupMap = new Map<string | null, DriverGroup>();
 
-    for (const order of filteredOrders) {
+    for (const order of sortedOrders) {
       const driverId = order.driverId ?? null;
       const driverName = order.driverName ?? null;
 
@@ -148,25 +141,10 @@ export function OrderListView({
       // Sort by driver name if both assigned
       return (a.driverName || '').localeCompare(b.driverName || '');
     });
-  }, [filteredOrders]);
+  }, [sortedOrders]);
 
   // Check if we have multiple drivers (need to show grouping)
   const hasMultipleDrivers = driverGroups.length > 1 || (driverGroups.length === 1 && driverGroups[0].driverId !== null);
-
-  const getAreaBadgeColor = (areaName: string) => {
-    switch (areaName.toLowerCase()) {
-      case 'north':
-        return 'bg-info text-info-foreground hover:bg-info/90';
-      case 'south':
-        return 'bg-success text-success-foreground hover:bg-success/90';
-      case 'east':
-        return 'bg-warning text-warning-foreground hover:bg-warning/90';
-      case 'west':
-        return 'bg-primary text-primary-foreground hover:bg-primary/90';
-      default:
-        return 'bg-muted text-muted-foreground hover:bg-muted/80';
-    }
-  };
 
   if (orders.length === 0) {
     return (
@@ -181,63 +159,31 @@ export function OrderListView({
 
   return (
     <div className="space-y-4">
-      {/* Area Filter - Only show if there are multiple areas */}
-      {areaNames.length > 1 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                <Filter className="h-4 w-4" />
-                <span>{t('filterByArea')}</span>
-              </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setAreaFilter('all')}
-                className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                  areaFilter === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                {t('allAreas')}
-              </button>
-              {areaNames.map((area) => (
-                <button
-                  key={area}
-                  onClick={() => setAreaFilter(area)}
-                  className={`px-3 py-1.5 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                    areaFilter === area
-                      ? getAreaBadgeColor(area) + ' shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  {area.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Area Label Filter */}
+      {onAreaChange && (
+        <AreaLabelFilter
+          selectedAreaId={areaId}
+          onAreaChange={onAreaChange}
+        />
       )}
 
       {/* Orders Count with Paused Indicator */}
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
           <p className="text-xs font-semibold text-muted-foreground">
-            {filteredOrders.length} {filteredOrders.length === 1 ? t('order') : t('orders')}
-            {areaFilter !== 'all' && ` · ${areaFilter.toUpperCase()}`}
+            {sortedOrders.length} {sortedOrders.length === 1 ? t('order') : t('orders')}
           </p>
           {/* Show paused orders count */}
-          {filteredOrders.filter(o => o.isPaused).length > 0 && (
+          {sortedOrders.filter(o => o.isPaused).length > 0 && (
             <Badge variant="outline" className="border-warning/50 text-warning-foreground bg-warning/10">
               <PauseCircle className="h-3 w-3 mr-1" />
-              {filteredOrders.filter(o => o.isPaused).length} {t('paused')}
+              {sortedOrders.filter(o => o.isPaused).length} {t('paused')}
             </Badge>
           )}
           {/* Show orders with progress */}
-          {filteredOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length > 0 && (
+          {sortedOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length > 0 && (
             <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10">
-              {filteredOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length} {t('inProgress')}
+              {sortedOrders.filter(o => (o.packedItemsCount ?? 0) > 0 && !o.isPaused).length} {t('inProgress')}
             </Badge>
           )}
         </div>
@@ -279,7 +225,7 @@ export function OrderListView({
       ) : (
         /* Flat list when no driver grouping needed */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredOrders.map((order, index) => (
+          {sortedOrders.map((order, index) => (
             <div
               key={order.orderId}
               id={`order-card-${order.orderNumber}`}
@@ -295,13 +241,13 @@ export function OrderListView({
       )}
 
       {/* Empty State for Filter */}
-      {filteredOrders.length === 0 && (
+      {sortedOrders.length === 0 && areaId && onAreaChange && (
         <Card>
           <CardContent className="p-12 text-center border-2 border-dashed">
             <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground font-medium">{t('noOrdersForArea')}</p>
             <Button
-              onClick={() => setAreaFilter('all')}
+              onClick={() => onAreaChange('')}
               className="mt-4"
             >
               {t('showAllAreas')}

@@ -253,7 +253,7 @@ export default function PackingPage() {
           </CardHeader>
         </Card>
 
-        {/* Category and Area Filters */}
+        {/* Category Filter - Area filter moved to OrderListView */}
         <FilterBar
           showCategoryFilter={categories.length > 1}
           category={categoryFilter}
@@ -261,7 +261,7 @@ export default function PackingPage() {
           categories={categories}
           categoryLabels={categoryLabels}
           allCategoriesLabel={t('allCategories')}
-          showAreaFilter={true}
+          showAreaFilter={false}
           areaId={areaFilter}
           onAreaChange={setAreaFilter}
         />
@@ -309,6 +309,8 @@ export default function PackingPage() {
                 onOrderUpdated={refetch}
                 focusedOrderNumber={focusedOrderNumber}
                 onClearFocus={handleClearFocus}
+                areaId={areaFilter}
+                onAreaChange={setAreaFilter}
               />
             }
             mainTitle={t('ordersPanel')}
