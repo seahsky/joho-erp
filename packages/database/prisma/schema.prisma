@@ -385,6 +385,7 @@ model Customer {
   // Relations
   orders              Order[]
   customerPricing     CustomerPricing[]
+  cart                Cart?               // Persistent shopping cart (one per customer)
 
   // Indexes
   @@index([contactPerson.email])
@@ -838,6 +839,21 @@ enum PackingSessionEndReason {
   new_session_started // Another session was started for same date
 }
 
+// Cart Model - Persistent shopping cart storage
+model Cart {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String      @unique @db.ObjectId
+  items       CartItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt(sort: Desc)])
+  @@map("carts")
+}
+
 // ============================================================================
 // COMPOSITE TYPES (Embedded Documents)
 // ============================================================================
@@ -901,15 +917,34 @@ type CreditSignature {
 }
 
 type OrderItem {
+  productId               String              @db.ObjectId
+  sku                     String
+  productName             String
+  unit                    String
+  quantity                Float
+  unitPrice               Int                 // Stored in cents
+  subtotal                Int                 // Stored in cents
+  applyGst                Boolean             @default(false)
+  gstRate                 Float?              // GST rate as percentage (e.g., 10.0 for 10%)
+  estimatedLossPercentage Float?              // Snapshot of product's loss % at order time (for subproducts)
+}
+
+type CartItem {
   productId           String              @db.ObjectId
   sku                 String
   productName         String
   unit                String
-  quantity            Float
-  unitPrice           Int                 // Stored in cents
-  subtotal            Int                 // Stored in cents
+  quantity            Int                 // Cart quantities are always integers
+  unitPrice           Int                 // In cents (effective price with customer-specific discount, before GST)
+  basePrice           Int                 // In cents (original price, before GST)
+  subtotal            Int                 // In cents (unitPrice * quantity, before GST)
+  hasCustomPricing    Boolean             @default(false)
   applyGst            Boolean             @default(false)
-  gstRate             Float?              // GST rate as percentage (e.g., 10.0 for 10%)
+  gstRate             Float               @default(10)  // GST rate percentage
+  itemGst             Int                 // In cents (calculated GST for this item)
+  itemTotal           Int                 // In cents (subtotal + itemGst)
+  imageUrl            String?             // Product image URL
+  description         String?             // Product description
 }
 
 type StatusHistory {

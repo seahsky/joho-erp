@@ -3431,5 +3431,16 @@
       "reordered": "區域排序成功"
     },
     "dragToReorder": "拖曳以重新排序"
+  },
+  "orderErrors": {
+    "invalidTransition": "無法將訂單狀態從 {from} 變更為 {to}",
+    "transitionNotAuthorized": "您無權執行此狀態變更",
+    "sameStatus": "訂單已處於此狀態",
+    "terminalStatus": "無法修改處於終態的訂單",
+    "zeroPrice": "訂單包含零價格商品。請聯繫業務設置定價。"
+  },
+  "packingErrors": {
+    "productDeleted": "產品 {name} ({sku}) 已被刪除，無法打包",
+    "deliveryDatePassed": "無法標記訂單就緒 - 配送日期已過"
   }
 }

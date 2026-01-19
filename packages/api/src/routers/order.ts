@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct } from '@joho-erp/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct, validateStatusTransition, type UserRole as StateMachineUserRole } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendBackorderSubmittedEmail,
@@ -112,10 +112,17 @@ async function getUserDetails(userId: string): Promise<UserDetails> {
 
 // Helper: Calculate available credit for a customer
 // Pending backorders don't count against credit limit (only approved ones do)
-export async function calculateAvailableCredit(customerId: string, creditLimit: number): Promise<number> {
+// Accepts optional transaction context for atomic credit checking
+export async function calculateAvailableCredit(
+  customerId: string,
+  creditLimit: number,
+  tx?: { order: typeof prisma.order }
+): Promise<number> {
+  const db = tx || prisma;
+
   // Get all orders that count against credit limit
   // Exclude: delivered (invoiced), cancelled, and pending_approval backorders
-  const outstandingOrders = await prisma.order.findMany({
+  const outstandingOrders = await db.order.findMany({
     where: {
       customerId,
       // Exclude awaiting_approval (pending backorders) - they don't count until approved
@@ -145,9 +152,10 @@ export async function getOutstandingBalance(customerId: string): Promise<number>
   const outstandingOrders = await prisma.order.findMany({
     where: {
       customerId,
-      // Exclude awaiting_approval (pending backorders) - they don't count until approved
+      // Include awaiting_approval to prevent customers from exceeding credit (Issue #9 fix)
+      // Pending backorders count against credit to prevent over-ordering while approval is pending
       status: {
-        in: ['confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
+        in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
     },
     select: {
@@ -311,8 +319,20 @@ export const orderRouter = router({
           subtotal: itemSubtotal, // In cents
           applyGst: product.applyGst,
           gstRate: product.gstRate,
+          // Store loss % at order time for subproduct stock calculations (Issue #10 fix)
+          estimatedLossPercentage: product.estimatedLossPercentage ?? null,
         };
       });
+
+      // Reject orders with zero-price items (Issue #20 fix)
+      const zeroItems = orderItems.filter((item) => item.unitPrice === 0);
+      if (zeroItems.length > 0) {
+        const zeroItemNames = zeroItems.map((i) => `${i.productName} (${i.sku})`).join(', ');
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot create order with zero-price items: ${zeroItemNames}. Please contact sales to set pricing.`,
+        });
+      }
 
       // Calculate totals using per-product GST settings
       const totals = calculateOrderTotals(orderItems);
@@ -391,7 +411,39 @@ export const orderRouter = router({
       // For normal orders: Reduce stock immediately
       // For backorders: Stock is NOT reduced (only when approved)
       const order = await prisma.$transaction(async (tx) => {
-        // Create the order
+        // Re-fetch products with fresh stock data inside transaction to prevent race conditions
+        const freshProducts = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            name: true,
+            currentStock: true,
+            status: true,
+            parentProductId: true,
+          },
+        });
+
+        // Re-validate stock with fresh data
+        const freshStockValidation = validateStockWithBackorder(input.items, freshProducts);
+
+        // Check if stock situation changed (was available, now requires backorder)
+        if (!stockValidation.requiresBackorder && freshStockValidation.requiresBackorder) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Stock availability changed. Some items are no longer in stock. Please review your order.',
+          });
+        }
+
+        // Re-check credit limit with fresh data inside transaction to prevent race conditions
+        const freshAvailableCredit = await calculateAvailableCredit(customer.id, creditLimit, tx);
+        if (totals.totalAmount > freshAvailableCredit) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Credit limit exceeded. Another order was placed. Available credit: $${(freshAvailableCredit / 100).toFixed(2)}`,
+          });
+        }
+
+        // Create the order using fresh validation
         const newOrder = await tx.order.create({
           data: {
             orderNumber,
@@ -403,15 +455,15 @@ export const orderRouter = router({
             totalAmount: totals.totalAmount,
             deliveryAddress,
             requestedDeliveryDate: deliveryDate,
-            status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
+            status: freshStockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
             statusHistory: [
               {
-                status: stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
+                status: freshStockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed',
                 changedAt: new Date(),
                 changedBy: ctx.userId,
                 changedByName: userDetails.changedByName,
                 changedByEmail: userDetails.changedByEmail,
-                notes: stockValidation.requiresBackorder
+                notes: freshStockValidation.requiresBackorder
                   ? 'Order created - Awaiting approval due to insufficient stock'
                   : 'Order created and confirmed',
               },
@@ -420,8 +472,8 @@ export const orderRouter = router({
             createdBy: ctx.userId,
 
             // Backorder fields (stockShortfall presence indicates backorder)
-            stockShortfall: stockValidation.requiresBackorder
-              ? stockValidation.stockShortfall
+            stockShortfall: freshStockValidation.requiresBackorder
+              ? freshStockValidation.stockShortfall
               : undefined,
           },
         });
@@ -429,13 +481,13 @@ export const orderRouter = router({
         // Stock is NOT reduced at order creation
         // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
 
-        return newOrder;
+        return { order: newOrder, stockValidationResult: freshStockValidation };
       });
 
       // Send backorder notification emails if required
-      if (stockValidation.requiresBackorder) {
+      if (order.stockValidationResult.requiresBackorder) {
         // Prepare stock shortfall data for email
-        const stockShortfallArray = Object.entries(stockValidation.stockShortfall).map(
+        const stockShortfallArray = Object.entries(order.stockValidationResult.stockShortfall).map(
           ([productId, data]) => {
             const product = products.find((p) => p.id === productId);
             return {
@@ -453,9 +505,9 @@ export const orderRouter = router({
         await sendBackorderSubmittedEmail({
           customerEmail: customer.contactPerson.email,
           customerName: customer.businessName,
-          orderNumber: order.orderNumber,
-          orderDate: order.orderedAt,
-          totalAmount: order.totalAmount,
+          orderNumber: order.order.orderNumber,
+          orderDate: order.order.orderedAt,
+          totalAmount: order.order.totalAmount,
           stockShortfall: stockShortfallArray,
         }).catch((error) => {
           console.error('Failed to send backorder submitted email to customer:', error);
@@ -463,9 +515,9 @@ export const orderRouter = router({
 
         // Send notification to admin
         await sendBackorderAdminNotification({
-          orderNumber: order.orderNumber,
+          orderNumber: order.order.orderNumber,
           customerName: customer.businessName,
-          totalAmount: order.totalAmount,
+          totalAmount: order.order.totalAmount,
           stockShortfall: stockShortfallArray,
         }).catch((error) => {
           console.error('Failed to send backorder admin notification:', error);
@@ -473,12 +525,12 @@ export const orderRouter = router({
       }
 
       // Send order confirmation email (for non-backorder orders)
-      if (!stockValidation.requiresBackorder) {
+      if (!order.stockValidationResult.requiresBackorder) {
         await sendOrderConfirmationEmail({
           customerEmail: customer.contactPerson.email,
           customerName: customer.businessName,
-          orderNumber: order.orderNumber,
-          orderDate: order.orderedAt,
+          orderNumber: order.order.orderNumber,
+          orderDate: order.order.orderedAt,
           requestedDeliveryDate: deliveryDate,
           items: orderItems.map((item) => ({
             productName: item.productName,
@@ -505,15 +557,15 @@ export const orderRouter = router({
       // Log order creation to audit trail
       await logOrderCreated(
         ctx.userId,
-        order.id,
-        order.orderNumber,
+        order.order.id,
+        order.order.orderNumber,
         customer.id,
-        order.totalAmount
+        order.order.totalAmount
       ).catch((error) => {
         console.error('Failed to log order creation:', error);
       });
 
-      return order;
+      return order.order;
     }),
 
   // Create order on behalf of customer (Admin only)
@@ -558,6 +610,16 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // 0. Validate role for bypass flags - only admin/manager can use bypass options
+      if (input.bypassCreditLimit || input.bypassCutoffTime || input.bypassMinimumOrder) {
+        if (!['admin', 'manager'].includes(ctx.userRole)) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Only admin or manager roles can bypass order restrictions',
+          });
+        }
+      }
+
       // 1. Validate customer exists
       const customer = await prisma.customer.findUnique({
         where: { id: input.customerId },
@@ -643,8 +705,20 @@ export const orderRouter = router({
           subtotal: itemSubtotal, // In cents
           applyGst: product.applyGst,
           gstRate: product.gstRate,
+          // Store loss % at order time for subproduct stock calculations (Issue #10 fix)
+          estimatedLossPercentage: product.estimatedLossPercentage ?? null,
         };
       });
+
+      // Reject orders with zero-price items (Issue #20 fix)
+      const zeroItems = orderItems.filter((item) => item.unitPrice === 0);
+      if (zeroItems.length > 0) {
+        const zeroItemNames = zeroItems.map((i) => `${i.productName} (${i.sku})`).join(', ');
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot create order with zero-price items: ${zeroItemNames}. Please set pricing for these products.`,
+        });
+      }
 
       // 8. Calculate totals using per-product GST settings
       const totals = calculateOrderTotals(orderItems);
@@ -1008,6 +1082,7 @@ export const orderRouter = router({
           'confirmed',
           'packing',
           'ready_for_delivery',
+          'out_for_delivery',
           'delivered',
           'cancelled',
         ]),
@@ -1029,6 +1104,19 @@ export const orderRouter = router({
 
       // Get user details for status history
       const userDetails = await getUserDetails(ctx.userId);
+
+      // Validate status transition using state machine (Issue #8 fix)
+      const transitionValidation = validateStatusTransition(
+        currentOrder.status as Parameters<typeof validateStatusTransition>[0],
+        input.newStatus,
+        ctx.userRole as StateMachineUserRole
+      );
+      if (!transitionValidation.valid) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: transitionValidation.error || 'Invalid status transition',
+        });
+      }
 
       // Check if cancelling an order with assigned driver - requires urgent driver notification
       // This applies when order is ready_for_delivery or delivered statuses and has a driver assigned
@@ -1134,8 +1222,10 @@ export const orderRouter = router({
             const productIsSubproduct = isSubproduct(product);
             const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
+            // Use stored loss % from order item, fallback to current product's loss % (Issue #11 fix)
+            const lossPercentage = item.estimatedLossPercentage ?? product.estimatedLossPercentage ?? 0;
             const restoreQuantity = productIsSubproduct
-              ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+              ? calculateParentConsumption(item.quantity, lossPercentage)
               : item.quantity;
 
             if (productIsSubproduct && parentProduct) {
@@ -1365,6 +1455,34 @@ export const orderRouter = router({
 
           case 'ready_for_delivery':
             // Send "out for delivery" email when order is ready to go out
+            {
+              const deliveryAddr = currentOrder.deliveryAddress as {
+                street: string;
+                suburb: string;
+                state: string;
+                postcode: string;
+              };
+              const delivery = currentOrder.delivery as { driverName?: string } | null;
+
+              await sendOrderOutForDeliveryEmail({
+                customerEmail: customer.contactPerson.email,
+                customerName: customer.businessName,
+                orderNumber: currentOrder.orderNumber,
+                driverName: delivery?.driverName,
+                deliveryAddress: {
+                  street: deliveryAddr.street,
+                  suburb: deliveryAddr.suburb,
+                  state: deliveryAddr.state,
+                  postcode: deliveryAddr.postcode,
+                },
+              }).catch((error) => {
+                console.error('Failed to send out for delivery email:', error);
+              });
+            }
+            break;
+
+          case 'out_for_delivery':
+            // Send notification when driver actually starts delivery (Issue #18 fix)
             {
               const deliveryAddr = currentOrder.deliveryAddress as {
                 street: string;
@@ -1873,6 +1991,27 @@ export const orderRouter = router({
             gstRate: item.gstRate ?? null,
           }))
         );
+
+        // Credit re-validation for partial approval (Issue #12 fix)
+        // Verify the new total doesn't exceed the customer's credit limit
+        const creditLimit = order.customer.creditApplication.creditLimit;
+        // Calculate credit available, excluding this order since it's being modified
+        const otherOrdersBalance = await prisma.order.aggregate({
+          where: {
+            customerId: order.customerId,
+            id: { not: orderId },
+            status: { in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'] },
+          },
+          _sum: { totalAmount: true },
+        });
+        const availableCredit = creditLimit - (otherOrdersBalance._sum.totalAmount || 0);
+
+        if (newTotals.totalAmount > availableCredit) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Approved order total ($${(newTotals.totalAmount / 100).toFixed(2)}) exceeds available credit ($${(availableCredit / 100).toFixed(2)}).`,
+          });
+        }
 
         // Update order with approved quantities and new totals
         const updatedOrder = await prisma.order.update({

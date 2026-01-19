@@ -401,3 +401,8 @@ export * from './money';
  * Export subproduct utilities
  */
 export * from './subproduct';
+
+/**
+ * Export order state machine utilities
+ */
+export * from './order-state-machine';

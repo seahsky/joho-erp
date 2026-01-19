@@ -1433,6 +1433,40 @@ export async function logPackingItemQuantityUpdate(
   });
 }
 
+/**
+ * Log when order total changes during packing (Issue #16 fix)
+ */
+export async function logPackingTotalChange(
+  userId: string,
+  orderId: string,
+  metadata: {
+    orderNumber: string;
+    previousTotal: number;
+    newTotal: number;
+    reason: string;
+  }
+): Promise<void> {
+  await createAuditLog({
+    userId,
+    action: 'update',
+    entity: 'order',
+    entityId: orderId,
+    changes: [
+      {
+        field: 'totalAmount',
+        oldValue: metadata.previousTotal,
+        newValue: metadata.newTotal,
+      },
+    ],
+    metadata: {
+      orderNumber: metadata.orderNumber,
+      reason: metadata.reason,
+      type: 'packing_total_change',
+      totalDifference: metadata.newTotal - metadata.previousTotal,
+    },
+  });
+}
+
 // ============================================================================
 // CATEGORY DOMAIN
 // ============================================================================

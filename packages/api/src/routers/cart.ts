@@ -23,7 +23,7 @@ import { calculateAvailableCredit } from './order';
  */
 
 // ============================================================================
-// IN-MEMORY CART STORAGE
+// DATABASE-BACKED CART STORAGE (Issue #17 fix)
 // ============================================================================
 
 /**
@@ -67,51 +67,85 @@ interface Cart {
 }
 
 /**
- * In-memory cart storage
- * Key: userId (Clerk user ID)
- * Value: Map of productId to CartItem
+ * Get user's cart items from database
+ * Uses customerId for database lookup
  */
-const cartStore = new Map<string, Map<string, CartItem>>();
-
-/**
- * Get user's cart items from store
- */
-function getUserCartItems(userId: string): CartItem[] {
-  const userCart = cartStore.get(userId);
-  return userCart ? Array.from(userCart.values()) : [];
+async function getUserCartItems(customerId: string): Promise<CartItem[]> {
+  const cart = await prisma.cart.findUnique({
+    where: { customerId },
+    select: { items: true },
+  });
+  return (cart?.items as CartItem[]) ?? [];
 }
 
 /**
- * Set cart item in store
+ * Set cart item in database
+ * Upserts cart and updates the item in the items array
  */
-function setCartItem(userId: string, item: CartItem): void {
-  let userCart = cartStore.get(userId);
-  if (!userCart) {
-    userCart = new Map();
-    cartStore.set(userId, userCart);
+async function setCartItem(customerId: string, item: CartItem): Promise<void> {
+  const existingCart = await prisma.cart.findUnique({
+    where: { customerId },
+    select: { items: true },
+  });
+
+  const existingItems = (existingCart?.items as CartItem[]) ?? [];
+
+  // Find and update existing item, or add new item
+  const itemIndex = existingItems.findIndex(i => i.productId === item.productId);
+  let updatedItems: CartItem[];
+
+  if (itemIndex >= 0) {
+    updatedItems = existingItems.map((i, idx) => idx === itemIndex ? item : i);
+  } else {
+    updatedItems = [...existingItems, item];
   }
-  userCart.set(item.productId, item);
+
+  await prisma.cart.upsert({
+    where: { customerId },
+    create: {
+      customerId,
+      items: updatedItems,
+    },
+    update: {
+      items: updatedItems,
+    },
+  });
 }
 
 /**
- * Remove cart item from store
+ * Remove cart item from database
  */
-function removeCartItem(userId: string, productId: string): void {
-  const userCart = cartStore.get(userId);
-  if (userCart) {
-    userCart.delete(productId);
-    // Clean up empty carts
-    if (userCart.size === 0) {
-      cartStore.delete(userId);
-    }
+async function removeCartItem(customerId: string, productId: string): Promise<void> {
+  const existingCart = await prisma.cart.findUnique({
+    where: { customerId },
+    select: { items: true },
+  });
+
+  if (!existingCart) return;
+
+  const existingItems = (existingCart.items as CartItem[]) ?? [];
+  const updatedItems = existingItems.filter(i => i.productId !== productId);
+
+  if (updatedItems.length === 0) {
+    // Delete empty cart
+    await prisma.cart.delete({
+      where: { customerId },
+    });
+  } else {
+    await prisma.cart.update({
+      where: { customerId },
+      data: { items: updatedItems },
+    });
   }
 }
 
 /**
  * Clear all items from user's cart
  */
-function clearUserCart(userId: string): void {
-  cartStore.delete(userId);
+async function clearUserCart(customerId: string): Promise<void> {
+  await prisma.cart.deleteMany({
+    where: { customerId },
+  });
 }
 
 // ============================================================================
@@ -186,8 +220,9 @@ function calculateCartTotals(items: CartItem[], creditLimit: number): Cart {
  * Build cart response for user
  * Uses available credit (excluding pending backorders) instead of raw credit limit
  */
-async function buildCartResponse(userId: string, customerId: string): Promise<Cart> {
-  const items = getUserCartItems(userId);
+async function buildCartResponse(customerId: string): Promise<Cart> {
+  // Get cart items from database (Issue #17 - persisted cart)
+  const items = await getUserCartItems(customerId);
 
   // Get customer for credit limit
   const customer = await prisma.customer.findUnique({
@@ -305,9 +340,9 @@ export const cartRouter = router({
       const itemSubtotalMoney = multiplyMoney(priceMoney, input.quantity);
       const itemSubtotal = toCents(itemSubtotalMoney);
 
-      // Check if item already exists in cart
-      const existingItems = getUserCartItems(ctx.userId);
-      const existingItem = existingItems.find(item => item.productId === input.productId);
+      // Check if item already exists in cart (from database-backed cart)
+      const existingItems = await getUserCartItems(customer.id);
+      const existingItem = existingItems.find((item: CartItem) => item.productId === input.productId);
 
       if (existingItem) {
         // Update quantity if item exists
@@ -334,7 +369,7 @@ export const cartRouter = router({
           itemTotal: itemTotal,
         };
 
-        setCartItem(ctx.userId, updatedItem);
+        await setCartItem(customer.id, updatedItem);
       } else {
         // Add new item to cart
 
@@ -368,11 +403,11 @@ export const cartRouter = router({
           description: product.description,
         };
 
-        setCartItem(ctx.userId, newItem);
+        await setCartItem(customer.id, newItem);
       }
 
       // Return updated cart
-      return await buildCartResponse(ctx.userId, customer.id);
+      return await buildCartResponse(customer.id);
     }),
 
   /**
@@ -397,9 +432,9 @@ export const cartRouter = router({
         });
       }
 
-      // Check if item exists in cart
-      const existingItems = getUserCartItems(ctx.userId);
-      const itemExists = existingItems.some(item => item.productId === input.productId);
+      // Check if item exists in cart (from database-backed cart)
+      const existingItems = await getUserCartItems(customer.id);
+      const itemExists = existingItems.some((item: CartItem) => item.productId === input.productId);
 
       if (!itemExists) {
         throw new TRPCError({
@@ -408,11 +443,11 @@ export const cartRouter = router({
         });
       }
 
-      // Remove item
-      removeCartItem(ctx.userId, input.productId);
+      // Remove item from database-backed cart
+      await removeCartItem(customer.id, input.productId);
 
       // Return updated cart
-      return await buildCartResponse(ctx.userId, customer.id);
+      return await buildCartResponse(customer.id);
     }),
 
   /**
@@ -442,9 +477,9 @@ export const cartRouter = router({
         });
       }
 
-      // Check if item exists in cart
-      const existingItems = getUserCartItems(ctx.userId);
-      const existingItem = existingItems.find(item => item.productId === input.productId);
+      // Check if item exists in cart (from database-backed cart)
+      const existingItems = await getUserCartItems(customer.id);
+      const existingItem = existingItems.find((item: CartItem) => item.productId === input.productId);
 
       if (!existingItem) {
         throw new TRPCError({
@@ -488,10 +523,10 @@ export const cartRouter = router({
         itemTotal: itemTotal,
       };
 
-      setCartItem(ctx.userId, updatedItem);
+      await setCartItem(customer.id, updatedItem);
 
       // Return updated cart
-      return await buildCartResponse(ctx.userId, customer.id);
+      return await buildCartResponse(customer.id);
     }),
 
   /**
@@ -515,8 +550,8 @@ export const cartRouter = router({
       });
     }
 
-    // Return cart with totals
-    return await buildCartResponse(ctx.userId, customer.id);
+    // Return cart with totals (from database-backed cart)
+    return await buildCartResponse(customer.id);
   }),
 
   /**
@@ -535,10 +570,10 @@ export const cartRouter = router({
       });
     }
 
-    // Clear cart
-    clearUserCart(ctx.userId);
+    // Clear cart from database
+    await clearUserCart(customer.id);
 
     // Return empty cart
-    return await buildCartResponse(ctx.userId, customer.id);
+    return await buildCartResponse(customer.id);
   }),
 });

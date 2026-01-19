@@ -48,6 +48,7 @@ import {
   logPackingOrderPauseResume,
   logPackingOrderReset,
   logPackingItemQuantityUpdate,
+  logPackingTotalChange,
 } from "../services/audit";
 
 export const packingRouter = router({
@@ -429,10 +430,12 @@ export const packingRouter = router({
       });
 
       // Recalculate order totals using per-product GST settings
+      // Note: Uses order-time prices (i.unitPrice) stored in the order item, NOT current product prices.
+      // This ensures price consistency even if product prices change after order placement. (Issue #14 clarification)
       const newTotals = calculateOrderTotals(
         updatedItems.map((i: any) => ({
           quantity: i.quantity,
-          unitPrice: i.unitPrice,
+          unitPrice: i.unitPrice, // Order-time price, not current product price
           applyGst: i.applyGst ?? false,
           gstRate: i.gstRate ?? null,
         }))
@@ -448,17 +451,24 @@ export const packingRouter = router({
         // Re-check stockConsumed inside transaction to prevent race condition
         const freshOrder = await tx.order.findUnique({
           where: { id: orderId },
-          select: { stockConsumed: true, status: true },
+          select: { stockConsumed: true, status: true, version: true },
         });
 
-        if (freshOrder?.stockConsumed) {
+        if (!freshOrder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found or was deleted.',
+          });
+        }
+
+        if (freshOrder.stockConsumed) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Order was marked ready concurrently. Cannot adjust quantities.',
           });
         }
 
-        if (freshOrder && !['confirmed', 'packing'].includes(freshOrder.status)) {
+        if (!['confirmed', 'packing'].includes(freshOrder.status)) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: `Order status changed to '${freshOrder.status}'. Cannot adjust quantities.`,
@@ -483,7 +493,7 @@ export const packingRouter = router({
         if (quantityDiff > 0 && freshProduct.currentStock < quantityDiff) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Insufficient stock. Available: ${freshProduct.currentStock}, Required increase: ${quantityDiff}`,
+            message: `Insufficient stock for ${freshProduct.name} (${item.sku}). Available: ${freshProduct.currentStock}, Required increase: ${quantityDiff}. Please reduce the quantity or wait for stock replenishment.`,
           });
         }
 
@@ -548,14 +558,32 @@ export const packingRouter = router({
           data: { currentStock: freshNewStock },
         });
 
-        // Update order with new items and totals
-        await tx.order.update({
-          where: { id: orderId },
+        // Update order with new items and totals using optimistic locking
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            version: freshOrder.version,
+          },
           data: {
             items: updatedItems,
             subtotal: newTotals.subtotal,
             taxAmount: newTotals.taxAmount,
             totalAmount: newTotals.totalAmount,
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please retry.',
+          });
+        }
+
+        // Update status history separately (requires update, not updateMany)
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
             statusHistory: {
               push: {
                 status: order.status,
@@ -583,6 +611,18 @@ export const packingRouter = router({
       }).catch((error) => {
         console.error('Audit log failed for packing quantity update:', error);
       });
+
+      // Audit log for order total change during packing (Issue #16 fix)
+      if (newTotals.totalAmount !== order.totalAmount) {
+        await logPackingTotalChange(ctx.userId, orderId, {
+          orderNumber: order.orderNumber,
+          previousTotal: order.totalAmount,
+          newTotal: newTotals.totalAmount,
+          reason: `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity}`,
+        }).catch((error) => {
+          console.error('Audit log failed for packing total change:', error);
+        });
+      }
 
       return {
         success: true,
@@ -726,6 +766,19 @@ export const packingRouter = router({
           });
         }
 
+        // Delivery date validation - check if date hasn't passed (Issue #19 fix)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const deliveryDate = new Date(freshOrder.requestedDeliveryDate);
+        deliveryDate.setHours(0, 0, 0, 0);
+
+        if (deliveryDate < today) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot mark order ready - delivery date (${freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU')}) has passed. Please update the delivery date first.`,
+          });
+        }
+
         // Validate order status
         if (freshOrder.status !== 'packing' && freshOrder.status !== 'confirmed') {
           throw new TRPCError({
@@ -778,10 +831,12 @@ export const packingRouter = router({
         for (const item of freshOrder.items as any[]) {
           const product = productMap.get(item.productId);
           
-          // Handle deleted products - log and skip
+          // Throw error for deleted products instead of silent skip (Issue #13 fix)
           if (!product) {
-            missingProducts.push(`${item.productName} (${item.sku})`);
-            continue;
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Product ${item.productName} (${item.sku}) has been deleted and cannot be packed. Please modify the order to remove this item.`,
+            });
           }
 
           const productIsSubproduct = isSubproduct(product);
@@ -818,10 +873,13 @@ export const packingRouter = router({
 
           // Validate stock availability with aggregated total
           if (newStock < 0) {
-            const itemNames = items.map(i => i.product.name).join(', ');
+            const itemDetails = items.map(i => `${i.product.name} (qty: ${i.item.quantity})`).join(', ');
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: `Insufficient stock for parent ${parentProduct.name}. Available: ${previousStock}, Required: ${totalConsumption} (for subproducts: ${itemNames})`,
+              message: `Insufficient stock for parent product "${parentProduct.name}" to fulfill subproducts. ` +
+                `Available: ${previousStock}, Required: ${totalConsumption.toFixed(2)}. ` +
+                `Affected items: ${itemDetails}. ` +
+                `Please adjust quantities or wait for parent product restock.`,
             });
           }
 
@@ -915,7 +973,9 @@ export const packingRouter = router({
           if (newStock < 0) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: `Insufficient stock for ${product.name}. Available: ${previousStock}, Required: ${consumeQuantity}`,
+              message: `Insufficient stock for "${product.name}" (SKU: ${product.sku ?? 'N/A'}). ` +
+                `Available: ${previousStock}, Required: ${consumeQuantity}. ` +
+                `Please adjust the order quantity or wait for stock replenishment.`,
             });
           }
 
@@ -990,18 +1050,19 @@ export const packingRouter = router({
           console.warn(`Order ${freshOrder.orderNumber}: Skipped deleted products:`, missingProducts);
         }
 
-        // Atomic update with stockConsumed check for idempotency
-        // Note: version check removed - stockConsumed: false provides sufficient guard
-        // and avoids MongoDB transaction quirks with updateMany WHERE evaluation
+        // Atomic update with stockConsumed check and version-based optimistic locking for idempotency
+        // Both stockConsumed: false and version check provide guards against concurrent modifications
         const updateResult = await tx.order.updateMany({
-          where: { 
-            id: input.orderId, 
+          where: {
+            id: input.orderId,
             stockConsumed: false,
+            version: freshOrder.version,
           },
           data: {
             status: 'ready_for_delivery',
             stockConsumed: true,
             stockConsumedAt: new Date(),
+            version: { increment: 1 },
           },
         });
 

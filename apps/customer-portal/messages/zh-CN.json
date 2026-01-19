@@ -1015,5 +1015,12 @@
       "secondaryDescription": "请重试或联系客服",
       "primaryAction": "重试"
     }
+  },
+  "orderErrors": {
+    "invalidTransition": "无法将订单状态从 {from} 更改为 {to}",
+    "transitionNotAuthorized": "您无权执行此操作",
+    "sameStatus": "订单已处于此状态",
+    "terminalStatus": "此订单无法修改",
+    "zeroPrice": "您的订单包含未定价商品。请联系我们的销售团队。"
   }
 }

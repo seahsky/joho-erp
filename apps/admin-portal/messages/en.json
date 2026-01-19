@@ -3425,5 +3425,16 @@
       "reordered": "Areas reordered successfully"
     },
     "dragToReorder": "Drag to reorder"
+  },
+  "orderErrors": {
+    "invalidTransition": "Cannot change order status from {from} to {to}",
+    "transitionNotAuthorized": "You are not authorized to perform this status change",
+    "sameStatus": "Order is already in this status",
+    "terminalStatus": "Cannot modify order in terminal status",
+    "zeroPrice": "Order contains items with zero price. Please contact sales to set pricing."
+  },
+  "packingErrors": {
+    "productDeleted": "Product {name} ({sku}) has been deleted and cannot be packed",
+    "deliveryDatePassed": "Cannot mark order ready - delivery date has passed"
   }
 }

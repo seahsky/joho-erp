@@ -1015,5 +1015,12 @@
       "secondaryDescription": "請重試或聯繫客服",
       "primaryAction": "重試"
     }
+  },
+  "orderErrors": {
+    "invalidTransition": "無法將訂單狀態從 {from} 變更為 {to}",
+    "transitionNotAuthorized": "您無權執行此操作",
+    "sameStatus": "訂單已處於此狀態",
+    "terminalStatus": "此訂單無法修改",
+    "zeroPrice": "您的訂單包含未定價商品。請聯繫我們的業務團隊。"
   }
 }

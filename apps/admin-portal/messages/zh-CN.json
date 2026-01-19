@@ -3425,5 +3425,16 @@
       "reordered": "区域排序成功"
     },
     "dragToReorder": "拖动以重新排序"
+  },
+  "orderErrors": {
+    "invalidTransition": "无法将订单状态从 {from} 更改为 {to}",
+    "transitionNotAuthorized": "您无权执行此状态变更",
+    "sameStatus": "订单已处于此状态",
+    "terminalStatus": "无法修改处于终态的订单",
+    "zeroPrice": "订单包含零价格商品。请联系销售设置定价。"
+  },
+  "packingErrors": {
+    "productDeleted": "产品 {name} ({sku}) 已被删除，无法打包",
+    "deliveryDatePassed": "无法标记订单就绪 - 送货日期已过"
   }
 }
