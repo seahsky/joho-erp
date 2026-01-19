@@ -212,6 +212,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         title: t('orderPaused'),
         description: t('orderPausedDescription'),
       });
+      // Invalidate order details cache to refetch updated status
+      utils.packing.getOrderDetails.invalidate();
       onOrderUpdated();
     },
     onError: (error) => {
@@ -230,6 +232,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         title: t('orderResumed'),
         description: t('orderResumedDescription'),
       });
+      // Invalidate order details cache to refetch updated status
+      utils.packing.getOrderDetails.invalidate();
       onOrderUpdated();
     },
     onError: (error) => {
@@ -248,6 +252,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         title: t('orderReset'),
         description: t('orderResetDescription'),
       });
+      // Invalidate order details cache to refetch updated status
+      utils.packing.getOrderDetails.invalidate();
       onOrderUpdated();
     },
     onError: (error) => {
