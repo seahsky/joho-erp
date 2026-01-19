@@ -1933,6 +1933,7 @@
     "paused": "已暂停",
     "inProgress": "进行中",
     "currentStock": "剩余",
+    "updatingStock": "更新中...",
     "stockAvailable": "可用 {count}",
     "lowStock": "库存不足",
     "outOfStock": "缺货",

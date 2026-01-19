@@ -78,40 +78,39 @@ export default function OrdersPage() {
   const [selectedConfirmOrder, setSelectedConfirmOrder] = useState<ConfirmOrder | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
-  // Date filter state - default to today
+  // Date filter state - default to today (using local timezone)
   const today = useMemo(() => {
-    const d = new Date();
-    d.setUTCHours(0, 0, 0, 0);
-    return d;
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }, []);
 
   const [orderDate, setOrderDate] = useState<Date | null>(today);
 
-  // Date input value helper
+  // Date input value helper - uses local timezone methods
   const dateInputValue = useMemo(() => {
     if (!orderDate) return '';
-    const year = orderDate.getUTCFullYear();
-    const month = String(orderDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(orderDate.getUTCDate()).padStart(2, '0');
+    const year = orderDate.getFullYear();
+    const month = String(orderDate.getMonth() + 1).padStart(2, '0');
+    const day = String(orderDate.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }, [orderDate]);
 
-  // End of day timestamp for date filtering (23:59:59.999 UTC)
+  // End of day timestamp for date filtering (23:59:59.999 local time)
   const orderDateEnd = useMemo(() => {
     if (!orderDate) return null;
     const endOfDay = new Date(orderDate.getTime());
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    endOfDay.setHours(23, 59, 59, 999);
     return endOfDay;
   }, [orderDate]);
 
-  // Date change handler
+  // Date change handler - creates local midnight
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.value) {
       setOrderDate(null);
       return;
     }
     const [year, month, day] = e.target.value.split('-').map(Number);
-    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     setOrderDate(newDate);
   };
 

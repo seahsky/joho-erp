@@ -34,11 +34,10 @@ export default function DeliveriesPage() {
   }>({ open: false, delivery: null });
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
-  // Date selector state for filtering by packing date
+  // Date selector state for filtering by packing date (using local timezone)
   const today = useMemo(() => {
-    const d = new Date();
-    d.setUTCHours(0, 0, 0, 0);
-    return d;
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }, []);
   const [deliveryDate, setDeliveryDate] = useState<Date>(today);
 
@@ -58,17 +57,26 @@ export default function DeliveriesPage() {
     }).format(utcDate);
   };
 
+  // Date change handler - creates local midnight
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [year, month, day] = e.target.value.split('-').map(Number);
-    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     setDeliveryDate(newDate);
   };
 
+  // Date input value helper - uses local timezone methods
   const dateInputValue = useMemo(() => {
-    const year = deliveryDate.getUTCFullYear();
-    const month = String(deliveryDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(deliveryDate.getUTCDate()).padStart(2, '0');
+    const year = deliveryDate.getFullYear();
+    const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+    const day = String(deliveryDate.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }, [deliveryDate]);
+
+  // End of day timestamp for date filtering (23:59:59.999 local time)
+  const deliveryDateEnd = useMemo(() => {
+    const endOfDay = new Date(deliveryDate.getTime());
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay;
   }, [deliveryDate]);
 
   // Mark Delivered mutation (for admins)
@@ -98,8 +106,8 @@ export default function DeliveriesPage() {
     search: searchQuery || undefined,
     status: statusFilter || undefined,
     areaId: areaFilter || undefined,
-    dateFrom: deliveryDate, // Filter by packing date
-    dateTo: deliveryDate, // Same day filter
+    dateFrom: deliveryDate, // Filter by packing date (local midnight)
+    dateTo: deliveryDateEnd, // End of day in local timezone
     sortBy,
     sortOrder,
   });

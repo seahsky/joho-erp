@@ -711,19 +711,24 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-1.5 flex-shrink-0 cursor-help">
-                        <Package className={`h-3.5 w-3.5 ${
-                          stockStatus === 'out' ? 'text-destructive' :
-                          stockStatus === 'low' ? 'text-warning' :
-                          'text-muted-foreground'
-                        }`} />
+                        {isUpdating ? (
+                          <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
+                        ) : (
+                          <Package className={`h-3.5 w-3.5 ${
+                            stockStatus === 'out' ? 'text-destructive' :
+                            stockStatus === 'low' ? 'text-warning' :
+                            'text-muted-foreground'
+                          }`} />
+                        )}
                         <span className={`text-xs font-medium tabular-nums ${
+                          isUpdating ? 'text-muted-foreground/50' :
                           stockStatus === 'out' ? 'text-destructive' :
                           stockStatus === 'low' ? 'text-warning' :
                           'text-muted-foreground'
                         }`}>
-                          {displayStock} {t('currentStock')}
+                          {isUpdating ? t('updatingStock') : `${displayStock} ${t('currentStock')}`}
                         </span>
-                        {stockStatus === 'low' && (
+                        {!isUpdating && stockStatus === 'low' && (
                           <AlertTriangle className="h-3 w-3 text-warning" />
                         )}
                       </div>

@@ -16,9 +16,10 @@ export default function PackingPage() {
   const t = useTranslations('packing');
   const { toast } = useToast();
 
-  // Default to today for delivery date (using UTC to avoid timezone issues)
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  // Default to today for delivery date (using local timezone)
+  // This ensures the packing page shows today's orders in the user's timezone
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const [deliveryDate, setDeliveryDate] = useState<Date>(today);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -210,13 +211,18 @@ export default function PackingPage() {
     }).format(utcDate);
   };
 
+  // Date change handler - creates local midnight
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [year, month, day] = e.target.value.split('-').map(Number);
-    const newDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     setDeliveryDate(newDate);
   };
 
-  const dateInputValue = deliveryDate.toISOString().split('T')[0];
+  // Date input value helper - uses local timezone methods
+  const year = deliveryDate.getFullYear();
+  const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+  const day = String(deliveryDate.getDate()).padStart(2, '0');
+  const dateInputValue = `${year}-${month}-${day}`;
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">

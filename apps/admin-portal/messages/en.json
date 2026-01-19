@@ -1933,6 +1933,7 @@
     "paused": "paused",
     "inProgress": "in progress",
     "currentStock": "remaining",
+    "updatingStock": "Updating...",
     "stockAvailable": "{count} available",
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock",

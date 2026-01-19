@@ -1939,6 +1939,7 @@
     "paused": "已暫停",
     "inProgress": "進行中",
     "currentStock": "剩餘",
+    "updatingStock": "更新中...",
     "stockAvailable": "可用 {count}",
     "lowStock": "庫存不足",
     "outOfStock": "缺貨",

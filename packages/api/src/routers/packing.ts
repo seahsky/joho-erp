@@ -67,17 +67,16 @@ export const packingRouter = router({
       const deliveryDate = new Date(input.deliveryDate);
 
       // Get all orders for the delivery date with status 'confirmed' or 'packing'
-      // Use UTC methods to avoid timezone inconsistencies
+      // Frontend sends local midnight - use it as-is for start
+      // End of day is 24 hours minus 1ms from start
       const startOfDay = new Date(deliveryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(deliveryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
       const orders = await prisma.order.findMany({
         where: {
           requestedDeliveryDate: {
             gte: startOfDay,
-            lt: endOfDay,
+            lte: endOfDay,
           },
           status: {
             in: ['confirmed', 'packing'],
@@ -835,6 +834,24 @@ export const packingRouter = router({
         const productMap = new Map(products.map((p) => [p.id, p]));
 
         // ============================================================================
+        // CRITICAL FIX: Check for packing adjustments
+        // If originalItems exists, quantity adjustments were made during packing.
+        // The delta was already consumed by updateItemQuantity, so we should only
+        // consume the ORIGINAL quantity here to avoid double consumption.
+        // ============================================================================
+        const packingData = freshOrder.packing as { originalItems?: any[] } | null;
+        const originalItems = packingData?.originalItems;
+        const hasAdjustments = Array.isArray(originalItems) && originalItems.length > 0;
+
+        // Create a map of original quantities by productId for quick lookup
+        const originalQuantityMap = new Map<string, number>();
+        if (hasAdjustments) {
+          for (const origItem of originalItems!) {
+            originalQuantityMap.set(origItem.productId, origItem.quantity);
+          }
+        }
+
+        // ============================================================================
         // PHASE 1: Aggregate consumption per parent product
         // This ensures that if an order has multiple subproducts from the same parent,
         // the parent stock is updated ONCE with the TOTAL consumption
@@ -865,9 +882,15 @@ export const packingRouter = router({
           const productIsSubproduct = isSubproduct(product);
           const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-          const consumeQuantity = productIsSubproduct
-            ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+          // CRITICAL FIX: Use original quantity when adjustments exist
+          // The adjustment delta was already consumed by updateItemQuantity
+          const quantityForConsumption = hasAdjustments
+            ? (originalQuantityMap.get(item.productId) ?? item.quantity)
             : item.quantity;
+
+          const consumeQuantity = productIsSubproduct
+            ? calculateParentConsumption(quantityForConsumption, product.estimatedLossPercentage ?? 0)
+            : quantityForConsumption;
 
           if (productIsSubproduct && parentProduct) {
             const existing = parentConsumptions.get(parentProduct.id) || {
@@ -1773,16 +1796,16 @@ export const packingRouter = router({
       const deliveryDate = new Date(input.deliveryDate);
 
       // Get all orders for the delivery date
+      // Frontend sends local midnight - use it as-is for start
+      // End of day is 24 hours minus 1ms from start
       const startOfDay = new Date(deliveryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(deliveryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
       // Build base where clause
       const where: Prisma.OrderWhereInput = {
         requestedDeliveryDate: {
           gte: startOfDay,
-          lt: endOfDay,
+          lte: endOfDay,
         },
         status: {
           in: ["confirmed", "packing", "ready_for_delivery"],
