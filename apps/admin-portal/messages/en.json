@@ -1915,6 +1915,7 @@
     "resetOrder": "Reset",
     "resetOrderTitle": "Reset Order Progress?",
     "resetOrderDescription": "This will clear {packedCount} packed items from order {orderNumber}. This action cannot be undone.",
+    "resetReadyOrderDescription": "This will reset order {orderNumber} back to confirmed status. Consumed stock will be restored to inventory. This action cannot be undone.",
     "confirmReset": "Reset Progress",
     "cancel": "Cancel",
     "resumePausedOrders": "Resume Paused Orders",

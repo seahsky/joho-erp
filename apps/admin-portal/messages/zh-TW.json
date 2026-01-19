@@ -1921,6 +1921,7 @@
     "resetOrder": "重設",
     "resetOrderTitle": "重設訂單進度？",
     "resetOrderDescription": "這將清除訂單 {orderNumber} 中已包裝的 {packedCount} 個商品。此操作無法撤銷。",
+    "resetReadyOrderDescription": "這將把訂單 {orderNumber} 重設為已確認狀態。已消耗的庫存將恢復到庫存中。此操作無法撤銷。",
     "confirmReset": "重設進度",
     "cancel": "取消",
     "resumePausedOrders": "繼續暫停的訂單",

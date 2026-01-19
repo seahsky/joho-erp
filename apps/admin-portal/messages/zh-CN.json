@@ -1915,6 +1915,7 @@
     "resetOrder": "重置",
     "resetOrderTitle": "重置订单进度？",
     "resetOrderDescription": "这将清除订单 {orderNumber} 中已打包的 {packedCount} 个商品。此操作无法撤销。",
+    "resetReadyOrderDescription": "这将把订单 {orderNumber} 重置为已确认状态。已消耗的库存将恢复到库存中。此操作无法撤销。",
     "confirmReset": "重置进度",
     "cancel": "取消",
     "resumePausedOrders": "继续暂停的订单",
