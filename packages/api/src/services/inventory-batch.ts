@@ -55,116 +55,167 @@ export async function consumeStock(
   // Use provided transaction context or global prisma instance
   const client = tx || prisma;
 
-  try {
-    // Step 1: Get available batches in FIFO order (oldest receivedAt first)
-    // Filter: quantityRemaining > 0, isConsumed = false, not expired
-    const now = new Date();
-    const availableBatches = await client.inventoryBatch.findMany({
-      where: {
-        productId,
-        isConsumed: false,
-        quantityRemaining: { gt: 0 },
-        OR: [
-          { expiryDate: null }, // No expiry date
-          { expiryDate: { gt: now } }, // Not yet expired
-        ],
-      },
-      orderBy: { receivedAt: 'asc' }, // FIFO: oldest first
-    });
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
 
-    // Step 2: Validate sufficient stock
-    const totalAvailable = availableBatches.reduce(
-      (sum: number, batch) => sum + batch.quantityRemaining,
-      0
-    );
+  while (retryCount < MAX_RETRIES) {
+    try {
+      // Step 1: Get available batches in FIFO order (oldest receivedAt first)
+      // Filter: quantityRemaining > 0, isConsumed = false, not expired
+      const now = new Date();
+      const availableBatches = await client.inventoryBatch.findMany({
+        where: {
+          productId,
+          isConsumed: false,
+          quantityRemaining: { gt: 0 },
+          OR: [
+            { expiryDate: null }, // No expiry date
+            { expiryDate: { gt: now } }, // Not yet expired
+          ],
+        },
+        orderBy: { receivedAt: 'asc' }, // FIFO: oldest first
+      });
 
-    if (totalAvailable < quantityToConsume) {
-      throw new Error(
-        `Insufficient stock. Need ${quantityToConsume}, have ${totalAvailable}`
+      // Step 2: Validate sufficient stock
+      const totalAvailable = availableBatches.reduce(
+        (sum: number, batch) => sum + batch.quantityRemaining,
+        0
       );
-    }
 
-    // Step 3: Consume from batches in FIFO order
-    let remainingToConsume = quantityToConsume;
-    const consumptions: BatchConsumptionRecord[] = [];
-    const expiryWarnings: ExpiryWarning[] = [];
-    let totalCost = 0;
-
-    for (const batch of availableBatches) {
-      if (remainingToConsume <= 0) break;
-
-      // Check if batch expires soon (within 7 days)
-      if (batch.expiryDate) {
-        const daysUntilExpiry = Math.ceil(
-          (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      if (totalAvailable < quantityToConsume) {
+        throw new Error(
+          `Insufficient stock. Need ${quantityToConsume}, have ${totalAvailable}`
         );
-        if (daysUntilExpiry <= 7) {
-          expiryWarnings.push({
-            batchId: batch.id,
-            expiryDate: batch.expiryDate,
-            quantityRemaining: batch.quantityRemaining,
-            daysUntilExpiry,
-          });
-        }
       }
 
-      // Consume from this batch
-      const quantityFromBatch = Math.min(
-        batch.quantityRemaining,
-        remainingToConsume
-      );
+      // Step 3: Consume from batches in FIFO order with atomic guards
+      let remainingToConsume = quantityToConsume;
+      const consumptions: BatchConsumptionRecord[] = [];
+      const expiryWarnings: ExpiryWarning[] = [];
+      let totalCost = 0;
+      let conflictDetected = false;
 
-      // Calculate cost from this batch (in cents)
-      const costFromBatch = Math.round(quantityFromBatch * batch.costPerUnit);
+      for (const batch of availableBatches) {
+        if (remainingToConsume <= 0) break;
 
-      // Add to consumptions record
-      consumptions.push({
-        batchId: batch.id,
-        quantityConsumed: quantityFromBatch,
-        costPerUnit: batch.costPerUnit,
-        totalCost: costFromBatch,
-      });
+        // Check if batch expires soon (within 7 days)
+        if (batch.expiryDate) {
+          const daysUntilExpiry = Math.ceil(
+            (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          if (daysUntilExpiry <= 7) {
+            expiryWarnings.push({
+              batchId: batch.id,
+              expiryDate: batch.expiryDate,
+              quantityRemaining: batch.quantityRemaining,
+              daysUntilExpiry,
+            });
+          }
+        }
 
-      totalCost += costFromBatch;
+        // Consume from this batch
+        const quantityFromBatch = Math.min(
+          batch.quantityRemaining,
+          remainingToConsume
+        );
 
-      // Update batch quantity
-      const newQuantity = batch.quantityRemaining - quantityFromBatch;
-      const isFullyConsumed = newQuantity === 0;
+        // Calculate cost from this batch (in cents)
+        const costFromBatch = Math.round(quantityFromBatch * batch.costPerUnit);
 
-      await client.inventoryBatch.update({
-        where: { id: batch.id },
-        data: {
-          quantityRemaining: newQuantity,
-          isConsumed: isFullyConsumed,
-          consumedAt: isFullyConsumed ? new Date() : null,
-        },
-      });
+        // Calculate new quantity
+        const newQuantity = batch.quantityRemaining - quantityFromBatch;
+        const isFullyConsumed = newQuantity === 0;
 
-      // Create BatchConsumption record
-      await client.batchConsumption.create({
-        data: {
+        // ATOMIC GUARD: Use updateMany with WHERE condition on expected quantityRemaining
+        // This prevents race conditions where another process consumed from this batch
+        const updateResult = await client.inventoryBatch.updateMany({
+          where: {
+            id: batch.id,
+            quantityRemaining: batch.quantityRemaining, // Optimistic lock on expected value
+            isConsumed: false, // Must not already be consumed
+          },
+          data: {
+            quantityRemaining: newQuantity,
+            isConsumed: isFullyConsumed,
+            consumedAt: isFullyConsumed ? new Date() : null,
+          },
+        });
+
+        // Check if update succeeded (batch wasn't modified by another process)
+        if (updateResult.count === 0) {
+          // Batch was consumed by another process - conflict detected
+          conflictDetected = true;
+          break; // Break and retry the entire operation
+        }
+
+        // Update succeeded - record the consumption
+        consumptions.push({
           batchId: batch.id,
-          transactionId,
           quantityConsumed: quantityFromBatch,
           costPerUnit: batch.costPerUnit,
           totalCost: costFromBatch,
-          orderId: orderId || null,
-          orderNumber: orderNumber || null,
-        },
-      });
+        });
 
-      remainingToConsume -= quantityFromBatch;
+        totalCost += costFromBatch;
+
+        // Create BatchConsumption record
+        await client.batchConsumption.create({
+          data: {
+            batchId: batch.id,
+            transactionId,
+            quantityConsumed: quantityFromBatch,
+            costPerUnit: batch.costPerUnit,
+            totalCost: costFromBatch,
+            orderId: orderId || null,
+            orderNumber: orderNumber || null,
+          },
+        });
+
+        remainingToConsume -= quantityFromBatch;
+      }
+
+      // If conflict detected, retry the entire operation
+      if (conflictDetected) {
+        retryCount++;
+        if (retryCount >= MAX_RETRIES) {
+          throw new Error(
+            `Concurrent batch consumption conflict after ${MAX_RETRIES} retries. Please try again.`
+          );
+        }
+        // Small delay before retry to reduce contention
+        await new Promise((resolve) => setTimeout(resolve, 50 * retryCount));
+        continue; // Retry the loop
+      }
+
+      // Check if we consumed enough (shouldn't happen if validation passed, but be safe)
+      if (remainingToConsume > 0) {
+        throw new Error(
+          `Failed to consume all required stock. Remaining: ${remainingToConsume}`
+        );
+      }
+
+      return {
+        totalCost,
+        batchesUsed: consumptions,
+        expiryWarnings,
+      };
+    } catch (error) {
+      // Re-throw non-conflict errors immediately
+      if (error instanceof Error && !error.message.includes('conflict')) {
+        console.error('Error consuming stock:', error);
+        throw error;
+      }
+      // For conflict errors, the while loop handles retries
+      retryCount++;
+      if (retryCount >= MAX_RETRIES) {
+        console.error('Error consuming stock after retries:', error);
+        throw error;
+      }
     }
-
-    return {
-      totalCost,
-      batchesUsed: consumptions,
-      expiryWarnings,
-    };
-  } catch (error) {
-    console.error('Error consuming stock:', error);
-    throw error;
   }
+
+  // Should never reach here, but TypeScript needs a return
+  throw new Error('Unexpected error in consumeStock');
 }
 
 /**

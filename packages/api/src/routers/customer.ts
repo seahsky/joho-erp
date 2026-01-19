@@ -729,64 +729,88 @@ export const customerRouter = router({
     .mutation(async ({ input, ctx }) => {
       const resolvedCustomerId = await resolveCustomerId(input.customerId);
 
-      // Fetch current customer to update creditApplication
-      const currentCustomer = await prisma.customer.findUnique({
-        where: { id: resolvedCustomerId },
+      // Wrap in transaction with atomic guard to prevent duplicate approvals
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch customer INSIDE transaction
+        const currentCustomer = await tx.customer.findUnique({
+          where: { id: resolvedCustomerId },
+        });
+
+        if (!currentCustomer) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Customer not found',
+          });
+        }
+
+        // STEP 2: Check if already approved (idempotent check)
+        const currentCreditApp = currentCustomer.creditApplication;
+        if (currentCreditApp.status === 'approved') {
+          // Already approved - return idempotent result
+          return { customer: currentCustomer, alreadyApproved: true };
+        }
+
+        // STEP 3: Validate status is pending (atomic guard)
+        if (currentCreditApp.status !== 'pending') {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Credit application cannot be approved. Current status: ${currentCreditApp.status}`,
+          });
+        }
+
+        // STEP 4: Update customer with credit approval
+        const customer = await tx.customer.update({
+          where: { id: resolvedCustomerId },
+          data: {
+            creditApplication: {
+              ...currentCreditApp,
+              status: 'approved',
+              creditLimit: input.creditLimit,
+              paymentTerms: input.paymentTerms,
+              notes: input.notes,
+              reviewedAt: new Date(),
+              reviewedBy: ctx.userId,
+            },
+          },
+        });
+
+        return { customer, alreadyApproved: false };
       });
 
-      if (!currentCustomer) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Customer not found',
+      // Only send emails and trigger side effects if not already approved (idempotent)
+      if (!result.alreadyApproved) {
+        // Send approval email to customer
+        const contactPerson = result.customer.contactPerson as { firstName: string; lastName: string; email: string };
+        await sendCreditApprovedEmail({
+          customerEmail: contactPerson.email,
+          customerName: result.customer.businessName,
+          contactPerson: `${contactPerson.firstName} ${contactPerson.lastName}`,
+          creditLimit: input.creditLimit,
+          paymentTerms: input.paymentTerms,
+          notes: input.notes,
+        }).catch((error) => {
+          console.error('Failed to send credit approved email:', error);
+        });
+
+        // Sync to Xero as contact
+        const { enqueueXeroJob } = await import('../services/xero-queue');
+        await enqueueXeroJob('sync_contact', 'customer', result.customer.id).catch((error) => {
+          console.error('Failed to enqueue Xero contact sync:', error);
+        });
+
+        // Log credit approval to audit trail
+        await logCreditApproval(
+          ctx.userId,
+          result.customer.id,
+          result.customer.businessName,
+          input.creditLimit,
+          input.paymentTerms
+        ).catch((error) => {
+          console.error('Failed to log credit approval:', error);
         });
       }
 
-      const customer = await prisma.customer.update({
-        where: { id: resolvedCustomerId },
-        data: {
-          creditApplication: {
-            ...currentCustomer.creditApplication,
-            status: 'approved',
-            creditLimit: input.creditLimit,
-            paymentTerms: input.paymentTerms,
-            notes: input.notes,
-            reviewedAt: new Date(),
-            reviewedBy: ctx.userId,
-          },
-        },
-      });
-
-      // Send approval email to customer
-      const contactPerson = customer.contactPerson as { firstName: string; lastName: string; email: string };
-      await sendCreditApprovedEmail({
-        customerEmail: contactPerson.email,
-        customerName: customer.businessName,
-        contactPerson: `${contactPerson.firstName} ${contactPerson.lastName}`,
-        creditLimit: input.creditLimit,
-        paymentTerms: input.paymentTerms,
-        notes: input.notes,
-      }).catch((error) => {
-        console.error('Failed to send credit approved email:', error);
-      });
-
-      // Sync to Xero as contact
-      const { enqueueXeroJob } = await import('../services/xero-queue');
-      await enqueueXeroJob('sync_contact', 'customer', customer.id).catch((error) => {
-        console.error('Failed to enqueue Xero contact sync:', error);
-      });
-
-      // Log credit approval to audit trail
-      await logCreditApproval(
-        ctx.userId,
-        customer.id,
-        customer.businessName,
-        input.creditLimit,
-        input.paymentTerms
-      ).catch((error) => {
-        console.error('Failed to log credit approval:', error);
-      });
-
-      return customer;
+      return result.customer;
     }),
 
   // Admin: Reject credit

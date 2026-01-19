@@ -834,49 +834,49 @@ export const productRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { sourceProductId, targetProductId, quantityToProcess, costPerUnit, expiryDate, notes } = input;
 
-      // Get both products
-      const [sourceProduct, targetProduct] = await Promise.all([
-        prisma.product.findUnique({ where: { id: sourceProductId } }),
-        prisma.product.findUnique({ where: { id: targetProductId } }),
-      ]);
-
-      if (!sourceProduct) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Source product not found',
-        });
-      }
-
-      if (!targetProduct) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Target product not found',
-        });
-      }
-
-      // Check sufficient source stock
-      if (sourceProduct.currentStock < quantityToProcess) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, requested: ${quantityToProcess}`,
-        });
-      }
-
-      // Calculate output quantity based on target's estimated loss percentage
-      const lossPercentage = targetProduct.estimatedLossPercentage || 0;
-      const outputQty = parseFloat((quantityToProcess * (1 - lossPercentage / 100)).toFixed(2));
-
-      // Validate output is not zero
-      if (outputQty <= 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Output quantity would be zero or negative. Check loss percentage configuration.',
-        });
-      }
-
-      // Use transaction to process stock atomically
+      // Use transaction to process stock atomically - ALL validation inside transaction
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create source InventoryTransaction (consumption)
+        // STEP 1: Get both products INSIDE transaction (prevents TOCTOU)
+        const [sourceProduct, targetProduct] = await Promise.all([
+          tx.product.findUnique({ where: { id: sourceProductId } }),
+          tx.product.findUnique({ where: { id: targetProductId } }),
+        ]);
+
+        if (!sourceProduct) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Source product not found',
+          });
+        }
+
+        if (!targetProduct) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Target product not found',
+          });
+        }
+
+        // STEP 2: Check sufficient source stock (validated inside transaction)
+        if (sourceProduct.currentStock < quantityToProcess) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, requested: ${quantityToProcess}`,
+          });
+        }
+
+        // Calculate output quantity based on target's estimated loss percentage
+        const lossPercentage = targetProduct.estimatedLossPercentage || 0;
+        const outputQty = parseFloat((quantityToProcess * (1 - lossPercentage / 100)).toFixed(2));
+
+        // Validate output is not zero
+        if (outputQty <= 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Output quantity would be zero or negative. Check loss percentage configuration.',
+          });
+        }
+
+        // STEP 3: Create source InventoryTransaction (consumption)
         const sourceTransaction = await tx.inventoryTransaction.create({
           data: {
             productId: sourceProductId,
@@ -891,7 +891,7 @@ export const productRouter = router({
           },
         });
 
-        // 2. Consume from source batches using FIFO
+        // STEP 4: Consume from source batches using FIFO
         const { consumeStock } = await import('../services/inventory-batch');
         const consumptionResult = await consumeStock(
           sourceProductId,
@@ -902,13 +902,23 @@ export const productRouter = router({
           tx
         );
 
-        // 3. Update source product stock
-        await tx.product.update({
-          where: { id: sourceProductId },
+        // STEP 5: Update source product stock with atomic guard
+        const sourceUpdateResult = await tx.product.updateMany({
+          where: {
+            id: sourceProductId,
+            currentStock: { gte: quantityToProcess }, // Atomic guard - ensure stock still available
+          },
           data: { currentStock: { decrement: quantityToProcess } },
         });
 
-        // 4. Create target InventoryTransaction (receipt)
+        if (sourceUpdateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Stock was modified by another process. Please try again.',
+          });
+        }
+
+        // STEP 6: Create target InventoryTransaction (receipt)
         const targetTransaction = await tx.inventoryTransaction.create({
           data: {
             productId: targetProductId,
@@ -925,7 +935,7 @@ export const productRouter = router({
           },
         });
 
-        // 5. Create InventoryBatch for target product
+        // STEP 7: Create InventoryBatch for target product
         await tx.inventoryBatch.create({
           data: {
             productId: targetProductId,
@@ -939,7 +949,7 @@ export const productRouter = router({
           },
         });
 
-        // 6. Update target product stock
+        // STEP 8: Update target product stock
         await tx.product.update({
           where: { id: targetProductId },
           data: { currentStock: { increment: outputQty } },
@@ -953,28 +963,30 @@ export const productRouter = router({
           lossPercentage,
           sourceCOGS: consumptionResult.totalCost,
           expiryWarnings: consumptionResult.expiryWarnings,
+          sourceProduct,
+          targetProduct,
         };
       });
 
-      // Audit logs for both products
+      // Audit logs for both products (outside transaction - non-critical)
       await Promise.all([
         logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, sourceProductId, {
-          sku: sourceProduct.sku,
+          sku: result.sourceProduct.sku,
           adjustmentType: 'packing_adjustment',
-          previousStock: sourceProduct.currentStock,
-          newStock: sourceProduct.currentStock - quantityToProcess,
+          previousStock: result.sourceProduct.currentStock,
+          newStock: result.sourceProduct.currentStock - quantityToProcess,
           quantity: -quantityToProcess,
-          notes: `Processed to ${targetProduct.name}`,
+          notes: `Processed to ${result.targetProduct.name}`,
         }).catch((error) => {
           console.error('Audit log failed for source product:', error);
         }),
         logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, targetProductId, {
-          sku: targetProduct.sku,
+          sku: result.targetProduct.sku,
           adjustmentType: 'stock_received',
-          previousStock: targetProduct.currentStock,
-          newStock: targetProduct.currentStock + outputQty,
-          quantity: outputQty,
-          notes: `Processed from ${sourceProduct.name}`,
+          previousStock: result.targetProduct.currentStock,
+          newStock: result.targetProduct.currentStock + result.quantityProduced,
+          quantity: result.quantityProduced,
+          notes: `Processed from ${result.sourceProduct.name}`,
         }).catch((error) => {
           console.error('Audit log failed for target product:', error);
         }),
@@ -983,16 +995,16 @@ export const productRouter = router({
       return {
         success: true,
         sourceProduct: {
-          id: sourceProduct.id,
-          name: sourceProduct.name,
-          sku: sourceProduct.sku,
-          newStock: sourceProduct.currentStock - quantityToProcess,
+          id: result.sourceProduct.id,
+          name: result.sourceProduct.name,
+          sku: result.sourceProduct.sku,
+          newStock: result.sourceProduct.currentStock - quantityToProcess,
         },
         targetProduct: {
-          id: targetProduct.id,
-          name: targetProduct.name,
-          sku: targetProduct.sku,
-          newStock: targetProduct.currentStock + outputQty,
+          id: result.targetProduct.id,
+          name: result.targetProduct.name,
+          sku: result.targetProduct.sku,
+          newStock: result.targetProduct.currentStock + result.quantityProduced,
         },
         quantityProcessed: result.quantityProcessed,
         quantityProduced: result.quantityProduced,

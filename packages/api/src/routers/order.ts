@@ -120,26 +120,24 @@ export async function calculateAvailableCredit(
 ): Promise<number> {
   const db = tx || prisma;
 
-  // Get all orders that count against credit limit
-  // Exclude: delivered (invoiced), cancelled, and pending_approval backorders
-  const outstandingOrders = await db.order.findMany({
+  // Use atomic aggregation instead of findMany + reduce to prevent race conditions
+  // This is a single database operation that returns the sum
+  const result = await db.order.aggregate({
     where: {
       customerId,
       // Exclude awaiting_approval (pending backorders) - they don't count until approved
+      // Exclude delivered (invoiced) and cancelled orders
       status: {
         in: ['confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
     },
-    select: {
+    _sum: {
       totalAmount: true,
     },
   });
 
-  // Sum outstanding order totals
-  const outstandingBalance = outstandingOrders.reduce(
-    (sum, order) => sum + order.totalAmount,
-    0
-  );
+  // Get the outstanding balance (null means no orders found)
+  const outstandingBalance = result._sum.totalAmount || 0;
 
   // Calculate available credit
   const availableCredit = creditLimit - outstandingBalance;
@@ -149,21 +147,24 @@ export async function calculateAvailableCredit(
 
 // Helper: Get outstanding balance for a customer
 export async function getOutstandingBalance(customerId: string): Promise<number> {
-  const outstandingOrders = await prisma.order.findMany({
+  // Use atomic aggregation instead of findMany + reduce to prevent race conditions
+  const result = await prisma.order.aggregate({
     where: {
       customerId,
       // Include awaiting_approval to prevent customers from exceeding credit (Issue #9 fix)
       // Pending backorders count against credit to prevent over-ordering while approval is pending
+      // Note: This is intentionally different from calculateAvailableCredit which excludes awaiting_approval
+      // because that function is used during backorder approval when we need the committed credit only
       status: {
         in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'],
       },
     },
-    select: {
+    _sum: {
       totalAmount: true,
     },
   });
 
-  return outstandingOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  return result._sum.totalAmount || 0;
 }
 
 export const orderRouter = router({
@@ -1090,103 +1091,105 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Fetch current order to append to statusHistory
-      const currentOrder = await prisma.order.findUnique({
-        where: { id: input.orderId },
-      });
-
-      if (!currentOrder) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Get user details for status history
+      // Get user details for status history (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Validate status transition using state machine (Issue #8 fix)
-      const transitionValidation = validateStatusTransition(
-        currentOrder.status as Parameters<typeof validateStatusTransition>[0],
-        input.newStatus,
-        ctx.userRole as StateMachineUserRole
-      );
-      if (!transitionValidation.valid) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: transitionValidation.error || 'Invalid status transition',
+      // Wrap entire operation in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch current order INSIDE transaction
+        const currentOrder = await tx.order.findUnique({
+          where: { id: input.orderId },
         });
-      }
 
-      // Check if cancelling an order with assigned driver - requires urgent driver notification
-      // This applies when order is ready_for_delivery or delivered statuses and has a driver assigned
-      const delivery = currentOrder.delivery as { driverId?: string; driverName?: string } | null;
-      const isCancellingWithAssignedDriver =
-        input.newStatus === 'cancelled' &&
-        delivery?.driverId &&
-        (currentOrder.status === 'ready_for_delivery' || currentOrder.status === 'delivered');
-
-      if (isCancellingWithAssignedDriver && delivery?.driverId) {
-        try {
-          // Fetch driver email from Clerk
-          const client = await clerkClient();
-          const driverUser = await client.users.getUser(delivery.driverId);
-          const driverEmail = driverUser.primaryEmailAddress?.emailAddress;
-
-          if (driverEmail) {
-            const deliveryAddr = currentOrder.deliveryAddress as {
-              street: string;
-              suburb: string;
-              state: string;
-              postcode: string;
-            };
-            await sendDriverUrgentCancellationEmail({
-              driverEmail,
-              driverName: delivery.driverName || 'Driver',
-              orderNumber: currentOrder.orderNumber,
-              customerName: currentOrder.customerName,
-              deliveryAddress: `${deliveryAddr.street}, ${deliveryAddr.suburb} ${deliveryAddr.state} ${deliveryAddr.postcode}`,
-              cancellationReason: input.notes || 'No reason provided',
-            });
-          }
-        } catch (error) {
-          console.error('Failed to send driver urgent cancellation email:', error);
+        if (!currentOrder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
         }
-      }
 
-      // Handle stock restoration when cancelling
-      // Only restore stock if:
-      // 1. Order is being cancelled
-      // 2. Order had stock reduced (stock is now reduced at packing step - ready_for_delivery or later)
-      // Use stockConsumed flag instead of status-based check for stock restoration
-      // This is more reliable as stockConsumed is only set after markOrderReady succeeds
-      const shouldRestoreStock =
-        input.newStatus === 'cancelled' &&
-        currentOrder.stockConsumed === true;
+        // STEP 2: Check for idempotency first
+        if (currentOrder.status === input.newStatus) {
+          return { order: currentOrder, alreadyCompleted: true, originalStatus: currentOrder.status };
+        }
 
-      if (shouldRestoreStock) {
-        // Restore stock in a transaction
-        const order = await prisma.$transaction(async (tx) => {
-          const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
+        // Validate status transition using state machine
+        const transitionValidation = validateStatusTransition(
+          currentOrder.status as Parameters<typeof validateStatusTransition>[0],
+          input.newStatus,
+          ctx.userRole as StateMachineUserRole
+        );
+        if (!transitionValidation.valid) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: transitionValidation.error || 'Invalid status transition',
+          });
+        }
 
-          // Update order status
-          const updatedOrder = await tx.order.update({
-            where: { id: input.orderId },
+        // STEP 3: Atomic guard - use updateMany with current status condition
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            status: currentOrder.status, // Atomic guard - must still be at current status
+          },
+          data: {
+            status: input.newStatus,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // Race condition - another process changed the status
+          const recheck = await tx.order.findUnique({ where: { id: input.orderId } });
+          if (recheck?.status === input.newStatus) {
+            return { order: recheck, alreadyCompleted: true, originalStatus: currentOrder.status };
+          }
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order status was changed by another process. Please refresh and try again.',
+          });
+        }
+
+        // Handle stock restoration when cancelling
+        const shouldRestoreStock =
+          input.newStatus === 'cancelled' &&
+          currentOrder.stockConsumed === true;
+
+        if (shouldRestoreStock) {
+          // STEP 4: Atomic guard for stock restoration - prevent double restoration
+          const stockGuardResult = await tx.order.updateMany({
+            where: {
+              id: input.orderId,
+              stockConsumed: true, // Only if stock is actually consumed
+            },
             data: {
-              status: input.newStatus,
-              statusHistory: [
-                ...currentOrder.statusHistory,
-                {
-                  status: input.newStatus,
-                  changedAt: new Date(),
-                  changedBy: ctx.userId,
-                  changedByName: userDetails.changedByName,
-                  changedByEmail: userDetails.changedByEmail,
-                  notes: input.notes,
-                },
-              ],
+              stockConsumed: false, // Mark as not consumed atomically
             },
           });
+
+          if (stockGuardResult.count === 0) {
+            // Stock already restored by another process - skip restoration
+            // Update status history and return
+            const order = await tx.order.update({
+              where: { id: input.orderId },
+              data: {
+                statusHistory: [
+                  ...currentOrder.statusHistory,
+                  {
+                    status: input.newStatus,
+                    changedAt: new Date(),
+                    changedBy: ctx.userId,
+                    changedByName: userDetails.changedByName,
+                    changedByEmail: userDetails.changedByEmail,
+                    notes: input.notes,
+                  },
+                ],
+              },
+            });
+            return { order, alreadyCompleted: false, originalStatus: currentOrder.status, stockAlreadyRestored: true };
+          }
+
+          // Proceed with stock restoration
+          const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
 
           // Get products with parent product info for subproduct handling
           const productIds = (currentOrder.items as any[]).map((item: any) => item.productId);
@@ -1195,14 +1198,9 @@ export const orderRouter = router({
             include: { parentProduct: true },
           });
 
-          // Create a map for quick lookup
           const productMap = new Map(products.map((p) => [p.id, p]));
 
-          // ============================================================================
           // PHASE 1: Aggregate restoration per parent product
-          // This ensures that if an order has multiple subproducts from the same parent,
-          // the parent stock is restored ONCE with the TOTAL restoration
-          // ============================================================================
           const parentRestorations = new Map<string, {
             totalRestoration: number;
             items: Array<{ product: any; item: any; restoreQuantity: number }>;
@@ -1214,7 +1212,6 @@ export const orderRouter = router({
             restoreQuantity: number;
           }> = [];
 
-          // First pass: categorize and aggregate
           for (const item of currentOrder.items as any[]) {
             const product = productMap.get(item.productId);
             if (!product) continue;
@@ -1222,7 +1219,6 @@ export const orderRouter = router({
             const productIsSubproduct = isSubproduct(product);
             const parentProduct = productIsSubproduct ? product.parentProduct : null;
 
-            // Use stored loss % from order item, fallback to current product's loss % (Issue #11 fix)
             const lossPercentage = item.estimatedLossPercentage ?? product.estimatedLossPercentage ?? 0;
             const restoreQuantity = productIsSubproduct
               ? calculateParentConsumption(item.quantity, lossPercentage)
@@ -1241,9 +1237,7 @@ export const orderRouter = router({
             }
           }
 
-          // ============================================================================
           // PHASE 2: Process parent products with aggregated restoration totals
-          // ============================================================================
           for (const [parentId, { totalRestoration, items }] of parentRestorations) {
             const parentProduct = await tx.product.findUnique({ where: { id: parentId } });
             if (!parentProduct) continue;
@@ -1251,7 +1245,6 @@ export const orderRouter = router({
             const currentStock = parentProduct.currentStock;
             const newStock = currentStock + totalRestoration;
 
-            // Create individual inventory transactions for each subproduct (detailed audit trail)
             for (const { product, item, restoreQuantity } of items) {
               const transactionNotes = `Subproduct stock restored: ${product.name} (${item.quantity}${product.unit}) from cancelled order ${currentOrder.orderNumber}`;
 
@@ -1259,9 +1252,9 @@ export const orderRouter = router({
                 data: {
                   productId: parentId,
                   type: 'return',
-                  quantity: restoreQuantity, // Positive for returns
+                  quantity: restoreQuantity,
                   previousStock: currentStock,
-                  newStock: currentStock + restoreQuantity, // Individual item's view
+                  newStock: currentStock + restoreQuantity,
                   referenceType: 'order',
                   referenceId: input.orderId,
                   notes: transactionNotes,
@@ -1269,26 +1262,23 @@ export const orderRouter = router({
                 },
               });
 
-              // Create batch for each returned subproduct item
               await tx.inventoryBatch.create({
                 data: {
                   productId: parentId,
                   quantityRemaining: restoreQuantity,
                   initialQuantity: restoreQuantity,
-                  costPerUnit: 0, // Unknown cost for returned stock
+                  costPerUnit: 0,
                   receivedAt: new Date(),
                   notes: `Stock returned from cancelled order ${currentOrder.orderNumber} (${product.name})`,
                 },
               });
             }
 
-            // Update parent stock ONCE with total restoration
             await tx.product.update({
               where: { id: parentId },
               data: { currentStock: newStock },
             });
 
-            // Recalculate all subproduct stocks ONCE
             const subproducts = await tx.product.findMany({
               where: { parentProductId: parentId },
               select: { id: true, parentProductId: true, estimatedLossPercentage: true },
@@ -1305,25 +1295,21 @@ export const orderRouter = router({
             }
           }
 
-          // ============================================================================
           // PHASE 3: Process regular (non-subproduct) products
-          // ============================================================================
           for (const { product, restoreQuantity } of regularProductItems) {
-            // Get current stock FRESH inside transaction
             const freshProduct = await tx.product.findUnique({ where: { id: product.id } });
             if (!freshProduct) continue;
 
             const currentStock = freshProduct.currentStock;
             const newStock = currentStock + restoreQuantity;
 
-            // Create inventory transaction (return)
             const transactionNotes = `Stock restored from cancelled order ${currentOrder.orderNumber}`;
 
             await tx.inventoryTransaction.create({
               data: {
                 productId: product.id,
                 type: 'return',
-                quantity: restoreQuantity, // Positive for returns
+                quantity: restoreQuantity,
                 previousStock: currentStock,
                 newStock,
                 referenceType: 'order',
@@ -1333,25 +1319,22 @@ export const orderRouter = router({
               },
             });
 
-            // Create a new batch for the returned stock
             await tx.inventoryBatch.create({
               data: {
                 productId: product.id,
                 quantityRemaining: restoreQuantity,
                 initialQuantity: restoreQuantity,
-                costPerUnit: 0, // Unknown cost for returned stock
+                costPerUnit: 0,
                 receivedAt: new Date(),
                 notes: `Stock returned from cancelled order ${currentOrder.orderNumber}`,
               },
             });
 
-            // Update product stock
             await tx.product.update({
               where: { id: product.id },
               data: { currentStock: newStock },
             });
 
-            // If this regular product has subproducts, recalculate their stocks too
             const subproducts = await tx.product.findMany({
               where: { parentProductId: product.id },
               select: { id: true, parentProductId: true, estimatedLossPercentage: true },
@@ -1367,178 +1350,172 @@ export const orderRouter = router({
               }
             }
           }
+        }
 
-          return updatedOrder;
+        // STEP 5: Update status history
+        const updatedOrder = await tx.order.update({
+          where: { id: input.orderId },
+          data: {
+            statusHistory: [
+              ...currentOrder.statusHistory,
+              {
+                status: input.newStatus,
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: input.notes,
+              },
+            ],
+          },
         });
 
-        // Send cancellation email to customer
+        return { 
+          order: updatedOrder, 
+          alreadyCompleted: false, 
+          originalStatus: currentOrder.status,
+          delivery: currentOrder.delivery,
+          shouldRestoreStock,
+        };
+      });
+
+      // Only trigger side effects if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Check if cancelling an order with assigned driver - send urgent notification
+        const delivery = result.delivery as { driverId?: string; driverName?: string } | null;
+        const isCancellingWithAssignedDriver =
+          input.newStatus === 'cancelled' &&
+          delivery?.driverId &&
+          (result.originalStatus === 'ready_for_delivery' || result.originalStatus === 'out_for_delivery');
+
+        if (isCancellingWithAssignedDriver && delivery?.driverId) {
+          try {
+            const client = await clerkClient();
+            const driverUser = await client.users.getUser(delivery.driverId);
+            const driverEmail = driverUser.primaryEmailAddress?.emailAddress;
+
+            if (driverEmail) {
+              const deliveryAddr = result.order.deliveryAddress as {
+                street: string;
+                suburb: string;
+                state: string;
+                postcode: string;
+              };
+              await sendDriverUrgentCancellationEmail({
+                driverEmail,
+                driverName: delivery.driverName || 'Driver',
+                orderNumber: result.order.orderNumber,
+                customerName: result.order.customerName,
+                deliveryAddress: `${deliveryAddr.street}, ${deliveryAddr.suburb} ${deliveryAddr.state} ${deliveryAddr.postcode}`,
+                cancellationReason: input.notes || 'No reason provided',
+              });
+            }
+          } catch (error) {
+            console.error('Failed to send driver urgent cancellation email:', error);
+          }
+        }
+
+        // Get customer for email notifications
         const customer = await prisma.customer.findUnique({
-          where: { id: currentOrder.customerId },
+          where: { id: result.order.customerId },
           select: { contactPerson: true, businessName: true },
         });
 
         if (customer) {
-          await sendOrderCancelledEmail({
-            customerEmail: customer.contactPerson.email,
-            customerName: customer.businessName,
-            orderNumber: currentOrder.orderNumber,
-            cancellationReason: input.notes || 'No reason provided',
-            totalAmount: currentOrder.totalAmount,
-          }).catch((error) => {
-            console.error('Failed to send order cancelled email:', error);
-          });
-        }
-
-        // If order has a Xero invoice, create a credit note
-        const xeroInfo = currentOrder.xero as { invoiceId?: string | null } | null;
-        if (xeroInfo?.invoiceId) {
-          const { enqueueXeroJob } = await import('../services/xero-queue');
-          await enqueueXeroJob('create_credit_note', 'order', input.orderId).catch((error) => {
-            console.error('Failed to enqueue Xero credit note creation:', error);
-          });
-        }
-
-        // Log cancellation to audit trail
-        await logOrderCancellation(
-          ctx.userId,
-          input.orderId,
-          currentOrder.orderNumber,
-          input.notes || 'No reason provided',
-          currentOrder.status
-        ).catch((error) => {
-          console.error('Failed to log order cancellation:', error);
-        });
-
-        return order;
-      }
-
-      // Normal status update (no stock restoration needed)
-      const order = await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          status: input.newStatus,
-          statusHistory: [
-            ...currentOrder.statusHistory,
-            {
-              status: input.newStatus,
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: input.notes,
-            },
-          ],
-        },
-      });
-
-      // Send notification emails based on status
-      const customer = await prisma.customer.findUnique({
-        where: { id: currentOrder.customerId },
-        select: { contactPerson: true, businessName: true },
-      });
-
-      if (customer) {
-        // Send appropriate email based on new status
-        switch (input.newStatus) {
-          case 'cancelled':
-            // Send cancellation email for orders not packed yet (no stock to restore)
-            await sendOrderCancelledEmail({
-              customerEmail: customer.contactPerson.email,
-              customerName: customer.businessName,
-              orderNumber: currentOrder.orderNumber,
-              cancellationReason: input.notes || 'No reason provided',
-              totalAmount: currentOrder.totalAmount,
-            }).catch((error) => {
-              console.error('Failed to send order cancelled email:', error);
-            });
-            break;
-
-          case 'ready_for_delivery':
-            // Send "out for delivery" email when order is ready to go out
-            {
-              const deliveryAddr = currentOrder.deliveryAddress as {
-                street: string;
-                suburb: string;
-                state: string;
-                postcode: string;
-              };
-              const delivery = currentOrder.delivery as { driverName?: string } | null;
-
-              await sendOrderOutForDeliveryEmail({
+          switch (input.newStatus) {
+            case 'cancelled':
+              await sendOrderCancelledEmail({
                 customerEmail: customer.contactPerson.email,
                 customerName: customer.businessName,
-                orderNumber: currentOrder.orderNumber,
-                driverName: delivery?.driverName,
-                deliveryAddress: {
-                  street: deliveryAddr.street,
-                  suburb: deliveryAddr.suburb,
-                  state: deliveryAddr.state,
-                  postcode: deliveryAddr.postcode,
-                },
+                orderNumber: result.order.orderNumber,
+                cancellationReason: input.notes || 'No reason provided',
+                totalAmount: result.order.totalAmount,
               }).catch((error) => {
-                console.error('Failed to send out for delivery email:', error);
+                console.error('Failed to send order cancelled email:', error);
               });
-            }
-            break;
 
-          case 'out_for_delivery':
-            // Send notification when driver actually starts delivery (Issue #18 fix)
-            {
-              const deliveryAddr = currentOrder.deliveryAddress as {
-                street: string;
-                suburb: string;
-                state: string;
-                postcode: string;
-              };
-              const delivery = currentOrder.delivery as { driverName?: string } | null;
+              // If order has a Xero invoice, create a credit note
+              const xeroInfo = result.order.xero as { invoiceId?: string | null } | null;
+              if (xeroInfo?.invoiceId) {
+                const { enqueueXeroJob } = await import('../services/xero-queue');
+                await enqueueXeroJob('create_credit_note', 'order', input.orderId).catch((error) => {
+                  console.error('Failed to enqueue Xero credit note creation:', error);
+                });
+              }
 
-              await sendOrderOutForDeliveryEmail({
+              // Log cancellation
+              await logOrderCancellation(
+                ctx.userId,
+                input.orderId,
+                result.order.orderNumber,
+                input.notes || 'No reason provided',
+                result.originalStatus
+              ).catch((error) => {
+                console.error('Failed to log order cancellation:', error);
+              });
+              break;
+
+            case 'ready_for_delivery':
+            case 'out_for_delivery':
+              {
+                const deliveryAddr = result.order.deliveryAddress as {
+                  street: string;
+                  suburb: string;
+                  state: string;
+                  postcode: string;
+                };
+                const orderDelivery = result.order.delivery as { driverName?: string } | null;
+
+                await sendOrderOutForDeliveryEmail({
+                  customerEmail: customer.contactPerson.email,
+                  customerName: customer.businessName,
+                  orderNumber: result.order.orderNumber,
+                  driverName: orderDelivery?.driverName,
+                  deliveryAddress: {
+                    street: deliveryAddr.street,
+                    suburb: deliveryAddr.suburb,
+                    state: deliveryAddr.state,
+                    postcode: deliveryAddr.postcode,
+                  },
+                }).catch((error) => {
+                  console.error('Failed to send out for delivery email:', error);
+                });
+              }
+              break;
+
+            case 'delivered':
+              await sendOrderDeliveredEmail({
                 customerEmail: customer.contactPerson.email,
                 customerName: customer.businessName,
-                orderNumber: currentOrder.orderNumber,
-                driverName: delivery?.driverName,
-                deliveryAddress: {
-                  street: deliveryAddr.street,
-                  suburb: deliveryAddr.suburb,
-                  state: deliveryAddr.state,
-                  postcode: deliveryAddr.postcode,
-                },
+                orderNumber: result.order.orderNumber,
+                deliveredAt: new Date(),
+                totalAmount: result.order.totalAmount,
               }).catch((error) => {
-                console.error('Failed to send out for delivery email:', error);
+                console.error('Failed to send order delivered email:', error);
               });
-            }
-            break;
+              break;
+          }
+        }
 
-          case 'delivered':
-            await sendOrderDeliveredEmail({
-              customerEmail: customer.contactPerson.email,
-              customerName: customer.businessName,
-              orderNumber: currentOrder.orderNumber,
-              deliveredAt: new Date(),
-              totalAmount: currentOrder.totalAmount,
-            }).catch((error) => {
-              console.error('Failed to send order delivered email:', error);
-            });
-            break;
+        // Log status change for non-cancellation changes
+        if (input.newStatus !== 'cancelled') {
+          await logOrderStatusChange(
+            ctx.userId,
+            input.orderId,
+            result.order.orderNumber,
+            result.originalStatus,
+            input.newStatus,
+            input.notes,
+            userDetails.changedByEmail || undefined,
+            userDetails.changedByName,
+            undefined
+          ).catch((error) => {
+            console.error('Failed to log order status change:', error);
+          });
         }
       }
 
-      // Log status change to audit trail
-      await logOrderStatusChange(
-        ctx.userId,
-        input.orderId,
-        currentOrder.orderNumber,
-        currentOrder.status,
-        input.newStatus,
-        input.notes,
-        userDetails.changedByEmail || undefined,
-        userDetails.changedByName,
-        undefined // userRole is not available here
-      ).catch((error) => {
-        console.error('Failed to log order status change:', error);
-      });
-
-      return order;
+      return result.order;
     }),
 
   // Reorder - Create new order from existing order
@@ -1885,277 +1862,287 @@ export const orderRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, approvedQuantities, expectedFulfillment, notes } = input;
 
-      // Get order with details
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          customer: true,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Verify order is pending backorder approval (awaiting_approval status with stockShortfall)
-      if (order.status !== 'awaiting_approval' || !order.stockShortfall) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Order is not pending backorder approval',
-        });
-      }
-
-      // Get user details for status history
+      // Get user details for status history (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
-
-      // Re-check stock availability before approving (stock may have changed since order was placed)
-      const { isSubproduct, calculateParentConsumption } = await import('@joho-erp/shared');
-      const productIds = (order.items as any[]).map((item: any) => item.productId);
-      const products = await prisma.product.findMany({
-        where: { id: { in: productIds } },
-        include: { parentProduct: true },
-      });
-
-      const shortfalls: Record<string, { requested: number; available: number }> = {};
-
-      for (const item of order.items as any[]) {
-        const product = products.find((p) => p.id === item.productId);
-        if (!product) continue;
-
-        // Check if this is a subproduct (has parent)
-        const productIsSubproduct = isSubproduct(product);
-        const consumeFrom = productIsSubproduct ? product.parentProduct : product;
-        
-        if (!consumeFrom) continue;
-
-        // Calculate consumption quantity (for subproducts, account for loss)
-        const consumeQty = productIsSubproduct
-          ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
-          : item.quantity;
-
-        if (consumeFrom.currentStock < consumeQty) {
-          shortfalls[item.productId] = { 
-            requested: consumeQty, 
-            available: consumeFrom.currentStock 
-          };
-        }
-      }
-
-      if (Object.keys(shortfalls).length > 0) {
-        const shortfallDetails = Object.entries(shortfalls)
-          .map(([productId, { requested, available }]) => {
-            const product = products.find((p) => p.id === productId);
-            return `${product?.name || productId}: need ${requested}, have ${available}`;
-          })
-          .join('; ');
-        
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Insufficient stock for some items. Stock may have changed since order was placed. ${shortfallDetails}`,
-        });
-      }
 
       // Determine if this is a partial approval
       const isPartialApproval = approvedQuantities && Object.keys(approvedQuantities).length > 0;
 
-      // Save original items for email
-      const originalItems = order.items as any[];
-
-      // Update order items if partial approval
-      let updatedItems = order.items;
-      if (isPartialApproval && approvedQuantities) {
-        updatedItems = order.items.map((item: any) => {
-          const approvedQty = approvedQuantities[item.productId];
-          if (approvedQty !== undefined && approvedQty !== item.quantity) {
-            // Recalculate subtotal for approved quantity
-            const unitPriceMoney = createMoney(item.unitPrice);
-            const newSubtotalMoney = multiplyMoney(unitPriceMoney, approvedQty);
-            return {
-              ...item,
-              quantity: approvedQty,
-              subtotal: toCents(newSubtotalMoney),
-            };
-          }
-          return item;
-        });
-
-        // Recalculate order totals using per-product GST settings
-        const newTotals = calculateOrderTotals(
-          updatedItems.map((item: any) => ({
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            applyGst: item.applyGst ?? false,
-            gstRate: item.gstRate ?? null,
-          }))
-        );
-
-        // Credit re-validation for partial approval (Issue #12 fix)
-        // Verify the new total doesn't exceed the customer's credit limit
-        const creditLimit = order.customer.creditApplication.creditLimit;
-        // Calculate credit available, excluding this order since it's being modified
-        const otherOrdersBalance = await prisma.order.aggregate({
+      // Wrap entire operation in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Atomic guard - update only if still awaiting_approval with stockShortfall
+        const updateResult = await tx.order.updateMany({
           where: {
-            customerId: order.customerId,
-            id: { not: orderId },
-            status: { in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'] },
+            id: orderId,
+            status: 'awaiting_approval',
+            stockShortfall: { not: null }, // Must have stock shortfall (backorder indicator)
           },
-          _sum: { totalAmount: true },
+          data: {
+            status: 'confirmed', // Atomic transition
+            reviewedBy: ctx.userId,
+            reviewedAt: new Date(),
+          },
         });
-        const availableCredit = creditLimit - (otherOrdersBalance._sum.totalAmount || 0);
 
-        if (newTotals.totalAmount > availableCredit) {
+        // STEP 2: Check idempotency
+        if (updateResult.count === 0) {
+          // Check if already approved (idempotent) or conflict
+          const existing = await tx.order.findUnique({
+            where: { id: orderId },
+            include: { customer: true },
+          });
+
+          if (!existing) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'Order not found',
+            });
+          }
+
+          if (existing.status === 'confirmed') {
+            // Already approved - return idempotent result
+            return { order: existing, alreadyCompleted: true, originalItems: existing.items };
+          }
+
+          // Different status - conflict
           throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Approved order total ($${(newTotals.totalAmount / 100).toFixed(2)}) exceeds available credit ($${(availableCredit / 100).toFixed(2)}).`,
+            code: 'CONFLICT',
+            message: `Order is not pending backorder approval. Current status: ${existing.status}`,
           });
         }
 
-        // Update order with approved quantities and new totals
-        const updatedOrder = await prisma.order.update({
+        // STEP 3: Fetch the updated order with customer for further processing
+        const order = await tx.order.findUnique({
           where: { id: orderId },
-          data: {
-            items: updatedItems,
-            subtotal: newTotals.subtotal,
-            taxAmount: newTotals.taxAmount,
-            totalAmount: newTotals.totalAmount,
-            approvedQuantities,  // This field indicates partial approval
-            backorderNotes: notes,
-            expectedFulfillment,
-            reviewedBy: ctx.userId,
-            reviewedAt: new Date(),
-            status: 'confirmed', // Move to confirmed for packing
-            statusHistory: [
-              ...order.statusHistory,
-              {
-                status: 'confirmed',
-                changedAt: new Date(),
-                changedBy: ctx.userId,
-                changedByName: userDetails.changedByName,
-                changedByEmail: userDetails.changedByEmail,
-                notes: `Backorder partially approved by admin${notes ? `: ${notes}` : ''}`,
-              },
-            ],
-          },
-          include: {
-            customer: true,
-          },
+          include: { customer: true },
         });
 
-        // Send partial approval email to customer
-        const approvedItemsForEmail = updatedItems.map((item: any) => ({
-          productName: item.productName,
-          sku: item.sku,
-          requestedQuantity: originalItems.find((i: any) => i.productId === item.productId)?.quantity || item.quantity,
-          approvedQuantity: item.quantity,
-          unit: item.unit,
-        }));
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found after update',
+          });
+        }
 
-        await sendBackorderPartialApprovalEmail({
-          customerEmail: updatedOrder.customer.contactPerson.email,
-          customerName: updatedOrder.customer.businessName,
-          orderNumber: updatedOrder.orderNumber,
-          totalAmount: updatedOrder.totalAmount,
-          approvedItems: approvedItemsForEmail,
-          estimatedFulfillment: expectedFulfillment,
-          notes,
-        }).catch((error) => {
-          console.error('Failed to send backorder partial approval email:', error);
+        // Save original items for email
+        const originalItems = order.items as any[];
+
+        // Re-check stock availability before finalizing (stock may have changed)
+        const { isSubproduct, calculateParentConsumption } = await import('@joho-erp/shared');
+        const productIds = originalItems.map((item: any) => item.productId);
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          include: { parentProduct: true },
         });
 
-        // Stock is NOT reduced at backorder approval
-        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
+        const shortfalls: Record<string, { requested: number; available: number }> = {};
 
-        // Log partial backorder approval to audit trail
-        await logBackorderApproval(
-          ctx.userId,
-          orderId,
-          updatedOrder.orderNumber,
-          'partial',
-          approvedQuantities
-        ).catch((error) => {
-          console.error('Failed to log backorder partial approval:', error);
-        });
+        for (const item of originalItems) {
+          const product = products.find((p) => p.id === item.productId);
+          if (!product) continue;
+
+          const productIsSubproduct = isSubproduct(product);
+          const consumeFrom = productIsSubproduct ? product.parentProduct : product;
+          
+          if (!consumeFrom) continue;
+
+          const consumeQty = productIsSubproduct
+            ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
+            : item.quantity;
+
+          if (consumeFrom.currentStock < consumeQty) {
+            shortfalls[item.productId] = { 
+              requested: consumeQty, 
+              available: consumeFrom.currentStock 
+            };
+          }
+        }
+
+        if (Object.keys(shortfalls).length > 0) {
+          // Rollback by reverting status (transaction will rollback anyway on throw)
+          const shortfallDetails = Object.entries(shortfalls)
+            .map(([productId, { requested, available }]) => {
+              const product = products.find((p) => p.id === productId);
+              return `${product?.name || productId}: need ${requested}, have ${available}`;
+            })
+            .join('; ');
+          
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Insufficient stock for some items. Stock may have changed since order was placed. ${shortfallDetails}`,
+          });
+        }
+
+        // STEP 4: Handle partial approval if applicable
+        let updatedOrder = order;
+        let updatedItems = order.items;
+
+        if (isPartialApproval && approvedQuantities) {
+          updatedItems = order.items.map((item: any) => {
+            const approvedQty = approvedQuantities[item.productId];
+            if (approvedQty !== undefined && approvedQty !== item.quantity) {
+              const unitPriceMoney = createMoney(item.unitPrice);
+              const newSubtotalMoney = multiplyMoney(unitPriceMoney, approvedQty);
+              return {
+                ...item,
+                quantity: approvedQty,
+                subtotal: toCents(newSubtotalMoney),
+              };
+            }
+            return item;
+          });
+
+          // Recalculate order totals using per-product GST settings
+          const newTotals = calculateOrderTotals(
+            updatedItems.map((item: any) => ({
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              applyGst: item.applyGst ?? false,
+              gstRate: item.gstRate ?? null,
+            }))
+          );
+
+          // Credit re-validation for partial approval
+          const creditLimit = order.customer.creditApplication.creditLimit;
+          const otherOrdersBalance = await tx.order.aggregate({
+            where: {
+              customerId: order.customerId,
+              id: { not: orderId },
+              status: { in: ['awaiting_approval', 'confirmed', 'packing', 'ready_for_delivery', 'out_for_delivery'] },
+            },
+            _sum: { totalAmount: true },
+          });
+          const availableCredit = creditLimit - (otherOrdersBalance._sum.totalAmount || 0);
+
+          if (newTotals.totalAmount > availableCredit) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Approved order total ($${(newTotals.totalAmount / 100).toFixed(2)}) exceeds available credit ($${(availableCredit / 100).toFixed(2)}).`,
+            });
+          }
+
+          // Update order with approved quantities and new totals
+          updatedOrder = await tx.order.update({
+            where: { id: orderId },
+            data: {
+              items: updatedItems,
+              subtotal: newTotals.subtotal,
+              taxAmount: newTotals.taxAmount,
+              totalAmount: newTotals.totalAmount,
+              approvedQuantities,
+              backorderNotes: notes,
+              expectedFulfillment,
+              statusHistory: [
+                ...order.statusHistory,
+                {
+                  status: 'confirmed',
+                  changedAt: new Date(),
+                  changedBy: ctx.userId,
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
+                  notes: `Backorder partially approved by admin${notes ? `: ${notes}` : ''}`,
+                },
+              ],
+            },
+            include: { customer: true },
+          });
+        } else {
+          // Full approval - update with status history
+          updatedOrder = await tx.order.update({
+            where: { id: orderId },
+            data: {
+              backorderNotes: notes,
+              expectedFulfillment,
+              statusHistory: [
+                ...order.statusHistory,
+                {
+                  status: 'confirmed',
+                  changedAt: new Date(),
+                  changedBy: ctx.userId,
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
+                  notes: `Backorder approved by admin${notes ? `: ${notes}` : ''}`,
+                },
+              ],
+            },
+            include: { customer: true },
+          });
+        }
+
+        return { order: updatedOrder, alreadyCompleted: false, originalItems, isPartialApproval, updatedItems };
+      });
+
+      // STEP 5: Send emails only if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        if (result.isPartialApproval) {
+          const approvedItemsForEmail = result.updatedItems.map((item: any) => ({
+            productName: item.productName,
+            sku: item.sku,
+            requestedQuantity: result.originalItems.find((i: any) => i.productId === item.productId)?.quantity || item.quantity,
+            approvedQuantity: item.quantity,
+            unit: item.unit,
+          }));
+
+          await sendBackorderPartialApprovalEmail({
+            customerEmail: result.order.customer.contactPerson.email,
+            customerName: result.order.customer.businessName,
+            orderNumber: result.order.orderNumber,
+            totalAmount: result.order.totalAmount,
+            approvedItems: approvedItemsForEmail,
+            estimatedFulfillment: expectedFulfillment,
+            notes,
+          }).catch((error) => {
+            console.error('Failed to send backorder partial approval email:', error);
+          });
+
+          await logBackorderApproval(
+            ctx.userId,
+            orderId,
+            result.order.orderNumber,
+            'partial',
+            approvedQuantities
+          ).catch((error) => {
+            console.error('Failed to log backorder partial approval:', error);
+          });
+        } else {
+          const approvedItemsForEmail = (result.order.items as any[]).map((item) => ({
+            productName: item.productName,
+            sku: item.sku,
+            approvedQuantity: item.quantity,
+            unit: item.unit,
+          }));
+
+          await sendBackorderApprovedEmail({
+            customerEmail: result.order.customer.contactPerson.email,
+            customerName: result.order.customer.businessName,
+            orderNumber: result.order.orderNumber,
+            totalAmount: result.order.totalAmount,
+            approvedItems: approvedItemsForEmail,
+            estimatedFulfillment: expectedFulfillment,
+            notes,
+          }).catch((error) => {
+            console.error('Failed to send backorder approved email:', error);
+          });
+
+          await logBackorderApproval(
+            ctx.userId,
+            orderId,
+            result.order.orderNumber,
+            'full',
+            undefined
+          ).catch((error) => {
+            console.error('Failed to log backorder full approval:', error);
+          });
+        }
 
         // Assign preliminary packing sequence for confirmed backorder
         await assignPreliminaryPackingSequence(
-          updatedOrder.requestedDeliveryDate,
-          updatedOrder.id
+          result.order.requestedDeliveryDate,
+          result.order.id
         );
-
-        return updatedOrder;
-      } else {
-        // Full approval - no quantity changes needed
-        // Note: backorder approval is inferred from stockShortfall being set + status moving to confirmed
-        const updatedOrder = await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            backorderNotes: notes,
-            expectedFulfillment,
-            reviewedBy: ctx.userId,
-            reviewedAt: new Date(),
-            status: 'confirmed', // Move to confirmed for packing
-            statusHistory: [
-              ...order.statusHistory,
-              {
-                status: 'confirmed',
-                changedAt: new Date(),
-                changedBy: ctx.userId,
-                changedByName: userDetails.changedByName,
-                changedByEmail: userDetails.changedByEmail,
-                notes: `Backorder approved by admin${notes ? `: ${notes}` : ''}`,
-              },
-            ],
-          },
-          include: {
-            customer: true,
-          },
-        });
-
-        // Send full approval email to customer
-        const approvedItemsForEmail = (order.items as any[]).map((item) => ({
-          productName: item.productName,
-          sku: item.sku,
-          approvedQuantity: item.quantity,
-          unit: item.unit,
-        }));
-
-        await sendBackorderApprovedEmail({
-          customerEmail: updatedOrder.customer.contactPerson.email,
-          customerName: updatedOrder.customer.businessName,
-          orderNumber: updatedOrder.orderNumber,
-          totalAmount: updatedOrder.totalAmount,
-          approvedItems: approvedItemsForEmail,
-          estimatedFulfillment: expectedFulfillment,
-          notes,
-        }).catch((error) => {
-          console.error('Failed to send backorder approved email:', error);
-        });
-
-        // Stock is NOT reduced at backorder approval
-        // Stock reduction happens at packing step (markOrderReady) to allow for quantity adjustments
-
-        // Log full backorder approval to audit trail
-        await logBackorderApproval(
-          ctx.userId,
-          orderId,
-          updatedOrder.orderNumber,
-          'full',
-          undefined
-        ).catch((error) => {
-          console.error('Failed to log backorder full approval:', error);
-        });
-
-        // Assign preliminary packing sequence for confirmed backorder
-        await assignPreliminaryPackingSequence(
-          updatedOrder.requestedDeliveryDate,
-          updatedOrder.id
-        );
-
-        return updatedOrder;
       }
+
+      return result.order;
     }),
 
   // Reject backorder (Admin only)
@@ -2169,87 +2156,119 @@ export const orderRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, reason } = input;
 
-      // Get order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          customer: true,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Verify order is pending backorder approval (awaiting_approval status with stockShortfall)
-      if (order.status !== 'awaiting_approval' || !order.stockShortfall) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Order is not pending backorder approval',
-        });
-      }
-
-      // Get user details for status history
+      // Get user details for status history (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Update order to rejected and cancelled
-      // Note: rejection is inferred from stockShortfall being set + status being cancelled
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          backorderNotes: reason,
-          reviewedBy: ctx.userId,
-          reviewedAt: new Date(),
-          status: 'cancelled',
-          statusHistory: [
-            ...order.statusHistory,
-            {
-              status: 'cancelled',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: `Backorder rejected by admin: ${reason}`,
-            },
-          ],
-        },
-        include: {
-          customer: true,
-        },
+      // Wrap in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Atomic guard - update only if still awaiting_approval with stockShortfall
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'awaiting_approval',
+            stockShortfall: { not: null }, // Must have stock shortfall (backorder indicator)
+          },
+          data: {
+            status: 'cancelled',
+            reviewedBy: ctx.userId,
+            reviewedAt: new Date(),
+          },
+        });
+
+        // STEP 2: Check idempotency
+        if (updateResult.count === 0) {
+          const existing = await tx.order.findUnique({
+            where: { id: orderId },
+            include: { customer: true },
+          });
+
+          if (!existing) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'Order not found',
+            });
+          }
+
+          // Check if already rejected (cancelled with stockShortfall)
+          if (existing.status === 'cancelled' && existing.stockShortfall) {
+            return { order: existing, alreadyCompleted: true };
+          }
+
+          // Different status - conflict
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Order is not pending backorder approval. Current status: ${existing.status}`,
+          });
+        }
+
+        // STEP 3: Fetch and update with rejection details
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { customer: true },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found after update',
+          });
+        }
+
+        // Update with backorder notes and status history
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            backorderNotes: reason,
+            statusHistory: [
+              ...order.statusHistory,
+              {
+                status: 'cancelled',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: `Backorder rejected by admin: ${reason}`,
+              },
+            ],
+          },
+          include: { customer: true },
+        });
+
+        return { order: updatedOrder, alreadyCompleted: false };
       });
 
-      // Send rejection email to customer
-      const rejectedItemsForEmail = (order.items as any[]).map((item) => ({
-        productName: item.productName,
-        sku: item.sku,
-        requestedQuantity: item.quantity,
-        unit: item.unit,
-      }));
+      // Only send emails if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Send rejection email to customer
+        const rejectedItemsForEmail = (result.order.items as any[]).map((item) => ({
+          productName: item.productName,
+          sku: item.sku,
+          requestedQuantity: item.quantity,
+          unit: item.unit,
+        }));
 
-      await sendBackorderRejectedEmail({
-        customerEmail: updatedOrder.customer.contactPerson.email,
-        customerName: updatedOrder.customer.businessName,
-        orderNumber: updatedOrder.orderNumber,
-        reason,
-        rejectedItems: rejectedItemsForEmail,
-      }).catch((error) => {
-        console.error('Failed to send backorder rejected email:', error);
-      });
+        await sendBackorderRejectedEmail({
+          customerEmail: result.order.customer.contactPerson.email,
+          customerName: result.order.customer.businessName,
+          orderNumber: result.order.orderNumber,
+          reason,
+          rejectedItems: rejectedItemsForEmail,
+        }).catch((error) => {
+          console.error('Failed to send backorder rejected email:', error);
+        });
 
-      // Log backorder rejection to audit trail
-      await logBackorderRejection(
-        ctx.userId,
-        orderId,
-        updatedOrder.orderNumber,
-        reason
-      ).catch((error) => {
-        console.error('Failed to log backorder rejection:', error);
-      });
+        // Log backorder rejection to audit trail
+        await logBackorderRejection(
+          ctx.userId,
+          orderId,
+          result.order.orderNumber,
+          reason
+        ).catch((error) => {
+          console.error('Failed to log backorder rejection:', error);
+        });
+      }
 
-      return updatedOrder;
+      return result.order;
     }),
 
   // ============================================================================

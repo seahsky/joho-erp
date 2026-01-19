@@ -220,70 +220,104 @@ export const deliveryRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Fetch current order to append to statusHistory
-      // Note: packing is an embedded type, automatically included in the order document
-      const currentOrder = await prisma.order.findUnique({
-        where: { id: input.orderId },
-      });
-
-      if (!currentOrder) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Same-day delivery validation: orders should be delivered on the same day as packing
-      const packedToday = isPackedToday(currentOrder.packing?.packedAt);
-      if (!packedToday && !input.adminOverride) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'This order was not packed today. Deliveries should occur on the same day as packing.',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      const order = await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          status: 'delivered',
-          delivery: {
-            ...currentOrder.delivery,
-            deliveredAt: new Date(),
+      // Wrap in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch order first to get current status for audit
+        const existingOrder = await tx.order.findUnique({
+          where: { id: input.orderId },
+        });
+
+        if (!existingOrder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        const previousStatus = existingOrder.status;
+
+        // STEP 2: Check idempotency
+        if (existingOrder.status === 'delivered') {
+          return { order: existingOrder, alreadyCompleted: true, oldStatus: previousStatus };
+        }
+
+        // STEP 3: Atomic guard - use updateMany with status condition
+        // Valid transitions to delivered: ready_for_delivery, out_for_delivery
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            status: { in: ['ready_for_delivery', 'out_for_delivery'] },
           },
-          statusHistory: [
-            ...currentOrder.statusHistory,
-            {
-              status: 'delivered',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: input.notes || 'Delivery completed',
+          data: {
+            status: 'delivered',
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot mark order as delivered. Current status: ${existingOrder.status}`,
+          });
+        }
+
+        // Same-day delivery validation
+        const packedToday = isPackedToday(existingOrder.packing?.packedAt);
+        if (!packedToday && !input.adminOverride) {
+          // Rollback will happen automatically on throw
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'This order was not packed today. Deliveries should occur on the same day as packing.',
+          });
+        }
+
+        // STEP 4: Update with delivery details and status history
+        const order = await tx.order.update({
+          where: { id: input.orderId },
+          data: {
+            delivery: {
+              ...existingOrder.delivery,
+              deliveredAt: new Date(),
             },
-          ],
-        },
+            statusHistory: [
+              ...existingOrder.statusHistory,
+              {
+                status: 'delivered',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: input.notes || 'Delivery completed',
+              },
+            ],
+          },
+        });
+
+        return { order, alreadyCompleted: false, oldStatus: previousStatus };
       });
 
-      // Enqueue Xero invoice creation
-      const { enqueueXeroJob } = await import('../services/xero-queue');
-      await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
-        console.error('Failed to enqueue Xero invoice creation:', error);
-      });
+      // Only trigger side effects if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Enqueue Xero invoice creation
+        const { enqueueXeroJob } = await import('../services/xero-queue');
+        await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
+          console.error('Failed to enqueue Xero invoice creation:', error);
+        });
 
-      // Audit log - HIGH: Delivery completion must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
-        oldStatus: currentOrder.status,
-        newStatus: 'delivered',
-        notes: input.notes,
-      }).catch((error) => {
-        console.error('Audit log failed for mark delivered:', error);
-      });
+        // Audit log
+        await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
+          orderNumber: result.order.orderNumber,
+          oldStatus: result.oldStatus,
+          newStatus: 'delivered',
+          notes: input.notes,
+        }).catch((error) => {
+          console.error('Audit log failed for mark delivered:', error);
+        });
+      }
 
-      return order;
+      return result.order;
     }),
 
   // Get delivery statistics
@@ -801,96 +835,152 @@ export const deliveryRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId } = input;
 
-      // Get the order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { customer: true },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Validate status
-      if (order.status !== 'ready_for_delivery') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot start delivery for order with status '${order.status}'. Order must be 'ready_for_delivery'.`,
-        });
-      }
-
-      // Validate driver assignment
-      if (order.delivery?.driverId && order.delivery.driverId !== ctx.userId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'This order is assigned to a different driver',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Update order status
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'out_for_delivery',
-          delivery: {
-            ...order.delivery,
-            driverId: ctx.userId,
-            startedAt: new Date(),
+      // Wrap in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch order inside transaction
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // STEP 2: Check for idempotency first
+        if (order.status === 'out_for_delivery') {
+          // Already out for delivery - check if same driver
+          if (order.delivery?.driverId === ctx.userId) {
+            return { order, alreadyCompleted: true };
+          }
+          // Different driver already claimed it
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This order has already been claimed by another driver',
+          });
+        }
+
+        // Validate status
+        if (order.status !== 'ready_for_delivery') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot start delivery for order with status '${order.status}'. Order must be 'ready_for_delivery'.`,
+          });
+        }
+
+        // Validate driver assignment (if order is pre-assigned to a different driver)
+        if (order.delivery?.driverId && order.delivery.driverId !== ctx.userId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This order is assigned to a different driver',
+          });
+        }
+
+        // STEP 3: Atomic guard - use updateMany with status condition
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'ready_for_delivery', // Atomic guard
           },
-          statusHistory: {
-            push: {
-              status: 'out_for_delivery',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: 'Driver started delivery',
+          data: {
+            status: 'out_for_delivery',
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // Race condition - another driver or process changed the status
+          const recheck = await tx.order.findUnique({ where: { id: orderId } });
+          if (recheck?.status === 'out_for_delivery') {
+            // Check if it was claimed by this driver (unlikely but possible)
+            if (recheck.delivery?.driverId === ctx.userId) {
+              return { order: recheck, alreadyCompleted: true };
+            }
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'This order has already been claimed by another driver',
+            });
+          }
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order status was changed by another process. Please refresh and try again.',
+          });
+        }
+
+        // STEP 4: Update with delivery details and status history
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            delivery: {
+              ...order.delivery,
+              driverId: ctx.userId,
+              startedAt: new Date(),
+            },
+            statusHistory: {
+              push: {
+                status: 'out_for_delivery',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: 'Driver started delivery',
+              },
             },
           },
-        },
-        include: { customer: true },
+        });
+
+        return { order: updatedOrder, alreadyCompleted: false };
       });
 
-      // Send notification email to customer
-      const deliveryAddr = updatedOrder.deliveryAddress as {
-        street: string;
-        suburb: string;
-        state: string;
-        postcode: string;
-      };
-      await sendOrderOutForDeliveryEmail({
-        customerEmail: updatedOrder.customer.contactPerson.email,
-        customerName: updatedOrder.customer.businessName,
-        orderNumber: updatedOrder.orderNumber,
-        driverName: updatedOrder.delivery?.driverName ?? undefined,
-        deliveryAddress: {
-          street: deliveryAddr.street,
-          suburb: deliveryAddr.suburb,
-          state: deliveryAddr.state,
-          postcode: deliveryAddr.postcode,
-        },
-      }).catch((error) => {
-        console.error('Failed to send out for delivery email:', error);
-      });
+      // Only trigger side effects if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Fetch customer for email notification
+        const customer = await prisma.customer.findUnique({
+          where: { id: result.order.customerId },
+          select: { contactPerson: true, businessName: true },
+        });
 
-      // Audit log - HIGH: Out for delivery status change must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
-        orderNumber: updatedOrder.orderNumber,
-        oldStatus: 'ready_for_delivery',
-        newStatus: 'out_for_delivery',
-        driverId: ctx.userId,
-        notes: 'Driver started delivery',
-      }).catch((error) => {
-        console.error('Audit log failed for mark out for delivery:', error);
-      });
+        if (customer) {
+          // Send notification email to customer
+          const deliveryAddr = result.order.deliveryAddress as {
+            street: string;
+            suburb: string;
+            state: string;
+            postcode: string;
+          };
+          await sendOrderOutForDeliveryEmail({
+            customerEmail: customer.contactPerson.email,
+            customerName: customer.businessName,
+            orderNumber: result.order.orderNumber,
+            driverName: result.order.delivery?.driverName ?? undefined,
+            deliveryAddress: {
+              street: deliveryAddr.street,
+              suburb: deliveryAddr.suburb,
+              state: deliveryAddr.state,
+              postcode: deliveryAddr.postcode,
+            },
+          }).catch((error) => {
+            console.error('Failed to send out for delivery email:', error);
+          });
+        }
 
-      return updatedOrder;
+        // Audit log
+        await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
+          orderNumber: result.order.orderNumber,
+          oldStatus: 'ready_for_delivery',
+          newStatus: 'out_for_delivery',
+          driverId: ctx.userId,
+          notes: 'Driver started delivery',
+        }).catch((error) => {
+          console.error('Audit log failed for mark out for delivery:', error);
+        });
+      }
+
+      return result.order;
     }),
 
   // Upload proof of delivery (photo or signature)
@@ -975,99 +1065,134 @@ export const deliveryRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, notes } = input;
 
-      // Get the order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { customer: true },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Validate status
-      if (order.status !== 'out_for_delivery') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot complete delivery for order with status '${order.status}'. Order must be 'out_for_delivery'.`,
-        });
-      }
-
-      // Validate driver assignment
-      if (order.delivery?.driverId !== ctx.userId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'This order is assigned to a different driver',
-        });
-      }
-
-      // Validate POD exists
-      if (!order.delivery?.proofOfDelivery) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Proof of delivery is required before completing delivery. Please upload a photo or signature.',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe to fetch outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Update order status
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'delivered',
-          delivery: {
-            ...order.delivery,
-            deliveredAt: new Date(),
-            actualArrival: new Date(),
-            notes: notes || order.delivery.notes,
+      // Wrap in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch order with customer inside transaction
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { customer: true },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // STEP 2: Check for idempotency first
+        if (order.status === 'delivered') {
+          return { order, alreadyCompleted: true };
+        }
+
+        // Validate status
+        if (order.status !== 'out_for_delivery') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot complete delivery for order with status '${order.status}'. Order must be 'out_for_delivery'.`,
+          });
+        }
+
+        // Validate driver assignment
+        if (order.delivery?.driverId !== ctx.userId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This order is assigned to a different driver',
+          });
+        }
+
+        // Validate POD exists
+        if (!order.delivery?.proofOfDelivery) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Proof of delivery is required before completing delivery. Please upload a photo or signature.',
+          });
+        }
+
+        // STEP 3: Atomic guard - use updateMany with status condition
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'out_for_delivery', // Atomic guard
           },
-          statusHistory: {
-            push: {
-              status: 'delivered',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: notes || 'Delivery completed by driver',
+          data: {
+            status: 'delivered',
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // Race condition - another process changed the status
+          const recheck = await tx.order.findUnique({ where: { id: orderId } });
+          if (recheck?.status === 'delivered') {
+            return { order: { ...order, status: 'delivered' }, alreadyCompleted: true };
+          }
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order status was changed by another process. Please refresh and try again.',
+          });
+        }
+
+        // STEP 4: Update with delivery details and status history
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            delivery: {
+              ...order.delivery,
+              deliveredAt: new Date(),
+              actualArrival: new Date(),
+              notes: notes || order.delivery.notes,
+            },
+            statusHistory: {
+              push: {
+                status: 'delivered',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: notes || 'Delivery completed by driver',
+              },
             },
           },
-        },
-        include: { customer: true },
+          include: { customer: true },
+        });
+
+        return { order: updatedOrder, alreadyCompleted: false };
       });
 
-      // Send delivery confirmation email to customer
-      await sendOrderDeliveredEmail({
-        customerEmail: updatedOrder.customer.contactPerson.email,
-        customerName: updatedOrder.customer.businessName,
-        orderNumber: updatedOrder.orderNumber,
-        deliveredAt: updatedOrder.delivery?.deliveredAt || new Date(),
-        totalAmount: updatedOrder.totalAmount,
-      }).catch((error) => {
-        console.error('Failed to send delivery confirmation email:', error);
-      });
+      // Only trigger side effects if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Send delivery confirmation email to customer
+        await sendOrderDeliveredEmail({
+          customerEmail: result.order.customer.contactPerson.email,
+          customerName: result.order.customer.businessName,
+          orderNumber: result.order.orderNumber,
+          deliveredAt: result.order.delivery?.deliveredAt || new Date(),
+          totalAmount: result.order.totalAmount,
+        }).catch((error) => {
+          console.error('Failed to send delivery confirmation email:', error);
+        });
 
-      // Enqueue Xero invoice creation
-      await enqueueXeroJob('create_invoice', 'order', orderId).catch((error) => {
-        console.error('Failed to enqueue Xero invoice creation:', error);
-      });
+        // Enqueue Xero invoice creation
+        await enqueueXeroJob('create_invoice', 'order', orderId).catch((error) => {
+          console.error('Failed to enqueue Xero invoice creation:', error);
+        });
 
-      // Audit log - HIGH: Delivery completion must be tracked
-      await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
-        orderNumber: order.orderNumber,
-        oldStatus: 'out_for_delivery',
-        newStatus: 'delivered',
-        driverId: ctx.userId,
-        notes,
-      }).catch((error) => {
-        console.error('Audit log failed for complete delivery:', error);
-      });
+        // Audit log
+        await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
+          orderNumber: result.order.orderNumber,
+          oldStatus: 'out_for_delivery',
+          newStatus: 'delivered',
+          driverId: ctx.userId,
+          notes,
+        }).catch((error) => {
+          console.error('Audit log failed for complete delivery:', error);
+        });
+      }
 
-      return updatedOrder;
+      return result.order;
     }),
 
   // Return order to warehouse
@@ -1088,34 +1213,8 @@ export const deliveryRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, reason, notes } = input;
 
-      // Get the order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { customer: true },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Validate status
-      if (order.status !== 'out_for_delivery') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot return order with status '${order.status}'. Order must be 'out_for_delivery'.`,
-        });
-      }
-
-      // Validate driver assignment
-      if (order.delivery?.driverId !== ctx.userId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'This order is assigned to a different driver',
-        });
-      }
+      // Get user details for audit trail (safe to fetch outside transaction)
+      const userDetails = await getUserDetails(ctx.userId);
 
       // Map reason to user-friendly text
       const reasonTexts: Record<string, string> = {
@@ -1126,69 +1225,129 @@ export const deliveryRouter = router({
         other: notes || 'Other reason',
       };
 
-      // Get user details for audit trail
-      const userDetails = await getUserDetails(ctx.userId);
+      // Wrap in transaction with atomic guard
+      const result = await prisma.$transaction(async (tx) => {
+        // STEP 1: Fetch order with customer inside transaction
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { customer: true },
+        });
 
-      // Update order status back to ready_for_delivery
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'ready_for_delivery',
-          delivery: {
-            ...order.delivery,
-            returnReason: reason,
-            returnNotes: notes,
-            returnedAt: new Date(),
-            // Clear the startedAt to indicate it needs to be re-attempted
-            startedAt: null,
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // STEP 2: Check for idempotency - if already returned to warehouse
+        if (order.status === 'ready_for_delivery' && order.delivery?.returnReason) {
+          return { order, alreadyCompleted: true };
+        }
+
+        // Validate status
+        if (order.status !== 'out_for_delivery') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot return order with status '${order.status}'. Order must be 'out_for_delivery'.`,
+          });
+        }
+
+        // Validate driver assignment
+        if (order.delivery?.driverId !== ctx.userId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This order is assigned to a different driver',
+          });
+        }
+
+        // STEP 3: Atomic guard - use updateMany with status condition
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'out_for_delivery', // Atomic guard
           },
-          statusHistory: {
-            push: {
-              status: 'ready_for_delivery',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: `Returned to warehouse: ${reasonTexts[reason]}${notes ? ` - ${notes}` : ''}`,
+          data: {
+            status: 'ready_for_delivery',
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // Race condition - check what happened
+          const recheck = await tx.order.findUnique({ where: { id: orderId } });
+          if (recheck?.status === 'ready_for_delivery' && recheck.delivery?.returnReason) {
+            return { order: recheck, alreadyCompleted: true };
+          }
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order status was changed by another process. Please refresh and try again.',
+          });
+        }
+
+        // STEP 4: Update with return details and status history
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            delivery: {
+              ...order.delivery,
+              returnReason: reason,
+              returnNotes: notes,
+              returnedAt: new Date(),
+              startedAt: null, // Clear to indicate needs re-attempt
+            },
+            statusHistory: {
+              push: {
+                status: 'ready_for_delivery',
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: `Returned to warehouse: ${reasonTexts[reason]}${notes ? ` - ${notes}` : ''}`,
+              },
             },
           },
-        },
-        include: { customer: true },
+          include: { customer: true },
+        });
+
+        return { order: updatedOrder, alreadyCompleted: false };
       });
 
-      // Send notification to admin/warehouse about returned order
-      const deliveryAddr = updatedOrder.deliveryAddress as {
-        street: string;
-        suburb: string;
-        state: string;
-        postcode: string;
-      };
-      const delivery = updatedOrder.delivery as { driverName?: string } | null;
+      // Only trigger side effects if not already completed (idempotent)
+      if (!result.alreadyCompleted) {
+        // Send notification to admin/warehouse about returned order
+        const deliveryAddr = result.order.deliveryAddress as {
+          street: string;
+          suburb: string;
+          state: string;
+          postcode: string;
+        };
+        const delivery = result.order.delivery as { driverName?: string } | null;
 
-      await sendOrderReturnedToWarehouseEmail({
-        orderNumber: updatedOrder.orderNumber,
-        customerName: updatedOrder.customerName,
-        driverName: delivery?.driverName || 'Unknown Driver',
-        returnReason: reason,
-        returnNotes: notes,
-        deliveryAddress: `${deliveryAddr.street}, ${deliveryAddr.suburb} ${deliveryAddr.state} ${deliveryAddr.postcode}`,
-      }).catch((error) => {
-        console.error('Failed to send order returned to warehouse email:', error);
-      });
+        await sendOrderReturnedToWarehouseEmail({
+          orderNumber: result.order.orderNumber,
+          customerName: result.order.customerName,
+          driverName: delivery?.driverName || 'Unknown Driver',
+          returnReason: reason,
+          returnNotes: notes,
+          deliveryAddress: `${deliveryAddr.street}, ${deliveryAddr.suburb} ${deliveryAddr.state} ${deliveryAddr.postcode}`,
+        }).catch((error) => {
+          console.error('Failed to send order returned to warehouse email:', error);
+        });
 
-      // Audit log - HIGH: Return to warehouse must be tracked
-      await logReturnToWarehouse(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
-        orderNumber: order.orderNumber,
-        reason,
-        driverId: ctx.userId,
-      }).catch((error) => {
-        console.error('Audit log failed for return to warehouse:', error);
-      });
+        // Audit log
+        await logReturnToWarehouse(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
+          orderNumber: result.order.orderNumber,
+          reason,
+          driverId: ctx.userId,
+        }).catch((error) => {
+          console.error('Audit log failed for return to warehouse:', error);
+        });
+      }
 
       return {
         success: true,
         message: 'Order returned to warehouse',
-        order: updatedOrder,
+        order: result.order,
       };
     }),
 
