@@ -451,7 +451,7 @@ export const packingRouter = router({
         // Re-check stockConsumed inside transaction to prevent race condition
         const freshOrder = await tx.order.findUnique({
           where: { id: orderId },
-          select: { stockConsumed: true, status: true, version: true },
+          select: { stockConsumed: true, status: true, version: true, packing: true, items: true },
         });
 
         if (!freshOrder) {
@@ -558,6 +558,28 @@ export const packingRouter = router({
           data: { currentStock: freshNewStock },
         });
 
+        // CRITICAL FIX: Store original items on FIRST quantity adjustment
+        // This allows full restoration on reset
+        const existingOriginalItems = freshOrder.packing?.originalItems;
+        const shouldStoreOriginalItems = !existingOriginalItems || existingOriginalItems.length === 0;
+
+        let packingUpdate: any = {};
+        if (shouldStoreOriginalItems) {
+          // Snapshot original items from current order state (before this adjustment)
+          packingUpdate = {
+            packing: {
+              ...(freshOrder.packing || {}),
+              originalItems: freshOrder.items.map((i: any) => ({
+                productId: i.productId,
+                sku: i.sku,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                subtotal: i.subtotal,
+              })),
+            },
+          };
+        }
+
         // Update order with new items and totals using optimistic locking
         const updateResult = await tx.order.updateMany({
           where: {
@@ -570,6 +592,7 @@ export const packingRouter = router({
             taxAmount: newTotals.taxAmount,
             totalAmount: newTotals.totalAmount,
             version: { increment: 1 },
+            ...packingUpdate,
           },
         });
 
@@ -1351,120 +1374,296 @@ export const packingRouter = router({
       // Import shared utilities for subproduct stock calculation
       const { calculateAllSubproductStocks } = await import('@joho-erp/shared');
 
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Allow resetting orders that are in 'packing', 'confirmed', or 'ready_for_delivery' status
-      if (!['packing', 'confirmed', 'ready_for_delivery'].includes(order.status)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only orders in packing, confirmed, or ready_for_delivery status can be reset',
-        });
-      }
-
-      const packedItemsCount = order.packing?.packedItems?.length ?? 0;
-
-      // Get user details for audit trail
+      // Get user details for audit trail (can be done outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Use transaction for stock reversal if needed
+      // Capture values for audit log outside transaction
+      let orderNumber: string = '';
+      let packedItemsCount = 0;
+      let stockWasConsumed = false;
+      let hadOriginalItems = false;
+
+      // Use transaction for all operations to ensure atomicity
       await prisma.$transaction(async (tx) => {
-        // If stock was consumed (ready_for_delivery), reverse the stock consumption
+        // CRITICAL FIX: Fetch order INSIDE transaction for fresh data
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Capture for audit log
+        orderNumber = order.orderNumber;
+        packedItemsCount = order.packing?.packedItems?.length ?? 0;
+        stockWasConsumed = order.stockConsumed;
+        hadOriginalItems = !!(order.packing?.originalItems && order.packing.originalItems.length > 0);
+
+        // Allow resetting orders that are in 'packing', 'confirmed', or 'ready_for_delivery' status
+        if (!['packing', 'confirmed', 'ready_for_delivery'].includes(order.status)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Only orders in packing, confirmed, or ready_for_delivery status can be reset',
+          });
+        }
+
+        // CRITICAL FIX: If stock was consumed, use atomic guard to prevent double restoration
         if (order.stockConsumed) {
-          // Find all sale transactions for this order
-          const saleTransactions = await tx.inventoryTransaction.findMany({
+          // Atomically claim the reset by setting stockConsumed to false
+          // Only succeeds if stockConsumed is still true
+          const claimResult = await tx.order.updateMany({
             where: {
-              referenceType: 'order',
-              referenceId: input.orderId,
-              type: 'sale',
+              id: input.orderId,
+              stockConsumed: true, // Atomic guard - only proceed if still true
+            },
+            data: {
+              stockConsumed: false,
+              stockConsumedAt: null,
             },
           });
 
-          // Group by productId to aggregate quantities consumed
-          const productConsumptions = new Map<string, number>();
-          for (const txn of saleTransactions) {
-            const current = productConsumptions.get(txn.productId) || 0;
-            // Sale transactions have negative quantities, so we take the absolute value
-            productConsumptions.set(txn.productId, current + Math.abs(txn.quantity));
-          }
-
-          // Restore stock for each product
-          for (const [productId, quantity] of productConsumptions) {
-            const product = await tx.product.findUnique({ where: { id: productId } });
-            if (!product) continue;
-
-            const previousStock = product.currentStock;
-            const newStock = previousStock + quantity;
-
-            // Create reversal transaction (adjustment type: packing_adjustment)
-            await tx.inventoryTransaction.create({
-              data: {
-                productId,
-                type: 'adjustment',
-                adjustmentType: 'packing_adjustment',
-                quantity: quantity, // Positive to add back
-                previousStock,
-                newStock,
+          if (claimResult.count === 0) {
+            // Check if already reset by another request (idempotent case)
+            const recheck = await tx.order.findUnique({
+              where: { id: input.orderId },
+              select: { stockConsumed: true },
+            });
+            if (!recheck?.stockConsumed) {
+              // Already reset - this is an idempotent success, skip stock restoration
+              // but continue to reset other fields
+            } else {
+              throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Order modified concurrently. Please retry.',
+              });
+            }
+          } else {
+            // Successfully claimed the reset - now restore stock
+            // CRITICAL FIX: Include BOTH sale AND packing_adjustment transactions
+            const stockTransactions = await tx.inventoryTransaction.findMany({
+              where: {
                 referenceType: 'order',
                 referenceId: input.orderId,
-                notes: `Stock restored from packing reset: Order ${order.orderNumber}`,
-                createdBy: ctx.userId || 'system',
+                OR: [
+                  { type: 'sale' },
+                  { type: 'adjustment', adjustmentType: 'packing_adjustment' },
+                ],
               },
             });
 
-            // Create new batch for returned stock
-            await tx.inventoryBatch.create({
-              data: {
-                productId,
-                quantityRemaining: quantity,
-                initialQuantity: quantity,
-                costPerUnit: 0, // Unknown cost for returned stock
-                receivedAt: new Date(),
-                notes: `Stock returned from packing reset: Order ${order.orderNumber}`,
-              },
-            });
+            // Group by productId to aggregate all quantities consumed
+            // Note: We need to handle both positive and negative quantities
+            const productConsumptions = new Map<string, number>();
+            for (const txn of stockTransactions) {
+              const current = productConsumptions.get(txn.productId) || 0;
+              // Sale transactions are negative (stock consumed)
+              // packing_adjustment can be positive or negative depending on direction
+              // We want to restore what was taken, so we negate the quantity
+              productConsumptions.set(txn.productId, current + (-txn.quantity));
+            }
 
-            // Update product stock
-            await tx.product.update({
-              where: { id: productId },
-              data: { currentStock: newStock },
-            });
+            // Restore stock for each product (only positive restorations)
+            for (const [productId, quantity] of productConsumptions) {
+              if (quantity <= 0) continue; // Skip if net effect is 0 or negative
 
-            // Recalculate subproduct stocks if this is a parent product
-            const subproducts = await tx.product.findMany({
-              where: { parentProductId: productId },
-              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-            });
+              const product = await tx.product.findUnique({ where: { id: productId } });
+              if (!product) continue;
 
-            if (subproducts.length > 0) {
-              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-              for (const { id, newStock: subStock } of updatedStocks) {
-                await tx.product.update({
-                  where: { id },
-                  data: { currentStock: subStock },
-                });
+              const previousStock = product.currentStock;
+              const newStock = previousStock + quantity;
+
+              // Create reversal transaction with dedicated type for clarity
+              await tx.inventoryTransaction.create({
+                data: {
+                  productId,
+                  type: 'adjustment',
+                  adjustmentType: 'packing_reset', // New type for clarity in audit trail
+                  quantity: quantity, // Positive to add back
+                  previousStock,
+                  newStock,
+                  referenceType: 'order',
+                  referenceId: input.orderId,
+                  notes: `Stock restored from packing reset: Order ${order.orderNumber}`,
+                  createdBy: ctx.userId || 'system',
+                },
+              });
+
+              // Create new batch for returned stock
+              await tx.inventoryBatch.create({
+                data: {
+                  productId,
+                  quantityRemaining: quantity,
+                  initialQuantity: quantity,
+                  costPerUnit: 0, // Unknown cost for returned stock
+                  receivedAt: new Date(),
+                  notes: `Stock returned from packing reset: Order ${order.orderNumber}`,
+                },
+              });
+
+              // Update product stock
+              await tx.product.update({
+                where: { id: productId },
+                data: { currentStock: newStock },
+              });
+
+              // Recalculate subproduct stocks if this is a parent product
+              const subproducts = await tx.product.findMany({
+                where: { parentProductId: productId },
+                select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+              });
+
+              if (subproducts.length > 0) {
+                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+                for (const { id, newStock: subStock } of updatedStocks) {
+                  await tx.product.update({
+                    where: { id },
+                    data: { currentStock: subStock },
+                  });
+                }
               }
             }
           }
         }
 
-        // Reset order fields
+        // CRITICAL FIX: Restore original order items if they were modified
+        // This handles packing adjustments made BEFORE markOrderReady
+        if (order.packing?.originalItems && order.packing.originalItems.length > 0) {
+          const originalItems = order.packing.originalItems;
+
+          // For items NOT already handled by stockConsumed restoration,
+          // we need to reverse the packing adjustments
+          // Note: If stockConsumed was true, the adjustments were already included above
+          // But if stockConsumed was false, we need to handle them here
+          if (!order.stockConsumed) {
+            // Find packing_adjustment transactions that haven't been reversed yet
+            const adjustmentTransactions = await tx.inventoryTransaction.findMany({
+              where: {
+                referenceType: 'order',
+                referenceId: input.orderId,
+                type: 'adjustment',
+                adjustmentType: 'packing_adjustment',
+              },
+            });
+
+            // Group by productId to aggregate quantities
+            const adjustmentQuantities = new Map<string, number>();
+            for (const txn of adjustmentTransactions) {
+              const current = adjustmentQuantities.get(txn.productId) || 0;
+              // Negate to restore what was taken
+              adjustmentQuantities.set(txn.productId, current + (-txn.quantity));
+            }
+
+            // Restore stock for each adjusted product
+            for (const [productId, quantity] of adjustmentQuantities) {
+              if (quantity <= 0) continue; // Skip if net effect is 0 or negative
+
+              const product = await tx.product.findUnique({ where: { id: productId } });
+              if (!product) continue;
+
+              const previousStock = product.currentStock;
+              const newStock = previousStock + quantity;
+
+              // Create reversal transaction
+              await tx.inventoryTransaction.create({
+                data: {
+                  productId,
+                  type: 'adjustment',
+                  adjustmentType: 'packing_reset',
+                  quantity: quantity,
+                  previousStock,
+                  newStock,
+                  referenceType: 'order',
+                  referenceId: input.orderId,
+                  notes: `Stock restored from packing adjustment reset: Order ${order.orderNumber}`,
+                  createdBy: ctx.userId || 'system',
+                },
+              });
+
+              // Create new batch for returned stock
+              await tx.inventoryBatch.create({
+                data: {
+                  productId,
+                  quantityRemaining: quantity,
+                  initialQuantity: quantity,
+                  costPerUnit: 0,
+                  receivedAt: new Date(),
+                  notes: `Stock returned from packing adjustment reset: Order ${order.orderNumber}`,
+                },
+              });
+
+              // Update product stock
+              await tx.product.update({
+                where: { id: productId },
+                data: { currentStock: newStock },
+              });
+
+              // Recalculate subproduct stocks
+              const subproducts = await tx.product.findMany({
+                where: { parentProductId: productId },
+                select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+              });
+
+              if (subproducts.length > 0) {
+                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+                for (const { id, newStock: subStock } of updatedStocks) {
+                  await tx.product.update({
+                    where: { id },
+                    data: { currentStock: subStock },
+                  });
+                }
+              }
+            }
+          }
+
+          // Recalculate order totals from original items
+          const { calculateOrderTotals } = await import('@joho-erp/shared');
+
+          // Restore original items array
+          const restoredItems = order.items.map((item: any) => {
+            const original = originalItems.find((o: any) => o.productId === item.productId);
+            if (original) {
+              return {
+                ...item,
+                quantity: original.quantity,
+                subtotal: original.subtotal,
+              };
+            }
+            return item;
+          });
+
+          // Recalculate totals
+          const newTotals = calculateOrderTotals(
+            restoredItems.map((i: any) => ({
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              applyGst: i.applyGst ?? false,
+              gstRate: i.gstRate ?? null,
+            }))
+          );
+
+          // Update order with restored items
+          await tx.order.update({
+            where: { id: input.orderId },
+            data: {
+              items: restoredItems,
+              subtotal: newTotals.subtotal,
+              taxAmount: newTotals.taxAmount,
+              totalAmount: newTotals.totalAmount,
+            },
+          });
+        }
+
+        // Reset order fields (status, packing, etc.)
         await tx.order.update({
           where: { id: input.orderId },
           data: {
             status: 'confirmed',
-            stockConsumed: false,
-            stockConsumedAt: null,
+            // Note: stockConsumed already set to false by atomic updateMany above if it was true
+            ...(order.stockConsumed ? {} : { stockConsumed: false, stockConsumedAt: null }),
             packing: {
               packedAt: null,
               packedBy: null,
@@ -1474,6 +1673,7 @@ export const packingRouter = router({
               lastPackedAt: null,
               lastPackedBy: null,
               pausedAt: null,
+              originalItems: [], // Clear original items snapshot
             },
             statusHistory: {
               push: {
@@ -1483,8 +1683,8 @@ export const packingRouter = router({
                 changedByName: userDetails.changedByName,
                 changedByEmail: userDetails.changedByEmail,
                 notes: `Packing reset from ${order.status} status. ${packedItemsCount} items cleared. ${
-                  order.stockConsumed ? 'Stock consumption reversed. ' : ''
-                }Reason: ${input.reason || 'Manual reset by packer'}`,
+                  stockWasConsumed ? 'Stock consumption reversed. ' : ''
+                }${hadOriginalItems ? 'Original quantities restored. ' : ''}Reason: ${input.reason || 'Manual reset by packer'}`,
               },
             },
           },
@@ -1493,8 +1693,8 @@ export const packingRouter = router({
 
       // Audit log - MEDIUM: Packing reset tracked
       await logPackingOrderReset(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
-        reason: order.stockConsumed
+        orderNumber: orderNumber,
+        reason: stockWasConsumed
           ? `${input.reason || 'Manual reset'} (stock consumption reversed)`
           : input.reason,
       }).catch((error) => {

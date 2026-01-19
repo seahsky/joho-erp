@@ -110,6 +110,7 @@ enum AdjustmentType {
   stock_count_correction  // Fixing discrepancy from stocktake
   stock_write_off         // Writing off damaged or expired inventory
   packing_adjustment      // Quantity adjusted during packing
+  packing_reset           // Stock restored from packing reset
 }
 
 enum AuditAction {
@@ -966,6 +967,17 @@ type Packing {
   lastPackedAt        DateTime?           // When packing was last updated
   lastPackedBy        String?             // Who last worked on this order (user ID)
   pausedAt            DateTime?           // When packing was paused (null if active)
+  // Original order items snapshot - stored on first quantity adjustment for reset capability
+  originalItems       OriginalOrderItem[]
+}
+
+// Snapshot of original order item for reset capability
+type OriginalOrderItem {
+  productId           String
+  sku                 String
+  quantity            Int
+  unitPrice           Int                 // Stored in cents
+  subtotal            Int                 // Stored in cents
 }
 
 type Delivery {
