@@ -1474,7 +1474,6 @@ export const packingRouter = router({
               where: {
                 referenceType: 'order',
                 referenceId: input.orderId,
-                NOT: { reversedAt: { not: null } }, // Exclude already-reversed transactions (handles missing field)
                 OR: [
                   { type: 'sale' },
                   { type: 'adjustment', adjustmentType: 'packing_adjustment' },
@@ -1482,10 +1481,13 @@ export const packingRouter = router({
               },
             });
 
+            // Filter out already-reversed transactions in code (MongoDB doesn't match missing fields with null)
+            const unreversedTransactions = stockTransactions.filter(txn => !txn.reversedAt);
+
             // Group by productId to aggregate all quantities consumed
             // Note: We need to handle both positive and negative quantities
             const productConsumptions = new Map<string, number>();
-            for (const txn of stockTransactions) {
+            for (const txn of unreversedTransactions) {
               const current = productConsumptions.get(txn.productId) || 0;
               // Sale transactions are negative (stock consumed)
               // packing_adjustment can be positive or negative depending on direction
@@ -1555,10 +1557,10 @@ export const packingRouter = router({
             }
 
             // Mark original transactions as reversed to prevent double-counting
-            if (stockTransactions.length > 0) {
+            if (unreversedTransactions.length > 0) {
               await tx.inventoryTransaction.updateMany({
                 where: {
-                  id: { in: stockTransactions.map((t) => t.id) },
+                  id: { in: unreversedTransactions.map((t) => t.id) },
                 },
                 data: {
                   reversedAt: new Date(),
@@ -1585,13 +1587,15 @@ export const packingRouter = router({
                 referenceId: input.orderId,
                 type: 'adjustment',
                 adjustmentType: 'packing_adjustment',
-                NOT: { reversedAt: { not: null } }, // Exclude already-reversed transactions (handles missing field)
               },
             });
 
+            // Filter out already-reversed transactions in code (MongoDB doesn't match missing fields with null)
+            const unreversedAdjustments = adjustmentTransactions.filter(txn => !txn.reversedAt);
+
             // Group by productId to aggregate quantities
             const adjustmentQuantities = new Map<string, number>();
-            for (const txn of adjustmentTransactions) {
+            for (const txn of unreversedAdjustments) {
               const current = adjustmentQuantities.get(txn.productId) || 0;
               // Negate to restore what was taken
               adjustmentQuantities.set(txn.productId, current + (-txn.quantity));
@@ -1659,10 +1663,10 @@ export const packingRouter = router({
             }
 
             // Mark adjustment transactions as reversed to prevent double-counting
-            if (adjustmentTransactions.length > 0) {
+            if (unreversedAdjustments.length > 0) {
               await tx.inventoryTransaction.updateMany({
                 where: {
-                  id: { in: adjustmentTransactions.map((t) => t.id) },
+                  id: { in: unreversedAdjustments.map((t) => t.id) },
                 },
                 data: {
                   reversedAt: new Date(),
