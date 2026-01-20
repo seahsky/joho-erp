@@ -502,6 +502,7 @@ model InventoryTransaction {
   createdBy           String
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
+  reversedAt          DateTime?                   // When this transaction was reversed/cancelled
 
   // Batch costing fields (only for stock_received transactions)
   costPerUnit         Int?                        // In cents - cost when receiving stock
@@ -517,6 +518,7 @@ model InventoryTransaction {
   @@index([type])
   @@index([adjustmentType])
   @@index([createdAt(sort: Desc), type])
+  @@index([reversedAt])
   @@map("inventorytransactions")
 }
 

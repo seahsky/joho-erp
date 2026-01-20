@@ -1469,10 +1469,12 @@ export const packingRouter = router({
           } else {
             // Successfully claimed the reset - now restore stock
             // CRITICAL FIX: Include BOTH sale AND packing_adjustment transactions
+            // Only include transactions that haven't been reversed yet
             const stockTransactions = await tx.inventoryTransaction.findMany({
               where: {
                 referenceType: 'order',
                 referenceId: input.orderId,
+                reversedAt: null, // Exclude already-reversed transactions
                 OR: [
                   { type: 'sale' },
                   { type: 'adjustment', adjustmentType: 'packing_adjustment' },
@@ -1551,6 +1553,18 @@ export const packingRouter = router({
                 }
               }
             }
+
+            // Mark original transactions as reversed to prevent double-counting
+            if (stockTransactions.length > 0) {
+              await tx.inventoryTransaction.updateMany({
+                where: {
+                  id: { in: stockTransactions.map((t) => t.id) },
+                },
+                data: {
+                  reversedAt: new Date(),
+                },
+              });
+            }
           }
         }
 
@@ -1571,6 +1585,7 @@ export const packingRouter = router({
                 referenceId: input.orderId,
                 type: 'adjustment',
                 adjustmentType: 'packing_adjustment',
+                reversedAt: null, // Exclude already-reversed transactions
               },
             });
 
@@ -1641,6 +1656,18 @@ export const packingRouter = router({
                   });
                 }
               }
+            }
+
+            // Mark adjustment transactions as reversed to prevent double-counting
+            if (adjustmentTransactions.length > 0) {
+              await tx.inventoryTransaction.updateMany({
+                where: {
+                  id: { in: adjustmentTransactions.map((t) => t.id) },
+                },
+                data: {
+                  reversedAt: new Date(),
+                },
+              });
             }
           }
 
