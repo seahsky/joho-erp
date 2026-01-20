@@ -1474,7 +1474,7 @@ export const packingRouter = router({
               where: {
                 referenceType: 'order',
                 referenceId: input.orderId,
-                reversedAt: null, // Exclude already-reversed transactions
+                NOT: { reversedAt: { not: null } }, // Exclude already-reversed transactions (handles missing field)
                 OR: [
                   { type: 'sale' },
                   { type: 'adjustment', adjustmentType: 'packing_adjustment' },
@@ -1585,7 +1585,7 @@ export const packingRouter = router({
                 referenceId: input.orderId,
                 type: 'adjustment',
                 adjustmentType: 'packing_adjustment',
-                reversedAt: null, // Exclude already-reversed transactions
+                NOT: { reversedAt: { not: null } }, // Exclude already-reversed transactions (handles missing field)
               },
             });
 
