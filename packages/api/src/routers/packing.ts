@@ -1139,6 +1139,8 @@ export const packingRouter = router({
           where: { id: input.orderId },
           data: {
             packing: {
+              // Preserve existing packing fields (including originalItems from quantity adjustments)
+              ...(freshOrder.packing || {}),
               packedAt: new Date(),
               packedBy: ctx.userId || 'system',
               notes: input.notes,
