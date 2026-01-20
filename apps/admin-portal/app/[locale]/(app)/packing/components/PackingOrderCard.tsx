@@ -646,9 +646,13 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         {items.map((item, index) => {
           const isPacked = item.packed;
           // Calculate display stock: deduct quantity when item is packed
-          const displayStock = isPacked
-            ? item.currentStock - item.quantity
-            : item.currentStock;
+          // When ready_for_delivery, stock has already been consumed - show actual stock
+          // Only apply optimistic deduction for in-progress packing
+          const displayStock = isReadyForDelivery
+            ? item.currentStock
+            : isPacked
+              ? item.currentStock - item.quantity
+              : item.currentStock;
           const stockStatus = getStockStatus(displayStock, item.lowStockThreshold);
           const isEditing = editingItemId === item.productId;
           const isUpdating = updateItemQuantityMutation.isPending &&
