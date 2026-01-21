@@ -86,12 +86,37 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       return { previousOrderDetails };
     },
 
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: t('orderReady'),
         description: t('orderReadyDescription'),
       });
-      // Don't invalidate - optimistic update already shows correct state
+
+      // Update cache with fresh stock data from response (no refetch/flash)
+      if (data.updatedStocks) {
+        utils.packing.getOrderDetails.setData(
+          { orderId: order.orderId },
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              status: 'ready_for_delivery' as const,
+              items: old.items.map((item) => {
+                const updatedStock = data.updatedStocks?.[item.productId];
+                if (updatedStock) {
+                  return {
+                    ...item,
+                    currentStock: updatedStock.currentStock,
+                    lowStockThreshold: updatedStock.lowStockThreshold ?? undefined,
+                  };
+                }
+                return item;
+              }),
+            };
+          }
+        );
+      }
+
       // Parent's onOrderUpdated() handles list refresh
       onOrderUpdated();
     },

@@ -1183,7 +1183,34 @@ export const packingRouter = router({
         });
       }
 
-      return { success: true };
+      // After transaction, fetch updated product stocks for the items in this order
+      // This allows the frontend to update cache without invalidation (prevents flash)
+      const orderForStocks = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: { items: true },
+      });
+
+      const orderItemsArray = (orderForStocks?.items ?? []) as Array<{ productId: string }>;
+      const productIds = [...new Set(orderItemsArray.map(item => item.productId).filter(Boolean))] as string[];
+
+      const updatedProducts = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          currentStock: true,
+          lowStockThreshold: true,
+        },
+      });
+
+      const updatedStocks = updatedProducts.reduce((acc, product) => {
+        acc[product.id] = {
+          currentStock: product.currentStock,
+          lowStockThreshold: product.lowStockThreshold,
+        };
+        return acc;
+      }, {} as Record<string, { currentStock: number; lowStockThreshold: number | null }>);
+
+      return { success: true, updatedStocks };
     }),
 
   /**
