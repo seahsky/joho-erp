@@ -694,6 +694,13 @@
         "acnFormat": "123456789",
         "creditLimitExample": "例如，10000 表示 $10,000",
         "forecastPurchaseExample": "例如，5000 表示 $5,000"
+      },
+      "address": {
+        "searchPlaceholder": "輸入地址進行搜尋...",
+        "enterManually": "手動輸入地址",
+        "useSearch": "搜尋地址",
+        "noResults": "未找到地址",
+        "searching": "搜尋中..."
       }
     },
     "directors": {

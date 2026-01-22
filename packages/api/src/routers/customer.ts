@@ -115,6 +115,8 @@ export const customerRouter = router({
           postcode: z.string(),
           areaId: z.string().optional(), // Manual area override
           deliveryInstructions: z.string().optional(),
+          latitude: z.number().optional(), // From geocoding
+          longitude: z.number().optional(), // From geocoding
         }),
         billingAddress: z
           .object({
@@ -191,6 +193,49 @@ export const customerRouter = router({
         areaName = area?.name ?? null;
       }
 
+      // Resolve coordinates for delivery address
+      let latitude = input.deliveryAddress.latitude ?? null;
+      let longitude = input.deliveryAddress.longitude ?? null;
+
+      // If coordinates not provided by frontend, try to geocode server-side
+      if (latitude === null || longitude === null) {
+        const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+        if (mapboxToken) {
+          try {
+            const fullAddress = `${input.deliveryAddress.street}, ${input.deliveryAddress.suburb}, ${input.deliveryAddress.state} ${input.deliveryAddress.postcode}, Australia`;
+            const encodedAddress = encodeURIComponent(fullAddress);
+            const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=AU&limit=1&types=address`;
+
+            const geocodeResponse = await fetch(geocodeUrl);
+            if (geocodeResponse.ok) {
+              const geocodeData = await geocodeResponse.json();
+              if (geocodeData.features && geocodeData.features.length > 0) {
+                const feature = geocodeData.features[0];
+                latitude = feature.center[1];
+                longitude = feature.center[0];
+              }
+            }
+          } catch (geocodeError) {
+            console.warn('Server-side geocoding failed, falling back to suburb mapping:', geocodeError);
+          }
+        }
+      }
+
+      // Fallback to SuburbAreaMapping coordinates if geocoding didn't work
+      if ((latitude === null || longitude === null) && !input.deliveryAddress.areaId) {
+        const suburbMappingForCoords = await prisma.suburbAreaMapping.findFirst({
+          where: {
+            suburb: { equals: input.deliveryAddress.suburb, mode: 'insensitive' },
+            state: input.deliveryAddress.state,
+            isActive: true,
+          },
+        });
+        if (suburbMappingForCoords) {
+          latitude = suburbMappingForCoords.latitude;
+          longitude = suburbMappingForCoords.longitude;
+        }
+      }
+
       // Create customer
       const customer = await prisma.customer.create({
         data: {
@@ -210,6 +255,8 @@ export const customerRouter = router({
             areaId,
             areaName,
             deliveryInstructions: input.deliveryAddress.deliveryInstructions,
+            latitude,
+            longitude,
           },
           billingAddress: input.billingAddress
             ? { ...input.billingAddress, country: 'Australia' }
@@ -1355,5 +1402,95 @@ export const customerRouter = router({
       });
 
       return customer;
+    }),
+
+  /**
+   * Public geocoding endpoint for address search during onboarding
+   * Uses Mapbox Geocoding API to get precise coordinates and parsed address parts
+   */
+  geocodeAddress: publicProcedure
+    .input(
+      z.object({
+        address: z.string().min(1, 'Address is required'),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+      if (!token) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Mapbox access token not configured',
+        });
+      }
+
+      try {
+        const encodedAddress = encodeURIComponent(input.address);
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=AU&limit=5&types=address`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error('Geocoding request failed');
+        }
+
+        const data = await response.json();
+
+        if (!data.features || data.features.length === 0) {
+          return { success: true, results: [] };
+        }
+
+        // Parse Mapbox response into structured address parts
+        const results = data.features.map((feature: {
+          place_name: string;
+          center: [number, number];
+          relevance: number;
+          text: string;
+          address?: string;
+          context?: Array<{ id: string; text: string; short_code?: string }>;
+        }) => {
+          // Extract address components from context
+          const context = feature.context || [];
+          const getContextValue = (prefix: string): string | undefined => {
+            const item = context.find((c) => c.id.startsWith(prefix));
+            return item?.text;
+          };
+          const getContextShortCode = (prefix: string): string | undefined => {
+            const item = context.find((c) => c.id.startsWith(prefix));
+            return item?.short_code;
+          };
+
+          // Build street address from Mapbox components
+          const streetNumber = feature.address || '';
+          const streetName = feature.text || '';
+          const street = streetNumber ? `${streetNumber} ${streetName}` : streetName;
+
+          // Extract suburb, state, postcode
+          const suburb = getContextValue('locality') || getContextValue('place') || '';
+          const stateShortCode = getContextShortCode('region');
+          // Convert "AU-NSW" to "NSW"
+          const state = stateShortCode ? stateShortCode.replace('AU-', '') : '';
+          const postcode = getContextValue('postcode') || '';
+
+          return {
+            fullAddress: feature.place_name,
+            street,
+            suburb,
+            state,
+            postcode,
+            latitude: feature.center[1],
+            longitude: feature.center[0],
+            relevance: feature.relevance,
+          };
+        });
+
+        return { success: true, results };
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Geocoding failed',
+        });
+      }
     }),
 });

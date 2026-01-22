@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent } from '@joho-erp/ui';
 import { Building2, User, MapPin, CreditCard } from 'lucide-react';
 import { parseToCents, validateABN } from '@joho-erp/shared';
 import type { BusinessInfo } from '../page';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 interface BusinessInfoStepProps {
   data: Partial<BusinessInfo>;
@@ -21,6 +22,22 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
   useEffect(() => {
     onChange(formData);
   }, [formData, onChange]);
+
+  // Handle address selection from AddressSearch component
+  const handleAddressSelect = useCallback((address: AddressResult) => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryAddress: {
+        ...prev.deliveryAddress,
+        street: address.street,
+        suburb: address.suburb,
+        state: address.state,
+        postcode: address.postcode,
+        latitude: address.latitude || undefined,
+        longitude: address.longitude || undefined,
+      },
+    }));
+  }, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -264,77 +281,26 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="deliveryStreet">{t('fields.street')}</Label>
-            <Input
-              id="deliveryStreet"
-              value={formData.deliveryAddress?.street || ''}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  deliveryAddress: { ...formData.deliveryAddress!, street: e.target.value },
-                })
-              }
-            />
-            {errors.deliveryStreet && (
-              <p className="mt-1 text-sm text-destructive">{errors.deliveryStreet}</p>
-            )}
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <Label htmlFor="deliverySuburb">{t('fields.suburb')}</Label>
-              <Input
-                id="deliverySuburb"
-                value={formData.deliveryAddress?.suburb || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    deliveryAddress: { ...formData.deliveryAddress!, suburb: e.target.value },
-                  })
-                }
-              />
-              {errors.deliverySuburb && (
-                <p className="mt-1 text-sm text-destructive">{errors.deliverySuburb}</p>
-              )}
+          {/* Address Search Component */}
+          <AddressSearch
+            onAddressSelect={handleAddressSelect}
+            defaultValues={{
+              street: formData.deliveryAddress?.street,
+              suburb: formData.deliveryAddress?.suburb,
+              state: formData.deliveryAddress?.state,
+              postcode: formData.deliveryAddress?.postcode,
+            }}
+          />
+          {/* Show validation errors for address fields */}
+          {(errors.deliveryStreet || errors.deliverySuburb || errors.deliveryState || errors.deliveryPostcode) && (
+            <div className="text-sm text-destructive space-y-1">
+              {errors.deliveryStreet && <p>{errors.deliveryStreet}</p>}
+              {errors.deliverySuburb && <p>{errors.deliverySuburb}</p>}
+              {errors.deliveryState && <p>{errors.deliveryState}</p>}
+              {errors.deliveryPostcode && <p>{errors.deliveryPostcode}</p>}
             </div>
-            <div>
-              <Label htmlFor="deliveryState">{t('fields.state')}</Label>
-              <Input
-                id="deliveryState"
-                value={formData.deliveryAddress?.state || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    deliveryAddress: { ...formData.deliveryAddress!, state: e.target.value },
-                  })
-                }
-              />
-              {errors.deliveryState && (
-                <p className="mt-1 text-sm text-destructive">{errors.deliveryState}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="deliveryPostcode">{t('fields.postcode')}</Label>
-              <Input
-                id="deliveryPostcode"
-                maxLength={4}
-                value={formData.deliveryAddress?.postcode || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    deliveryAddress: {
-                      ...formData.deliveryAddress!,
-                      postcode: e.target.value.replace(/\D/g, ''),
-                    },
-                  })
-                }
-              />
-              {errors.deliveryPostcode && (
-                <p className="mt-1 text-sm text-destructive">{errors.deliveryPostcode}</p>
-              )}
-            </div>
-          </div>
-          {/* Area selection removed - area is auto-assigned by backend based on suburb */}
+          )}
+          {/* Delivery Instructions */}
           <div>
             <Label htmlFor="deliveryInstructions">{t('fields.deliveryInstructions')}</Label>
             <textarea

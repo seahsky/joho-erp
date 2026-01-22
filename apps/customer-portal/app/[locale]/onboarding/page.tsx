@@ -43,6 +43,8 @@ export interface BusinessInfo {
     postcode: string;
     // areaTag removed - area is auto-assigned by backend based on suburb
     deliveryInstructions?: string;
+    latitude?: number; // From geocoding
+    longitude?: number; // From geocoding
   };
   billingAddress?: {
     street: string;
