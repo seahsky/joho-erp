@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useUser } from '@clerk/nextjs';
 import { Button, Input, Label, useToast } from '@joho-erp/ui';
 import type { DirectorInfo } from '../page';
+import { IdentityDocumentUpload, type IdDocumentData } from './identity-document-upload';
 
 interface DirectorsStepProps {
   data: DirectorInfo[];
@@ -15,10 +17,14 @@ interface DirectorsStepProps {
 export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepProps) {
   const t = useTranslations('onboarding.directors');
   const { toast } = useToast();
+  const { user } = useUser();
   const [directors, setDirectors] = useState<DirectorInfo[]>(
     data.length > 0 ? data : [createEmptyDirector()]
   );
   const [directorErrors, setDirectorErrors] = useState<Record<number, Record<string, string>>>({});
+
+  // Use clerk user ID as the customer ID for file uploads (before actual customer is created)
+  const customerId = user?.id || 'temp-' + Date.now();
 
   function createEmptyDirector(): DirectorInfo {
     return {
@@ -30,8 +36,37 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
       licenseState: 'NSW',
       licenseExpiry: '',
       position: '',
+      // ID Document defaults
+      idDocumentType: 'DRIVER_LICENSE',
+      idDocumentFrontUrl: undefined,
+      idDocumentBackUrl: undefined,
+      idDocumentUploadedAt: undefined,
     };
   }
+
+  // Helper to convert director data to IdDocumentData
+  const getIdDocumentData = (director: DirectorInfo): IdDocumentData => ({
+    documentType: director.idDocumentType || 'DRIVER_LICENSE',
+    frontUrl: director.idDocumentFrontUrl || null,
+    backUrl: director.idDocumentBackUrl || null,
+    uploadedAt: director.idDocumentUploadedAt || null,
+  });
+
+  // Handle ID document data change
+  const handleIdDocumentChange = (index: number, data: IdDocumentData) => {
+    const updated = [...directors];
+    updated[index] = {
+      ...updated[index],
+      idDocumentType: data.documentType,
+      idDocumentFrontUrl: data.frontUrl || undefined,
+      idDocumentBackUrl: data.backUrl || undefined,
+      idDocumentUploadedAt: data.uploadedAt || undefined,
+    };
+    setDirectors(updated);
+    onChange(updated);
+    // Clear ID document error if any
+    clearFieldError(index, 'idDocument');
+  };
 
   const clearFieldError = (index: number, field: string) => {
     if (directorErrors[index]?.[field]) {
@@ -131,6 +166,15 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
 
       if (!director.licenseExpiry) {
         directorErrors.licenseExpiry = t('validation.licenseExpiryRequired');
+        isValid = false;
+      }
+
+      // ID Document validation
+      if (!director.idDocumentFrontUrl) {
+        directorErrors.idDocument = t('validation.idDocumentRequired');
+        isValid = false;
+      } else if (director.idDocumentType === 'DRIVER_LICENSE' && !director.idDocumentBackUrl) {
+        directorErrors.idDocument = t('validation.idDocumentBackRequired');
         isValid = false;
       }
 
@@ -300,6 +344,17 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
                 <p className="text-sm text-destructive">{directorErrors[index].licenseExpiry}</p>
               )}
             </div>
+          </div>
+
+          {/* ID Document Upload */}
+          <div className="mt-6">
+            <IdentityDocumentUpload
+              directorIndex={index}
+              customerId={customerId}
+              value={getIdDocumentData(director)}
+              onChange={(data) => handleIdDocumentChange(index, data)}
+              error={directorErrors[index]?.idDocument}
+            />
           </div>
         </div>
       ))}

@@ -1069,14 +1069,19 @@ type XeroSettings {
 }
 
 type DirectorDetails {
-  familyName          String
-  givenNames          String
-  residentialAddress  ResidentialAddress
-  dateOfBirth         DateTime
-  driverLicenseNumber String
-  licenseState        AustralianState
-  licenseExpiry       DateTime
-  position            String?
+  familyName              String
+  givenNames              String
+  residentialAddress      ResidentialAddress
+  dateOfBirth             DateTime
+  driverLicenseNumber     String
+  licenseState            AustralianState
+  licenseExpiry           DateTime
+  position                String?
+  // ID Document fields for credit verification
+  idDocumentType          String?           // DRIVER_LICENSE | PASSPORT
+  idDocumentFrontUrl      String?           // Required for both types
+  idDocumentBackUrl       String?           // Required for driver license only
+  idDocumentUploadedAt    DateTime?
 }
 
 type ResidentialAddress {

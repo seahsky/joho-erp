@@ -28,6 +28,14 @@ export const IMAGE_UPLOAD_CONFIG = {
 
 export type AllowedMimeType = (typeof IMAGE_UPLOAD_CONFIG.allowedMimeTypes)[number];
 
+// Identity document upload constraints
+export const IDENTITY_DOCUMENT_CONFIG = {
+  maxSizeBytes: 5 * 1024 * 1024, // 5MB
+  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'] as const,
+} as const;
+
+export type IdentityDocumentMimeType = (typeof IDENTITY_DOCUMENT_CONFIG.allowedMimeTypes)[number];
+
 /**
  * Check if R2 is properly configured
  */
@@ -204,6 +212,64 @@ export async function uploadToR2(params: {
   const timestamp = Date.now();
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
   const key = `${path}/${timestamp}-${sanitizedFilename}`;
+
+  const client = getR2Client();
+
+  // Upload directly to R2
+  const command = new PutObjectCommand({
+    Bucket: R2_CONFIG.bucketName,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    ContentLength: buffer.length,
+  });
+
+  await client.send(command);
+
+  // Construct public URL
+  const publicUrl = `${R2_CONFIG.publicUrl}/${key}`;
+
+  return { publicUrl, key };
+}
+
+/**
+ * Upload an identity document (driver license or passport) to R2
+ * Used for credit application verification
+ *
+ * @param params.customerId - The customer ID for organizing files
+ * @param params.directorIndex - The director index (0-based)
+ * @param params.documentType - Either 'DRIVER_LICENSE' or 'PASSPORT'
+ * @param params.side - 'front' or 'back' (back only for driver license)
+ * @param params.filename - Original filename
+ * @param params.contentType - File MIME type
+ * @param params.buffer - File content as Buffer
+ */
+export async function uploadIdentityDocument(params: {
+  customerId: string;
+  directorIndex: number;
+  documentType: 'DRIVER_LICENSE' | 'PASSPORT';
+  side: 'front' | 'back';
+  filename: string;
+  contentType: IdentityDocumentMimeType;
+  buffer: Buffer;
+}): Promise<{ publicUrl: string; key: string }> {
+  const { customerId, directorIndex, documentType, side, filename, contentType, buffer } = params;
+
+  // Validate content type
+  if (!IDENTITY_DOCUMENT_CONFIG.allowedMimeTypes.includes(contentType as IdentityDocumentMimeType)) {
+    throw new Error(`Invalid file type: ${contentType}. Allowed types: ${IDENTITY_DOCUMENT_CONFIG.allowedMimeTypes.join(', ')}`);
+  }
+
+  // Validate file size (5MB max)
+  if (buffer.length > IDENTITY_DOCUMENT_CONFIG.maxSizeBytes) {
+    throw new Error(`File too large: max ${IDENTITY_DOCUMENT_CONFIG.maxSizeBytes / 1024 / 1024}MB`);
+  }
+
+  // Generate unique key: identity-documents/{customerId}/director-{index}-{docType}-{side}-{timestamp}.{ext}
+  const timestamp = Date.now();
+  const extension = filename.split('.').pop()?.toLowerCase() || 'jpg';
+  const docTypeSlug = documentType.toLowerCase().replace('_', '-');
+  const key = `identity-documents/${customerId}/director-${directorIndex}-${docTypeSlug}-${side}-${timestamp}.${extension}`;
 
   const client = getR2Client();
 

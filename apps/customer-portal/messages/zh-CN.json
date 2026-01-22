@@ -734,7 +734,28 @@
         "postcodeRequired": "邮递区号为必填项",
         "postcodeInvalid": "邮递区号必须为 4 位数字",
         "driverLicenseRequired": "驾照号码为必填项",
-        "licenseExpiryRequired": "驾照有效期为必填项"
+        "licenseExpiryRequired": "驾照有效期为必填项",
+        "idDocumentRequired": "身份证明文件为必填项",
+        "idDocumentBackRequired": "需要驾照背面"
+      },
+      "idDocument": {
+        "title": "身份证明文件",
+        "description": "上传您的驾照或护照照片以进行验证",
+        "selectType": "选择证件类型",
+        "driverLicense": "驾照",
+        "passport": "护照",
+        "licenseFront": "驾照（正面）",
+        "licenseBack": "驾照（背面）",
+        "passportPhotoPage": "护照照片页",
+        "clickToUpload": "点击上传",
+        "allowedFileTypes": "JPEG、PNG 或 PDF（最大 5MB）",
+        "maxFileSize": "文件大小不能超过 5MB",
+        "uploading": "上传中...",
+        "replace": "替换",
+        "uploadError": "上传失败",
+        "uploadErrorGeneric": "文件上传失败，请重试。",
+        "invalidFileType": "文件类型无效",
+        "fileTooLarge": "文件过大"
       },
       "buttons": {
         "addDirector": "添加另一位董事",

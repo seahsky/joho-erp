@@ -1628,7 +1628,20 @@
       "rejectTitle": "确认信用拒绝",
       "rejectDescription": "您即将拒绝 {businessName} 的信用申请。此操作将向客户发送通知邮件。"
     },
-    "enterDollars": "输入金额（以澳元为单位，例如：10000 表示 $10,000）"
+    "enterDollars": "输入金额（以澳元为单位，例如：10000 表示 $10,000）",
+    "identityDocuments": {
+      "title": "身份证件",
+      "description": "已上传的身份证件供核实",
+      "driverLicense": "驾驶执照",
+      "passport": "护照",
+      "front": "正面",
+      "back": "背面",
+      "photoPage": "照片页",
+      "uploadedAt": "上传于 {date}",
+      "viewPdf": "查看PDF",
+      "noDocuments": "未上传身份证件",
+      "verifyHint": "请核实证件与上述填写的信息是否一致"
+    }
   },
   "customerForm": {
     "title": "添加新客户",
@@ -3033,6 +3046,18 @@
       "licenseExpiry": "驾照有效期",
       "residentialAddress": "居住地址",
       "director": "董事"
+    },
+    "identityDocuments": {
+      "title": "身份证件",
+      "description": "已上传的身份证件供核实",
+      "driverLicense": "驾驶执照",
+      "passport": "护照",
+      "front": "正面",
+      "back": "背面",
+      "photoPage": "照片页",
+      "uploadedAt": "上传于 {date}",
+      "viewPdf": "查看PDF",
+      "noDocuments": "未上传身份证件"
     },
     "financialDetails": {
       "title": "财务信息",

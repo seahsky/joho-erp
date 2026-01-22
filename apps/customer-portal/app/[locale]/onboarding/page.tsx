@@ -76,6 +76,11 @@ export interface DirectorInfo {
   licenseState: 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT';
   licenseExpiry: string;
   position?: string;
+  // ID Document fields for credit verification
+  idDocumentType?: 'DRIVER_LICENSE' | 'PASSPORT';
+  idDocumentFrontUrl?: string;
+  idDocumentBackUrl?: string;
+  idDocumentUploadedAt?: string;
 }
 
 export interface FinancialInfo {
@@ -217,6 +222,11 @@ export default function OnboardingPage() {
         dateOfBirth: new Date(d.dateOfBirth),
         licenseExpiry: new Date(d.licenseExpiry),
         residentialAddress: { ...d.residentialAddress, country: 'Australia' },
+        // ID Document fields
+        idDocumentType: d.idDocumentType,
+        idDocumentFrontUrl: d.idDocumentFrontUrl,
+        idDocumentBackUrl: d.idDocumentBackUrl,
+        idDocumentUploadedAt: d.idDocumentUploadedAt ? new Date(d.idDocumentUploadedAt) : undefined,
       })),
       financialDetails: financialInfo as FinancialInfo,
       tradeReferences,

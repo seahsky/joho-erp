@@ -734,7 +734,28 @@
         "postcodeRequired": "郵遞區號為必填項",
         "postcodeInvalid": "郵遞區號必須為 4 位數字",
         "driverLicenseRequired": "駕照號碼為必填項",
-        "licenseExpiryRequired": "駕照有效期為必填項"
+        "licenseExpiryRequired": "駕照有效期為必填項",
+        "idDocumentRequired": "身份證明文件為必填項",
+        "idDocumentBackRequired": "需要駕照背面"
+      },
+      "idDocument": {
+        "title": "身份證明文件",
+        "description": "上傳您的駕照或護照照片以進行驗證",
+        "selectType": "選擇證件類型",
+        "driverLicense": "駕照",
+        "passport": "護照",
+        "licenseFront": "駕照（正面）",
+        "licenseBack": "駕照（背面）",
+        "passportPhotoPage": "護照照片頁",
+        "clickToUpload": "點擊上傳",
+        "allowedFileTypes": "JPEG、PNG 或 PDF（最大 5MB）",
+        "maxFileSize": "檔案大小不能超過 5MB",
+        "uploading": "上傳中...",
+        "replace": "替換",
+        "uploadError": "上傳失敗",
+        "uploadErrorGeneric": "檔案上傳失敗，請重試。",
+        "invalidFileType": "檔案類型無效",
+        "fileTooLarge": "檔案過大"
       },
       "buttons": {
         "addDirector": "新增另一位董事",

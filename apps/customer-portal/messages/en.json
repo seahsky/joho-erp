@@ -609,7 +609,28 @@
         "postcodeRequired": "Postcode is required",
         "postcodeInvalid": "Postcode must be 4 digits",
         "driverLicenseRequired": "Driver license number is required",
-        "licenseExpiryRequired": "License expiry date is required"
+        "licenseExpiryRequired": "License expiry date is required",
+        "idDocumentRequired": "ID document is required",
+        "idDocumentBackRequired": "Back of driver license is required"
+      },
+      "idDocument": {
+        "title": "Identity Document",
+        "description": "Upload a photo of your driver license or passport for verification",
+        "selectType": "Select ID type",
+        "driverLicense": "Driver License",
+        "passport": "Passport",
+        "licenseFront": "Driver License (Front)",
+        "licenseBack": "Driver License (Back)",
+        "passportPhotoPage": "Passport Photo Page",
+        "clickToUpload": "Click to upload",
+        "allowedFileTypes": "JPEG, PNG or PDF (max 5MB)",
+        "maxFileSize": "Maximum file size is 5MB",
+        "uploading": "Uploading...",
+        "replace": "Replace",
+        "uploadError": "Upload Failed",
+        "uploadErrorGeneric": "Failed to upload document. Please try again.",
+        "invalidFileType": "Invalid File Type",
+        "fileTooLarge": "File Too Large"
       },
       "buttons": {
         "addDirector": "Add Another Director",

@@ -1628,7 +1628,20 @@
       "rejectTitle": "Confirm Credit Rejection",
       "rejectDescription": "You are about to reject the credit application for {businessName}. This action will send a notification email to the customer."
     },
-    "enterDollars": "Enter amount in dollars (e.g., 10000 for $10,000)"
+    "enterDollars": "Enter amount in dollars (e.g., 10000 for $10,000)",
+    "identityDocuments": {
+      "title": "Identity Documents",
+      "description": "Uploaded ID documents for verification",
+      "driverLicense": "Driver License",
+      "passport": "Passport",
+      "front": "Front",
+      "back": "Back",
+      "photoPage": "Photo Page",
+      "uploadedAt": "Uploaded {date}",
+      "viewPdf": "View PDF",
+      "noDocuments": "No identity documents uploaded",
+      "verifyHint": "Verify that the document matches the details entered above"
+    }
   },
   "customerForm": {
     "title": "Add New Customer",
@@ -3033,6 +3046,18 @@
       "licenseExpiry": "License Expiry",
       "residentialAddress": "Residential Address",
       "director": "Director"
+    },
+    "identityDocuments": {
+      "title": "Identity Documents",
+      "description": "Uploaded ID documents for verification",
+      "driverLicense": "Driver License",
+      "passport": "Passport",
+      "front": "Front",
+      "back": "Back",
+      "photoPage": "Photo Page",
+      "uploadedAt": "Uploaded {date}",
+      "viewPdf": "View PDF",
+      "noDocuments": "No identity documents uploaded"
     },
     "financialDetails": {
       "title": "Financial Details",

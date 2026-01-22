@@ -32,9 +32,12 @@ export {
 
 export {
   uploadToR2,
+  uploadIdentityDocument,
   isR2Configured,
   IMAGE_UPLOAD_CONFIG,
+  IDENTITY_DOCUMENT_CONFIG,
   type AllowedMimeType,
+  type IdentityDocumentMimeType,
 } from './services/r2';
 
 export {
