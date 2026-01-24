@@ -176,6 +176,34 @@ export const customerRouter = router({
         });
       }
 
+      // Check email uniqueness (Issue #4 fix)
+      const existingByEmail = await prisma.customer.findFirst({
+        where: {
+          contactPerson: {
+            is: { email: input.contactPerson.email },
+          },
+        },
+      });
+
+      if (existingByEmail) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A customer with this email already exists',
+        });
+      }
+
+      // Check ABN uniqueness (Issue #4 fix)
+      const existingByABN = await prisma.customer.findFirst({
+        where: { abn: input.abn },
+      });
+
+      if (existingByABN) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A customer with this ABN already exists',
+        });
+      }
+
       // Auto-assign area based on suburb lookup (if not manually specified)
       let areaId = input.deliveryAddress.areaId ?? null;
       let areaName: string | null = null;
@@ -212,15 +240,16 @@ export const customerRouter = router({
           try {
             const fullAddress = `${input.deliveryAddress.street}, ${input.deliveryAddress.suburb}, ${input.deliveryAddress.state} ${input.deliveryAddress.postcode}, Australia`;
             const encodedAddress = encodeURIComponent(fullAddress);
-            const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=AU&limit=1&types=address`;
+            // Use v6 API with secondary_address support for unit numbers
+            const geocodeUrl = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodedAddress}&access_token=${mapboxToken}&country=AU&limit=1&types=address,secondary_address`;
 
             const geocodeResponse = await fetch(geocodeUrl);
             if (geocodeResponse.ok) {
               const geocodeData = await geocodeResponse.json();
               if (geocodeData.features && geocodeData.features.length > 0) {
                 const feature = geocodeData.features[0];
-                latitude = feature.center[1];
-                longitude = feature.center[0];
+                latitude = feature.properties.coordinates.latitude;
+                longitude = feature.properties.coordinates.longitude;
               }
             }
           } catch (geocodeError) {
@@ -1434,7 +1463,8 @@ export const customerRouter = router({
 
       try {
         const encodedAddress = encodeURIComponent(input.address);
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=AU&limit=5&types=address`;
+        // Use v6 API with secondary_address support for unit numbers
+        const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodedAddress}&access_token=${token}&country=AU&limit=5&types=address,secondary_address`;
 
         const response = await fetch(url);
 
@@ -1448,49 +1478,60 @@ export const customerRouter = router({
           return { success: true, results: [] };
         }
 
-        // Parse Mapbox response into structured address parts
-        const results = data.features.map((feature: {
-          place_name: string;
-          center: [number, number];
-          relevance: number;
-          text: string;
-          address?: string;
-          context?: Array<{ id: string; text: string; short_code?: string }>;
-        }) => {
-          // Extract address components from context
-          const context = feature.context || [];
-          const getContextValue = (prefix: string): string | undefined => {
-            const item = context.find((c) => c.id.startsWith(prefix));
-            return item?.text;
-          };
-          const getContextShortCode = (prefix: string): string | undefined => {
-            const item = context.find((c) => c.id.startsWith(prefix));
-            return item?.short_code;
-          };
+        // Parse Mapbox v6 response into structured address parts
+        const results = data.features.map(
+          (feature: {
+            properties: {
+              full_address: string;
+              feature_type: string;
+              coordinates: { longitude: number; latitude: number };
+              context: {
+                address?: { street_name?: string; address_number?: string };
+                locality?: { name?: string };
+                place?: { name?: string };
+                region?: { region_code?: string };
+                postcode?: { name?: string };
+              };
+            };
+            relevance?: number;
+          }) => {
+            const props = feature.properties;
+            const context = props.context || {};
 
-          // Build street address from Mapbox components
-          const streetNumber = feature.address || '';
-          const streetName = feature.text || '';
-          const street = streetNumber ? `${streetNumber} ${streetName}` : streetName;
+            // Build street address from v6 context
+            const addressNumber = context.address?.address_number || '';
+            const streetName = context.address?.street_name || '';
+            let street = addressNumber ? `${addressNumber} ${streetName}` : streetName;
 
-          // Extract suburb, state, postcode
-          const suburb = getContextValue('locality') || getContextValue('place') || '';
-          const stateShortCode = getContextShortCode('region');
-          // Convert "AU-NSW" to "NSW"
-          const state = stateShortCode ? stateShortCode.replace('AU-', '') : '';
-          const postcode = getContextValue('postcode') || '';
+            // For secondary addresses, extract unit info from full_address
+            if (props.feature_type === 'secondary_address') {
+              // full_address format: "Unit 5, 123 Main Street, Suburb, State, Postcode, Australia"
+              const parts = props.full_address.split(',');
+              if (parts.length > 1) {
+                // Take first two parts (unit + street address)
+                street = `${parts[0].trim()}, ${parts[1].trim()}`;
+              }
+            }
 
-          return {
-            fullAddress: feature.place_name,
-            street,
-            suburb,
-            state,
-            postcode,
-            latitude: feature.center[1],
-            longitude: feature.center[0],
-            relevance: feature.relevance,
-          };
-        });
+            // Extract suburb, state, postcode from context
+            const suburb = context.locality?.name || context.place?.name || '';
+            const regionCode = context.region?.region_code || '';
+            // Convert "AU-NSW" to "NSW"
+            const state = regionCode.replace('AU-', '');
+            const postcode = context.postcode?.name || '';
+
+            return {
+              fullAddress: props.full_address,
+              street,
+              suburb,
+              state,
+              postcode,
+              latitude: props.coordinates.latitude,
+              longitude: props.coordinates.longitude,
+              relevance: feature.relevance || 1,
+            };
+          }
+        );
 
         return { success: true, results };
       } catch (error) {

@@ -10,14 +10,28 @@ export const pricingRouter = router({
   /**
    * Get all custom prices for a specific customer
    */
-  getCustomerPrices: requirePermission('pricing:view')
+  getCustomerPrices: protectedProcedure
     .input(
       z.object({
         customerId: z.string(),
         includeExpired: z.boolean().default(false),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Authorization: customers can only view their own pricing
+      if (ctx.userRole === 'customer') {
+        const myCustomer = await prisma.customer.findFirst({
+          where: { clerkUserId: ctx.userId },
+          select: { id: true },
+        });
+        if (!myCustomer || input.customerId !== myCustomer.id) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only view your own pricing',
+          });
+        }
+      }
+
       const where: any = { customerId: input.customerId };
 
       // Filter out expired pricing if not requested

@@ -415,7 +415,8 @@ export const companyRouter = router({
 
       try {
         const encodedAddress = encodeURIComponent(input.address);
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=AU&limit=5`;
+        // Use v6 API with secondary_address support for unit numbers
+        const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodedAddress}&access_token=${token}&country=AU&limit=5&types=address,secondary_address`;
 
         const response = await fetch(url);
 
@@ -429,15 +430,23 @@ export const companyRouter = router({
           throw new Error('No results found for this address');
         }
 
-        // Return formatted results
+        // Return formatted results from v6 response format
         return {
           success: true,
-          results: data.features.map((feature: any) => ({
-            address: feature.place_name,
-            latitude: feature.center[1],
-            longitude: feature.center[0],
-            relevance: feature.relevance,
-          })),
+          results: data.features.map(
+            (feature: {
+              properties: {
+                full_address: string;
+                coordinates: { longitude: number; latitude: number };
+              };
+              relevance?: number;
+            }) => ({
+              address: feature.properties.full_address,
+              latitude: feature.properties.coordinates.latitude,
+              longitude: feature.properties.coordinates.longitude,
+              relevance: feature.relevance || 1,
+            })
+          ),
         };
       } catch (error) {
         throw new TRPCError({

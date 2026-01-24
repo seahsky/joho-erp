@@ -670,78 +670,104 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Get current packed items or initialize empty array
-      const packedItems = order.packing?.packedItems ?? [];
-
-      // Update packed items array
-      const updatedPackedItems = input.packed
-        ? [...new Set([...packedItems, input.itemSku])] // Add SKU (deduplicate)
-        : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
-
-      // Get user details for audit trail
-      const userDetails = await getUserDetails(ctx.userId);
-
-      // Update order with packed items and move to packing status if confirmed
-      // Also update lastPackedAt/lastPackedBy and clear pausedAt (active packing)
-      await prisma.order.update({
-        where: {
-          id: input.orderId,
-        },
-        data: {
-          status: order.status === 'confirmed' ? 'packing' : order.status,
-          packing: {
-            ...(order.packing ?? {}),
-            packedItems: updatedPackedItems,
-            // Track when and who last packed
-            lastPackedAt: new Date(),
-            lastPackedBy: ctx.userId || 'system',
-            // Clear paused state when actively packing
-            pausedAt: null,
+      return prisma.$transaction(async (tx) => {
+        // Fetch order with version for optimistic locking
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            packing: true,
+            version: true,
+            requestedDeliveryDate: true,
           },
-          statusHistory: order.status === 'confirmed' ? {
-            push: {
-              status: 'packing',
-              changedAt: new Date(),
-              changedBy: ctx.userId || 'system',
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: 'Order moved to packing status',
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Get current packed items or initialize empty array
+        const packedItems = order.packing?.packedItems ?? [];
+
+        // Update packed items array
+        const updatedPackedItems = input.packed
+          ? [...new Set([...packedItems, input.itemSku])] // Add SKU (deduplicate)
+          : packedItems.filter((sku) => sku !== input.itemSku); // Remove SKU
+
+        // Get user details for audit trail
+        const userDetails = await getUserDetails(ctx.userId);
+
+        // Optimistic locking: update only if version matches
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            version: order.version,
+          },
+          data: {
+            status: order.status === 'confirmed' ? 'packing' : order.status,
+            packing: {
+              ...(order.packing ?? {}),
+              packedItems: updatedPackedItems,
+              // Track when and who last packed
+              lastPackedAt: new Date(),
+              lastPackedBy: ctx.userId || 'system',
+              // Clear paused state when actively packing
+              pausedAt: null,
             },
-          } : order.statusHistory,
-        },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please refresh and retry.',
+          });
+        }
+
+        // Handle statusHistory push separately (updateMany doesn't support push)
+        if (order.status === 'confirmed') {
+          await tx.order.update({
+            where: { id: input.orderId },
+            data: {
+              statusHistory: {
+                push: {
+                  status: 'packing',
+                  changedAt: new Date(),
+                  changedBy: ctx.userId || 'system',
+                  changedByName: userDetails.changedByName,
+                  changedByEmail: userDetails.changedByEmail,
+                  notes: 'Order moved to packing status',
+                },
+              },
+            },
+          });
+        }
+
+        // Update packing session activity to prevent timeout
+        if (ctx.userId) {
+          await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
+        }
+
+        // Audit log - MEDIUM: Item packing tracked
+        await logPackingItemUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
+          orderNumber: order.orderNumber,
+          itemSku: input.itemSku,
+          action: input.packed ? 'packed' : 'unpacked',
+        }).catch((error) => {
+          console.error('Audit log failed for mark item packed:', error);
+        });
+
+        return {
+          success: true,
+          packedItems: updatedPackedItems,
+        };
       });
-
-      // Update packing session activity to prevent timeout
-      if (ctx.userId) {
-        await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
-      }
-
-      // Audit log - MEDIUM: Item packing tracked
-      await logPackingItemUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
-        itemSku: input.itemSku,
-        action: input.packed ? 'packed' : 'unpacked',
-      }).catch((error) => {
-        console.error('Audit log failed for mark item packed:', error);
-      });
-
-      return {
-        success: true,
-        packedItems: updatedPackedItems,
-      };
     }),
 
   /**
@@ -1224,40 +1250,51 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
+      return prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: { id: true, orderNumber: true, packing: true, version: true },
         });
-      }
 
-      await prisma.order.update({
-        where: {
-          id: input.orderId,
-        },
-        data: {
-          packing: {
-            ...order.packing,
-            notes: input.notes,
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Optimistic locking: update only if version matches
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            version: order.version,
           },
-        },
-      });
+          data: {
+            packing: {
+              ...order.packing,
+              notes: input.notes,
+            },
+            version: { increment: 1 },
+          },
+        });
 
-      // Audit log - LOW: Packing notes tracked
-      await logPackingNotesUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
-        notes: input.notes,
-      }).catch((error) => {
-        console.error('Audit log failed for packing notes:', error);
-      });
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please refresh and retry.',
+          });
+        }
 
-      return { success: true };
+        // Audit log - LOW: Packing notes tracked
+        await logPackingNotesUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
+          orderNumber: order.orderNumber,
+          notes: input.notes,
+        }).catch((error) => {
+          console.error('Audit log failed for packing notes:', error);
+        });
+
+        return { success: true };
+      });
     }),
 
   /**
