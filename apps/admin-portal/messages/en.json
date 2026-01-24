@@ -3110,7 +3110,8 @@
       "limit": "Credit Limit",
       "balance": "Outstanding Balance",
       "available": "Available Credit",
-      "paymentTerms": "Payment Terms"
+      "paymentTerms": "Payment Terms",
+      "downloadApplication": "Download Credit Application"
     },
     "stats": {
       "title": "Account Statistics",

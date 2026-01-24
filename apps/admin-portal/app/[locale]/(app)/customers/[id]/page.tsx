@@ -59,6 +59,7 @@ import {
   Trash2,
   MessageSquare,
   IdCard,
+  Download,
 } from 'lucide-react';
 import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek, validateABN } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
@@ -1708,6 +1709,18 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">{t('credit.paymentTerms')}</span>
                   <span className="font-medium">{creditApp.paymentTerms}</span>
+                </div>
+              )}
+              {customer.creditApplicationPdfUrl && (
+                <div className="pt-4 border-t mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('credit.downloadApplication')}
+                  </Button>
                 </div>
               )}
             </CardContent>

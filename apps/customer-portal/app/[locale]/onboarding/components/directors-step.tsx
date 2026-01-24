@@ -7,6 +7,9 @@ import { Button, Input, Label, useToast } from '@joho-erp/ui';
 import type { DirectorInfo } from '../page';
 import { IdentityDocumentUpload, type IdDocumentData } from './identity-document-upload';
 
+// Maximum number of directors allowed (PDF template limit)
+const MAX_DIRECTORS = 3;
+
 interface DirectorsStepProps {
   data: DirectorInfo[];
   onChange: (data: DirectorInfo[]) => void;
@@ -101,10 +104,19 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
   };
 
   const addDirector = () => {
+    if (directors.length >= MAX_DIRECTORS) {
+      toast({
+        title: t('validation.maxDirectorsReached'),
+        variant: 'destructive',
+      });
+      return;
+    }
     const updated = [...directors, createEmptyDirector()];
     setDirectors(updated);
     onChange(updated);
   };
+
+  const canAddMoreDirectors = directors.length < MAX_DIRECTORS;
 
   const removeDirector = (index: number) => {
     if (directors.length > 1) {
@@ -359,9 +371,15 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
         </div>
       ))}
 
-      <Button variant="outline" onClick={addDirector}>
-        {t('buttons.addDirector')}
-      </Button>
+      {canAddMoreDirectors ? (
+        <Button variant="outline" onClick={addDirector}>
+          {t('buttons.addDirector')}
+        </Button>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {t('validation.maxDirectorsInfo', { max: MAX_DIRECTORS })}
+        </p>
+      )}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>

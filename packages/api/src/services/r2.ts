@@ -289,3 +289,48 @@ export async function uploadIdentityDocument(params: {
 
   return { publicUrl, key };
 }
+
+/**
+ * Upload a PDF file directly to R2
+ * Used for credit application PDFs and other document uploads
+ *
+ * @param params.path - Storage path (e.g., 'credit-applications')
+ * @param params.filename - Output filename
+ * @param params.buffer - PDF content as Buffer or Uint8Array
+ */
+export async function uploadPdfToR2(params: {
+  path: string;
+  filename: string;
+  buffer: Buffer | Uint8Array;
+}): Promise<{ publicUrl: string; key: string }> {
+  const { path, filename, buffer } = params;
+
+  // Max 10MB for PDFs
+  const maxPdfSize = 10 * 1024 * 1024;
+  if (buffer.length > maxPdfSize) {
+    throw new Error(`PDF file too large: max ${maxPdfSize / 1024 / 1024}MB`);
+  }
+
+  // Generate unique key: {path}/{timestamp}-{sanitizedFilename}
+  const ts = Date.now();
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const key = `${path}/${ts}-${sanitizedFilename}`;
+
+  const client = getR2Client();
+
+  // Upload directly to R2
+  const command = new PutObjectCommand({
+    Bucket: R2_CONFIG.bucketName,
+    Key: key,
+    Body: Buffer.from(buffer),
+    ContentType: 'application/pdf',
+    ContentLength: buffer.length,
+  });
+
+  await client.send(command);
+
+  // Construct public URL
+  const publicUrl = `${R2_CONFIG.publicUrl}/${key}`;
+
+  return { publicUrl, key };
+}

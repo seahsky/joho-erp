@@ -744,7 +744,9 @@
         "driverLicenseRequired": "驾照号码为必填项",
         "licenseExpiryRequired": "驾照有效期为必填项",
         "idDocumentRequired": "身份证明文件为必填项",
-        "idDocumentBackRequired": "需要驾照背面"
+        "idDocumentBackRequired": "需要驾照背面",
+        "maxDirectorsReached": "最多只能添加3位董事",
+        "maxDirectorsInfo": "已达到最多{max}位董事的限制"
       },
       "idDocument": {
         "title": "身份证明文件",

@@ -3110,7 +3110,8 @@
       "limit": "信用额度",
       "balance": "未结余额",
       "available": "可用信用",
-      "paymentTerms": "付款条款"
+      "paymentTerms": "付款条款",
+      "downloadApplication": "下载信用申请表"
     },
     "stats": {
       "title": "账户统计",

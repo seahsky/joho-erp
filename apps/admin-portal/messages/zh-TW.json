@@ -3116,7 +3116,8 @@
       "limit": "信用額度",
       "balance": "未結餘額",
       "available": "可用信用",
-      "paymentTerms": "付款條款"
+      "paymentTerms": "付款條款",
+      "downloadApplication": "下載信用申請表"
     },
     "stats": {
       "title": "帳戶統計",

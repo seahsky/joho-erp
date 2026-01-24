@@ -5,6 +5,9 @@ import { useTranslations } from 'next-intl';
 import { Button, Input, Label } from '@joho-erp/ui';
 import type { TradeReferenceInfo } from '../page';
 
+// Maximum number of trade references allowed (PDF template limit)
+const MAX_TRADE_REFERENCES = 1;
+
 interface TradeReferencesStepProps {
   data: TradeReferenceInfo[];
   onChange: (data: TradeReferenceInfo[]) => void;
@@ -28,10 +31,15 @@ export function TradeReferencesStep({ data, onChange, onNext, onBack }: TradeRef
   };
 
   const addReference = () => {
+    if (references.length >= MAX_TRADE_REFERENCES) {
+      return;
+    }
     const updated = [...references, createEmptyReference()];
     setReferences(updated);
     onChange(updated);
   };
+
+  const canAddMoreReferences = references.length < MAX_TRADE_REFERENCES;
 
   const removeReference = (index: number) => {
     const updated = references.filter((_, i) => i !== index);
@@ -102,9 +110,11 @@ export function TradeReferencesStep({ data, onChange, onNext, onBack }: TradeRef
             </div>
           ))}
 
-          <Button variant="outline" onClick={addReference}>
-            {t('buttons.addAnother')}
-          </Button>
+          {canAddMoreReferences && (
+            <Button variant="outline" onClick={addReference}>
+              {t('buttons.addAnother')}
+            </Button>
+          )}
         </>
       )}
 

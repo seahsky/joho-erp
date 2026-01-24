@@ -619,7 +619,9 @@
         "driverLicenseRequired": "Driver license number is required",
         "licenseExpiryRequired": "License expiry date is required",
         "idDocumentRequired": "ID document is required",
-        "idDocumentBackRequired": "Back of driver license is required"
+        "idDocumentBackRequired": "Back of driver license is required",
+        "maxDirectorsReached": "Maximum of 3 directors allowed",
+        "maxDirectorsInfo": "Maximum of {max} directors reached"
       },
       "idDocument": {
         "title": "Identity Document",

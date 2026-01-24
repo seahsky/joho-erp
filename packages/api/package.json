@@ -22,8 +22,12 @@
   },
   "typesVersions": {
     "*": {
-      "services/xero": ["./src/services/xero.ts"],
-      "services/r2": ["./src/services/r2.ts"]
+      "services/xero": [
+        "./src/services/xero.ts"
+      ],
+      "services/r2": [
+        "./src/services/r2.ts"
+      ]
     }
   },
   "scripts": {
@@ -39,9 +43,10 @@
     "@joho-erp/database": "workspace:*",
     "@joho-erp/shared": "workspace:*",
     "@trpc/server": "^11.0.0",
+    "pdf-lib": "^1.17.1",
     "resend": "^4.0.0",
-    "twilio": "^5.4.0",
     "superjson": "^2.2.1",
+    "twilio": "^5.4.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

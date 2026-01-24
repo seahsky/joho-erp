@@ -26,6 +26,8 @@ import {
   logCustomerCreatedByAdmin,
   logCustomerStatusChange,
 } from '../services/audit';
+import { generateCreditApplicationPdf } from '../services/pdf-generator';
+import { uploadPdfToR2, isR2Configured } from '../services/r2';
 
 // Validation schemas for credit application
 const residentialAddressSchema = z.object({
@@ -371,6 +373,67 @@ export const customerRouter = router({
       ).catch((error) => {
         console.error('Failed to log customer registration:', error);
       });
+
+      // Generate and upload credit application PDF
+      if (isR2Configured()) {
+        try {
+          const pdfBytes = await generateCreditApplicationPdf({
+            accountType: input.accountType,
+            businessName: input.businessName,
+            abn: input.abn,
+            acn: input.acn,
+            tradingName: input.tradingName,
+            deliveryAddress: {
+              street: input.deliveryAddress.street,
+              suburb: input.deliveryAddress.suburb,
+              state: input.deliveryAddress.state,
+              postcode: input.deliveryAddress.postcode,
+            },
+            postalAddress: input.postalAddress,
+            contactFirstName: input.contactPerson.firstName,
+            contactLastName: input.contactPerson.lastName,
+            contactPhone: input.contactPerson.phone,
+            contactMobile: input.contactPerson.mobile,
+            contactEmail: input.contactPerson.email,
+            requestedCreditLimit: input.requestedCreditLimit,
+            forecastPurchaseAmount: input.forecastPurchase,
+            directors: input.directors.map((d) => ({
+              familyName: d.familyName,
+              givenNames: d.givenNames,
+              residentialAddress: d.residentialAddress,
+              dateOfBirth: d.dateOfBirth,
+              driverLicenseNumber: d.driverLicenseNumber,
+              licenseState: d.licenseState,
+              licenseExpiry: d.licenseExpiry,
+              position: d.position,
+            })),
+            financialDetails: input.financialDetails,
+            tradeReferences: input.tradeReferences,
+            signatures: input.signatures,
+            submissionDate: new Date(),
+          });
+
+          // Upload PDF to R2
+          const { publicUrl } = await uploadPdfToR2({
+            path: `credit-applications/${customer.id}`,
+            filename: `credit-application-${customer.businessName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            buffer: pdfBytes,
+          });
+
+          // Update customer with PDF URL
+          await prisma.customer.update({
+            where: { id: customer.id },
+            data: { creditApplicationPdfUrl: publicUrl },
+          });
+
+          console.log(`Credit application PDF generated for customer ${customer.id}: ${publicUrl}`);
+        } catch (pdfError) {
+          // Log error but don't fail the registration
+          console.error('Failed to generate or upload credit application PDF:', pdfError);
+        }
+      } else {
+        console.warn('R2 not configured - skipping credit application PDF generation');
+      }
 
       return {
         customerId: customer.id,

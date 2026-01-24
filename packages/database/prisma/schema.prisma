@@ -381,10 +381,11 @@ model Customer {
   closureReason       String?             // Reason for account closure (if closed)
   closedAt            DateTime?           // When account was closed
   closedBy            String?             // User ID of admin who closed the account
-  xeroContactId       String?
-  onboardingComplete  Boolean             @default(false)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  xeroContactId             String?
+  onboardingComplete        Boolean             @default(false)
+  creditApplicationPdfUrl   String?             // URL to generated credit application PDF in R2
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
   // Relations
   orders              Order[]
