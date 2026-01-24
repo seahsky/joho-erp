@@ -1732,6 +1732,13 @@
       "sameAsDelivery": "Same as delivery address",
       "sameAsBilling": "Same as billing address"
     },
+    "addressSearch": {
+      "searchPlaceholder": "Type address to search...",
+      "enterManually": "Enter address manually",
+      "useSearch": "Search for address",
+      "searching": "Searching...",
+      "noResults": "No addresses found"
+    },
     "creditApplication": {
       "title": "Credit Terms & Application",
       "description": "Set credit terms or process credit application",

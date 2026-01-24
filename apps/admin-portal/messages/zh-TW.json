@@ -1738,6 +1738,13 @@
         "west": "西部"
       }
     },
+    "addressSearch": {
+      "searchPlaceholder": "輸入地址搜尋...",
+      "enterManually": "手動輸入地址",
+      "useSearch": "搜尋地址",
+      "searching": "搜尋中...",
+      "noResults": "未找到地址"
+    },
     "creditApplication": {
       "title": "信用條款與申請",
       "description": "設置信用條款或處理信用申請",

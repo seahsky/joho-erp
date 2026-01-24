@@ -19,6 +19,7 @@ import { ArrowLeft, Loader2, Plus, X, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { parseToCents, validateABN, validateACN, validateAustralianPhone } from '@joho-erp/shared';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 // Type definitions
 type DirectorInfo = {
@@ -908,91 +909,36 @@ export default function NewCustomerPage() {
                 <CardTitle>{t('addresses.deliveryTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deliveryStreet">{t('addresses.street')} *</Label>
-                  <Input
-                    id="deliveryStreet"
-                    placeholder={t('addresses.streetPlaceholder')}
-                    required
-                    value={formData.deliveryAddress.street}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        deliveryAddress: { ...formData.deliveryAddress, street: e.target.value },
-                      });
-                      clearAddressError('delivery.street');
-                    }}
-                  />
-                  {addressErrors['delivery.street'] && (
-                    <p className="text-sm text-destructive">{addressErrors['delivery.street']}</p>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="deliverySuburb">{t('addresses.suburb')} *</Label>
-                    <Input
-                      id="deliverySuburb"
-                      placeholder={t('addresses.suburbPlaceholder')}
-                      required
-                      value={formData.deliveryAddress.suburb}
-                      onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          deliveryAddress: { ...formData.deliveryAddress, suburb: e.target.value },
-                        });
-                        clearAddressError('delivery.suburb');
-                      }}
-                    />
-                    {addressErrors['delivery.suburb'] && (
-                      <p className="text-sm text-destructive">{addressErrors['delivery.suburb']}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deliveryState">{t('addresses.state')} *</Label>
-                    <select
-                      id="deliveryState"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={formData.deliveryAddress.state}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          deliveryAddress: { ...formData.deliveryAddress, state: e.target.value },
-                        })
-                      }
-                      required
-                    >
-                      <option value="NSW">NSW</option>
-                      <option value="VIC">VIC</option>
-                      <option value="QLD">QLD</option>
-                      <option value="SA">SA</option>
-                      <option value="WA">WA</option>
-                      <option value="TAS">TAS</option>
-                      <option value="NT">NT</option>
-                      <option value="ACT">ACT</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deliveryPostcode">{t('addresses.postcode')} *</Label>
-                    <Input
-                      id="deliveryPostcode"
-                      placeholder={t('addresses.postcodePlaceholder')}
-                      required
-                      maxLength={4}
-                      value={formData.deliveryAddress.postcode}
-                      onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          deliveryAddress: { ...formData.deliveryAddress, postcode: e.target.value },
-                        });
-                        clearAddressError('delivery.postcode');
-                      }}
-                    />
-                    {addressErrors['delivery.postcode'] && (
-                      <p className="text-sm text-destructive">{addressErrors['delivery.postcode']}</p>
-                    )}
-                  </div>
-                </div>
+                <AddressSearch
+                  id="deliveryAddress"
+                  onAddressSelect={(address: AddressResult) => {
+                    setFormData({
+                      ...formData,
+                      deliveryAddress: {
+                        ...formData.deliveryAddress,
+                        street: address.street,
+                        suburb: address.suburb,
+                        state: address.state,
+                        postcode: address.postcode,
+                        areaId: undefined, // Reset area to trigger auto-lookup
+                      },
+                    });
+                    clearAddressError('delivery.street');
+                    clearAddressError('delivery.suburb');
+                    clearAddressError('delivery.postcode');
+                  }}
+                  defaultValues={{
+                    street: formData.deliveryAddress.street,
+                    suburb: formData.deliveryAddress.suburb,
+                    state: formData.deliveryAddress.state,
+                    postcode: formData.deliveryAddress.postcode,
+                  }}
+                />
+                {(addressErrors['delivery.street'] || addressErrors['delivery.suburb'] || addressErrors['delivery.postcode']) && (
+                  <p className="text-sm text-destructive">
+                    {addressErrors['delivery.street'] || addressErrors['delivery.suburb'] || addressErrors['delivery.postcode']}
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="areaId">{t('addresses.area')}</Label>
@@ -1083,88 +1029,34 @@ export default function NewCustomerPage() {
 
                 {!sameAsDelivery && (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="billingStreet">{t('addresses.street')} *</Label>
-                      <Input
-                        id="billingStreet"
-                        required={!sameAsDelivery}
-                        value={formData.billingAddress.street}
-                        onChange={(e) => {
-                          setFormData({
-                            ...formData,
-                            billingAddress: { ...formData.billingAddress, street: e.target.value },
-                          });
-                          clearAddressError('billing.street');
-                        }}
-                      />
-                      {addressErrors['billing.street'] && (
-                        <p className="text-sm text-destructive">{addressErrors['billing.street']}</p>
-                      )}
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="billingSuburb">{t('addresses.suburb')} *</Label>
-                        <Input
-                          id="billingSuburb"
-                          required={!sameAsDelivery}
-                          value={formData.billingAddress.suburb}
-                          onChange={(e) => {
-                            setFormData({
-                              ...formData,
-                              billingAddress: { ...formData.billingAddress, suburb: e.target.value },
-                            });
-                            clearAddressError('billing.suburb');
-                          }}
-                        />
-                        {addressErrors['billing.suburb'] && (
-                          <p className="text-sm text-destructive">{addressErrors['billing.suburb']}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="billingState">{t('addresses.state')} *</Label>
-                        <select
-                          id="billingState"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={formData.billingAddress.state}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              billingAddress: { ...formData.billingAddress, state: e.target.value },
-                            })
-                          }
-                          required={!sameAsDelivery}
-                        >
-                          <option value="NSW">NSW</option>
-                          <option value="VIC">VIC</option>
-                          <option value="QLD">QLD</option>
-                          <option value="SA">SA</option>
-                          <option value="WA">WA</option>
-                          <option value="TAS">TAS</option>
-                          <option value="NT">NT</option>
-                          <option value="ACT">ACT</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="billingPostcode">{t('addresses.postcode')} *</Label>
-                        <Input
-                          id="billingPostcode"
-                          required={!sameAsDelivery}
-                          maxLength={4}
-                          value={formData.billingAddress.postcode}
-                          onChange={(e) => {
-                            setFormData({
-                              ...formData,
-                              billingAddress: { ...formData.billingAddress, postcode: e.target.value },
-                            });
-                            clearAddressError('billing.postcode');
-                          }}
-                        />
-                        {addressErrors['billing.postcode'] && (
-                          <p className="text-sm text-destructive">{addressErrors['billing.postcode']}</p>
-                        )}
-                      </div>
-                    </div>
+                    <AddressSearch
+                      id="billingAddress"
+                      onAddressSelect={(address: AddressResult) => {
+                        setFormData({
+                          ...formData,
+                          billingAddress: {
+                            street: address.street,
+                            suburb: address.suburb,
+                            state: address.state,
+                            postcode: address.postcode,
+                          },
+                        });
+                        clearAddressError('billing.street');
+                        clearAddressError('billing.suburb');
+                        clearAddressError('billing.postcode');
+                      }}
+                      defaultValues={{
+                        street: formData.billingAddress.street,
+                        suburb: formData.billingAddress.suburb,
+                        state: formData.billingAddress.state,
+                        postcode: formData.billingAddress.postcode,
+                      }}
+                    />
+                    {(addressErrors['billing.street'] || addressErrors['billing.suburb'] || addressErrors['billing.postcode']) && (
+                      <p className="text-sm text-destructive">
+                        {addressErrors['billing.street'] || addressErrors['billing.suburb'] || addressErrors['billing.postcode']}
+                      </p>
+                    )}
                   </>
                 )}
               </CardContent>
@@ -1191,88 +1083,34 @@ export default function NewCustomerPage() {
 
                 {!postalSameAsBilling && (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="postalStreet">{t('addresses.street')} *</Label>
-                      <Input
-                        id="postalStreet"
-                        required={!postalSameAsBilling}
-                        value={formData.postalAddress.street}
-                        onChange={(e) => {
-                          setFormData({
-                            ...formData,
-                            postalAddress: { ...formData.postalAddress, street: e.target.value },
-                          });
-                          clearAddressError('postal.street');
-                        }}
-                      />
-                      {addressErrors['postal.street'] && (
-                        <p className="text-sm text-destructive">{addressErrors['postal.street']}</p>
-                      )}
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="postalSuburb">{t('addresses.suburb')} *</Label>
-                        <Input
-                          id="postalSuburb"
-                          required={!postalSameAsBilling}
-                          value={formData.postalAddress.suburb}
-                          onChange={(e) => {
-                            setFormData({
-                              ...formData,
-                              postalAddress: { ...formData.postalAddress, suburb: e.target.value },
-                            });
-                            clearAddressError('postal.suburb');
-                          }}
-                        />
-                        {addressErrors['postal.suburb'] && (
-                          <p className="text-sm text-destructive">{addressErrors['postal.suburb']}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="postalState">{t('addresses.state')} *</Label>
-                        <select
-                          id="postalState"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={formData.postalAddress.state}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              postalAddress: { ...formData.postalAddress, state: e.target.value },
-                            })
-                          }
-                          required={!postalSameAsBilling}
-                        >
-                          <option value="NSW">NSW</option>
-                          <option value="VIC">VIC</option>
-                          <option value="QLD">QLD</option>
-                          <option value="SA">SA</option>
-                          <option value="WA">WA</option>
-                          <option value="TAS">TAS</option>
-                          <option value="NT">NT</option>
-                          <option value="ACT">ACT</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="postalPostcode">{t('addresses.postcode')} *</Label>
-                        <Input
-                          id="postalPostcode"
-                          required={!postalSameAsBilling}
-                          maxLength={4}
-                          value={formData.postalAddress.postcode}
-                          onChange={(e) => {
-                            setFormData({
-                              ...formData,
-                              postalAddress: { ...formData.postalAddress, postcode: e.target.value },
-                            });
-                            clearAddressError('postal.postcode');
-                          }}
-                        />
-                        {addressErrors['postal.postcode'] && (
-                          <p className="text-sm text-destructive">{addressErrors['postal.postcode']}</p>
-                        )}
-                      </div>
-                    </div>
+                    <AddressSearch
+                      id="postalAddress"
+                      onAddressSelect={(address: AddressResult) => {
+                        setFormData({
+                          ...formData,
+                          postalAddress: {
+                            street: address.street,
+                            suburb: address.suburb,
+                            state: address.state,
+                            postcode: address.postcode,
+                          },
+                        });
+                        clearAddressError('postal.street');
+                        clearAddressError('postal.suburb');
+                        clearAddressError('postal.postcode');
+                      }}
+                      defaultValues={{
+                        street: formData.postalAddress.street,
+                        suburb: formData.postalAddress.suburb,
+                        state: formData.postalAddress.state,
+                        postcode: formData.postalAddress.postcode,
+                      }}
+                    />
+                    {(addressErrors['postal.street'] || addressErrors['postal.suburb'] || addressErrors['postal.postcode']) && (
+                      <p className="text-sm text-destructive">
+                        {addressErrors['postal.street'] || addressErrors['postal.suburb'] || addressErrors['postal.postcode']}
+                      </p>
+                    )}
                   </>
                 )}
               </CardContent>

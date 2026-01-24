@@ -64,6 +64,7 @@ import {
 import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek, validateABN } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
 import { usePermission } from '@/components/permission-provider';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -931,53 +932,27 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent>
               {isEditing ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="street" className="text-sm text-muted-foreground">{t('address.street')}</Label>
-                    <Input
-                      id="street"
-                      value={editForm.street}
-                      onChange={(e) => setEditForm({ ...editForm, street: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <AddressSearch
+                    id="deliveryAddress"
+                    onAddressSelect={(address: AddressResult) => {
+                      setEditForm({
+                        ...editForm,
+                        street: address.street,
+                        suburb: address.suburb,
+                        state: address.state,
+                        postcode: address.postcode,
+                        areaId: undefined, // Reset area to trigger auto-lookup
+                      });
+                    }}
+                    defaultValues={{
+                      street: editForm.street,
+                      suburb: editForm.suburb,
+                      state: editForm.state,
+                      postcode: editForm.postcode,
+                    }}
+                  />
                   <div>
-                    <Label htmlFor="suburb" className="text-sm text-muted-foreground">{t('address.suburb')}</Label>
-                    <Input
-                      id="suburb"
-                      value={editForm.suburb}
-                      onChange={(e) => setEditForm({ ...editForm, suburb: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state" className="text-sm text-muted-foreground">{t('address.state')}</Label>
-                    <Select
-                      value={editForm.state}
-                      onValueChange={(value) => setEditForm({ ...editForm, state: value })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={t('address.state')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUSTRALIAN_STATES.map((state) => (
-                          <SelectItem key={state} value={state}>
-                            {t(`states.${state}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="postcode" className="text-sm text-muted-foreground">{t('address.postcode')}</Label>
-                    <Input
-                      id="postcode"
-                      value={editForm.postcode}
-                      onChange={(e) => setEditForm({ ...editForm, postcode: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
                     <Label htmlFor="areaId" className="text-sm text-muted-foreground">{t('address.area')}</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <select
@@ -1073,53 +1048,24 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent>
               {isEditing ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="billingStreet" className="text-sm text-muted-foreground">{t('billingAddress.street')}</Label>
-                    <Input
-                      id="billingStreet"
-                      value={editForm.billingStreet}
-                      onChange={(e) => setEditForm({ ...editForm, billingStreet: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingSuburb" className="text-sm text-muted-foreground">{t('billingAddress.suburb')}</Label>
-                    <Input
-                      id="billingSuburb"
-                      value={editForm.billingSuburb}
-                      onChange={(e) => setEditForm({ ...editForm, billingSuburb: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingState" className="text-sm text-muted-foreground">{t('billingAddress.state')}</Label>
-                    <Select
-                      value={editForm.billingState}
-                      onValueChange={(value) => setEditForm({ ...editForm, billingState: value })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={t('billingAddress.state')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUSTRALIAN_STATES.map((state) => (
-                          <SelectItem key={state} value={state}>
-                            {t(`states.${state}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="billingPostcode" className="text-sm text-muted-foreground">{t('billingAddress.postcode')}</Label>
-                    <Input
-                      id="billingPostcode"
-                      value={editForm.billingPostcode}
-                      onChange={(e) => setEditForm({ ...editForm, billingPostcode: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
+                <AddressSearch
+                  id="billingAddress"
+                  onAddressSelect={(address: AddressResult) => {
+                    setEditForm({
+                      ...editForm,
+                      billingStreet: address.street,
+                      billingSuburb: address.suburb,
+                      billingState: address.state,
+                      billingPostcode: address.postcode,
+                    });
+                  }}
+                  defaultValues={{
+                    street: editForm.billingStreet,
+                    suburb: editForm.billingSuburb,
+                    state: editForm.billingState,
+                    postcode: editForm.billingPostcode,
+                  }}
+                />
               ) : customer.billingAddress ? (
                 <p>
                   {customer.billingAddress.street}<br />
@@ -1154,53 +1100,24 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     <Label htmlFor="postalSameAsBilling" className="text-sm">{t('postalAddress.sameAsBilling')}</Label>
                   </div>
                   {!editForm.postalSameAsBilling && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="postalStreet" className="text-sm text-muted-foreground">{t('postalAddress.street')}</Label>
-                        <Input
-                          id="postalStreet"
-                          value={editForm.postalStreet}
-                          onChange={(e) => setEditForm({ ...editForm, postalStreet: e.target.value })}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="postalSuburb" className="text-sm text-muted-foreground">{t('postalAddress.suburb')}</Label>
-                        <Input
-                          id="postalSuburb"
-                          value={editForm.postalSuburb}
-                          onChange={(e) => setEditForm({ ...editForm, postalSuburb: e.target.value })}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="postalState" className="text-sm text-muted-foreground">{t('postalAddress.state')}</Label>
-                        <Select
-                          value={editForm.postalState}
-                          onValueChange={(value) => setEditForm({ ...editForm, postalState: value })}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder={t('postalAddress.state')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {AUSTRALIAN_STATES.map((state) => (
-                              <SelectItem key={state} value={state}>
-                                {t(`states.${state}`)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="postalPostcode" className="text-sm text-muted-foreground">{t('postalAddress.postcode')}</Label>
-                        <Input
-                          id="postalPostcode"
-                          value={editForm.postalPostcode}
-                          onChange={(e) => setEditForm({ ...editForm, postalPostcode: e.target.value })}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
+                    <AddressSearch
+                      id="postalAddress"
+                      onAddressSelect={(address: AddressResult) => {
+                        setEditForm({
+                          ...editForm,
+                          postalStreet: address.street,
+                          postalSuburb: address.suburb,
+                          postalState: address.state,
+                          postalPostcode: address.postcode,
+                        });
+                      }}
+                      defaultValues={{
+                        street: editForm.postalStreet,
+                        suburb: editForm.postalSuburb,
+                        state: editForm.postalState,
+                        postcode: editForm.postalPostcode,
+                      }}
+                    />
                   )}
                 </div>
               ) : customer.postalAddress ? (

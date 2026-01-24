@@ -1732,6 +1732,13 @@
       "sameAsDelivery": "与送货地址相同",
       "sameAsBilling": "与账单地址相同"
     },
+    "addressSearch": {
+      "searchPlaceholder": "输入地址搜索...",
+      "enterManually": "手动输入地址",
+      "useSearch": "搜索地址",
+      "searching": "搜索中...",
+      "noResults": "未找到地址"
+    },
     "creditApplication": {
       "title": "信用条款与申请",
       "description": "设置信用条款或处理信用申请",
