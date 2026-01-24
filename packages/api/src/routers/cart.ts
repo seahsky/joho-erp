@@ -53,6 +53,18 @@ interface CartItem {
 }
 
 /**
+ * Price change notification for when product prices have changed since added to cart
+ * Issue #11 fix: Detect stale prices on cart fetch
+ */
+interface PriceChange {
+  productId: string;
+  productName: string;
+  oldPrice: number; // In cents
+  newPrice: number; // In cents
+  direction: 'increased' | 'decreased';
+}
+
+/**
  * Cart interface with totals
  * All monetary values in cents
  */
@@ -64,6 +76,7 @@ interface Cart {
   itemCount: number;
   exceedsCredit: boolean;
   creditLimit: number; // In cents
+  priceChanges?: PriceChange[]; // Issue #11: Notify of price changes since items were added
 }
 
 /**
@@ -219,10 +232,12 @@ function calculateCartTotals(items: CartItem[], creditLimit: number): Cart {
 /**
  * Build cart response for user
  * Uses available credit (excluding pending backorders) instead of raw credit limit
+ *
+ * Issue #11 fix: Recalculate prices on fetch to detect stale cached prices
  */
 async function buildCartResponse(customerId: string): Promise<Cart> {
   // Get cart items from database (Issue #17 - persisted cart)
-  const items = await getUserCartItems(customerId);
+  let items = await getUserCartItems(customerId);
 
   // Get customer for credit limit
   const customer = await prisma.customer.findUnique({
@@ -242,7 +257,102 @@ async function buildCartResponse(customerId: string): Promise<Cart> {
   // Calculate available credit (excluding pending backorders)
   const availableCredit = await calculateAvailableCredit(customerId, creditLimit);
 
-  return calculateCartTotals(items, availableCredit);
+  // Issue #11 fix: Check for price changes since items were added to cart
+  const priceChanges: PriceChange[] = [];
+  let hasChanges = false;
+
+  if (items.length > 0) {
+    // Fetch current prices for all products in cart
+    const productIds = items.map((item) => item.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, basePrice: true, applyGst: true, gstRate: true },
+    });
+
+    // Fetch customer-specific pricing
+    const customerPricings = await prisma.customerPricing.findMany({
+      where: {
+        customerId,
+        productId: { in: productIds },
+      },
+    });
+
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
+
+    // Check each item for price changes
+    const updatedItems: CartItem[] = [];
+
+    for (const item of items) {
+      const product = productMap.get(item.productId);
+      if (!product) {
+        // Product no longer exists - skip (will be removed on next cart operation)
+        continue;
+      }
+
+      // Calculate current effective price
+      const customPricing = pricingMap.get(item.productId);
+      const priceInfo = getEffectivePrice(product.basePrice, customPricing);
+      const currentPrice = priceInfo.effectivePrice;
+
+      if (currentPrice !== item.unitPrice) {
+        // Price has changed!
+        priceChanges.push({
+          productId: item.productId,
+          productName: item.productName,
+          oldPrice: item.unitPrice,
+          newPrice: currentPrice,
+          direction: currentPrice > item.unitPrice ? 'increased' : 'decreased',
+        });
+
+        // Recalculate item with new price
+        const priceMoney = createMoney(currentPrice);
+        const newSubtotalMoney = multiplyMoney(priceMoney, item.quantity);
+        const newSubtotal = toCents(newSubtotalMoney);
+
+        const gstRate = product.gstRate ?? DEFAULT_GST_RATE;
+        const { itemGst, itemTotal } = calculateItemGst(
+          newSubtotal,
+          product.applyGst,
+          gstRate
+        );
+
+        updatedItems.push({
+          ...item,
+          unitPrice: currentPrice,
+          basePrice: product.basePrice,
+          subtotal: newSubtotal,
+          hasCustomPricing: priceInfo.hasCustomPricing,
+          applyGst: product.applyGst,
+          gstRate: gstRate,
+          itemGst: itemGst,
+          itemTotal: itemTotal,
+        });
+
+        hasChanges = true;
+      } else {
+        updatedItems.push(item);
+      }
+    }
+
+    // Update cart in database if prices changed
+    if (hasChanges) {
+      await prisma.cart.update({
+        where: { customerId },
+        data: { items: updatedItems },
+      });
+      items = updatedItems;
+    }
+  }
+
+  const cart = calculateCartTotals(items, availableCredit);
+
+  // Include price changes if any were detected
+  if (priceChanges.length > 0) {
+    cart.priceChanges = priceChanges;
+  }
+
+  return cart;
 }
 
 // ============================================================================

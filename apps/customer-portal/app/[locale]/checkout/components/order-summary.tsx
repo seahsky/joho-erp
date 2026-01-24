@@ -17,7 +17,7 @@ import {
 } from '@joho-erp/ui';
 import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, ClipboardList, CreditCard } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, formatDateForMelbourne } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -57,19 +57,21 @@ export function OrderSummary() {
   React.useEffect(() => {
     if (cutoffInfo?.nextAvailableDeliveryDate && !deliveryDate) {
       const nextDate = new Date(cutoffInfo.nextAvailableDeliveryDate);
-      setDeliveryDate(nextDate.toISOString().split('T')[0]);
+      // Issue #12 fix: Use Melbourne timezone to avoid off-by-one errors
+      setDeliveryDate(formatDateForMelbourne(nextDate));
     }
   }, [cutoffInfo, deliveryDate]);
 
   // Calculate min date for date picker (tomorrow or day after based on cutoff)
+  // Issue #12 fix: Use Melbourne timezone to avoid off-by-one errors
   const minDeliveryDate = React.useMemo(() => {
     if (cutoffInfo?.nextAvailableDeliveryDate) {
-      return new Date(cutoffInfo.nextAvailableDeliveryDate).toISOString().split('T')[0];
+      return formatDateForMelbourne(new Date(cutoffInfo.nextAvailableDeliveryDate));
     }
     // Default to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return formatDateForMelbourne(tomorrow);
   }, [cutoffInfo]);
 
   // TRPC utils for cache invalidation

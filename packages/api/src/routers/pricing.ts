@@ -233,6 +233,7 @@ export const pricingRouter = router({
 
   /**
    * Get a specific customer's price for a product (used by order creation)
+   * Issue #13 fix: Customers can only query their own pricing
    */
   getCustomerProductPrice: protectedProcedure
     .input(
@@ -241,7 +242,21 @@ export const pricingRouter = router({
         productId: z.string(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Authorization check: customers can only query their own pricing
+      if (ctx.userRole === 'customer') {
+        const myCustomer = await prisma.customer.findFirst({
+          where: { clerkUserId: ctx.userId },
+          select: { id: true },
+        });
+        if (!myCustomer || input.customerId !== myCustomer.id) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only view your own pricing',
+          });
+        }
+      }
+
       const pricing = await prisma.customerPricing.findFirst({
         where: {
           customerId: input.customerId,

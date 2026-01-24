@@ -36,6 +36,7 @@ import {
   logResendConfirmation,
 } from '../services/audit';
 import { assignPreliminaryPackingSequence } from '../services/route-optimizer';
+import { restoreOrderStock } from '../services/stock-restoration';
 
 // Helper: Validate stock and calculate shortfall for backorder support
 interface StockValidationResult {
@@ -1635,12 +1636,13 @@ export const orderRouter = router({
       const stockValidation = validateStockWithBackorder(orderItems, products);
       const orderStatus = stockValidation.requiresBackorder ? 'awaiting_approval' : 'confirmed';
 
-      // Validate credit limit
+      // Validate available credit (Issue #2 fix: check available credit, not total limit)
       const creditLimit = customer.creditApplication.creditLimit; // In cents
-      if (totals.totalAmount > creditLimit) {
+      const availableCredit = await calculateAvailableCredit(customer.id, creditLimit);
+      if (totals.totalAmount > availableCredit) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Order total exceeds your credit limit. Credit limit: ${creditLimit / 100}, Order total: ${totals.totalAmount / 100}`,
+          message: `Order exceeds available credit. Available: $${(availableCredit / 100).toFixed(2)}, Order total: $${(totals.totalAmount / 100).toFixed(2)}`,
         });
       }
 
@@ -2573,42 +2575,23 @@ export const orderRouter = router({
 
       // Cancel the order and restore stock in a transaction
       const cancelledOrder = await prisma.$transaction(async (tx) => {
-        // For normal orders (not backorders), restore the stock
-        if (!order.stockShortfall) {
+        // Only restore stock if it was actually consumed (during packing)
+        // Issue #1 fix: Check stockConsumed flag, not stockShortfall
+        if (order.stockConsumed) {
           const orderItems = order.items as Array<{ productId: string; quantity: number }>;
 
-          for (const item of orderItems) {
-            // Get current product stock
-            const product = await tx.product.findUnique({
-              where: { id: item.productId },
-            });
-
-            if (product) {
-              const previousStock = product.currentStock;
-              const newStock = previousStock + item.quantity;
-
-              // Create inventory transaction (return)
-              await tx.inventoryTransaction.create({
-                data: {
-                  productId: item.productId,
-                  type: 'return',
-                  quantity: item.quantity, // Positive for return
-                  previousStock,
-                  newStock,
-                  referenceType: 'order',
-                  referenceId: order.id,
-                  notes: `Stock restored from cancelled order ${order.orderNumber}`,
-                  createdBy: ctx.userId,
-                },
-              });
-
-              // Update product stock
-              await tx.product.update({
-                where: { id: item.productId },
-                data: { currentStock: newStock },
-              });
-            }
-          }
+          // Use unified stock restoration service
+          // This handles subproduct aggregation, inventoryBatch creation, etc.
+          await restoreOrderStock(
+            {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              items: orderItems,
+              userId: ctx.userId,
+              reason: reason || 'Cancelled by customer',
+            },
+            tx
+          );
         }
 
         // Update order status

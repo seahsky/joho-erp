@@ -15,7 +15,9 @@
   },
   "typesVersions": {
     "*": {
-      "hooks": ["./src/hooks/index.ts"]
+      "hooks": [
+        "./src/hooks/index.ts"
+      ]
     }
   },
   "scripts": {
@@ -23,6 +25,8 @@
   },
   "dependencies": {
     "@dinero.js/currencies": "2.0.0-alpha.1",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dinero.js": "2.0.0-alpha.14",
     "zod": "^3.22.4"
   },

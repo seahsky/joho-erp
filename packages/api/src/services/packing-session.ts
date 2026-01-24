@@ -22,15 +22,44 @@ export interface PackingSessionInfo {
 }
 
 /**
+ * Information about a packing conflict when another packer is working on the same orders.
+ * Issue #7 fix: Return conflict info instead of auto-cancelling sessions.
+ */
+export interface PackingConflict {
+  existingPackerId: string;
+  existingPackerName?: string;
+  existingSessionId: string;
+  conflictingOrderIds: string[];
+  lastActivityAt: Date;
+  progressInfo: {
+    orderNumber: string;
+    packedItemCount: number;
+  }[];
+}
+
+/**
+ * Result of attempting to start a packing session.
+ * Either succeeds with session info, or returns conflict info for takeover confirmation.
+ */
+export interface StartPackingSessionResult {
+  success: boolean;
+  session?: PackingSessionInfo;
+  conflict?: PackingConflict;
+}
+
+/**
  * Start or resume a packing session for a packer on a specific delivery date.
  * If an active session exists for this packer and date, resume it.
- * If an active session exists for another packer, end that session first.
+ *
+ * Issue #7 fix: If another packer has an active session with overlapping orders,
+ * returns conflict info instead of auto-cancelling. Use takeoverPackingSession()
+ * for explicit takeover with user confirmation.
  */
 export async function startPackingSession(
   packerId: string,
   deliveryDate: Date,
   orderIds: string[]
-): Promise<PackingSessionInfo> {
+): Promise<StartPackingSessionResult> {
   const startOfDay = new Date(deliveryDate);
   startOfDay.setUTCHours(0, 0, 0, 0);
   const endOfDay = new Date(deliveryDate);
@@ -59,6 +88,180 @@ export async function startPackingSession(
     });
 
     return {
+      success: true,
+      session: {
+        sessionId: updatedSession.id,
+        packerId: updatedSession.packerId,
+        deliveryDate: updatedSession.deliveryDate,
+        orderIds: updatedSession.orderIds,
+        startedAt: updatedSession.startedAt,
+        lastActivityAt: updatedSession.lastActivityAt,
+        isTimedOut: false,
+      },
+    };
+  }
+
+  // Check for OTHER packers' active sessions that overlap with the requested orders
+  const otherActiveSessions = await prisma.packingSession.findMany({
+    where: {
+      deliveryDate: {
+        gte: startOfDay,
+        lt: endOfDay,
+      },
+      status: "active",
+      packerId: { not: packerId },
+    },
+  });
+
+  // Check for order-level conflicts
+  for (const otherSession of otherActiveSessions) {
+    const conflictingOrderIds = orderIds.filter((id) =>
+      otherSession.orderIds.includes(id)
+    );
+
+    if (conflictingOrderIds.length > 0) {
+      // Get progress info for conflicting orders
+      const ordersWithProgress = await prisma.order.findMany({
+        where: {
+          id: { in: conflictingOrderIds },
+          status: "packing",
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          packing: true,
+        },
+      });
+
+      const progressInfo = ordersWithProgress.map((order) => ({
+        orderNumber: order.orderNumber,
+        packedItemCount: order.packing?.packedItems?.length ?? 0,
+      }));
+
+      // Return conflict instead of auto-cancelling
+      return {
+        success: false,
+        conflict: {
+          existingPackerId: otherSession.packerId,
+          existingSessionId: otherSession.id,
+          conflictingOrderIds,
+          lastActivityAt: otherSession.lastActivityAt,
+          progressInfo,
+        },
+      };
+    }
+  }
+
+  // No conflicts - create new session
+  const newSession = await prisma.packingSession.create({
+    data: {
+      packerId,
+      deliveryDate: startOfDay,
+      orderIds,
+      status: "active",
+      startedAt: new Date(),
+      lastActivityAt: new Date(),
+    },
+  });
+
+  return {
+    success: true,
+    session: {
+      sessionId: newSession.id,
+      packerId: newSession.packerId,
+      deliveryDate: newSession.deliveryDate,
+      orderIds: newSession.orderIds,
+      startedAt: newSession.startedAt,
+      lastActivityAt: newSession.lastActivityAt,
+      isTimedOut: false,
+    },
+  };
+}
+
+/**
+ * Take over packing for orders from another packer's session.
+ * Called after user confirms takeover from conflict dialog.
+ *
+ * Preserves progress: orders with packed items keep their progress.
+ */
+export async function takeoverPackingSession(
+  newPackerId: string,
+  existingSessionId: string,
+  orderIdsToTakeover: string[]
+): Promise<PackingSessionInfo> {
+  // Get the existing session
+  const existingSession = await prisma.packingSession.findUnique({
+    where: { id: existingSessionId },
+  });
+
+  if (!existingSession) {
+    throw new Error("Session not found");
+  }
+
+  // Remove taken-over orders from the old session
+  const remainingOrders = existingSession.orderIds.filter(
+    (id) => !orderIdsToTakeover.includes(id)
+  );
+
+  if (remainingOrders.length === 0) {
+    // Cancel the old session entirely
+    await prisma.packingSession.update({
+      where: { id: existingSessionId },
+      data: {
+        status: "cancelled",
+        endedAt: new Date(),
+        endReason: "new_session_started", // Takeover by another packer
+      },
+    });
+  } else {
+    // Update old session to remove taken-over orders
+    await prisma.packingSession.update({
+      where: { id: existingSessionId },
+      data: {
+        orderIds: remainingOrders,
+      },
+    });
+  }
+
+  // Update orders to record the takeover (preserve progress)
+  await prisma.order.updateMany({
+    where: {
+      id: { in: orderIdsToTakeover },
+      status: "packing",
+    },
+    data: {
+      // Note: Can't push to statusHistory in updateMany, handled separately if needed
+    },
+  });
+
+  // Check for existing session for the new packer
+  const startOfDay = new Date(existingSession.deliveryDate);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const endOfDay = new Date(existingSession.deliveryDate);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  const newPackerSession = await prisma.packingSession.findFirst({
+    where: {
+      packerId: newPackerId,
+      deliveryDate: {
+        gte: startOfDay,
+        lt: endOfDay,
+      },
+      status: "active",
+    },
+  });
+
+  if (newPackerSession) {
+    // Add to existing session
+    const updatedSession = await prisma.packingSession.update({
+      where: { id: newPackerSession.id },
+      data: {
+        lastActivityAt: new Date(),
+        orderIds: [...new Set([...newPackerSession.orderIds, ...orderIdsToTakeover])],
+      },
+    });
+
+    return {
       sessionId: updatedSession.id,
       packerId: updatedSession.packerId,
       deliveryDate: updatedSession.deliveryDate,
@@ -69,29 +272,12 @@ export async function startPackingSession(
     };
   }
 
-  // End any other active sessions for this delivery date (by other packers)
-  await prisma.packingSession.updateMany({
-    where: {
-      deliveryDate: {
-        gte: startOfDay,
-        lt: endOfDay,
-      },
-      status: "active",
-      packerId: { not: packerId },
-    },
-    data: {
-      status: "cancelled",
-      endedAt: new Date(),
-      endReason: "new_session_started",
-    },
-  });
-
-  // Create new session
+  // Create new session for the new packer
   const newSession = await prisma.packingSession.create({
     data: {
-      packerId,
-      deliveryDate: startOfDay,
-      orderIds,
+      packerId: newPackerId,
+      deliveryDate: existingSession.deliveryDate,
+      orderIds: orderIdsToTakeover,
       status: "active",
       startedAt: new Date(),
       lastActivityAt: new Date(),
