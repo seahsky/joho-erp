@@ -2805,6 +2805,24 @@
       "mtvNumber": "MTV编号",
       "vehicleTemperature": "车辆温度"
     },
+    "batchDetail": {
+      "title": "库存批次详情",
+      "notFound": "未找到批次",
+      "quantityRemaining": "剩余库存",
+      "initialQuantity": "初始数量",
+      "consumed": "已消耗",
+      "expiryDate": "有效期",
+      "costPerUnit": "单位成本",
+      "totalValue": "总价值",
+      "receivedAt": "入库时间",
+      "traceabilityInfo": "追溯信息",
+      "supplier": "供应商",
+      "stockInDate": "入库日期",
+      "invoiceNumber": "发票号码",
+      "mtvNumber": "MTV编号",
+      "vehicleTemperature": "车辆温度",
+      "notes": "备注"
+    },
     "productSelector": {
       "searchPlaceholder": "按产品名称或SKU搜索...",
       "selectProduct": "选择要调整库存的产品",

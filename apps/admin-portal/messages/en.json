@@ -2805,6 +2805,24 @@
       "mtvNumber": "MTV Number",
       "vehicleTemperature": "Vehicle Temperature"
     },
+    "batchDetail": {
+      "title": "Stock Batch Details",
+      "notFound": "Batch not found",
+      "quantityRemaining": "Stock Remaining",
+      "initialQuantity": "Initial Quantity",
+      "consumed": "Consumed",
+      "expiryDate": "Expiry Date",
+      "costPerUnit": "Cost per Unit",
+      "totalValue": "Total Value",
+      "receivedAt": "Received At",
+      "traceabilityInfo": "Traceability Information",
+      "supplier": "Supplier",
+      "stockInDate": "Stock In Date",
+      "invoiceNumber": "Invoice Number",
+      "mtvNumber": "MTV Number",
+      "vehicleTemperature": "Vehicle Temperature",
+      "notes": "Notes"
+    },
     "productSelector": {
       "searchPlaceholder": "Search by product name or SKU...",
       "selectProduct": "Select a product to adjust stock",
