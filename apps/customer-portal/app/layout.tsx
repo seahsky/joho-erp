@@ -1,6 +1,7 @@
 import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
 import { TRPCProvider } from './trpc-provider';
+import { Toaster } from '@joho-erp/ui';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 
@@ -31,6 +32,7 @@ export default function RootLayout({
       <html lang="en" className={outfit.variable}>
         <body className="font-outfit antialiased">
           <TRPCProvider>{children}</TRPCProvider>
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>
