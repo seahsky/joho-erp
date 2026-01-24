@@ -174,12 +174,14 @@ export const orderRouter = router({
     .input(
       z.object({
         customerId: z.string().optional(), // For admin placing on behalf
-        items: z.array(
-          z.object({
-            productId: z.string(),
-            quantity: z.number().min(1),
-          })
-        ),
+        items: z
+          .array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number().int().min(1).max(10000),
+            })
+          )
+          .min(1, 'At least one item is required'),
         deliveryAddress: z
           .object({
             street: z.string(),
@@ -579,7 +581,7 @@ export const orderRouter = router({
           .array(
             z.object({
               productId: z.string(),
-              quantity: z.number().min(1),
+              quantity: z.number().int().min(1).max(10000),
             })
           )
           .min(1, 'At least one item is required'),
@@ -2365,164 +2367,179 @@ export const orderRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, notes } = input;
 
-      // Get the order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { customer: true },
-      });
+      // Use transaction to ensure atomic stock check and order update
+      return prisma.$transaction(
+        async (tx) => {
+          // Get the order inside transaction
+          const order = await tx.order.findUnique({
+            where: { id: orderId },
+            include: { customer: true },
+          });
 
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
+          if (!order) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'Order not found',
+            });
+          }
 
-      // Validate current status - only awaiting_approval orders can be confirmed (for backorders)
-      if (order.status !== 'awaiting_approval') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot confirm order with status '${order.status}'. Only orders awaiting approval can be confirmed.`,
-        });
-      }
+          // Validate current status - only awaiting_approval orders can be confirmed (for backorders)
+          if (order.status !== 'awaiting_approval') {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Cannot confirm order with status '${order.status}'. Only orders awaiting approval can be confirmed.`,
+            });
+          }
 
-      // Check stock availability for non-backorders and convert to backorder if insufficient
-      let stockValidation: StockValidationResult = { requiresBackorder: false, stockShortfall: {} };
-      if (!order.stockShortfall) {  // Normal order (not a backorder)
-        const orderItems = order.items as Array<{ productId: string; quantity: number }>;
-        const productIds = orderItems.map((item) => item.productId);
-        const products = await prisma.product.findMany({
-          where: { id: { in: productIds } },
-        });
+          // Check stock availability for non-backorders and convert to backorder if insufficient
+          let stockValidation: StockValidationResult = { requiresBackorder: false, stockShortfall: {} };
+          if (!order.stockShortfall) {
+            // Normal order (not a backorder)
+            const orderItems = order.items as Array<{ productId: string; quantity: number }>;
+            const productIds = orderItems.map((item) => item.productId);
 
-        stockValidation = validateStockWithBackorder(orderItems, products);
+            // Fetch products inside transaction
+            const products = await tx.product.findMany({
+              where: { id: { in: productIds } },
+            });
 
-        // If stock is insufficient, convert to backorder instead of blocking
-        if (stockValidation.requiresBackorder) {
+            stockValidation = validateStockWithBackorder(orderItems, products);
+
+            // If stock is insufficient, convert to backorder instead of blocking
+            if (stockValidation.requiresBackorder) {
+              const userDetails = await getUserDetails(ctx.userId);
+
+              // Update order to backorder status with atomic guard on status
+              const updatedBackorder = await tx.order.update({
+                where: {
+                  id: orderId,
+                  status: 'awaiting_approval', // Atomic guard
+                },
+                data: {
+                  stockShortfall: stockValidation.stockShortfall, // This indicates it's now a backorder
+                  statusHistory: {
+                    push: {
+                      status: 'awaiting_approval',
+                      changedAt: new Date(),
+                      changedBy: ctx.userId,
+                      changedByName: userDetails.changedByName,
+                      changedByEmail: userDetails.changedByEmail,
+                      notes: 'Order converted to backorder due to insufficient stock',
+                    },
+                  },
+                },
+                include: { customer: true },
+              });
+
+              // Send backorder notification
+              const stockShortfallArray = Object.entries(stockValidation.stockShortfall).map(
+                ([productId, data]) => {
+                  const product = products.find((p) => p.id === productId);
+                  return {
+                    productName: product?.name || 'Unknown Product',
+                    sku: product?.sku || productId,
+                    requested: data.requested,
+                    available: data.available,
+                    shortfall: data.shortfall,
+                    unit: product?.unit || 'unit',
+                  };
+                }
+              );
+
+              await sendBackorderSubmittedEmail({
+                customerEmail: updatedBackorder.customer.contactPerson.email,
+                customerName: updatedBackorder.customer.businessName,
+                orderNumber: updatedBackorder.orderNumber,
+                orderDate: updatedBackorder.orderedAt,
+                stockShortfall: stockShortfallArray,
+                totalAmount: updatedBackorder.totalAmount,
+              }).catch((error) => {
+                console.error('Failed to send backorder submitted email:', error);
+              });
+
+              return {
+                ...updatedBackorder,
+                convertedToBackorder: true,
+                message: 'Order converted to backorder due to insufficient stock. Awaiting approval.',
+              };
+            }
+          }
+
+          // Re-validate credit limit
+          const creditLimit = order.customer.creditApplication.creditLimit;
+          const availableCredit = await calculateAvailableCredit(order.customerId, creditLimit);
+
+          // Need to exclude this order's amount from available credit since it's already counted
+          const adjustedAvailableCredit = availableCredit + order.totalAmount;
+          if (order.totalAmount > adjustedAvailableCredit) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Order total exceeds available credit. Available: $${(adjustedAvailableCredit / 100).toFixed(2)}`,
+            });
+          }
+
+          // Validate delivery date is in the future
+          const now = new Date();
+          if (order.requestedDeliveryDate < now) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Requested delivery date is in the past. Please update the delivery date.',
+            });
+          }
+
+          // Get user details for status history
           const userDetails = await getUserDetails(ctx.userId);
 
-          // Update order to backorder status
-          const updatedBackorder = await prisma.order.update({
-            where: { id: orderId },
+          // Update order status to confirmed with atomic guard on status
+          const updatedOrder = await tx.order.update({
+            where: {
+              id: orderId,
+              status: 'awaiting_approval', // Atomic guard
+            },
             data: {
-              stockShortfall: stockValidation.stockShortfall,  // This indicates it's now a backorder
+              status: 'confirmed',
               statusHistory: {
                 push: {
-                  status: 'awaiting_approval',
+                  status: 'confirmed',
                   changedAt: new Date(),
                   changedBy: ctx.userId,
                   changedByName: userDetails.changedByName,
                   changedByEmail: userDetails.changedByEmail,
-                  notes: 'Order converted to backorder due to insufficient stock',
+                  notes: notes || 'Order confirmed by admin',
                 },
               },
             },
             include: { customer: true },
           });
 
-          // Send backorder notification
-          const stockShortfallArray = Object.entries(stockValidation.stockShortfall).map(
-            ([productId, data]) => {
-              const product = products.find((p) => p.id === productId);
-              return {
-                productName: product?.name || 'Unknown Product',
-                sku: product?.sku || productId,
-                requested: data.requested,
-                available: data.available,
-                shortfall: data.shortfall,
-                unit: product?.unit || 'unit',
-              };
-            }
+          // Assign preliminary packing sequence for immediate display
+          await assignPreliminaryPackingSequence(
+            updatedOrder.requestedDeliveryDate,
+            updatedOrder.id
           );
 
-          await sendBackorderSubmittedEmail({
-            customerEmail: updatedBackorder.customer.contactPerson.email,
-            customerName: updatedBackorder.customer.businessName,
-            orderNumber: updatedBackorder.orderNumber,
-            orderDate: updatedBackorder.orderedAt,
-            stockShortfall: stockShortfallArray,
-            totalAmount: updatedBackorder.totalAmount,
+          // Send order confirmed by admin email to customer
+          await sendOrderConfirmedByAdminEmail({
+            customerEmail: updatedOrder.customer.contactPerson.email,
+            customerName: updatedOrder.customer.businessName,
+            orderNumber: updatedOrder.orderNumber,
+            estimatedDeliveryDate: updatedOrder.requestedDeliveryDate,
           }).catch((error) => {
-            console.error('Failed to send backorder submitted email:', error);
+            console.error('Failed to send order confirmed by admin email:', error);
           });
 
-          return {
-            ...updatedBackorder,
-            convertedToBackorder: true,
-            message: 'Order converted to backorder due to insufficient stock. Awaiting approval.',
-          };
-        }
-      }
+          // Audit log - HIGH: Order confirmation must be tracked
+          await logOrderConfirmation(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
+            orderNumber: order.orderNumber,
+            customerId: order.customerId,
+          }).catch((error) => {
+            console.error('Audit log failed for order confirmation:', error);
+          });
 
-      // Re-validate credit limit
-      const creditLimit = order.customer.creditApplication.creditLimit;
-      const availableCredit = await calculateAvailableCredit(order.customerId, creditLimit);
-
-      // Need to exclude this order's amount from available credit since it's already counted
-      const adjustedAvailableCredit = availableCredit + order.totalAmount;
-      if (order.totalAmount > adjustedAvailableCredit) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Order total exceeds available credit. Available: $${(adjustedAvailableCredit / 100).toFixed(2)}`,
-        });
-      }
-
-      // Validate delivery date is in the future
-      const now = new Date();
-      if (order.requestedDeliveryDate < now) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Requested delivery date is in the past. Please update the delivery date.',
-        });
-      }
-
-      // Get user details for status history
-      const userDetails = await getUserDetails(ctx.userId);
-
-      // Update order status to confirmed
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'confirmed',
-          statusHistory: {
-            push: {
-              status: 'confirmed',
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: notes || 'Order confirmed by admin',
-            },
-          },
+          return updatedOrder;
         },
-        include: { customer: true },
-      });
-
-      // Assign preliminary packing sequence for immediate display
-      await assignPreliminaryPackingSequence(
-        updatedOrder.requestedDeliveryDate,
-        updatedOrder.id
+        { timeout: 15000 }
       );
-
-      // Send order confirmed by admin email to customer
-      await sendOrderConfirmedByAdminEmail({
-        customerEmail: updatedOrder.customer.contactPerson.email,
-        customerName: updatedOrder.customer.businessName,
-        orderNumber: updatedOrder.orderNumber,
-        estimatedDeliveryDate: updatedOrder.requestedDeliveryDate,
-      }).catch((error) => {
-        console.error('Failed to send order confirmed by admin email:', error);
-      });
-
-      // Audit log - HIGH: Order confirmation must be tracked
-      await logOrderConfirmation(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
-        orderNumber: order.orderNumber,
-        customerId: order.customerId,
-      }).catch((error) => {
-        console.error('Audit log failed for order confirmation:', error);
-      });
-
-      return updatedOrder;
     }),
 
   // ============================================================================

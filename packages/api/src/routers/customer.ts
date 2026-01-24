@@ -2,7 +2,15 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { paginatePrismaQuery, buildPrismaOrderBy, validateABN } from '@joho-erp/shared';
+import {
+  paginatePrismaQuery,
+  buildPrismaOrderBy,
+  validateABN,
+  phoneSchema,
+  postcodeSchema,
+  creditLimitSchema,
+  licenseExpirySchema,
+} from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendCreditApprovedEmail,
@@ -35,7 +43,7 @@ const directorDetailsSchema = z.object({
   dateOfBirth: z.date().or(z.string().transform((str) => new Date(str))),
   driverLicenseNumber: z.string().min(1, 'Driver license number is required'),
   licenseState: z.enum(['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']),
-  licenseExpiry: z.date().or(z.string().transform((str) => new Date(str))),
+  licenseExpiry: licenseExpirySchema,
   position: z.string().optional(),
 });
 
@@ -105,14 +113,14 @@ export const customerRouter = router({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
           email: z.string().email(),
-          phone: z.string(),
+          phone: phoneSchema,
           mobile: z.string().optional(),
         }),
         deliveryAddress: z.object({
           street: z.string().min(1),
           suburb: z.string().min(1),
           state: z.string(),
-          postcode: z.string(),
+          postcode: postcodeSchema,
           areaId: z.string().optional(), // Manual area override
           deliveryInstructions: z.string().optional(),
           latitude: z.number().optional(), // From geocoding
@@ -123,7 +131,7 @@ export const customerRouter = router({
             street: z.string().min(1),
             suburb: z.string().min(1),
             state: z.string(),
-            postcode: z.string(),
+            postcode: postcodeSchema,
           })
           .optional(),
         postalAddress: z
@@ -131,7 +139,7 @@ export const customerRouter = router({
             street: z.string().min(1),
             suburb: z.string().min(1),
             state: z.string(),
-            postcode: z.string(),
+            postcode: postcodeSchema,
           })
           .optional(),
         requestedCreditLimit: z.number().int().optional(), // In cents
@@ -768,7 +776,7 @@ export const customerRouter = router({
     .input(
       z.object({
         customerId: z.string(),
-        creditLimit: z.number().int().min(0), // In cents
+        creditLimit: creditLimitSchema, // In cents, max $100,000
         paymentTerms: z.string(),
         notes: z.string().optional(),
       })

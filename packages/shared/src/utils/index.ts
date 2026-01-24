@@ -411,3 +411,8 @@ export * from './order-state-machine';
  * Export timezone utilities (Melbourne)
  */
 export * from './timezone';
+
+/**
+ * Export validation schemas (Zod)
+ */
+export * from './validation';

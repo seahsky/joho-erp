@@ -1,8 +1,32 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
+import { createMoney, multiplyMoney, sumMoney, toCents } from '@joho-erp/shared';
 
 const COMPARISON_TYPES = ['week_over_week', 'month_over_month'] as const;
+
+/**
+ * Calculate the total value of an inventory batch using dinero.js for precision
+ * @param batch - Batch with quantityRemaining and costPerUnit (in cents)
+ * @returns Total value in cents
+ */
+function calculateBatchValue(batch: { quantityRemaining: number; costPerUnit: number }): number {
+  const costMoney = createMoney(batch.costPerUnit);
+  const totalMoney = multiplyMoney(costMoney, batch.quantityRemaining);
+  return toCents(totalMoney);
+}
+
+/**
+ * Calculate the total value of multiple inventory batches
+ * @param batches - Array of batches with quantityRemaining and costPerUnit
+ * @returns Total value in cents
+ */
+function calculateTotalBatchValue(
+  batches: Array<{ quantityRemaining: number; costPerUnit: number }>
+): number {
+  const values = batches.map((batch) => createMoney(calculateBatchValue(batch)));
+  return toCents(sumMoney(values));
+}
 
 // Helper to calculate date range based on comparison type
 function getComparisonDateRange(comparisonType: (typeof COMPARISON_TYPES)[number]) {
@@ -97,10 +121,7 @@ export const inventoryRouter = router({
               },
             });
 
-            const totalValue = batches.reduce(
-              (sum, batch) => sum + batch.quantityRemaining * batch.costPerUnit,
-              0
-            );
+            const totalValue = calculateTotalBatchValue(batches);
 
             // Get category breakdown
             const categories = await prisma.category.findMany({
@@ -140,7 +161,7 @@ export const inventoryRouter = router({
               const currentValue = batchValuesByProduct.get(batch.productId) || 0;
               batchValuesByProduct.set(
                 batch.productId,
-                currentValue + batch.quantityRemaining * batch.costPerUnit
+                currentValue + calculateBatchValue(batch)
               );
             });
 
@@ -325,10 +346,7 @@ export const inventoryRouter = router({
               },
             });
 
-            const currentTotalValue = trendsBatches.reduce(
-              (sum, batch) => sum + batch.quantityRemaining * batch.costPerUnit,
-              0
-            );
+            const currentTotalValue = calculateTotalBatchValue(trendsBatches);
 
             const inventoryValue = [
               {
@@ -595,7 +613,7 @@ export const inventoryRouter = router({
           (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
         ),
         isExpired: batch.expiryDate! < now,
-        totalValue: batch.quantityRemaining * batch.costPerUnit,
+        totalValue: calculateBatchValue(batch),
       }));
 
       return {
@@ -635,7 +653,7 @@ export const inventoryRouter = router({
 
       return batches.map((batch) => ({
         ...batch,
-        totalValue: batch.quantityRemaining * batch.costPerUnit,
+        totalValue: calculateBatchValue(batch),
         utilizationRate:
           batch.initialQuantity > 0
             ? ((batch.initialQuantity - batch.quantityRemaining) /

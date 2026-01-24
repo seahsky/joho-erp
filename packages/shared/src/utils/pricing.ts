@@ -4,7 +4,7 @@
  * All prices are in cents (Int) for precision
  */
 
-import { createMoney, subtractMoney, toCents, getDiscountPercentage } from './money';
+import { createMoney, subtractMoney, toCents, getDiscountPercentage, multiplyMoney } from './money';
 
 export interface CustomerPricing {
   id: string;
@@ -51,9 +51,11 @@ export function calculatePriceWithGst(
     return effectivePrice;
   }
   const rate = gstRate ?? DEFAULT_GST_RATE;
-  // Calculate GST: price * rate / 100, then add to price
-  const gstAmount = Math.round((effectivePrice * rate) / 100);
-  return effectivePrice + gstAmount;
+  // Use dinero.js for precise GST calculation
+  const priceMoney = createMoney(effectivePrice);
+  // Multiply by rate/100 using dinero's ratio object for precision
+  const gstMoney = multiplyMoney(priceMoney, { amount: rate, scale: 2 });
+  return effectivePrice + toCents(gstMoney);
 }
 
 /**

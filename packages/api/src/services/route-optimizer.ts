@@ -4,6 +4,11 @@
  */
 
 import { prisma } from "@joho-erp/database";
+
+export type TransactionClient = Omit<
+  typeof prisma,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 import {
   optimizeRoutesByArea,
   calculateArrivalTimes,
@@ -800,8 +805,10 @@ export async function optimizeDeliveryOnlyRoute(
  * @param deliveryDate - The delivery date to calculate sequences for
  */
 export async function calculatePerDriverSequences(
-  deliveryDate: Date
+  deliveryDate: Date,
+  tx?: TransactionClient
 ): Promise<void> {
+  const db = tx || prisma;
   const startOfDay = new Date(deliveryDate);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -809,7 +816,7 @@ export async function calculatePerDriverSequences(
   endOfDay.setUTCHours(23, 59, 59, 999);
 
   // Fetch all ready_for_delivery orders with their current sequences
-  const orders = await prisma.order.findMany({
+  const orders = await db.order.findMany({
     where: {
       requestedDeliveryDate: {
         gte: startOfDay,
@@ -876,7 +883,7 @@ export async function calculatePerDriverSequences(
   // Update all orders with per-driver sequences
   await Promise.all(
     updates.map((update) =>
-      prisma.order.update({
+      db.order.update({
         where: { id: update.orderId },
         data: {
           delivery: {
