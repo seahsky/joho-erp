@@ -26,6 +26,7 @@ export function InlineQuantityControls({
 }: InlineQuantityControlsProps) {
   const tCart = useTranslations('cart');
   const t = useTranslations('products');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const [isEditing, setIsEditing] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(currentQuantity.toString());
@@ -79,9 +80,10 @@ export function InlineQuantityControls({
       if (context?.previousCart) {
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
+      console.error('Cart add error:', error.message);
       toast({
         title: tCart('messages.errorAddingToCart'),
-        description: error.message,
+        description: tErrors('cartUpdateFailed'),
         variant: 'destructive',
       });
     },
@@ -119,9 +121,10 @@ export function InlineQuantityControls({
       if (context?.previousCart) {
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
+      console.error('Cart update error:', error.message);
       toast({
         title: tCart('messages.errorUpdatingQuantity'),
-        description: error.message,
+        description: tErrors('cartUpdateFailed'),
         variant: 'destructive',
       });
     },
@@ -159,9 +162,10 @@ export function InlineQuantityControls({
       if (context?.previousCart) {
         utils.cart.getCart.setData(undefined, context.previousCart);
       }
+      console.error('Cart remove error:', error.message);
       toast({
         title: tCart('messages.errorRemovingItem'),
-        description: error.message,
+        description: tErrors('cartUpdateFailed'),
         variant: 'destructive',
       });
     },

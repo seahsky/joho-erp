@@ -22,6 +22,7 @@ import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 
 export default function CompanySettingsPage() {
   const t = useTranslations('settings.company');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
@@ -58,9 +59,10 @@ export default function CompanySettingsPage() {
       void utils.company.getSettings.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('saveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -85,6 +85,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
   const t = useTranslations('orderDetails');
   const tOrders = useTranslations('orders');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
   const isMobile = useIsMobile();
@@ -111,9 +112,10 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Cancel order error:', error.message);
       toast({
         title: tOrders('cancel.error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -276,7 +278,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                           className="relative w-20 h-20 rounded-md overflow-hidden border-2 border-border hover:border-primary transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                           <Image
-                            src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
+                            src={(order.delivery as Delivery)?.proofOfDelivery?.fileUrl ?? ''}
                             alt={t('proofOfDelivery.imageAlt')}
                             width={80}
                             height={80}
@@ -288,16 +290,16 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
                         </button>
                         <div>
                           <p className="text-sm font-medium">
-                            {(order.delivery as Delivery).proofOfDelivery!.type === 'signature'
+                            {(order.delivery as Delivery)?.proofOfDelivery?.type === 'signature'
                               ? t('proofOfDelivery.signature')
                               : t('proofOfDelivery.photo')}
                           </p>
                           <Muted className="text-xs">
-                            {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery).proofOfDelivery!.uploadedAt)}
+                            {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery)?.proofOfDelivery?.uploadedAt ?? new Date())}
                           </Muted>
-                          {(order.delivery as Delivery).deliveredAt && (
+                          {(order.delivery as Delivery)?.deliveredAt && (
                             <Muted className="text-xs">
-                              {t('proofOfDelivery.deliveredAt')}: {formatDate((order.delivery as Delivery).deliveredAt!)}
+                              {t('proofOfDelivery.deliveredAt')}: {formatDate((order.delivery as Delivery)?.deliveredAt ?? new Date())}
                             </Muted>
                           )}
                         </div>
@@ -447,7 +449,7 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={(order.delivery as Delivery).proofOfDelivery!.fileUrl}
+              src={(order.delivery as Delivery)?.proofOfDelivery?.fileUrl ?? ''}
               alt={t('proofOfDelivery.imageAlt')}
               width={1200}
               height={1200}
@@ -455,12 +457,12 @@ export function OrderDetailsModal({ orderId, open, onOpenChange }: OrderDetailsM
             />
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent rounded-b-lg">
               <p className="text-white text-sm font-medium">
-                {(order.delivery as Delivery).proofOfDelivery!.type === 'signature'
+                {(order.delivery as Delivery)?.proofOfDelivery?.type === 'signature'
                   ? t('proofOfDelivery.signature')
                   : t('proofOfDelivery.photo')}
               </p>
               <p className="text-white/80 text-xs">
-                {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery).proofOfDelivery!.uploadedAt)}
+                {t('proofOfDelivery.uploadedAt')}: {formatDate((order.delivery as Delivery)?.proofOfDelivery?.uploadedAt ?? new Date())}
               </p>
             </div>
           </div>

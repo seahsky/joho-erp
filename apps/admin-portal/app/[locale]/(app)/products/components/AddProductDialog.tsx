@@ -43,6 +43,7 @@ export function AddProductDialog({
 }: AddProductDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('productForm');
+  const tErrors = useTranslations('errors');
 
   // Form state
   const [sku, setSku] = useState('');
@@ -88,9 +89,10 @@ export function AddProductDialog({
       });
     },
     onError: (error) => {
+      console.error('Category create error:', error.message);
       toast({
         title: t('messages.categoryCreateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -164,9 +166,10 @@ export function AddProductDialog({
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Product create error:', error.message);
       toast({
         title: t('messages.errorCreating'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

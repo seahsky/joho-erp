@@ -51,6 +51,14 @@
     "retry": "重試",
     "errorOccurred": "出了點問題"
   },
+  "errors": {
+    "operationFailed": "操作失敗，請重試。",
+    "networkError": "網路錯誤，請檢查您的網路連線。",
+    "cartUpdateFailed": "購物車更新失敗，請重試。",
+    "orderFailed": "訂單處理失敗，請重試。",
+    "loadFailed": "載入資料失敗，請重新整理頁面。",
+    "searchError": "搜尋失敗，請重試。"
+  },
   "statusBadges": {
     "awaiting_approval": "待審批",
     "confirmed": "已確認",

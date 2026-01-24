@@ -19,6 +19,7 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const t = useTranslations('deliveries');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
@@ -90,9 +91,10 @@ export default function DeliveriesPage() {
       setMarkDeliveredDialog({ open: false, delivery: null });
     },
     onError: (error) => {
+      console.error('Mark delivered error:', error.message);
       toast({
         title: t('messages.markDeliveredError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

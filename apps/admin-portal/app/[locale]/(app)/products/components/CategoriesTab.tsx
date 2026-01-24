@@ -47,6 +47,7 @@ type Category = {
 export function CategoriesTab() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -72,9 +73,10 @@ export function CategoriesTab() {
       setCategoryToDelete(null);
     },
     onError: (error) => {
+      console.error('Category delete error:', error.message);
       toast({
         title: t('messages.deleteError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -63,6 +63,7 @@ export function StockAdjustmentDialog({
 }: StockAdjustmentDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('stockAdjustment');
+  const tErrors = useTranslations('errors');
   const tInventory = useTranslations('inventory');
 
   // Product selection state
@@ -161,9 +162,10 @@ export function StockAdjustmentDialog({
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('messages.error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -36,6 +36,7 @@ type Role = 'admin' | 'sales' | 'manager' | 'packer' | 'driver';
 
 export default function UserManagementSettingsPage() {
   const t = useTranslations('settings.users');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
 
@@ -81,9 +82,10 @@ export default function UserManagementSettingsPage() {
       void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('inviteError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -98,9 +100,10 @@ export default function UserManagementSettingsPage() {
       void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('updateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -115,9 +118,10 @@ export default function UserManagementSettingsPage() {
       void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('deactivateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -130,9 +134,10 @@ export default function UserManagementSettingsPage() {
       void utils.user.getPendingInvitations.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('revokeError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

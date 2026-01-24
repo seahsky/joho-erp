@@ -51,6 +51,7 @@ export default function SupplierDetailPage({ params }: PageProps) {
   const router = useRouter();
   const t = useTranslations('supplierDetail');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -104,9 +105,10 @@ export default function SupplierDetailPage({ params }: PageProps) {
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
+      console.error('Update supplier error:', error.message);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: t('updateError'),
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -123,9 +125,10 @@ export default function SupplierDetailPage({ params }: PageProps) {
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
+      console.error('Suspend supplier error:', error.message);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: t('suspendError'),
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -141,9 +144,10 @@ export default function SupplierDetailPage({ params }: PageProps) {
       void utils.supplier.getById.invalidate({ id: resolvedParams.id });
     },
     onError: (error) => {
+      console.error('Activate supplier error:', error.message);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: t('activateError'),
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

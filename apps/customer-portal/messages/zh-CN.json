@@ -51,6 +51,14 @@
     "retry": "重试",
     "errorOccurred": "出了点问题"
   },
+  "errors": {
+    "operationFailed": "操作失败，请重试。",
+    "networkError": "网络错误，请检查您的网络连接。",
+    "cartUpdateFailed": "购物车更新失败，请重试。",
+    "orderFailed": "订单处理失败，请重试。",
+    "loadFailed": "加载数据失败，请刷新页面。",
+    "searchError": "搜索失败，请重试。"
+  },
   "statusBadges": {
     "awaiting_approval": "待审批",
     "confirmed": "已确认",

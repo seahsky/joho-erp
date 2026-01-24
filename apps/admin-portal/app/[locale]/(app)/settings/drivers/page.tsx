@@ -40,6 +40,7 @@ interface Driver {
 
 export default function DriverAreasSettingsPage() {
   const t = useTranslations('settings.driverAreas');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
 
@@ -63,9 +64,10 @@ export default function DriverAreasSettingsPage() {
       void utils.delivery.getDriversWithAreas.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('saveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

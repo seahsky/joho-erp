@@ -47,6 +47,7 @@ export function EditCategoryDialog({
   const { toast } = useToast();
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -83,9 +84,10 @@ export function EditCategoryDialog({
       onSuccess();
     },
     onError: (error) => {
+      console.error('Category update error:', error.message);
       toast({
         title: t('messages.updateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

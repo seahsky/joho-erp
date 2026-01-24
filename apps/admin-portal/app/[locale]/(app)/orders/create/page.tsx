@@ -15,7 +15,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/client';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
 import {
   ShoppingCart,
   Plus,
@@ -131,7 +131,9 @@ export default function CreateOrderOnBehalfPage() {
     const gstCents = orderItems.reduce((sum, item) => {
       if (!item.applyGst) return sum;
       const rate = item.gstRate ?? DEFAULT_GST_RATE;
-      return sum + Math.round((item.subtotal * rate) / 100);
+      const itemMoney = createMoney(item.subtotal);
+      const itemGst = multiplyMoney(itemMoney, { amount: rate, scale: 2 });
+      return sum + toCents(itemGst);
     }, 0);
     const totalCents = subtotalCents + gstCents;
     return {

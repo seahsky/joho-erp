@@ -33,7 +33,7 @@ const MIN_ALERT_INTERVAL_HOURS = parseInt(
 export async function GET(request: Request) {
   // Verify authorization
   const authHeader = request.headers.get("authorization");
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

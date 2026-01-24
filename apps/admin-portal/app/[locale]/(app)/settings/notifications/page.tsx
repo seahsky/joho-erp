@@ -33,6 +33,7 @@ function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean
 
 export default function NotificationSettingsPage() {
   const t = useTranslations('settings.notifications');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
@@ -66,9 +67,10 @@ export default function NotificationSettingsPage() {
       void utils.notification.getSettings.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('saveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -83,9 +85,10 @@ export default function NotificationSettingsPage() {
       });
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('testEmailError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

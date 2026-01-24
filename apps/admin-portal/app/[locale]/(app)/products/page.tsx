@@ -86,6 +86,7 @@ export default function ProductsPage() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const tSubproduct = useTranslations('subproduct');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   const deleteMutation = api.product.delete.useMutation({
@@ -100,9 +101,10 @@ export default function ProductsPage() {
       setProductToDelete(null);
     },
     onError: (error) => {
+      console.error('Delete product error:', error.message);
       toast({
         title: t('deleteDialog.error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

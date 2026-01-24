@@ -72,6 +72,7 @@ function getTypeLabel(type: JobType, t: (key: string) => string) {
 
 export default function XeroSyncPage() {
   const t = useTranslations('xeroSync');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<JobType | 'all'>('all');
@@ -102,9 +103,10 @@ export default function XeroSyncPage() {
       refetchJobs();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('retryError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -51,6 +51,14 @@
     "retry": "Try Again",
     "errorOccurred": "Something went wrong"
   },
+  "errors": {
+    "operationFailed": "Something went wrong. Please try again.",
+    "networkError": "Network error. Please check your connection.",
+    "cartUpdateFailed": "Failed to update cart. Please try again.",
+    "orderFailed": "Failed to process order. Please try again.",
+    "loadFailed": "Failed to load data. Please refresh the page.",
+    "searchError": "Search failed. Please try again."
+  },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
     "confirmed": "Confirmed",

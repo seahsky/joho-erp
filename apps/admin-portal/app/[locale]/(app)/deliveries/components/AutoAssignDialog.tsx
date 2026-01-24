@@ -30,6 +30,7 @@ export function AutoAssignDialog({
   onAssigned,
 }: AutoAssignDialogProps) {
   const t = useTranslations('deliveries.autoAssignment');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   // Fetch preview data
@@ -50,9 +51,10 @@ export function AutoAssignDialog({
       onAssigned();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

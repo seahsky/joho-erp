@@ -35,6 +35,7 @@ export function AddCategoryDialog({
   const { toast } = useToast();
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -60,9 +61,10 @@ export function AddCategoryDialog({
       onSuccess();
     },
     onError: (error) => {
+      console.error('Category create error:', error.message);
       toast({
         title: t('messages.createError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

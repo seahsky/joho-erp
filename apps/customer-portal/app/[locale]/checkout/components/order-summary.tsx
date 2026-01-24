@@ -30,6 +30,7 @@ export function OrderSummary() {
   const tDelivery = useTranslations('checkout.deliveryDate');
   const tCredit = useTranslations('checkout.credit');
   const tBlocking = useTranslations('checkout.blocking');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const { toast } = useToast();
   const params = useParams();
@@ -98,9 +99,10 @@ export function OrderSummary() {
       router.push('/orders');
     },
     onError: (error) => {
+      console.error('Place order error:', error.message);
       toast({
         title: t('orderFailed'),
-        description: error.message,
+        description: tErrors('orderFailed'),
         variant: 'destructive',
       });
     },

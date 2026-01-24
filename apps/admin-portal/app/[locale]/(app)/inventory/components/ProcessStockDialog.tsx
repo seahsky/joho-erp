@@ -63,6 +63,7 @@ export function ProcessStockDialog({
 }: ProcessStockDialogProps) {
   const { toast } = useToast();
   const t = useTranslations('processStock');
+  const tErrors = useTranslations('errors');
   const tCommon = useTranslations('common');
 
   // Product selection state
@@ -208,9 +209,10 @@ export function ProcessStockDialog({
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('messages.error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

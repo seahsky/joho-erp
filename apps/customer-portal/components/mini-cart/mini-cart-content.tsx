@@ -21,6 +21,7 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   const tCart = useTranslations('cart');
   const tDelivery = useTranslations('checkout.deliveryDate');
   const tCheckout = useTranslations('checkout');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -78,9 +79,10 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
       router.push(`/${locale}/orders`);
     },
     onError: (error) => {
+      console.error('Quick checkout error:', error.message);
       toast({
         title: tCheckout('error'),
-        description: error.message,
+        description: tErrors('orderFailed'),
         variant: 'destructive',
       });
     },

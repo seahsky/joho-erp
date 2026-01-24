@@ -19,6 +19,7 @@ export function OrderList() {
   const tStatus = useTranslations('statusBadges');
   const _tCommon = useTranslations('common');
   const tIllustrated = useTranslations('illustratedEmptyState');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const { toast } = useToast();
   const [filter, setFilter] = React.useState<'all' | StatusType>('all');
@@ -96,9 +97,10 @@ export function OrderList() {
       router.push('/orders');
     },
     onError: (error) => {
+      console.error('Reorder error:', error.message);
       toast({
         title: t('reorderError'),
-        description: error.message,
+        description: tErrors('orderFailed'),
         variant: 'destructive',
       });
     },

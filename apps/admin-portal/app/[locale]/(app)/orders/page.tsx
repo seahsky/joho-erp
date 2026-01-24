@@ -68,6 +68,7 @@ export default function OrdersPage() {
   const tCommon = useTranslations('common');
   const tAlert = useTranslations('orders.backorderAlert');
   const tMessages = useTranslations('orders.backorderMessages');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -141,9 +142,10 @@ export default function OrdersPage() {
       utils.order.getAll.invalidate();
     },
     onError: (error) => {
+      console.error('Approve backorder error:', error.message);
       toast({
         title: tMessages('approveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -160,9 +162,10 @@ export default function OrdersPage() {
       utils.order.getAll.invalidate();
     },
     onError: (error) => {
+      console.error('Reject backorder error:', error.message);
       toast({
         title: tMessages('rejectError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -181,9 +184,10 @@ export default function OrdersPage() {
       utils.order.getAll.invalidate();
     },
     onError: (error) => {
+      console.error('Confirm order error:', error.message);
       toast({
         title: tConfirm('error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

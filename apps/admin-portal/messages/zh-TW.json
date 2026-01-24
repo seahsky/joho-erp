@@ -259,6 +259,19 @@
       "clickToExpand": "點擊展開"
     }
   },
+  "errors": {
+    "errorTitle": "錯誤",
+    "operationFailed": "操作失敗，請重試。",
+    "networkError": "網路錯誤，請檢查您的網路連線。",
+    "saveFailed": "儲存失敗，請重試。",
+    "deleteFailed": "刪除失敗，請重試。",
+    "loadFailed": "載入資料失敗，請重新整理頁面。",
+    "syncFailed": "同步失敗，請重試。",
+    "updateFailed": "更新失敗，請重試。",
+    "generationFailed": "生成失敗，請重試。",
+    "optimizationFailed": "最佳化失敗，請重試。",
+    "searchError": "搜尋失敗，請重試。"
+  },
   "suppliers": {
     "title": "供應商管理",
     "subtitle": "管理您的供應商帳戶和合作關係",
@@ -453,8 +466,11 @@
       "confirm": "啟用"
     },
     "updateSuccess": "供應商已更新",
+    "updateError": "更新失敗",
     "suspendSuccess": "供應商已暫停",
+    "suspendError": "暫停失敗",
     "activateSuccess": "供應商已啟用",
+    "activateError": "啟用失敗",
     "validation": {
       "abnInvalid": "無效的 ABN - 校驗和驗證失敗"
     }

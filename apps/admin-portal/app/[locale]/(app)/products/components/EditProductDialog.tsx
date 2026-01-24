@@ -79,6 +79,7 @@ export function EditProductDialog({
   const { toast } = useToast();
   const t = useTranslations('productForm');
   const tSubproduct = useTranslations('subproduct');
+  const tErrors = useTranslations('errors');
 
   // Determine if editing a subproduct
   const isSubproduct = !!product?.parentProductId;
@@ -142,9 +143,10 @@ export function EditProductDialog({
       });
     },
     onError: (error) => {
+      console.error('Category create error:', error.message);
       toast({
         title: t('messages.categoryCreateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -353,9 +355,10 @@ export function EditProductDialog({
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Product update error:', error.message);
       toast({
         title: t('messages.errorUpdating'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

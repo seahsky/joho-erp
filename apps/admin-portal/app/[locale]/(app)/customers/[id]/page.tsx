@@ -109,6 +109,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const tCommon = useTranslations('common');
   const tDays = useTranslations('days');
   const tOrders = useTranslations('orders');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const { toast } = useToast();
   const utils = api.useUtils();
@@ -221,9 +222,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setSuspendReason('');
     },
     onError: (error) => {
+      console.error('Suspend customer error:', error.message);
       toast({
         title: t('suspension.suspendError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -241,9 +243,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setActivateNotes('');
     },
     onError: (error) => {
+      console.error('Activate customer error:', error.message);
       toast({
         title: t('suspension.activateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -260,9 +263,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setIsEditing(false);
     },
     onError: (error) => {
+      console.error('Update customer error:', error.message);
       toast({
         title: t('edit.updateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

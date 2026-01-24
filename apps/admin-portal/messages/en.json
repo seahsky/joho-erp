@@ -259,6 +259,19 @@
       "clickToExpand": "Click to expand"
     }
   },
+  "errors": {
+    "errorTitle": "Error",
+    "operationFailed": "Operation failed. Please try again.",
+    "networkError": "Network error. Please check your connection.",
+    "saveFailed": "Failed to save changes. Please try again.",
+    "deleteFailed": "Failed to delete. Please try again.",
+    "loadFailed": "Failed to load data. Please refresh the page.",
+    "syncFailed": "Sync failed. Please try again.",
+    "updateFailed": "Failed to update. Please try again.",
+    "generationFailed": "Generation failed. Please try again.",
+    "optimizationFailed": "Optimization failed. Please try again.",
+    "searchError": "Search failed. Please try again."
+  },
   "suppliers": {
     "title": "Supplier Management",
     "subtitle": "Manage your supplier accounts and relationships",
@@ -453,8 +466,11 @@
       "confirm": "Activate"
     },
     "updateSuccess": "Supplier Updated",
+    "updateError": "Update Failed",
     "suspendSuccess": "Supplier Suspended",
+    "suspendError": "Suspension Failed",
     "activateSuccess": "Supplier Activated",
+    "activateError": "Activation Failed",
     "validation": {
       "abnInvalid": "Invalid ABN - checksum validation failed"
     }

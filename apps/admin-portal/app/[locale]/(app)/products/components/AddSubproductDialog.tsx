@@ -57,6 +57,7 @@ export function AddSubproductDialog({
   const { toast } = useToast();
   const t = useTranslations('productForm');
   const tSubproduct = useTranslations('subproduct');
+  const tErrors = useTranslations('errors');
 
   // Form state
   const [sku, setSku] = useState('');
@@ -98,9 +99,10 @@ export function AddSubproductDialog({
       });
     },
     onError: (error) => {
+      console.error('Category create error:', error.message);
       toast({
         title: t('messages.categoryCreateError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -171,9 +173,10 @@ export function AddSubproductDialog({
       onOpenChange(false);
     },
     onError: (error) => {
+      console.error('Subproduct create error:', error.message);
       toast({
         title: tSubproduct('messages.errorCreating'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

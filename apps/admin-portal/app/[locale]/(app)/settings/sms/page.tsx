@@ -45,6 +45,7 @@ function Switch({
 
 export default function SmsSettingsPage() {
   const t = useTranslations('settings.sms');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
   const [hasChanges, setHasChanges] = useState(false);
@@ -69,9 +70,10 @@ export default function SmsSettingsPage() {
       void utils.sms.getSettings.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('saveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -86,9 +88,10 @@ export default function SmsSettingsPage() {
       });
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('testSms.error'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -64,6 +64,7 @@ export function SetPriceDialog({
   onSuccess,
 }: SetPriceDialogProps) {
   const t = useTranslations('pricingDialog');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const [customerId, setCustomerId] = useState(pricing?.customerId || '');
   const [productId, setProductId] = useState(pricing?.productId || '');
@@ -124,9 +125,10 @@ export function SetPriceDialog({
       onSuccess();
     },
     onError: (err) => {
+      console.error('Operation error:', err.message);
       toast({
         title: t('messages.priceSetError'),
-        description: err.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
       setError(err.message);

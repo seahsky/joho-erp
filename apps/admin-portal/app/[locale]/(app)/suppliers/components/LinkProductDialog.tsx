@@ -38,6 +38,7 @@ export function LinkProductDialog({
   onSuccess,
 }: LinkProductDialogProps) {
   const t = useTranslations('supplierDetail');
+  const tErrors = useTranslations('errors');
   const tCommon = useTranslations('common');
   const { toast } = useToast();
 
@@ -97,9 +98,10 @@ export function LinkProductDialog({
       if (error.message.includes('already linked')) {
         setErrors({ productId: t('productAlreadyLinked') });
       } else {
+        console.error('Operation error:', error.message);
         toast({
-          title: 'Error',
-          description: error.message,
+          title: tErrors('errorTitle'),
+          description: tErrors('operationFailed'),
           variant: 'destructive',
         });
       }

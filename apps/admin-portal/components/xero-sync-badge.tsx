@@ -79,6 +79,7 @@ export function XeroOrderSyncBadge({
   compact = false,
 }: XeroOrderSyncBadgeProps) {
   const t = useTranslations('xeroSync');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   const {
@@ -96,9 +97,10 @@ export function XeroOrderSyncBadge({
       refetch();
     },
     onError: (error) => {
+      console.error('Invoice creation error:', error.message);
       toast({
         title: t('invoiceError'),
-        description: error.message,
+        description: tErrors('syncFailed'),
         variant: 'destructive',
       });
     },
@@ -303,6 +305,7 @@ export function XeroCustomerSyncBadge({
   creditStatus,
 }: XeroCustomerSyncBadgeProps) {
   const t = useTranslations('xeroSync');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   const {
@@ -320,9 +323,10 @@ export function XeroCustomerSyncBadge({
       refetch();
     },
     onError: (error) => {
+      console.error('Contact sync error:', error.message);
       toast({
         title: t('contactError'),
-        description: error.message,
+        description: tErrors('syncFailed'),
         variant: 'destructive',
       });
     },

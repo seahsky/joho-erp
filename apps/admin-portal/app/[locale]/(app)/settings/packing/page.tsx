@@ -52,6 +52,7 @@ function Switch({
 
 export default function PackingSettingsPage() {
   const t = useTranslations('settings.packing');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
 
@@ -79,9 +80,10 @@ export default function PackingSettingsPage() {
       void utils.company.getPackingSettings.invalidate();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorUpdatingPin'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -21,6 +21,7 @@ import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 
 export default function PermissionManagementPage() {
   const t = useTranslations('settings.permissions');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   const [selectedRole, setSelectedRole] = useState<string>('sales');
@@ -44,9 +45,10 @@ export default function PermissionManagementPage() {
       refetch();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('saveError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -59,9 +61,10 @@ export default function PermissionManagementPage() {
       refetch();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('resetError'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

@@ -33,6 +33,7 @@ interface PackingOrderCardProps {
 
 export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProps) {
   const t = useTranslations('packing');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const [packingNotes, setPackingNotes] = useState('');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -130,9 +131,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         );
       }
 
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorMarkingReady'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -181,9 +183,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         );
       }
 
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorMarkingItem'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -240,9 +243,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       onOrderUpdated();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorPausingOrder'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -259,9 +263,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       onOrderUpdated();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorResumingOrder'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -278,9 +283,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       onOrderUpdated();
     },
     onError: (error) => {
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorResettingOrder'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },
@@ -334,9 +340,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
           context.previousOrderDetails
         );
       }
+      console.error('Operation error:', error.message);
       toast({
         title: t('errorUpdatingQuantity'),
-        description: error.message,
+        description: tErrors('operationFailed'),
         variant: 'destructive',
       });
     },

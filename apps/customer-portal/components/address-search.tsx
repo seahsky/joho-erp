@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Input, Label, Button } from '@joho-erp/ui';
+import { Input, Label, Button, useToast } from '@joho-erp/ui';
 import { Search, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '@/trpc/client';
 
@@ -36,6 +36,8 @@ export function AddressSearch({
 }: AddressSearchProps) {
   const t = useTranslations('onboarding.businessInfo');
   const tAddress = useTranslations('onboarding.businessInfo.address');
+  const tErrors = useTranslations('errors');
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isManualMode, setIsManualMode] = useState(false);
@@ -71,6 +73,10 @@ export function AddressSearch({
       }
     } catch (error) {
       console.error('Geocoding error:', error);
+      toast({
+        title: tErrors('searchError'),
+        variant: 'destructive',
+      });
       setResults([]);
       setShowResults(true);
     }

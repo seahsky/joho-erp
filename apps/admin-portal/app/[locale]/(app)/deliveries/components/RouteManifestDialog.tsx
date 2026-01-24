@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { Loader2, FileText, Download } from 'lucide-react';
@@ -71,6 +72,8 @@ export function RouteManifestDialog({
 }: RouteManifestDialogProps) {
   const t = useTranslations('deliveries.manifest');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
+  const { toast } = useToast();
 
   const [layout, setLayout] = useState<LayoutOption>('one-per-page');
   const [areaFilter, setAreaFilter] = useState<string>(selectedArea || 'all');
@@ -198,6 +201,10 @@ export function RouteManifestDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      toast({
+        title: tErrors('generationFailed'),
+        variant: 'destructive',
+      });
     } finally {
       setIsGenerating(false);
     }

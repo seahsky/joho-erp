@@ -14,6 +14,7 @@ import type { ProductCategory } from '@joho-erp/shared';
 
 export default function PackingPage() {
   const t = useTranslations('packing');
+  const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
   // Default to today for delivery date (using local timezone)
@@ -107,6 +108,10 @@ export default function PackingPage() {
         await refetch(); // Refresh session data
       } catch (error) {
         console.error('Auto-optimization failed:', error);
+        toast({
+          title: tErrors('optimizationFailed'),
+          variant: 'destructive',
+        });
       } finally {
         setIsOptimizing(false);
       }

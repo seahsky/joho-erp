@@ -259,6 +259,19 @@
       "clickToExpand": "点击展开"
     }
   },
+  "errors": {
+    "errorTitle": "错误",
+    "operationFailed": "操作失败，请重试。",
+    "networkError": "网络错误，请检查您的网络连接。",
+    "saveFailed": "保存失败，请重试。",
+    "deleteFailed": "删除失败，请重试。",
+    "loadFailed": "加载数据失败，请刷新页面。",
+    "syncFailed": "同步失败，请重试。",
+    "updateFailed": "更新失败，请重试。",
+    "generationFailed": "生成失败，请重试。",
+    "optimizationFailed": "优化失败，请重试。",
+    "searchError": "搜索失败，请重试。"
+  },
   "suppliers": {
     "title": "供应商管理",
     "subtitle": "管理您的供应商账户和合作关系",
@@ -453,8 +466,11 @@
       "confirm": "激活"
     },
     "updateSuccess": "供应商已更新",
+    "updateError": "更新失败",
     "suspendSuccess": "供应商已暂停",
+    "suspendError": "暂停失败",
     "activateSuccess": "供应商已激活",
+    "activateError": "激活失败",
     "validation": {
       "abnInvalid": "无效的 ABN - 校验和验证失败"
     }
