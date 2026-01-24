@@ -627,6 +627,71 @@ export const inventoryRouter = router({
     }),
 
   /**
+   * Get a single batch by ID with full details
+   */
+  getBatchById: requirePermission('inventory:view')
+    .input(z.object({ batchId: z.string() }))
+    .query(async ({ input }) => {
+      const batch = await prisma.inventoryBatch.findUnique({
+        where: { id: input.batchId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              unit: true,
+              category: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              businessName: true,
+            },
+          },
+          consumptions: {
+            take: 10,
+            orderBy: { consumedAt: 'desc' },
+            include: {
+              transaction: {
+                select: {
+                  type: true,
+                  referenceType: true,
+                  referenceId: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!batch) {
+        return null;
+      }
+
+      const now = new Date();
+      const daysUntilExpiry = batch.expiryDate
+        ? Math.ceil(
+            (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          )
+        : null;
+
+      return {
+        ...batch,
+        totalValue: calculateBatchValue(batch),
+        utilizationRate:
+          batch.initialQuantity > 0
+            ? ((batch.initialQuantity - batch.quantityRemaining) /
+                batch.initialQuantity) *
+              100
+            : 0,
+        daysUntilExpiry,
+        isExpired: daysUntilExpiry !== null && daysUntilExpiry < 0,
+      };
+    }),
+
+  /**
    * Get all batches for a specific product
    */
   getProductBatches: requirePermission('inventory:view')

@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -48,6 +49,7 @@ import {
   ProcessStockDialog,
   InventoryTransactionDetailDialog,
   StockCountsTable,
+  BatchInfoDialog,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
@@ -61,6 +63,8 @@ type AdjustmentTypeFilter = 'stock_received' | undefined;
 
 export default function InventoryPage() {
   const t = useTranslations('inventory');
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
@@ -87,6 +91,21 @@ export default function InventoryPage() {
   // Transaction detail dialog state
   const [selectedTransaction, setSelectedTransaction] = useState<InventoryTransaction | null>(null);
   const [showTransactionDetail, setShowTransactionDetail] = useState(false);
+
+  // Batch info dialog state
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [showBatchInfoDialog, setShowBatchInfoDialog] = useState(false);
+
+  // Handle batchId query parameter from URL (e.g., from dashboard alerts)
+  useEffect(() => {
+    const batchId = searchParams.get('batchId');
+    if (batchId) {
+      setSelectedBatchId(batchId);
+      setShowBatchInfoDialog(true);
+      // Clear the URL parameter after opening the dialog
+      router.replace('/inventory', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // API calls
   const { data: summary } = api.dashboard.getInventorySummary.useQuery();
@@ -526,6 +545,16 @@ export default function InventoryPage() {
           if (!open) setSelectedTransaction(null);
         }}
         transaction={selectedTransaction}
+      />
+
+      {/* Batch Info Dialog */}
+      <BatchInfoDialog
+        open={showBatchInfoDialog}
+        onOpenChange={(open) => {
+          setShowBatchInfoDialog(open);
+          if (!open) setSelectedBatchId(null);
+        }}
+        batchId={selectedBatchId}
       />
     </div>
   );

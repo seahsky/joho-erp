@@ -2811,6 +2811,24 @@
       "mtvNumber": "MTV編號",
       "vehicleTemperature": "車輛溫度"
     },
+    "batchDetail": {
+      "title": "庫存批次詳情",
+      "notFound": "未找到批次",
+      "quantityRemaining": "剩餘庫存",
+      "initialQuantity": "初始數量",
+      "consumed": "已消耗",
+      "expiryDate": "有效期",
+      "costPerUnit": "單位成本",
+      "totalValue": "總價值",
+      "receivedAt": "入庫時間",
+      "traceabilityInfo": "追溯資訊",
+      "supplier": "供應商",
+      "stockInDate": "入庫日期",
+      "invoiceNumber": "發票號碼",
+      "mtvNumber": "MTV編號",
+      "vehicleTemperature": "車輛溫度",
+      "notes": "備註"
+    },
     "productSelector": {
       "searchPlaceholder": "按產品名稱或SKU搜尋...",
       "selectProduct": "選擇要調整庫存的產品",
