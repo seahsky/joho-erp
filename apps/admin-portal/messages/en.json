@@ -751,6 +751,7 @@
     "showingOrdersFor": "Showing orders for delivery on {date}",
     "showAllDates": "Show All Dates",
     "showingAllDates": "Showing orders for all delivery dates",
+    "showingAllAwaitingApproval": "Showing all orders awaiting approval (date filter ignored)",
     "listTitle": "Orders",
     "listDescription": "Complete list of all customer orders",
     "noOrdersFound": "No orders found",

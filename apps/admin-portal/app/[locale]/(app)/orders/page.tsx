@@ -120,12 +120,16 @@ export default function OrdersPage() {
 
   const utils = api.useUtils();
 
+  // When filtering by awaiting_approval status, ignore date filter to show all orders needing approval
+  // This ensures dashboard count matches what users can find on this page
+  const shouldApplyDateFilter = statusFilter !== 'awaiting_approval';
+
   const { data, isLoading, error } = api.order.getAll.useQuery({
     status: statusFilter || undefined,
     areaId: areaFilter || undefined,
     search: searchQuery || undefined,
-    dateFrom: orderDate || undefined,
-    dateTo: orderDateEnd || undefined,
+    dateFrom: shouldApplyDateFilter ? (orderDate || undefined) : undefined,
+    dateTo: shouldApplyDateFilter ? (orderDateEnd || undefined) : undefined,
     sortBy,
     sortOrder,
     limit: 100,
@@ -573,9 +577,11 @@ export default function OrdersPage() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {orderDate
-                ? t('showingOrdersFor', { date: orderDate.toLocaleDateString() })
-                : t('showingAllDates')}
+              {statusFilter === 'awaiting_approval'
+                ? t('showingAllAwaitingApproval')
+                : orderDate
+                  ? t('showingOrdersFor', { date: orderDate.toLocaleDateString() })
+                  : t('showingAllDates')}
             </p>
           </div>
         </CardHeader>
