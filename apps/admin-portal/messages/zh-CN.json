@@ -751,6 +751,7 @@
     "showingOrdersFor": "显示 {date} 配送的订单",
     "showAllDates": "显示所有日期",
     "showingAllDates": "显示所有配送日期的订单",
+    "showingAllAwaitingApproval": "显示所有待审核订单（已忽略日期筛选）",
     "listTitle": "订单",
     "listDescription": "所有客户订单的完整列表",
     "noOrdersFound": "未找到订单",

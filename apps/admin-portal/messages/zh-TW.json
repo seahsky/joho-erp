@@ -751,6 +751,7 @@
     "showingOrdersFor": "顯示 {date} 配送的訂單",
     "showAllDates": "顯示所有日期",
     "showingAllDates": "顯示所有配送日期的訂單",
+    "showingAllAwaitingApproval": "顯示所有待審核訂單（已忽略日期篩選）",
     "listTitle": "訂單",
     "listDescription": "所有客戶訂單的完整列表",
     "noOrdersFound": "未找到訂單",
