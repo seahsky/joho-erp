@@ -345,6 +345,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'dashboard:view',
     'customers:view',
     'customers:edit',
+    'customers:delete',
     'customers:approve_credit',
     'suppliers:view',
     'suppliers:edit',

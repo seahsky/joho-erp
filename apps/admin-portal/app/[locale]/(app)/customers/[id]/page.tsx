@@ -50,6 +50,7 @@ import {
   FileText,
   Pencil,
   X,
+  XCircle,
   Save,
   Banknote,
   Users,
@@ -120,6 +121,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [suspendReason, setSuspendReason] = useState('');
   const [activateNotes, setActivateNotes] = useState('');
+
+  // Closure dialog state
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [closeReason, setCloseReason] = useState('');
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
@@ -252,6 +257,27 @@ export default function CustomerDetailPage({ params }: PageProps) {
     },
   });
 
+  // Close mutation (permanent account closure)
+  const closeMutation = api.customer.close.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('closure.closeSuccess'),
+        description: t('closure.closeSuccessMessage'),
+      });
+      void utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+      setShowCloseDialog(false);
+      setCloseReason('');
+    },
+    onError: (error) => {
+      console.error('Close customer error:', error.message);
+      toast({
+        title: t('closure.closeError'),
+        description: tErrors('operationFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Update mutation
   const updateMutation = api.customer.update.useMutation({
     onSuccess: () => {
@@ -291,6 +317,21 @@ export default function CustomerDetailPage({ params }: PageProps) {
     activateMutation.mutate({
       customerId: resolvedParams.id,
       notes: activateNotes || undefined,
+    });
+  };
+
+  const handleClose = () => {
+    if (!closeReason.trim() || closeReason.length < 10) {
+      toast({
+        title: t('closure.reasonRequired'),
+        description: t('closure.reasonMinLength'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    closeMutation.mutate({
+      customerId: resolvedParams.id,
+      reason: closeReason,
     });
   };
 
@@ -586,6 +627,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const orders = (ordersData?.orders ?? []) as Order[];
   const creditApp = customer.creditApplication;
   const isSuspended = customer.status === 'suspended';
+  const isClosed = customer.status === 'closed';
 
   const orderColumns: TableColumn<Order>[] = [
     {
@@ -640,26 +682,38 @@ export default function CustomerDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          {!isEditing && (
+          {!isEditing && !isClosed && (
             <Button onClick={handleStartEdit} variant="outline">
               <Pencil className="mr-2 h-4 w-4" />
               {t('edit.editButton')}
             </Button>
           )}
-          {isSuspended ? (
-            <Button onClick={() => setShowActivateDialog(true)} variant="default" disabled={isEditing}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {t('suspension.activate')}
-            </Button>
-          ) : (
-            <Button onClick={() => setShowSuspendDialog(true)} variant="destructive" disabled={isEditing}>
-              <Ban className="mr-2 h-4 w-4" />
-              {t('suspension.suspend')}
-            </Button>
+          {!isClosed && (
+            <>
+              {isSuspended ? (
+                <Button onClick={() => setShowActivateDialog(true)} variant="default" disabled={isEditing}>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  {t('suspension.activate')}
+                </Button>
+              ) : (
+                <Button onClick={() => setShowSuspendDialog(true)} variant="destructive" disabled={isEditing}>
+                  <Ban className="mr-2 h-4 w-4" />
+                  {t('suspension.suspend')}
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowCloseDialog(true)}
+                variant="destructive"
+                disabled={isEditing}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                {t('closure.close')}
+              </Button>
+            </>
           )}
           <Button
             variant="outline"
-            disabled={isEditing}
+            disabled={isEditing || isClosed}
             onClick={() =>
               router.push(`/${resolvedParams.locale}/customers/${resolvedParams.id}/credit-review`)
             }
@@ -1780,6 +1834,30 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </Card>
           )}
 
+          {/* Closure Info (if closed) */}
+          {isClosed && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive flex items-center gap-2">
+                  <XCircle className="h-5 w-5" />
+                  {t('closure.closedAccount')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('closure.reason')}</p>
+                  <p className="text-sm">{customer.closureReason}</p>
+                </div>
+                {customer.closedAt && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('closure.closedAt')}</p>
+                    <p className="text-sm">{formatDate(customer.closedAt)}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Activity History */}
           <AuditLogSection entity="customer" entityId={customer.id} />
         </div>
@@ -1860,6 +1938,54 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 </>
               ) : (
                 t('suspension.confirmActivate')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Close Dialog */}
+      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('closure.closeTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('closure.closeDescription', { businessName: customer.businessName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="p-3 bg-destructive/10 rounded-md border border-destructive/20">
+              <p className="text-sm text-destructive font-medium">{t('closure.closeWarning')}</p>
+            </div>
+            <div>
+              <Label htmlFor="closeReason">{t('closure.reason')}</Label>
+              <textarea
+                id="closeReason"
+                value={closeReason}
+                onChange={(e) => setCloseReason(e.target.value)}
+                placeholder={t('closure.reasonPlaceholder')}
+                className="mt-2 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{t('closure.reasonMinLength')}</p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closeMutation.isPending}>
+              {tCommon('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClose}
+              disabled={closeMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {closeMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('closure.closing')}
+                </>
+              ) : (
+                t('closure.confirm')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

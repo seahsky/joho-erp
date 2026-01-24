@@ -378,6 +378,9 @@ model Customer {
   suspensionReason    String?             // Reason for suspension (if suspended)
   suspendedAt         DateTime?           // When account was suspended
   suspendedBy         String?             // User ID of admin who suspended
+  closureReason       String?             // Reason for account closure (if closed)
+  closedAt            DateTime?           // When account was closed
+  closedBy            String?             // User ID of admin who closed the account
   xeroContactId       String?
   onboardingComplete  Boolean             @default(false)
   createdAt           DateTime            @default(now())

@@ -1072,6 +1072,72 @@ export const customerRouter = router({
       return updatedCustomer;
     }),
 
+  // Admin: Permanently close a customer account (soft delete)
+  close: requirePermission('customers:delete')
+    .input(
+      z.object({
+        customerId: z.string(),
+        reason: z.string().min(10, 'Closure reason must be at least 10 characters'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: resolvedCustomerId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      if (customer.status === 'closed') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Customer account is already closed',
+        });
+      }
+
+      const previousStatus = customer.status;
+
+      // Modify clerkUserId to allow email re-registration
+      // Append '_closed_<timestamp>' suffix to free up the original identifier
+      const modifiedClerkUserId = `${customer.clerkUserId}_closed_${Date.now()}`;
+
+      const updatedCustomer = await prisma.customer.update({
+        where: { id: resolvedCustomerId },
+        data: {
+          status: 'closed',
+          clerkUserId: modifiedClerkUserId,
+          closureReason: input.reason,
+          closedAt: new Date(),
+          closedBy: ctx.userId,
+        },
+      });
+
+      // Log closure to audit trail
+      await logCustomerStatusChange(
+        ctx.userId,
+        undefined, // userEmail not available in context
+        ctx.userRole,
+        ctx.userName,
+        customer.id,
+        {
+          businessName: customer.businessName,
+          action: 'close',
+          reason: input.reason,
+          previousStatus,
+        }
+      ).catch((error) => {
+        console.error('Failed to log customer closure:', error);
+      });
+
+      return updatedCustomer;
+    }),
+
   // Admin: Update customer details
   update: requirePermission('customers:edit')
     .input(

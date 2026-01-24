@@ -3143,6 +3143,24 @@
       "suspendedAccount": "已暂停账户",
       "suspendedAt": "暂停日期"
     },
+    "closure": {
+      "close": "关闭账户",
+      "closeTitle": "关闭客户账户",
+      "closeDescription": "您即将永久关闭 {businessName} 的账户。",
+      "closeWarning": "此操作无法撤销。客户将无法再下订单。",
+      "reason": "关闭原因",
+      "reasonPlaceholder": "请输入关闭该账户的原因...",
+      "reasonRequired": "必须填写原因",
+      "reasonMinLength": "原因至少需要10个字符",
+      "confirm": "关闭账户",
+      "closing": "关闭中...",
+      "closeSuccess": "账户已关闭",
+      "closeSuccessMessage": "客户账户已永久关闭。",
+      "closeError": "关闭失败",
+      "closedAccount": "已关闭账户",
+      "closedAt": "关闭日期",
+      "closedBy": "关闭人"
+    },
     "edit": {
       "editButton": "编辑",
       "editMode": "编辑中",

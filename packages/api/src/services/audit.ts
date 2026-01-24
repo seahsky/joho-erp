@@ -1702,7 +1702,7 @@ export async function logXeroJobRetry(
 // ============================================================================
 
 /**
- * Log customer status change (suspend/activate)
+ * Log customer status change (suspend/activate/close)
  */
 export async function logCustomerStatusChange(
   userId: string,
@@ -1712,10 +1712,26 @@ export async function logCustomerStatusChange(
   customerId: string,
   metadata: {
     businessName: string;
-    action: 'suspend' | 'activate';
+    action: 'suspend' | 'activate' | 'close';
     reason?: string;
+    previousStatus?: string;
   }
 ): Promise<void> {
+  // Determine old and new status based on action
+  let oldValue: string;
+  let newValue: string;
+  if (metadata.action === 'suspend') {
+    oldValue = 'active';
+    newValue = 'suspended';
+  } else if (metadata.action === 'activate') {
+    oldValue = 'suspended';
+    newValue = 'active';
+  } else {
+    // close action
+    oldValue = metadata.previousStatus ?? 'active';
+    newValue = 'closed';
+  }
+
   await createAuditLog({
     userId,
     userEmail,
@@ -1727,8 +1743,8 @@ export async function logCustomerStatusChange(
     changes: [
       {
         field: 'status',
-        oldValue: metadata.action === 'suspend' ? 'active' : 'suspended',
-        newValue: metadata.action === 'suspend' ? 'suspended' : 'active',
+        oldValue,
+        newValue,
       },
     ],
     metadata: {

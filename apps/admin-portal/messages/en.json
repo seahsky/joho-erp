@@ -3143,6 +3143,24 @@
       "suspendedAccount": "Suspended Account",
       "suspendedAt": "Suspended On"
     },
+    "closure": {
+      "close": "Close Account",
+      "closeTitle": "Close Customer Account",
+      "closeDescription": "You are about to permanently close the account for {businessName}.",
+      "closeWarning": "This action cannot be undone. The customer will no longer be able to place orders.",
+      "reason": "Closure Reason",
+      "reasonPlaceholder": "Enter the reason for closing this account...",
+      "reasonRequired": "Reason Required",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "confirm": "Close Account",
+      "closing": "Closing...",
+      "closeSuccess": "Account Closed",
+      "closeSuccessMessage": "The customer account has been permanently closed.",
+      "closeError": "Closure Failed",
+      "closedAccount": "Closed Account",
+      "closedAt": "Closed On",
+      "closedBy": "Closed By"
+    },
     "edit": {
       "editButton": "Edit",
       "editMode": "Editing",

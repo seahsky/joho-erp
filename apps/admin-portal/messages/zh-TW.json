@@ -3149,6 +3149,24 @@
       "suspendedAccount": "已暫停帳戶",
       "suspendedAt": "暫停日期"
     },
+    "closure": {
+      "close": "關閉帳戶",
+      "closeTitle": "關閉客戶帳戶",
+      "closeDescription": "您即將永久關閉 {businessName} 的帳戶。",
+      "closeWarning": "此操作無法撤銷。客戶將無法再下訂單。",
+      "reason": "關閉原因",
+      "reasonPlaceholder": "請輸入關閉該帳戶的原因...",
+      "reasonRequired": "必須填寫原因",
+      "reasonMinLength": "原因至少需要10個字元",
+      "confirm": "關閉帳戶",
+      "closing": "關閉中...",
+      "closeSuccess": "帳戶已關閉",
+      "closeSuccessMessage": "客戶帳戶已永久關閉。",
+      "closeError": "關閉失敗",
+      "closedAccount": "已關閉帳戶",
+      "closedAt": "關閉日期",
+      "closedBy": "關閉人"
+    },
     "edit": {
       "editButton": "編輯",
       "editMode": "編輯中",
