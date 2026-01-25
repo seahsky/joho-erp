@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType, useToast, Badge, Input } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock, Calendar } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock, Calendar, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -19,9 +19,11 @@ const DeliveryMap = dynamic(() => import('./delivery-map'), {
 
 export default function DeliveriesPage() {
   const t = useTranslations('deliveries');
+  const tPacking = useTranslations('packing');
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
   const utils = api.useUtils();
+  const [isRecalculatingRoute, setIsRecalculatingRoute] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ready_for_delivery' | 'delivered' | ''>('');
@@ -99,6 +101,33 @@ export default function DeliveriesPage() {
       });
     },
   });
+
+  // Optimize Route mutation (for recalculating the route)
+  const optimizeRouteMutation = api.packing.optimizeRoute.useMutation();
+
+  // Handler for recalculating the delivery route
+  const handleRecalculateRoute = async () => {
+    if (!deliveryDate) return;
+    setIsRecalculatingRoute(true);
+    try {
+      await optimizeRouteMutation.mutateAsync({
+        deliveryDate: deliveryDate.toISOString(),
+        force: true,
+      });
+      await utils.delivery.getOptimizedRoute.invalidate();
+      await utils.delivery.getAll.invalidate();
+      toast({
+        title: tPacking('routeOptimized'),
+      });
+    } catch (error) {
+      toast({
+        title: tErrors('optimizationFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRecalculatingRoute(false);
+    }
+  };
 
   // Get ISO date string for route optimization query
   const deliveryDateISO = useMemo(() => deliveryDate.toISOString(), [deliveryDate]);
@@ -235,6 +264,25 @@ export default function DeliveriesPage() {
             <Button onClick={() => setManifestDialogOpen(true)} variant="outline">
               <FileText className="h-4 w-4 mr-2" />
               {t('printManifest')}
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="packing:manage">
+            <Button
+              onClick={handleRecalculateRoute}
+              variant="outline"
+              disabled={isRecalculatingRoute || !deliveryDate}
+            >
+              {isRecalculatingRoute ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {tPacking('optimizingRoute')}
+                </>
+              ) : (
+                <>
+                  <Navigation className="h-4 w-4 mr-2" />
+                  {tPacking('regenerateRoute')}
+                </>
+              )}
             </Button>
           </PermissionGate>
         </div>
