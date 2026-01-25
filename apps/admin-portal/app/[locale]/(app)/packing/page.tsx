@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
 import { OrderListView } from './components/OrderListView';
+import { AreaLabelFilter } from './components/AreaLabelFilter';
 import { StatsBar, FilterBar, OperationsLayout, type StatItem } from '@/components/operations';
 import type { ProductCategory } from '@joho-erp/shared';
 
@@ -331,11 +332,22 @@ export default function PackingPage() {
             focusKey={focusedOrderNumber}
           />
         ) : (
-          <div className="py-12">
+          <div className="py-12 space-y-4">
+            {/* Show area filter if an area is selected so user can clear it */}
+            {areaFilter && (
+              <AreaLabelFilter
+                selectedAreaId={areaFilter}
+                onAreaChange={setAreaFilter}
+              />
+            )}
             <EmptyState
               icon={Package}
-              title={t('noOrders')}
-              description={t('noOrdersDescription')}
+              title={areaFilter ? t('noOrdersForArea') : t('noOrders')}
+              description={areaFilter ? t('noOrdersForAreaDescription') : t('noOrdersDescription')}
+              action={areaFilter ? {
+                label: t('showAllAreas'),
+                onClick: () => setAreaFilter('')
+              } : undefined}
             />
           </div>
         )}

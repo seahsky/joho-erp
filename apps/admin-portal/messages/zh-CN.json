@@ -1955,6 +1955,7 @@
     "noOrdersDescription": "此日期没有预定打包的订单",
     "noProducts": "没有要打包的产品",
     "noOrdersForArea": "所选区域没有订单",
+    "noOrdersForAreaDescription": "此区域在该日期没有安排的订单",
     "unassignedOrders": "未分配的订单",
     "driverGroup": "司机: {name}",
     "packingSequence": "打包 #{sequence}",

@@ -1961,6 +1961,7 @@
     "noOrdersDescription": "此日期沒有預定打包的訂單",
     "noProducts": "沒有要打包的產品",
     "noOrdersForArea": "所選區域沒有訂單",
+    "noOrdersForAreaDescription": "此區域在該日期沒有安排的訂單",
     "unassignedOrders": "未分配的訂單",
     "driverGroup": "司機: {name}",
     "packingSequence": "打包 #{sequence}",
