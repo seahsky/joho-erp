@@ -94,6 +94,7 @@ export default function PackingPage() {
   useEffect(() => {
     const autoOptimize = async () => {
       if (!session) return;
+      if (!session.orders || session.orders.length === 0) return;
       if (isOptimizing) return;
       if (session.routeOptimization && !session.routeOptimization.needsReoptimization) {
         return; // Already optimized
