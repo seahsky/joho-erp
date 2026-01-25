@@ -6,9 +6,46 @@
  */
 
 import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont } from 'pdf-lib';
-import * as fs from 'fs';
-import * as path from 'path';
 import { PDF_FIELD_COORDINATES, SignatureCoordinate } from './pdf-field-coordinates';
+
+// ============================================================================
+// R2 Template Configuration
+// ============================================================================
+
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
+const PDF_TEMPLATE_PATH = 'templates/credit-application-template.pdf';
+
+// Template cache to avoid repeated fetches
+let cachedTemplateBytes: Uint8Array | null = null;
+
+/**
+ * Fetch PDF template from R2 storage
+ * Caches the template in memory after first fetch
+ */
+async function fetchPdfTemplate(): Promise<Uint8Array> {
+  // Return cached template if available
+  if (cachedTemplateBytes) {
+    return cachedTemplateBytes;
+  }
+
+  if (!R2_PUBLIC_URL) {
+    throw new Error('R2_PUBLIC_URL environment variable is not configured');
+  }
+
+  const templateUrl = `${R2_PUBLIC_URL}/${PDF_TEMPLATE_PATH}`;
+
+  const response = await fetch(templateUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch PDF template from ${templateUrl}: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  cachedTemplateBytes = new Uint8Array(arrayBuffer);
+
+  return cachedTemplateBytes;
+}
 
 // ============================================================================
 // Types
@@ -260,9 +297,8 @@ async function embedSignature(
 export async function generateCreditApplicationPdf(
   data: CreditApplicationPdfData
 ): Promise<Uint8Array> {
-  // Load the template PDF
-  const templatePath = path.join(__dirname, '../templates/credit-application-template.pdf');
-  const templateBytes = fs.readFileSync(templatePath);
+  // Fetch template from R2 storage
+  const templateBytes = await fetchPdfTemplate();
   const pdfDoc = await PDFDocument.load(templateBytes);
 
   // Embed fonts
