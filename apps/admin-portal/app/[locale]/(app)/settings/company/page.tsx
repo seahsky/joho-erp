@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl';
 import { validateABN } from '@joho-erp/shared';
 import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 export default function CompanySettingsPage() {
   const t = useTranslations('settings.company');
@@ -89,6 +90,14 @@ export default function CompanySettingsPage() {
       setLogoUrl(settings.logoUrl || '');
     }
   }, [settings]);
+
+  // Handle address selection from AddressSearch component
+  const handleAddressSelect = (result: AddressResult) => {
+    setStreet(result.street);
+    setSuburb(result.suburb);
+    setState(result.state);
+    setPostcode(result.postcode);
+  };
 
   // Track changes
   useEffect(() => {
@@ -289,45 +298,17 @@ export default function CompanySettingsPage() {
             <CardDescription>{t('address.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="street">{t('fields.street')} *</Label>
-              <Input
-                id="street"
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder={t('fields.street')}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="suburb">{t('fields.suburb')} *</Label>
-                <Input
-                  id="suburb"
-                  value={suburb}
-                  onChange={(e) => setSuburb(e.target.value)}
-                  placeholder={t('fields.suburb')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">{t('fields.state')} *</Label>
-                <Input
-                  id="state"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  placeholder={t('fields.state')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postcode">{t('fields.postcode')} *</Label>
-                <Input
-                  id="postcode"
-                  value={postcode}
-                  onChange={(e) => setPostcode(e.target.value)}
-                  placeholder={t('fields.postcode')}
-                />
-              </div>
-            </div>
+            <AddressSearch
+              id="companyAddress"
+              label={t('fields.street')}
+              onAddressSelect={handleAddressSelect}
+              defaultValues={{
+                street,
+                suburb,
+                state,
+                postcode,
+              }}
+            />
           </CardContent>
         </Card>
 

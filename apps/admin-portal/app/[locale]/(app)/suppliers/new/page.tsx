@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { api } from '@/trpc/client';
 import { parseToCents, validateABN, validateACN } from '@joho-erp/shared';
 import type { PaymentMethod, AustralianState } from '@joho-erp/database';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 // Type definitions
 type ContactInfo = {
@@ -130,6 +131,24 @@ export default function NewSupplierPage() {
       delete newErrors[field];
       setFinancialErrors(newErrors);
     }
+  };
+
+  // Handle address selection from AddressSearch component
+  const handleAddressSelect = (result: AddressResult) => {
+    setFormData({
+      ...formData,
+      businessAddress: {
+        street: result.street,
+        suburb: result.suburb,
+        state: result.state as AustralianState,
+        postcode: result.postcode,
+        country: 'Australia',
+      },
+    });
+    // Clear any address-related errors
+    clearContactError('street');
+    clearContactError('suburb');
+    clearContactError('postcode');
   };
 
   // Category management
@@ -610,97 +629,22 @@ export default function NewSupplierPage() {
                 <CardTitle>{t('sections.businessAddress')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="street">{t('fields.street')} *</Label>
-                  <Input
-                    id="street"
-                    placeholder={t('fields.streetPlaceholder')}
-                    required
-                    value={formData.businessAddress.street}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        businessAddress: { ...formData.businessAddress, street: e.target.value },
-                      });
-                      clearContactError('street');
-                    }}
-                  />
-                  {contactErrors.street && (
-                    <p className="text-sm text-destructive">{contactErrors.street}</p>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="suburb">{t('fields.suburb')} *</Label>
-                    <Input
-                      id="suburb"
-                      placeholder={t('fields.suburbPlaceholder')}
-                      required
-                      value={formData.businessAddress.suburb}
-                      onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          businessAddress: { ...formData.businessAddress, suburb: e.target.value },
-                        });
-                        clearContactError('suburb');
-                      }}
-                    />
-                    {contactErrors.suburb && (
-                      <p className="text-sm text-destructive">{contactErrors.suburb}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">{t('fields.state')} *</Label>
-                    <select
-                      id="state"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={formData.businessAddress.state}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          businessAddress: {
-                            ...formData.businessAddress,
-                            state: e.target.value as AustralianState,
-                          },
-                        })
-                      }
-                      required
-                    >
-                      <option value="NSW">NSW</option>
-                      <option value="VIC">VIC</option>
-                      <option value="QLD">QLD</option>
-                      <option value="SA">SA</option>
-                      <option value="WA">WA</option>
-                      <option value="TAS">TAS</option>
-                      <option value="NT">NT</option>
-                      <option value="ACT">ACT</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="postcode">{t('fields.postcode')} *</Label>
-                    <Input
-                      id="postcode"
-                      placeholder={t('fields.postcodePlaceholder')}
-                      required
-                      maxLength={4}
-                      value={formData.businessAddress.postcode}
-                      onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          businessAddress: {
-                            ...formData.businessAddress,
-                            postcode: e.target.value.replace(/\D/g, ''),
-                          },
-                        });
-                        clearContactError('postcode');
-                      }}
-                    />
-                    {contactErrors.postcode && (
-                      <p className="text-sm text-destructive">{contactErrors.postcode}</p>
-                    )}
-                  </div>
-                </div>
+                <AddressSearch
+                  id="supplierBusinessAddress"
+                  label={t('fields.street')}
+                  onAddressSelect={handleAddressSelect}
+                  defaultValues={{
+                    street: formData.businessAddress.street,
+                    suburb: formData.businessAddress.suburb,
+                    state: formData.businessAddress.state,
+                    postcode: formData.businessAddress.postcode,
+                  }}
+                />
+                {(contactErrors.street || contactErrors.suburb || contactErrors.postcode) && (
+                  <p className="text-sm text-destructive">
+                    {contactErrors.street || contactErrors.suburb || contactErrors.postcode}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

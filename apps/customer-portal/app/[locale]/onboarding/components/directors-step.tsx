@@ -6,6 +6,7 @@ import { useUser } from '@clerk/nextjs';
 import { Button, Input, Label, useToast } from '@joho-erp/ui';
 import type { DirectorInfo } from '../page';
 import { IdentityDocumentUpload, type IdDocumentData } from './identity-document-upload';
+import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 // Maximum number of directors allowed (PDF template limit)
 const MAX_DIRECTORS = 3;
@@ -92,15 +93,25 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
     clearFieldError(index, field);
   };
 
-  const updateDirectorAddress = (index: number, field: string, value: string) => {
+  // Handle full address selection from AddressSearch component
+  const handleDirectorAddressSelect = (index: number, result: AddressResult) => {
     const updated = [...directors];
     updated[index] = {
       ...updated[index],
-      residentialAddress: { ...updated[index].residentialAddress, [field]: value },
+      residentialAddress: {
+        street: result.street,
+        suburb: result.suburb,
+        state: result.state,
+        postcode: result.postcode,
+      },
     };
     setDirectors(updated);
     onChange(updated);
-    clearFieldError(index, field);
+    // Clear any address-related errors
+    clearFieldError(index, 'street');
+    clearFieldError(index, 'suburb');
+    clearFieldError(index, 'state');
+    clearFieldError(index, 'postcode');
   };
 
   const addDirector = () => {
@@ -273,51 +284,26 @@ export function DirectorsStep({ data, onChange, onNext, onBack }: DirectorsStepP
 
           <div className="mt-4 space-y-4">
             <h4 className="font-medium">{t('sections.residentialAddress')}</h4>
-            <div className="space-y-2">
-              <Label>{t('fields.street')}</Label>
-              <Input
-                value={director.residentialAddress.street}
-                onChange={(e) => updateDirectorAddress(index, 'street', e.target.value)}
-              />
-              {directorErrors[index]?.street && (
-                <p className="text-sm text-destructive">{directorErrors[index].street}</p>
-              )}
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label>{t('fields.suburb')}</Label>
-                <Input
-                  value={director.residentialAddress.suburb}
-                  onChange={(e) => updateDirectorAddress(index, 'suburb', e.target.value)}
-                />
-                {directorErrors[index]?.suburb && (
-                  <p className="text-sm text-destructive">{directorErrors[index].suburb}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{t('fields.state')}</Label>
-                <Input
-                  value={director.residentialAddress.state}
-                  onChange={(e) => updateDirectorAddress(index, 'state', e.target.value)}
-                />
-                {directorErrors[index]?.state && (
-                  <p className="text-sm text-destructive">{directorErrors[index].state}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{t('fields.postcode')}</Label>
-                <Input
-                  maxLength={4}
-                  value={director.residentialAddress.postcode}
-                  onChange={(e) =>
-                    updateDirectorAddress(index, 'postcode', e.target.value.replace(/\D/g, ''))
-                  }
-                />
-                {directorErrors[index]?.postcode && (
-                  <p className="text-sm text-destructive">{directorErrors[index].postcode}</p>
-                )}
-              </div>
-            </div>
+            <AddressSearch
+              onAddressSelect={(result) => handleDirectorAddressSelect(index, result)}
+              defaultValues={{
+                street: director.residentialAddress.street,
+                suburb: director.residentialAddress.suburb,
+                state: director.residentialAddress.state,
+                postcode: director.residentialAddress.postcode,
+              }}
+            />
+            {(directorErrors[index]?.street ||
+              directorErrors[index]?.suburb ||
+              directorErrors[index]?.state ||
+              directorErrors[index]?.postcode) && (
+              <p className="text-sm text-destructive">
+                {directorErrors[index]?.street ||
+                 directorErrors[index]?.suburb ||
+                 directorErrors[index]?.state ||
+                 directorErrors[index]?.postcode}
+              </p>
+            )}
           </div>
 
           <div className="mt-4 grid gap-4 md:grid-cols-3">
