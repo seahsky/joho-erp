@@ -937,7 +937,7 @@ export const orderRouter = router({
 
       // Assign preliminary packing sequence for non-backorder orders (confirmed immediately)
       if (!stockValidation.requiresBackorder) {
-        await assignPreliminaryPackingSequence(deliveryDate, order.id);
+        await assignPreliminaryPackingSequence(deliveryDate, order.id, deliveryAddress?.areaName ?? null);
       }
 
       // Send order confirmation email to customer (for non-backorder orders)
@@ -2229,7 +2229,8 @@ export const orderRouter = router({
         // Assign preliminary packing sequence for confirmed backorder
         await assignPreliminaryPackingSequence(
           result.order.requestedDeliveryDate,
-          result.order.id
+          result.order.id,
+          (result.order.deliveryAddress as { areaName?: string } | null)?.areaName ?? null
         );
       }
 
@@ -2602,7 +2603,8 @@ export const orderRouter = router({
           // Assign preliminary packing sequence for immediate display
           await assignPreliminaryPackingSequence(
             updatedOrder.requestedDeliveryDate,
-            updatedOrder.id
+            updatedOrder.id,
+            (updatedOrder.deliveryAddress as { areaName?: string } | null)?.areaName ?? null
           );
 
           // Send order confirmed by admin email to customer

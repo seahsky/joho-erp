@@ -416,7 +416,8 @@ export async function checkIfRouteNeedsReoptimization(
  */
 export async function assignPreliminaryPackingSequence(
   deliveryDate: Date,
-  orderId: string
+  orderId: string,
+  areaName: string | null
 ): Promise<number> {
   const startOfDay = new Date(deliveryDate);
   startOfDay.setUTCHours(0, 0, 0, 0);
@@ -424,20 +425,31 @@ export async function assignPreliminaryPackingSequence(
   const endOfDay = new Date(deliveryDate);
   endOfDay.setUTCHours(23, 59, 59, 999);
 
-  // Get max existing packing sequence for this delivery date
-  const ordersWithSequence = await prisma.order.findMany({
-    where: {
-      requestedDeliveryDate: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-      status: {
-        in: ["confirmed", "packing", "ready_for_delivery"],
-      },
-      NOT: {
-        id: orderId, // Exclude the current order
-      },
+  // Build where clause - filter by area if provided for per-area sequencing
+  const whereClause: any = {
+    requestedDeliveryDate: {
+      gte: startOfDay,
+      lte: endOfDay,
     },
+    status: {
+      in: ["confirmed", "packing", "ready_for_delivery"],
+    },
+    NOT: {
+      id: orderId, // Exclude the current order
+    },
+  };
+
+  // Add area filter to ensure each area has its own independent sequence
+  if (areaName) {
+    whereClause.deliveryAddress = {
+      path: ['areaName'],
+      equals: areaName,
+    };
+  }
+
+  // Get max existing packing sequence for this delivery date and area
+  const ordersWithSequence = await prisma.order.findMany({
+    where: whereClause,
     select: {
       packing: true,
     },
