@@ -105,6 +105,60 @@ async function resolveCustomerId(customerId: string): Promise<string> {
   return customerId;
 }
 
+
+/**
+ * Helper function to geocode an address and get coordinates
+ * Returns coordinates from Mapbox, or falls back to SuburbAreaMapping
+ */
+async function geocodeAddressCoordinates(address: {
+  street: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+}): Promise<{ latitude: number | null; longitude: number | null }> {
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+
+  // Try Mapbox geocoding first
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (mapboxToken) {
+    try {
+      const fullAddress = `${address.street}, ${address.suburb}, ${address.state} ${address.postcode}, Australia`;
+      const encodedAddress = encodeURIComponent(fullAddress);
+      const geocodeUrl = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodedAddress}&access_token=${mapboxToken}&country=AU&limit=1&types=address,secondary_address`;
+
+      const geocodeResponse = await fetch(geocodeUrl);
+      if (geocodeResponse.ok) {
+        const geocodeData = await geocodeResponse.json();
+        if (geocodeData.features && geocodeData.features.length > 0) {
+          const feature = geocodeData.features[0];
+          latitude = feature.properties.coordinates.latitude;
+          longitude = feature.properties.coordinates.longitude;
+        }
+      }
+    } catch (geocodeError) {
+      console.warn('Server-side geocoding failed:', geocodeError);
+    }
+  }
+
+  // Fallback to SuburbAreaMapping coordinates if geocoding didn't work
+  if (latitude === null || longitude === null) {
+    const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+      where: {
+        suburb: { equals: address.suburb, mode: 'insensitive' },
+        state: address.state,
+        isActive: true,
+      },
+    });
+    if (suburbMapping) {
+      latitude = suburbMapping.latitude;
+      longitude = suburbMapping.longitude;
+    }
+  }
+
+  return { latitude, longitude };
+}
+
 export const customerRouter = router({
   // Public registration
   register: publicProcedure
@@ -516,6 +570,10 @@ export const customerRouter = router({
           .object({
             street: z.string(),
             suburb: z.string(),
+            state: z.string(),
+            postcode: z.string(),
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
             deliveryInstructions: z.string().optional(),
           })
           .optional(),
@@ -545,9 +603,61 @@ export const customerRouter = router({
       }
 
       if (input.deliveryAddress) {
+        let { latitude, longitude } = input.deliveryAddress;
+
+        // Check if address has changed (street or suburb)
+        const addressChanged =
+          input.deliveryAddress.street !== currentCustomer.deliveryAddress?.street ||
+          input.deliveryAddress.suburb !== currentCustomer.deliveryAddress?.suburb;
+
+        // If address changed and no valid coordinates provided, geocode
+        if (addressChanged && (!latitude || !longitude || latitude === 0 || longitude === 0)) {
+          const coords = await geocodeAddressCoordinates({
+            street: input.deliveryAddress.street,
+            suburb: input.deliveryAddress.suburb,
+            state: input.deliveryAddress.state,
+            postcode: input.deliveryAddress.postcode,
+          });
+          latitude = coords.latitude ?? undefined;
+          longitude = coords.longitude ?? undefined;
+        }
+
+        // Check if suburb changed and update area assignment
+        let areaId: string | null | undefined = currentCustomer.deliveryAddress?.areaId;
+        let areaName: string | null | undefined = currentCustomer.deliveryAddress?.areaName;
+
+        if (input.deliveryAddress.suburb !== currentCustomer.deliveryAddress?.suburb) {
+          // Look up new area for the suburb
+          const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+            where: {
+              suburb: { equals: input.deliveryAddress.suburb, mode: 'insensitive' },
+              state: input.deliveryAddress.state,
+              isActive: true,
+            },
+            include: { area: true },
+          });
+
+          if (suburbMapping?.area) {
+            areaId = suburbMapping.areaId;
+            areaName = suburbMapping.area.name;
+          } else {
+            // No mapping found, clear area assignment
+            areaId = null;
+            areaName = null;
+          }
+        }
+
         updateData.deliveryAddress = {
           ...currentCustomer.deliveryAddress,
-          ...input.deliveryAddress,
+          street: input.deliveryAddress.street,
+          suburb: input.deliveryAddress.suburb,
+          state: input.deliveryAddress.state,
+          postcode: input.deliveryAddress.postcode,
+          deliveryInstructions: input.deliveryAddress.deliveryInstructions,
+          latitude: latitude ?? currentCustomer.deliveryAddress?.latitude,
+          longitude: longitude ?? currentCustomer.deliveryAddress?.longitude,
+          areaId,
+          areaName,
         };
       }
 
@@ -1399,6 +1509,9 @@ export const customerRouter = router({
             deliveryInstructions: z.string().optional(),
             // Area assignment (optional - if not provided, auto-assigns based on suburb)
             areaId: z.string().nullable().optional(),
+            // Coordinates (optional - if not provided, auto-geocodes based on address)
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
           })
           .optional(),
         // Business information
@@ -1524,13 +1637,41 @@ export const customerRouter = router({
         });
       }
 
-      // Handle delivery address with area assignment logic
+      // Handle delivery address with area assignment logic and geocoding
       if (input.deliveryAddress) {
         const currentAddress = currentCustomer.deliveryAddress as Record<string, unknown>;
         const newAddress: Record<string, unknown> = {
           ...currentAddress,
           ...input.deliveryAddress,
         };
+
+        // Check if address has changed (street or suburb)
+        const addressChanged =
+          (input.deliveryAddress.street !== undefined && input.deliveryAddress.street !== currentAddress?.street) ||
+          (input.deliveryAddress.suburb !== undefined && input.deliveryAddress.suburb !== currentAddress?.suburb);
+
+        // Handle geocoding if address changed but no valid coordinates provided
+        if (addressChanged) {
+          let { latitude, longitude } = input.deliveryAddress;
+
+          if (!latitude || !longitude || latitude === 0 || longitude === 0) {
+            const coords = await geocodeAddressCoordinates({
+              street: (input.deliveryAddress.street ?? currentAddress?.street) as string,
+              suburb: (input.deliveryAddress.suburb ?? currentAddress?.suburb) as string,
+              state: (input.deliveryAddress.state ?? currentAddress?.state) as string,
+              postcode: (input.deliveryAddress.postcode ?? currentAddress?.postcode) as string,
+            });
+            newAddress.latitude = coords.latitude;
+            newAddress.longitude = coords.longitude;
+          } else {
+            newAddress.latitude = latitude;
+            newAddress.longitude = longitude;
+          }
+        } else if (input.deliveryAddress.latitude !== undefined || input.deliveryAddress.longitude !== undefined) {
+          // Coordinates explicitly provided without address change
+          newAddress.latitude = input.deliveryAddress.latitude ?? currentAddress?.latitude;
+          newAddress.longitude = input.deliveryAddress.longitude ?? currentAddress?.longitude;
+        }
 
         // Handle area assignment
         const suburbChanged =

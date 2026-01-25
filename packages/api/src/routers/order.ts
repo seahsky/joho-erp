@@ -146,6 +146,60 @@ export async function calculateAvailableCredit(
   return availableCredit;
 }
 
+
+/**
+ * Helper function to geocode an address and get coordinates
+ * Returns coordinates from Mapbox, or falls back to SuburbAreaMapping
+ */
+async function geocodeAddressCoordinates(address: {
+  street: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+}): Promise<{ latitude: number | null; longitude: number | null }> {
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+
+  // Try Mapbox geocoding first
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (mapboxToken) {
+    try {
+      const fullAddress = `${address.street}, ${address.suburb}, ${address.state} ${address.postcode}, Australia`;
+      const encodedAddress = encodeURIComponent(fullAddress);
+      const geocodeUrl = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodedAddress}&access_token=${mapboxToken}&country=AU&limit=1&types=address,secondary_address`;
+
+      const geocodeResponse = await fetch(geocodeUrl);
+      if (geocodeResponse.ok) {
+        const geocodeData = await geocodeResponse.json();
+        if (geocodeData.features && geocodeData.features.length > 0) {
+          const feature = geocodeData.features[0];
+          latitude = feature.properties.coordinates.latitude;
+          longitude = feature.properties.coordinates.longitude;
+        }
+      }
+    } catch (geocodeError) {
+      console.warn('Server-side geocoding failed:', geocodeError);
+    }
+  }
+
+  // Fallback to SuburbAreaMapping coordinates if geocoding didn't work
+  if (latitude === null || longitude === null) {
+    const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+      where: {
+        suburb: { equals: address.suburb, mode: 'insensitive' },
+        state: address.state,
+        isActive: true,
+      },
+    });
+    if (suburbMapping) {
+      latitude = suburbMapping.latitude;
+      longitude = suburbMapping.longitude;
+    }
+  }
+
+  return { latitude, longitude };
+}
+
 // Helper: Get outstanding balance for a customer
 export async function getOutstandingBalance(customerId: string): Promise<number> {
   // Use atomic aggregation instead of findMany + reduce to prevent race conditions
@@ -596,6 +650,8 @@ export const orderRouter = router({
             postcode: z.string(),
             areaId: z.string().optional(),
             deliveryInstructions: z.string().optional(),
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
           })
           .optional(),
 
@@ -766,19 +822,56 @@ export const orderRouter = router({
         deliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       }
 
-      // 12. Determine delivery address
-      const deliveryAddress =
-        input.useCustomAddress && input.customDeliveryAddress
-          ? {
-              street: input.customDeliveryAddress.street,
-              suburb: input.customDeliveryAddress.suburb,
+      // 12. Determine delivery address (with geocoding for custom addresses)
+      let deliveryAddress;
+      if (input.useCustomAddress && input.customDeliveryAddress) {
+        let { latitude, longitude } = input.customDeliveryAddress;
+
+        // Geocode if no valid coordinates provided
+        if (!latitude || !longitude || latitude === 0 || longitude === 0) {
+          const coords = await geocodeAddressCoordinates({
+            street: input.customDeliveryAddress.street,
+            suburb: input.customDeliveryAddress.suburb,
+            state: input.customDeliveryAddress.state,
+            postcode: input.customDeliveryAddress.postcode,
+          });
+          latitude = coords.latitude ?? undefined;
+          longitude = coords.longitude ?? undefined;
+        }
+
+        // Look up area for the suburb if not provided
+        let areaId: string | null | undefined = input.customDeliveryAddress.areaId;
+        let areaName: string | undefined;
+        if (!areaId) {
+          const suburbMapping = await prisma.suburbAreaMapping.findFirst({
+            where: {
+              suburb: { equals: input.customDeliveryAddress.suburb, mode: 'insensitive' },
               state: input.customDeliveryAddress.state,
-              postcode: input.customDeliveryAddress.postcode,
-              country: 'Australia',
-              areaId: input.customDeliveryAddress.areaId,
-              deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
-            }
-          : customer.deliveryAddress;
+              isActive: true,
+            },
+            include: { area: true },
+          });
+          if (suburbMapping?.area && suburbMapping.areaId) {
+            areaId = suburbMapping.areaId;
+            areaName = suburbMapping.area.name;
+          }
+        }
+
+        deliveryAddress = {
+          street: input.customDeliveryAddress.street,
+          suburb: input.customDeliveryAddress.suburb,
+          state: input.customDeliveryAddress.state,
+          postcode: input.customDeliveryAddress.postcode,
+          country: 'Australia',
+          areaId,
+          areaName,
+          deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
+          latitude,
+          longitude,
+        };
+      } else {
+        deliveryAddress = customer.deliveryAddress;
+      }
 
       // 13. Get user details for status history
       const userDetails = await getUserDetails(ctx.userId);
@@ -821,15 +914,9 @@ export const orderRouter = router({
             bypassCutoffTime: input.bypassCutoffTime,
             bypassMinimumOrder: input.bypassMinimumOrder,
             useCustomAddress: input.useCustomAddress,
-            customDeliveryAddress: input.useCustomAddress && input.customDeliveryAddress ? {
-              street: input.customDeliveryAddress.street,
-              suburb: input.customDeliveryAddress.suburb,
-              state: input.customDeliveryAddress.state,
-              postcode: input.customDeliveryAddress.postcode,
-              country: 'Australia',
-              areaId: input.customDeliveryAddress.areaId,
-              deliveryInstructions: input.customDeliveryAddress.deliveryInstructions,
-            } : undefined,
+            customDeliveryAddress: input.useCustomAddress && input.customDeliveryAddress
+              ? deliveryAddress  // Use the already geocoded deliveryAddress
+              : undefined,
             adminNotes: input.adminNotes,
             internalNotes: input.internalNotes,
             placedOnBehalfOf: customer.id,
