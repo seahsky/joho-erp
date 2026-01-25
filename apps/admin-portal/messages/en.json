@@ -1658,6 +1658,31 @@
       "viewPdf": "View PDF",
       "noDocuments": "No identity documents uploaded",
       "verifyHint": "Verify that the document matches the details entered above"
+    },
+    "creditApplicationPdf": {
+      "title": "Credit Application PDF",
+      "description": "Original credit application document submitted by the customer",
+      "viewButton": "View Credit Application PDF"
+    },
+    "termsAgreement": {
+      "title": "Terms & Conditions Agreement",
+      "agreedAt": "Agreed At"
+    },
+    "signatures": {
+      "title": "Digital Signatures",
+      "description": "Signatures captured during the credit application process",
+      "signature": "Signature",
+      "signedAt": "Signed",
+      "signatureOf": "{name}'s signature",
+      "viewSignature": "View Signature",
+      "fullSizeSignature": "Full Size Signature",
+      "witness": "Witness",
+      "witnessSignedAt": "Witness signed",
+      "witnessSignatureOf": "{name}'s witness signature",
+      "types": {
+        "applicant": "Applicant",
+        "guarantor": "Guarantor"
+      }
     }
   },
   "customerForm": {

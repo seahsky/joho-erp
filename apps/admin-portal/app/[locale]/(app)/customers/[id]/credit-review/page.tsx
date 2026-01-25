@@ -19,8 +19,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@joho-erp/ui';
-import { ArrowLeft, Loader2, IdCard, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
 import { formatAUD, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
@@ -51,6 +55,7 @@ export default function CreditReviewPage({ params }: PageProps) {
   const [rejectNotes, setRejectNotes] = useState('');
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [selectedSignature, setSelectedSignature] = useState<string | null>(null);
 
   // Fetch customer data
   const {
@@ -248,6 +253,43 @@ export default function CreditReviewPage({ params }: PageProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left Column - Application Details */}
         <div className="space-y-6">
+          {/* Credit Application PDF */}
+          {customer.creditApplicationPdfUrl && (
+            <Card className="p-6 border-primary/50">
+              <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                {t('creditApplicationPdf.title')}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('creditApplicationPdf.description')}
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+                className="w-full"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {t('creditApplicationPdf.viewButton')}
+              </Button>
+            </Card>
+          )}
+
+          {/* Terms Agreement */}
+          {creditApp.agreedToTermsAt && (
+            <Card className="p-6">
+              <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-success" />
+                {t('termsAgreement.title')}
+              </h2>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="font-medium text-muted-foreground">{t('termsAgreement.agreedAt')}:</dt>
+                  <dd>{formatDate(creditApp.agreedToTermsAt)}</dd>
+                </div>
+              </dl>
+            </Card>
+          )}
+
           {/* Business Information */}
           <Card className="p-6">
             <h2 className="mb-4 text-xl font-semibold">{t('businessInformation')}</h2>
@@ -489,6 +531,89 @@ export default function CreditReviewPage({ params }: PageProps) {
                     </div>
                   );
                 })}
+              </div>
+            </Card>
+          )}
+
+          {/* Digital Signatures */}
+          {creditApp.signatures && creditApp.signatures.length > 0 && (
+            <Card className="p-6 border-primary/50">
+              <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
+                <PenLine className="h-5 w-5" />
+                {t('signatures.title')}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('signatures.description')}
+              </p>
+              <div className="space-y-4">
+                {creditApp.signatures.map((sig: {
+                  signerName: string;
+                  signerPosition: string | null;
+                  signatureUrl: string;
+                  signedAt: Date;
+                  signatureType: string;
+                  witnessName: string | null;
+                  witnessSignatureUrl: string | null;
+                  witnessSignedAt: Date | null;
+                }, index: number) => (
+                  <div key={index} className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-medium">{sig.signerName}</p>
+                        {sig.signerPosition && (
+                          <p className="text-sm text-muted-foreground">{sig.signerPosition}</p>
+                        )}
+                      </div>
+                      <Badge variant={sig.signatureType === 'APPLICANT' ? 'default' : 'secondary'}>
+                        {sig.signatureType === 'APPLICANT'
+                          ? t('signatures.types.applicant')
+                          : t('signatures.types.guarantor')}
+                      </Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {/* Applicant/Guarantor Signature */}
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {t('signatures.signature')} - {t('signatures.signedAt')}: {formatDate(sig.signedAt)}
+                        </p>
+                        <button
+                          onClick={() => setSelectedSignature(sig.signatureUrl)}
+                          className="block"
+                        >
+                          <img
+                            src={sig.signatureUrl}
+                            alt={t('signatures.signatureOf', { name: sig.signerName })}
+                            className="max-w-[200px] rounded border hover:opacity-80 transition-opacity cursor-pointer"
+                          />
+                        </button>
+                      </div>
+
+                      {/* Witness Info (for guarantor signatures) */}
+                      {sig.signatureType === 'GUARANTOR' && sig.witnessName && sig.witnessSignatureUrl && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="font-medium text-sm mb-2">
+                            {t('signatures.witness')}: {sig.witnessName}
+                          </p>
+                          {sig.witnessSignedAt && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {t('signatures.witnessSignedAt')}: {formatDate(sig.witnessSignedAt)}
+                            </p>
+                          )}
+                          <button
+                            onClick={() => setSelectedSignature(sig.witnessSignatureUrl!)}
+                            className="block"
+                          >
+                            <img
+                              src={sig.witnessSignatureUrl}
+                              alt={t('signatures.witnessSignatureOf', { name: sig.witnessName })}
+                              className="max-w-[200px] rounded border hover:opacity-80 transition-opacity cursor-pointer"
+                            />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
           )}
@@ -773,6 +898,24 @@ export default function CreditReviewPage({ params }: PageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Signature View Dialog */}
+      <Dialog open={!!selectedSignature} onOpenChange={(open) => !open && setSelectedSignature(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('signatures.fullSizeSignature')}</DialogTitle>
+          </DialogHeader>
+          {selectedSignature && (
+            <div className="flex justify-center p-4">
+              <img
+                src={selectedSignature}
+                alt={t('signatures.signature')}
+                className="max-w-full max-h-[60vh] object-contain border rounded"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

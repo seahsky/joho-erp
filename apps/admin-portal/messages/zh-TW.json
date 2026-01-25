@@ -1658,6 +1658,31 @@
       "viewPdf": "檢視PDF",
       "noDocuments": "未上傳身分證件",
       "verifyHint": "請核實證件與上述填寫的資訊是否一致"
+    },
+    "creditApplicationPdf": {
+      "title": "信用申請PDF",
+      "description": "客戶提交的原始信用申請文件",
+      "viewButton": "檢視信用申請PDF"
+    },
+    "termsAgreement": {
+      "title": "條款與條件協議",
+      "agreedAt": "同意時間"
+    },
+    "signatures": {
+      "title": "電子簽名",
+      "description": "信用申請過程中採集的簽名",
+      "signature": "簽名",
+      "signedAt": "簽署時間",
+      "signatureOf": "{name}的簽名",
+      "viewSignature": "檢視簽名",
+      "fullSizeSignature": "完整尺寸簽名",
+      "witness": "見證人",
+      "witnessSignedAt": "見證人簽署時間",
+      "witnessSignatureOf": "{name}的見證人簽名",
+      "types": {
+        "applicant": "申請人",
+        "guarantor": "擔保人"
+      }
     }
   },
   "customerForm": {

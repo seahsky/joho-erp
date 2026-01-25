@@ -1658,6 +1658,31 @@
       "viewPdf": "查看PDF",
       "noDocuments": "未上传身份证件",
       "verifyHint": "请核实证件与上述填写的信息是否一致"
+    },
+    "creditApplicationPdf": {
+      "title": "信用申请PDF",
+      "description": "客户提交的原始信用申请文件",
+      "viewButton": "查看信用申请PDF"
+    },
+    "termsAgreement": {
+      "title": "条款与条件协议",
+      "agreedAt": "同意时间"
+    },
+    "signatures": {
+      "title": "电子签名",
+      "description": "信用申请过程中采集的签名",
+      "signature": "签名",
+      "signedAt": "签署时间",
+      "signatureOf": "{name}的签名",
+      "viewSignature": "查看签名",
+      "fullSizeSignature": "完整尺寸签名",
+      "witness": "见证人",
+      "witnessSignedAt": "见证人签署时间",
+      "witnessSignatureOf": "{name}的见证人签名",
+      "types": {
+        "applicant": "申请人",
+        "guarantor": "担保人"
+      }
     }
   },
   "customerForm": {
