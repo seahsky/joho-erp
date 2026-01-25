@@ -78,18 +78,87 @@ export function ProductRow({
   return (
     <div className="bg-background">
       {/* Main Product Row */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 transition-colors hover:bg-muted/30">
-        {/* Product Image + Name + Details (Left Section) */}
-        <div className="flex items-start gap-4 flex-1 min-w-0">
-          {/* Product Image */}
-          <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative rounded-lg overflow-hidden border border-border bg-muted">
+      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 p-4 transition-colors hover:bg-muted/30">
+        {/* Mobile Layout: Image on left, info stacked on right */}
+        <div className="flex gap-3 md:hidden">
+          {/* Product Image - Bigger on mobile */}
+          <div className="flex-shrink-0 w-20 h-20 relative rounded-lg overflow-hidden border border-border bg-muted">
             {product.imageUrl ? (
               <Image
                 src={product.imageUrl}
                 alt={product.name}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 64px, 80px"
+                sizes="80px"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <span className="text-xs font-medium">{t('noImage')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Product Info + Price stacked vertically */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            {/* Product Name */}
+            <div>
+              <button
+                onClick={onExpandToggle}
+                className="text-left w-full group focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
+              >
+                <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                  {product.name}
+                </h3>
+              </button>
+              {/* SKU + Category */}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Muted className="text-xs">
+                  {product.sku}
+                </Muted>
+                {product.categoryRelation && (
+                  <>
+                    <span className="text-muted-foreground text-xs">|</span>
+                    <Muted className="text-xs truncate">
+                      {product.categoryRelation.name}
+                    </Muted>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Price + Stock (Mobile) - Below product name */}
+            <div className="flex items-center justify-between mt-1.5">
+              <div className="flex items-center gap-1.5">
+                <Large className="font-bold text-sm">
+                  {formatAUD(displayPrice)}
+                </Large>
+                <Muted className="text-xs">
+                  / {product.unit}
+                </Muted>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {getStockBadge(product.stockStatus)}
+                {hasCustomPricing && (
+                  <Badge variant="success" className="text-xs">
+                    {t('customPricing')}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout: Original horizontal layout */}
+        <div className="hidden md:flex md:items-center md:gap-4 md:flex-1 min-w-0">
+          {/* Product Image */}
+          <div className="flex-shrink-0 w-20 h-20 relative rounded-lg overflow-hidden border border-border bg-muted">
+            {product.imageUrl ? (
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="80px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -100,17 +169,14 @@ export function ProductRow({
 
           {/* Product Info */}
           <div className="flex-1 min-w-0">
-            {/* Product Name - Clickable to expand */}
             <button
               onClick={onExpandToggle}
               className="text-left w-full group focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
             >
-              <h3 className="font-semibold text-sm md:text-base truncate group-hover:text-primary transition-colors">
+              <h3 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
                 {product.name}
               </h3>
             </button>
-
-            {/* SKU + Category */}
             <div className="flex items-center gap-2 mt-1">
               <Muted className="text-xs">
                 {product.sku}
@@ -124,19 +190,10 @@ export function ProductRow({
                 </>
               )}
             </div>
-
-            {/* Custom Pricing Badge (Mobile) */}
-            {hasCustomPricing && (
-              <div className="mt-2 md:hidden">
-                <Badge variant="success" className="text-xs">
-                  {t('customPricing')}
-                </Badge>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Price (Center Section - Desktop) */}
+        {/* Price (Desktop only) */}
         <div className="hidden md:flex md:flex-col md:items-end md:w-32 md:flex-shrink-0">
           <Large className="font-bold">
             {formatAUD(displayPrice)}
@@ -151,42 +208,19 @@ export function ProductRow({
           )}
         </div>
 
-        {/* Stock Status (Center-Right Section) */}
+        {/* Stock Status (Desktop only) */}
         <div className="hidden md:flex md:w-28 md:flex-shrink-0 md:justify-center">
           {getStockBadge(product.stockStatus)}
         </div>
 
-        {/* Quantity Controls (Right Section) */}
-        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 md:gap-4 min-w-0">
-          {/* Price + Stock (Mobile) */}
-          <div className="flex flex-col md:hidden min-w-0 flex-shrink">
-            <div className="flex items-center gap-1.5">
-              <Large className="font-bold text-sm">
-                {formatAUD(displayPrice)}
-              </Large>
-              <Muted className="text-xs">
-                / {product.unit}
-              </Muted>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1">
-              {getStockBadge(product.stockStatus)}
-              {product.applyGst && (
-                <Muted className="text-xs">
-                  ({t('gstIncluded')})
-                </Muted>
-              )}
-            </div>
-          </div>
-
-          {/* Inline Quantity Controls */}
-          <div className="md:w-44 md:flex-shrink-0 flex md:justify-end flex-shrink-0">
-            <InlineQuantityControls
-              productId={product.id}
-              productName={product.name}
-              currentQuantity={cartQuantity}
-              disabled={!canAddToCart}
-            />
-          </div>
+        {/* Quantity Controls */}
+        <div className="flex items-center justify-end md:w-44 md:flex-shrink-0">
+          <InlineQuantityControls
+            productId={product.id}
+            productName={product.name}
+            currentQuantity={cartQuantity}
+            disabled={!canAddToCart}
+          />
         </div>
       </div>
 
