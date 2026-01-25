@@ -20,7 +20,7 @@ interface RouteOptimizationResult {
   orderUpdates: Array<{
     orderId: string;
     orderNumber: string;
-    packingSequence: number;
+    areaPackingSequence: number;
     deliverySequence: number;
     estimatedArrival: Date;
     areaName: string;
@@ -197,15 +197,15 @@ export async function optimizeDeliveryRoute(
       const order = areaOrders.find((o) => o.id === orderId)!;
       const deliverySequence = globalDeliverySequence++;
 
-      // Packing sequence: pack last delivery first within area
-      // But maintain area grouping (all north packed before south, etc.)
-      const packingSequence = areaOrderCount - index;
+      // Per-area LIFO: pack last delivery first within this area
+      // Each area has independent sequences (#1, #2, #3...)
+      const areaPackingSequence = areaOrderCount - index;
 
       orderUpdates.push({
         orderId: order.id,
         orderNumber: order.orderNumber,
         deliverySequence,
-        packingSequence,
+        areaPackingSequence,
         estimatedArrival: arrivalTimes[index],
         areaName,
       });
@@ -219,23 +219,7 @@ export async function optimizeDeliveryRoute(
     });
   }
 
-  // 7. Adjust packing sequence to be global and grouped by area
-  // Re-calculate packing sequence so areas are packed in reverse order
-  let globalPackingSequence = 1;
-  const areaOrderReversed = [...areaOrder].reverse(); // Pack south last (delivered first)
-
-  for (const areaName of areaOrderReversed) {
-    const areaOrderUpdates = orderUpdates.filter((u) => u.areaName === areaName);
-
-    // Sort by delivery sequence ascending, then reverse for packing
-    areaOrderUpdates.sort((a, b) => b.deliverySequence - a.deliverySequence);
-
-    areaOrderUpdates.forEach((update) => {
-      update.packingSequence = globalPackingSequence++;
-    });
-  }
-
-  // 8. Calculate total route stats
+  // 7. Calculate total route stats (per-area sequences already set above)
   const totalDistance = areaBreakdown.reduce(
     (sum, area) => sum + area.distance,
     0
@@ -330,7 +314,7 @@ export async function optimizeDeliveryRoute(
         where: { id: update.orderId },
         data: {
           packing: {
-            packingSequence: update.packingSequence,
+            areaPackingSequence: update.areaPackingSequence,
             packedItems: [],
           },
           delivery: {
@@ -460,7 +444,7 @@ export async function assignPreliminaryPackingSequence(
   });
 
   const maxSequence = ordersWithSequence.reduce((max, order) => {
-    const seq = order.packing?.packingSequence ?? 0;
+    const seq = order.packing?.areaPackingSequence ?? 0;
     return seq > max ? seq : max;
   }, 0);
 
@@ -471,7 +455,7 @@ export async function assignPreliminaryPackingSequence(
     where: { id: orderId },
     data: {
       packing: {
-        packingSequence: newSequence,
+        areaPackingSequence: newSequence,
         packedItems: [],
       },
     },
@@ -781,9 +765,6 @@ export async function optimizeDeliveryOnlyRoute(
     })
   );
 
-  // 12. Calculate per-driver sequences if drivers are assigned
-  await calculatePerDriverSequences(deliveryDate);
-
   // NO email notification for delivery route (only for packing route)
 
   return {
@@ -798,103 +779,7 @@ export async function optimizeDeliveryOnlyRoute(
   };
 }
 
-/**
- * Calculate per-driver delivery and packing sequences.
- * Groups orders by driverId and assigns contiguous sequences within each driver.
- *
- * @param deliveryDate - The delivery date to calculate sequences for
- */
-export async function calculatePerDriverSequences(
-  deliveryDate: Date,
-  tx?: TransactionClient
-): Promise<void> {
-  const db = tx || prisma;
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
-
-  // Fetch all ready_for_delivery orders with their current sequences
-  const orders = await db.order.findMany({
-    where: {
-      requestedDeliveryDate: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-      status: "ready_for_delivery",
-    },
-    select: {
-      id: true,
-      delivery: true,
-    },
-    orderBy: {
-      delivery: {
-        deliverySequence: "asc",
-      },
-    },
-  });
-
-  if (orders.length === 0) return;
-
-  // Group orders by driverId
-  const ordersByDriver = new Map<string | null, typeof orders>();
-
-  for (const order of orders) {
-    const driverId = order.delivery?.driverId || null;
-    if (!ordersByDriver.has(driverId)) {
-      ordersByDriver.set(driverId, []);
-    }
-    ordersByDriver.get(driverId)!.push(order);
-  }
-
-  // Calculate per-driver sequences
-  const updates: Array<{
-    orderId: string;
-    driverDeliverySequence: number;
-    driverPackingSequence: number;
-  }> = [];
-
-  for (const [_driverId, driverOrders] of ordersByDriver.entries()) {
-    // Sort by global delivery sequence (already sorted from query, but ensure)
-    driverOrders.sort(
-      (a, b) =>
-        (a.delivery?.deliverySequence || 0) -
-        (b.delivery?.deliverySequence || 0)
-    );
-
-    const orderCount = driverOrders.length;
-
-    driverOrders.forEach((order, index) => {
-      // Contiguous delivery sequence for this driver (1, 2, 3...)
-      const driverDeliverySequence = index + 1;
-
-      // LIFO packing sequence for this driver (reverse of delivery)
-      const driverPackingSequence = orderCount - index;
-
-      updates.push({
-        orderId: order.id,
-        driverDeliverySequence,
-        driverPackingSequence,
-      });
-    });
-  }
-
-  // Update all orders with per-driver sequences
-  await Promise.all(
-    updates.map((update) =>
-      db.order.update({
-        where: { id: update.orderId },
-        data: {
-          delivery: {
-            driverDeliverySequence: update.driverDeliverySequence,
-            driverPackingSequence: update.driverPackingSequence,
-          },
-        },
-      })
-    )
-  );
-}
+// Per-driver sequences removed - now using per-area sequences only
 
 /**
  * Get existing delivery-type route optimization for a date

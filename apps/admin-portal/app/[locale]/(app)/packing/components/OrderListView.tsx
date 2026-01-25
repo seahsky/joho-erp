@@ -13,14 +13,11 @@ interface OrderListViewProps {
     orderNumber: string;
     customerName: string;
     areaName: string | null;
-    packingSequence: number | null;
+    areaPackingSequence: number | null;
+    areaColorVariant?: string;
+    areaDisplayName?: string;
     deliverySequence: number | null;
     status: string;
-    // Per-driver fields for multi-driver grouping
-    driverId?: string | null;
-    driverName?: string | null;
-    driverPackingSequence?: number | null;
-    driverDeliverySequence?: number | null;
     // Partial progress fields
     isPaused?: boolean;
     lastPackedBy?: string | null;
@@ -36,10 +33,11 @@ interface OrderListViewProps {
   onAreaChange?: (areaId: string) => void;
 }
 
-// Group orders by driver for multi-driver packing
-interface DriverGroup {
-  driverId: string | null;
-  driverName: string | null;
+// Group orders by area for per-area packing sequences
+interface AreaGroup {
+  areaName: string | null;
+  areaDisplayName: string;
+  areaColorVariant: string;
   orders: OrderListViewProps['orders'];
 }
 
@@ -114,37 +112,39 @@ export function OrderListView({
     return 0; // Preserve original order for same status
   });
 
-  // Group orders by driver for multi-driver support
-  const driverGroups = useMemo<DriverGroup[]>(() => {
-    const groupMap = new Map<string | null, DriverGroup>();
+  // Group orders by area for per-area packing sequences
+  const areaGroups = useMemo<AreaGroup[]>(() => {
+    const groupMap = new Map<string | null, AreaGroup>();
 
     for (const order of sortedOrders) {
-      const driverId = order.driverId ?? null;
-      const driverName = order.driverName ?? null;
+      const areaName = order.areaName ?? null;
+      const areaDisplayName = order.areaDisplayName ?? 'Unassigned';
+      const areaColorVariant = order.areaColorVariant ?? 'secondary';
 
-      if (!groupMap.has(driverId)) {
-        groupMap.set(driverId, {
-          driverId,
-          driverName,
+      if (!groupMap.has(areaName)) {
+        groupMap.set(areaName, {
+          areaName,
+          areaDisplayName,
+          areaColorVariant,
           orders: [],
         });
       }
-      groupMap.get(driverId)!.orders.push(order);
+      groupMap.get(areaName)!.orders.push(order);
     }
 
-    // Convert to array and sort: assigned drivers first, then unassigned
+    // Convert to array and sort: named areas first (alphabetically), then unassigned
     const groups = Array.from(groupMap.values());
     return groups.sort((a, b) => {
       // Unassigned (null) goes last
-      if (a.driverId === null && b.driverId !== null) return 1;
-      if (a.driverId !== null && b.driverId === null) return -1;
-      // Sort by driver name if both assigned
-      return (a.driverName || '').localeCompare(b.driverName || '');
+      if (a.areaName === null && b.areaName !== null) return 1;
+      if (a.areaName !== null && b.areaName === null) return -1;
+      // Sort by area name if both assigned
+      return (a.areaName || '').localeCompare(b.areaName || '');
     });
   }, [sortedOrders]);
 
-  // Check if we have multiple drivers (need to show grouping)
-  const hasMultipleDrivers = driverGroups.length > 1 || (driverGroups.length === 1 && driverGroups[0].driverId !== null);
+  // Check if we have multiple areas (need to show grouping)
+  const hasMultipleAreas = areaGroups.length > 1 || (areaGroups.length === 1 && areaGroups[0].areaName !== null);
 
   if (orders.length === 0) {
     return (
@@ -189,22 +189,22 @@ export function OrderListView({
         </div>
       </div>
 
-      {/* Orders grouped by driver (or flat list if single/no driver) */}
-      {hasMultipleDrivers ? (
+      {/* Orders grouped by area (or flat list if single/no area) */}
+      {hasMultipleAreas ? (
         <div className="space-y-6">
-          {driverGroups.map((group) => (
-            <div key={group.driverId ?? 'unassigned'} className="space-y-3">
-              {/* Driver Header */}
+          {areaGroups.map((group) => (
+            <div key={group.areaName ?? 'unassigned'} className="space-y-3">
+              {/* Area Header */}
               <div className="flex items-center gap-2 px-2 py-2 bg-muted/50 rounded-lg">
                 <Truck className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold text-sm">
-                  {group.driverName || t('unassignedOrders')}
+                  {group.areaDisplayName}
                 </span>
                 <Badge variant="secondary" className="ml-auto">
                   {group.orders.length} {group.orders.length === 1 ? t('order') : t('orders')}
                 </Badge>
               </div>
-              {/* 2-Column Grid Layout for Driver's Orders */}
+              {/* 2-Column Grid Layout for Area's Orders */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {group.orders.map((order, index) => (
                   <div
@@ -223,7 +223,7 @@ export function OrderListView({
           ))}
         </div>
       ) : (
-        /* Flat list when no driver grouping needed */
+        /* Flat list when no area grouping needed */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {sortedOrders.map((order, index) => (
             <div

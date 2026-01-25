@@ -8,18 +8,26 @@ import { api } from '@/trpc/client';
 import { useDebouncedCallback } from 'use-debounce';
 import { PinEntryDialog } from './PinEntryDialog';
 
+// Map area colorVariant to Tailwind background classes
+const areaColorClasses: Record<string, string> = {
+  default: 'bg-slate-500',
+  secondary: 'bg-gray-500',
+  info: 'bg-blue-500',
+  success: 'bg-green-500',
+  warning: 'bg-amber-500',
+  destructive: 'bg-red-500',
+};
+
 interface PackingOrderCardProps {
   order: {
     orderId: string;
     orderNumber: string;
     customerName: string;
     areaName: string | null;
-    packingSequence: number | null;
+    areaPackingSequence: number | null;
+    areaColorVariant?: string;
+    areaDisplayName?: string;
     deliverySequence: number | null;
-    driverPackingSequence?: number | null;
-    driverDeliverySequence?: number | null;
-    driverId?: string | null;
-    driverName?: string | null;
     status: string;
     // Partial progress fields
     isPaused?: boolean;
@@ -604,12 +612,13 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
       {/* Clean Header - With Sequence Badge */}
       <div className="relative">
-        {/* Sequence Badge - Prominent Position (per-driver sequence with fallback to global) */}
+        {/* Sequence Badge - Per-area sequence with area-colored background */}
         {(() => {
-          const displaySequence = order.driverPackingSequence ?? order.packingSequence;
+          const displaySequence = order.areaPackingSequence;
+          const badgeColor = areaColorClasses[order.areaColorVariant ?? 'secondary'] ?? areaColorClasses.secondary;
           return displaySequence !== null ? (
             <div className="absolute top-0 left-0 z-10">
-              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg">
+              <div className={`${badgeColor} text-white px-4 py-2 rounded-tl-lg rounded-br-lg shadow-lg`}>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold opacity-90">{t('packBadge')}</span>
                   <span className="text-2xl font-black tabular-nums leading-none">

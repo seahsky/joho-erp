@@ -967,7 +967,7 @@ type Packing {
   packedAt            DateTime?
   packedBy            String?
   notes               String?
-  packingSequence     Int?                // Position in packing queue (1 = pack first)
+  areaPackingSequence Int?                // Position in packing queue within area (1 = pack first for this area)
   packedItems         String[]            // Array of SKUs that have been packed
   // Partial progress persistence fields
   lastPackedAt        DateTime?           // When packing was last updated
@@ -998,9 +998,7 @@ type Delivery {
   routeId             String?             // Reference to RouteOptimization
   estimatedArrival    DateTime?           // Estimated arrival time based on route
   actualArrival       DateTime?           // Actual arrival time (for analytics)
-  // Per-driver sequences (for multi-driver scenarios)
-  driverDeliverySequence Int?             // Contiguous sequence within driver's route (1,2,3...)
-  driverPackingSequence  Int?             // LIFO sequence for this driver's vehicle
+
   // Return fields (when driver returns order to warehouse)
   returnReason        DeliveryReturnReason?
   returnNotes         String?

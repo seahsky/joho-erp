@@ -8,7 +8,6 @@ import {
   getDeliveryRouteOptimization,
   checkIfDeliveryRouteNeedsRecalculation,
   optimizeDeliveryOnlyRoute,
-  calculatePerDriverSequences,
 } from '../services/route-optimizer';
 import {
   sendOrderOutForDeliveryEmail,
@@ -197,7 +196,6 @@ export const deliveryRouter = router({
         deliverySequence: order.delivery?.deliverySequence,
         driverId: order.delivery?.driverId ?? null,
         driverName: order.delivery?.driverName ?? null,
-        driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
         deliveredAt: order.delivery?.deliveredAt,
         packedAt: order.packing?.packedAt ?? null, // Add packing date for same-day delivery validation
       }));
@@ -780,8 +778,8 @@ export const deliveryRouter = router({
       const orders = await prisma.order.findMany({
         where,
         orderBy: [
-          { delivery: { driverDeliverySequence: 'asc' } },
-          { delivery: { deliverySequence: 'asc' } }, // Fallback to global sequence
+          { deliveryAddress: { areaName: 'asc' } }, // Group by area
+          { delivery: { deliverySequence: 'asc' } },
           { orderNumber: 'asc' },
         ],
         include: {
@@ -804,8 +802,7 @@ export const deliveryRouter = router({
         longitude: order.deliveryAddress.longitude,
         areaName: order.deliveryAddress.areaName,
         status: order.status,
-        // Use per-driver sequence for contiguous ordering (1, 2, 3...) or fall back to global
-        deliverySequence: order.delivery?.driverDeliverySequence || order.delivery?.deliverySequence || null,
+        deliverySequence: order.delivery?.deliverySequence || null,
         globalDeliverySequence: order.delivery?.deliverySequence || null,
         estimatedArrival: order.delivery?.estimatedArrival || null,
         startedAt: order.delivery?.startedAt || null,
@@ -1422,31 +1419,7 @@ export const deliveryRouter = router({
         console.error('Audit log failed for driver assignment:', error);
       });
 
-      // Recalculate per-driver sequences when driver assignment changes
-      await calculatePerDriverSequences(order.requestedDeliveryDate).catch((error) => {
-        console.error('Failed to recalculate per-driver sequences:', error);
-      });
-
       return updatedOrder;
-    }),
-
-  // Recalculate per-driver sequences for a delivery date
-  // Call this when driver assignments change or need to be refreshed
-  recalculatePerDriverSequences: requirePermission('deliveries:manage')
-    .input(
-      z.object({
-        deliveryDate: z.string().datetime(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const deliveryDate = new Date(input.deliveryDate);
-
-      await calculatePerDriverSequences(deliveryDate);
-
-      return {
-        success: true,
-        message: 'Per-driver sequences recalculated successfully',
-      };
     }),
 
   // Get all drivers with their assigned areas
@@ -1769,9 +1742,6 @@ export const deliveryRouter = router({
             driverCounters.set(areaId, counter);
             results.push({ areaId, assigned, skipped: 0 });
           }
-
-          // Recalculate per-driver sequences inside transaction
-          await calculatePerDriverSequences(targetDate, tx);
 
           const byArea = Object.fromEntries(
             results.map((r) => [r.areaId, { assigned: r.assigned, skipped: r.skipped }])

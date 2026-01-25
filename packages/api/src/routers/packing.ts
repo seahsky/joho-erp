@@ -32,7 +32,6 @@ import {
   optimizeDeliveryRoute,
   getRouteOptimization,
   checkIfRouteNeedsReoptimization,
-  calculatePerDriverSequences,
 } from "../services/route-optimizer";
 import {
   startPackingSession,
@@ -1788,7 +1787,7 @@ export const packingRouter = router({
               packedAt: null,
               packedBy: null,
               notes: null,
-              packingSequence: order.packing?.packingSequence ?? null,
+              areaPackingSequence: order.packing?.areaPackingSequence ?? null,
               packedItems: [],
               lastPackedAt: null,
               lastPackedBy: null,
@@ -1925,7 +1924,8 @@ export const packingRouter = router({
           },
         },
         orderBy: [
-          { packing: { packingSequence: "asc" } }, // Sort by packing sequence if available
+          { deliveryAddress: { areaName: "asc" } }, // Group by area first
+          { packing: { areaPackingSequence: "asc" } }, // Then by per-area packing sequence
           { orderNumber: "asc" }, // Fallback to order number
         ],
       });
@@ -2024,14 +2024,10 @@ export const packingRouter = router({
               },
             },
             orderBy: [
-              { packing: { packingSequence: "asc" } },
+              { deliveryAddress: { areaName: "asc" } }, // Group by area
+              { packing: { areaPackingSequence: "asc" } }, // Then by per-area packing sequence
               { orderNumber: "asc" },
             ],
-          });
-
-          // Calculate per-driver sequences after route optimization
-          await calculatePerDriverSequences(deliveryDate).catch((error) => {
-            console.error("Failed to calculate per-driver sequences:", error);
           });
 
           // Re-fetch orders with updated sequences
@@ -2047,36 +2043,43 @@ export const packingRouter = router({
               },
             },
             orderBy: [
-              { delivery: { driverId: "asc" } }, // Group by driver
-              { delivery: { driverPackingSequence: "asc" } }, // Then by per-driver packing sequence
-              { packing: { packingSequence: "asc" } }, // Fallback to global packing sequence
+              { deliveryAddress: { areaName: "asc" } }, // Group by area
+              { packing: { areaPackingSequence: "asc" } }, // Then by per-area packing sequence
               { orderNumber: "asc" },
             ],
           });
 
-          // Use updated orders with packing sequences and driver info
+          // Fetch area colors for mapping
+          const areas = await prisma.area.findMany({
+            where: { isActive: true },
+            select: { name: true, displayName: true, colorVariant: true },
+          });
+          const areaMap = new Map(areas.map(a => [a.name, a]));
+
+          // Use updated orders with packing sequences and area info
           return {
             deliveryDate,
-            orders: refetchedOrders.map((order) => ({
-              orderId: order.id,
-              orderNumber: order.orderNumber,
-              customerName: order.customer?.businessName ?? "Unknown Customer",
-              areaName: order.deliveryAddress.areaName,
-              packingSequence: order.packing?.packingSequence ?? null,
-              deliverySequence: order.delivery?.deliverySequence ?? null,
-              // Per-driver fields for multi-driver grouping
-              driverId: order.delivery?.driverId ?? null,
-              driverName: order.delivery?.driverName ?? null,
-              driverPackingSequence: order.delivery?.driverPackingSequence ?? null,
-              driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
-              status: order.status,
-              packedItemsCount: order.packing?.packedItems?.length ?? 0,
-              totalItemsCount: order.items.length,
-              // Partial progress fields
-              isPaused: !!order.packing?.pausedAt,
-              lastPackedBy: order.packing?.lastPackedBy ?? null,
-              lastPackedAt: order.packing?.lastPackedAt ?? null,
-            })),
+            orders: refetchedOrders.map((order) => {
+              const areaName = order.deliveryAddress.areaName ?? 'unassigned';
+              const area = areaMap.get(areaName);
+              return {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                customerName: order.customer?.businessName ?? "Unknown Customer",
+                areaName: order.deliveryAddress.areaName,
+                areaPackingSequence: order.packing?.areaPackingSequence ?? null,
+                areaColorVariant: area?.colorVariant ?? 'secondary',
+                areaDisplayName: area?.displayName ?? 'Unassigned',
+                deliverySequence: order.delivery?.deliverySequence ?? null,
+                status: order.status,
+                packedItemsCount: order.packing?.packedItems?.length ?? 0,
+                totalItemsCount: order.items.length,
+                // Partial progress fields
+                isPaused: !!order.packing?.pausedAt,
+                lastPackedBy: order.packing?.lastPackedBy ?? null,
+                lastPackedAt: order.packing?.lastPackedAt ?? null,
+              };
+            }),
             productSummary,
             routeOptimization: routeOptimization
               ? {
@@ -2095,41 +2098,49 @@ export const packingRouter = router({
         }
       }
 
-      // Sort orders by driver, then by per-driver packing sequence for multi-driver support
-      const sortedOrders = [...orders].sort((a, b) => {
-        // First sort by driverId (nulls last)
-        const driverA = a.delivery?.driverId ?? 'zzz'; // Put unassigned at end
-        const driverB = b.delivery?.driverId ?? 'zzz';
-        if (driverA !== driverB) return driverA.localeCompare(driverB);
+      // Fetch area colors for mapping
+      const areas = await prisma.area.findMany({
+        where: { isActive: true },
+        select: { name: true, displayName: true, colorVariant: true },
+      });
+      const areaMap = new Map(areas.map(a => [a.name, a]));
 
-        // Then by per-driver packing sequence
-        const seqA = a.delivery?.driverPackingSequence ?? a.packing?.packingSequence ?? 999;
-        const seqB = b.delivery?.driverPackingSequence ?? b.packing?.packingSequence ?? 999;
+      // Sort orders by area name, then by per-area packing sequence
+      const sortedOrders = [...orders].sort((a, b) => {
+        // First sort by area name (nulls/unassigned last)
+        const areaA = a.deliveryAddress.areaName ?? 'zzz';
+        const areaB = b.deliveryAddress.areaName ?? 'zzz';
+        if (areaA !== areaB) return areaA.localeCompare(areaB);
+
+        // Then by per-area packing sequence
+        const seqA = a.packing?.areaPackingSequence ?? 999;
+        const seqB = b.packing?.areaPackingSequence ?? 999;
         return seqA - seqB;
       });
 
       return {
         deliveryDate,
-        orders: sortedOrders.map((order) => ({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customer?.businessName ?? "Unknown Customer",
-          areaName: order.deliveryAddress.areaName,
-          packingSequence: order.packing?.packingSequence ?? null,
-          deliverySequence: order.delivery?.deliverySequence ?? null,
-          // Per-driver fields for multi-driver grouping
-          driverId: order.delivery?.driverId ?? null,
-          driverName: order.delivery?.driverName ?? null,
-          driverPackingSequence: order.delivery?.driverPackingSequence ?? null,
-          driverDeliverySequence: order.delivery?.driverDeliverySequence ?? null,
-          status: order.status,
-          packedItemsCount: order.packing?.packedItems?.length ?? 0,
-          totalItemsCount: order.items.length,
-          // Partial progress fields
-          isPaused: !!order.packing?.pausedAt,
-          lastPackedBy: order.packing?.lastPackedBy ?? null,
-          lastPackedAt: order.packing?.lastPackedAt ?? null,
-        })),
+        orders: sortedOrders.map((order) => {
+          const areaName = order.deliveryAddress.areaName ?? 'unassigned';
+          const area = areaMap.get(areaName);
+          return {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerName: order.customer?.businessName ?? "Unknown Customer",
+            areaName: order.deliveryAddress.areaName,
+            areaPackingSequence: order.packing?.areaPackingSequence ?? null,
+            areaColorVariant: area?.colorVariant ?? 'secondary',
+            areaDisplayName: area?.displayName ?? 'Unassigned',
+            deliverySequence: order.delivery?.deliverySequence ?? null,
+            status: order.status,
+            packedItemsCount: order.packing?.packedItems?.length ?? 0,
+            totalItemsCount: order.items.length,
+            // Partial progress fields
+            isPaused: !!order.packing?.pausedAt,
+            lastPackedBy: order.packing?.lastPackedBy ?? null,
+            lastPackedAt: order.packing?.lastPackedAt ?? null,
+          };
+        }),
         productSummary,
         routeOptimization: routeOptimization
           ? {

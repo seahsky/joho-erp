@@ -465,7 +465,7 @@ export async function processTimedOutSessions(): Promise<{
                 packedAt: null,
                 packedBy: null,
                 notes: null,
-                packingSequence: order.packing?.packingSequence ?? null,
+                areaPackingSequence: order.packing?.areaPackingSequence ?? null,
                 packedItems: [],
                 lastPackedAt: null,
                 lastPackedBy: null,
