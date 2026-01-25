@@ -9,3 +9,5 @@ export { InventoryTransactionDetailDialog } from './InventoryTransactionDetailDi
 export type { InventoryTransaction } from './InventoryTransactionDetailDialog';
 export { StockCountsTable } from './StockCountsTable';
 export { BatchInfoDialog } from './BatchInfoDialog';
+export { ExpiringBatchesList } from './ExpiringBatchesList';
+export { ExpiringBatchActions } from './ExpiringBatchActions';

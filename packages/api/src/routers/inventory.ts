@@ -571,43 +571,108 @@ export const inventoryRouter = router({
   getExpiringBatches: requirePermission('inventory:view')
     .input(
       z.object({
-        daysThreshold: z.number().int().positive().default(7),
-        includeExpired: z.boolean().default(false),
+        page: z.number().int().positive().default(1),
+        pageSize: z.number().int().positive().max(100).default(25),
+        sortBy: z.enum(['expiryDate', 'value', 'productName', 'quantity']).default('expiryDate'),
+        sortDirection: z.enum(['asc', 'desc']).default('asc'),
+        statusFilter: z.enum(['all', 'expired', 'expiringSoon']).default('all'),
+        categoryId: z.string().optional(),
+        supplierId: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const { daysThreshold, includeExpired } = input;
+      const { page, pageSize, sortBy, sortDirection, statusFilter, categoryId, supplierId } = input;
+
+      // Get company inventory settings for threshold
+      const company = await prisma.company.findFirst({
+        select: { inventorySettings: true },
+      });
+      const daysThreshold = company?.inventorySettings?.expiryAlertDays || 7;
 
       const thresholdDate = new Date();
       thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+      const now = new Date();
 
+      // Build where clause
       const where: any = {
         expiryDate: { not: null },
         isConsumed: false,
         quantityRemaining: { gt: 0 },
       };
 
-      if (includeExpired) {
-        where.expiryDate.lte = thresholdDate;
-      } else {
+      // Apply status filter
+      if (statusFilter === 'expired') {
+        where.expiryDate.lt = now;
+      } else if (statusFilter === 'expiringSoon') {
         where.AND = [
-          { expiryDate: { gt: new Date() } },
+          { expiryDate: { gte: now } },
           { expiryDate: { lte: thresholdDate } },
         ];
+      } else {
+        // 'all' - include both expired and expiring soon
+        where.expiryDate.lte = thresholdDate;
       }
 
+      // Apply category filter
+      if (categoryId) {
+        where.product = { ...where.product, categoryId };
+      }
+
+      // Apply supplier filter
+      if (supplierId) {
+        where.supplierId = supplierId;
+      }
+
+      // Build orderBy based on sortBy
+      let orderBy: any;
+      switch (sortBy) {
+        case 'productName':
+          orderBy = { product: { name: sortDirection } };
+          break;
+        case 'quantity':
+          orderBy = { quantityRemaining: sortDirection };
+          break;
+        case 'value':
+          // For value sorting, we'll sort in-memory since it's a computed field
+          orderBy = { expiryDate: 'asc' };
+          break;
+        case 'expiryDate':
+        default:
+          orderBy = { expiryDate: sortDirection };
+          break;
+      }
+
+      // Get total count for pagination
+      const totalCount = await prisma.inventoryBatch.count({ where });
+
+      // Get batches with pagination
       const batches = await prisma.inventoryBatch.findMany({
         where,
         include: {
           product: {
-            select: { id: true, sku: true, name: true, unit: true },
+            select: {
+              id: true,
+              sku: true,
+              name: true,
+              unit: true,
+              category: true,
+              categoryId: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              businessName: true,
+            },
           },
         },
-        orderBy: { expiryDate: 'asc' },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
       });
 
-      const now = new Date();
-      const enrichedBatches = batches.map((batch) => ({
+      // Enrich batches with computed fields
+      let enrichedBatches = batches.map((batch) => ({
         ...batch,
         daysUntilExpiry: Math.ceil(
           (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -616,12 +681,40 @@ export const inventoryRouter = router({
         totalValue: calculateBatchValue(batch),
       }));
 
+      // Sort by value in-memory if that's the sort field
+      if (sortBy === 'value') {
+        enrichedBatches.sort((a, b) => {
+          const diff = a.totalValue - b.totalValue;
+          return sortDirection === 'desc' ? -diff : diff;
+        });
+      }
+
+      // Calculate summary for all matching batches (not just current page)
+      const allBatches = await prisma.inventoryBatch.findMany({
+        where,
+        select: { quantityRemaining: true, costPerUnit: true, expiryDate: true },
+      });
+      
+      const expiredCount = allBatches.filter((b) => b.expiryDate! < now).length;
+      const expiringSoonCount = allBatches.filter(
+        (b) => b.expiryDate! >= now && b.expiryDate! <= thresholdDate
+      ).length;
+      const totalValue = calculateTotalBatchValue(allBatches);
+
       return {
         batches: enrichedBatches,
+        pagination: {
+          page,
+          pageSize,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / pageSize),
+        },
         summary: {
-          totalBatches: enrichedBatches.length,
-          totalValue: enrichedBatches.reduce((sum, b) => sum + b.totalValue, 0),
-          expiredCount: enrichedBatches.filter((b) => b.isExpired).length,
+          totalBatches: totalCount,
+          totalValue,
+          expiredCount,
+          expiringSoonCount,
+          thresholdDays: daysThreshold,
         },
       };
     }),
@@ -726,5 +819,133 @@ export const inventoryRouter = router({
               100
             : 0,
       }));
+    }),
+
+  /**
+   * Mark a batch as fully consumed
+   */
+  markBatchConsumed: requirePermission('products:adjust_stock')
+    .input(z.object({ batchId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const batch = await prisma.inventoryBatch.findUnique({
+        where: { id: input.batchId },
+        include: {
+          product: {
+            select: { id: true, currentStock: true },
+          },
+        },
+      });
+
+      if (!batch) {
+        throw new Error('Batch not found');
+      }
+
+      if (batch.isConsumed) {
+        throw new Error('Batch is already consumed');
+      }
+
+      // Update the batch and reduce product stock
+      const quantityToDeduct = batch.quantityRemaining;
+
+      await prisma.$transaction([
+        // Mark batch as consumed
+        prisma.inventoryBatch.update({
+          where: { id: input.batchId },
+          data: {
+            isConsumed: true,
+            quantityRemaining: 0,
+          },
+        }),
+        // Update product stock
+        prisma.product.update({
+          where: { id: batch.productId },
+          data: {
+            currentStock: { decrement: quantityToDeduct },
+          },
+        }),
+        // Create inventory transaction for traceability
+        prisma.inventoryTransaction.create({
+          data: {
+            type: 'adjustment',
+            adjustmentType: 'stock_write_off',
+            productId: batch.productId,
+            quantity: -quantityToDeduct,
+            previousStock: batch.product.currentStock,
+            newStock: batch.product.currentStock - quantityToDeduct,
+            costPerUnit: batch.costPerUnit,
+            notes: `Batch marked as consumed (expiry management)`,
+            createdBy: ctx.userId || 'system',
+          },
+        }),
+      ]);
+
+      return { success: true };
+    }),
+
+  /**
+   * Update a batch's remaining quantity
+   */
+  updateBatchQuantity: requirePermission('products:adjust_stock')
+    .input(
+      z.object({
+        batchId: z.string(),
+        newQuantity: z.number().min(0),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const batch = await prisma.inventoryBatch.findUnique({
+        where: { id: input.batchId },
+        include: {
+          product: {
+            select: { id: true, currentStock: true },
+          },
+        },
+      });
+
+      if (!batch) {
+        throw new Error('Batch not found');
+      }
+
+      if (batch.isConsumed) {
+        throw new Error('Cannot update consumed batch');
+      }
+
+      const quantityDiff = input.newQuantity - batch.quantityRemaining;
+      const newProductStock = batch.product.currentStock + quantityDiff;
+      const isConsumed = input.newQuantity === 0;
+
+      await prisma.$transaction([
+        // Update batch quantity
+        prisma.inventoryBatch.update({
+          where: { id: input.batchId },
+          data: {
+            quantityRemaining: input.newQuantity,
+            isConsumed,
+          },
+        }),
+        // Update product stock
+        prisma.product.update({
+          where: { id: batch.productId },
+          data: {
+            currentStock: newProductStock,
+          },
+        }),
+        // Create inventory transaction for traceability
+        prisma.inventoryTransaction.create({
+          data: {
+            type: 'adjustment',
+            adjustmentType: 'stock_count_correction',
+            productId: batch.productId,
+            quantity: quantityDiff,
+            previousStock: batch.product.currentStock,
+            newStock: newProductStock,
+            costPerUnit: batch.costPerUnit,
+            notes: `Batch quantity adjusted (expiry management)`,
+            createdBy: ctx.userId || 'system',
+          },
+        }),
+      ]);
+
+      return { success: true, newQuantity: input.newQuantity };
     }),
 });

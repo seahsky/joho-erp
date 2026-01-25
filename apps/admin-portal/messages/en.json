@@ -3017,6 +3017,66 @@
         "costPerUnitRequired": "Cost per unit required when receiving stock",
         "expiryDateFuture": "Expiry date must be in the future"
       }
+    },
+    "expiringList": {
+      "title": "Expiring Stock",
+      "subtitle": "{expired} expired, {expiring} expiring within {days} days",
+      "totalValue": "Total Value at Risk",
+      "filters": {
+        "all": "All",
+        "expired": "Expired",
+        "expiringSoon": "Expiring Soon",
+        "allCategories": "All Categories",
+        "allSuppliers": "All Suppliers"
+      },
+      "sort": {
+        "sortBy": "Sort by",
+        "expiryDateAsc": "Expiry Date (Soonest)",
+        "expiryDateDesc": "Expiry Date (Latest)",
+        "valueDesc": "Value (Highest)",
+        "valueAsc": "Value (Lowest)",
+        "productNameAsc": "Product Name (A-Z)",
+        "productNameDesc": "Product Name (Z-A)",
+        "quantityDesc": "Quantity (Highest)",
+        "quantityAsc": "Quantity (Lowest)"
+      },
+      "columns": {
+        "product": "Product",
+        "category": "Category",
+        "expiry": "Expiry",
+        "quantity": "Quantity",
+        "received": "Received",
+        "supplier": "Supplier",
+        "value": "Value",
+        "actions": "Actions"
+      },
+      "emptyState": "No expiring batches",
+      "emptyStateDescription": "There are no batches matching your filters",
+      "pagination": {
+        "showing": "Showing {start}-{end} of {total} expiring batches",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {total}"
+      },
+      "actions": {
+        "markConsumed": "Mark Consumed",
+        "adjust": "Adjust Quantity",
+        "markConsumedTitle": "Mark Batch as Consumed",
+        "markConsumedDescription": "This will mark {quantity} {unit} of {product} as fully consumed and remove it from inventory.",
+        "markConsumedSuccess": "Batch marked as consumed",
+        "markConsumedError": "Failed to mark batch as consumed",
+        "adjustTitle": "Adjust Batch Quantity",
+        "adjustDescription": "Update the remaining quantity for {product}",
+        "currentQuantity": "Current Quantity",
+        "newQuantity": "New Quantity",
+        "adjustSuccess": "Quantity updated successfully",
+        "adjustError": "Failed to update quantity",
+        "invalidQuantity": "Please enter a valid quantity",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save",
+        "processing": "Processing..."
+      }
     }
   },
   "customerDetail": {

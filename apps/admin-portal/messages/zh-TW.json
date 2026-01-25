@@ -3023,6 +3023,66 @@
         "costPerUnitRequired": "接收庫存時需要單位成本",
         "expiryDateFuture": "到期日期必須在未來"
       }
+    },
+    "expiringList": {
+      "title": "即將過期庫存",
+      "subtitle": "{expired} 已過期，{expiring} 將在 {days} 天內過期",
+      "totalValue": "風險總價值",
+      "filters": {
+        "all": "全部",
+        "expired": "已過期",
+        "expiringSoon": "即將過期",
+        "allCategories": "所有類別",
+        "allSuppliers": "所有供應商"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "expiryDateAsc": "到期日期（最近）",
+        "expiryDateDesc": "到期日期（最遠）",
+        "valueDesc": "價值（最高）",
+        "valueAsc": "價值（最低）",
+        "productNameAsc": "產品名稱（A-Z）",
+        "productNameDesc": "產品名稱（Z-A）",
+        "quantityDesc": "數量（最多）",
+        "quantityAsc": "數量（最少）"
+      },
+      "columns": {
+        "product": "產品",
+        "category": "類別",
+        "expiry": "到期日期",
+        "quantity": "數量",
+        "received": "收貨日期",
+        "supplier": "供應商",
+        "value": "價值",
+        "actions": "操作"
+      },
+      "emptyState": "沒有即將過期的批次",
+      "emptyStateDescription": "沒有符合篩選條件的批次",
+      "pagination": {
+        "showing": "顯示 {start}-{end}，共 {total} 個即將過期批次",
+        "previous": "上一頁",
+        "next": "下一頁",
+        "pageOf": "第 {page} 頁，共 {total} 頁"
+      },
+      "actions": {
+        "markConsumed": "標記為已消耗",
+        "adjust": "調整數量",
+        "markConsumedTitle": "標記批次為已消耗",
+        "markConsumedDescription": "這將標記 {quantity} {unit} 的 {product} 為完全消耗並從庫存中移除。",
+        "markConsumedSuccess": "批次已標記為已消耗",
+        "markConsumedError": "標記批次失敗",
+        "adjustTitle": "調整批次數量",
+        "adjustDescription": "更新 {product} 的剩餘數量",
+        "currentQuantity": "當前數量",
+        "newQuantity": "新數量",
+        "adjustSuccess": "數量更新成功",
+        "adjustError": "更新數量失敗",
+        "invalidQuantity": "請輸入有效的數量",
+        "cancel": "取消",
+        "confirm": "確認",
+        "save": "儲存",
+        "processing": "處理中..."
+      }
     }
   },
   "customerDetail": {

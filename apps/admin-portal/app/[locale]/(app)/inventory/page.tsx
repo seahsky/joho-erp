@@ -50,6 +50,7 @@ import {
   InventoryTransactionDetailDialog,
   StockCountsTable,
   BatchInfoDialog,
+  ExpiringBatchesList,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
@@ -96,13 +97,22 @@ export default function InventoryPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchInfoDialog, setShowBatchInfoDialog] = useState(false);
 
-  // Handle batchId query parameter from URL (e.g., from dashboard alerts)
+  // Expiring batches list state
+  const [showExpiringList, setShowExpiringList] = useState(false);
+
+  // Handle query parameters from URL (e.g., from dashboard alerts)
   useEffect(() => {
     const batchId = searchParams.get('batchId');
+    const expiryFilter = searchParams.get('expiryFilter');
+
     if (batchId) {
       setSelectedBatchId(batchId);
       setShowBatchInfoDialog(true);
       // Clear the URL parameter after opening the dialog
+      router.replace('/inventory', { scroll: false });
+    } else if (expiryFilter === 'alert') {
+      setShowExpiringList(true);
+      // Clear the URL parameter after setting state
       router.replace('/inventory', { scroll: false });
     }
   }, [searchParams, router]);
@@ -165,6 +175,15 @@ export default function InventoryPage() {
     });
     setShowStockDialog(true);
   };
+
+  // If showing expiring list, render that instead
+  if (showExpiringList) {
+    return (
+      <div className="container mx-auto px-4 py-6 md:py-10">
+        <ExpiringBatchesList onBack={() => setShowExpiringList(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">

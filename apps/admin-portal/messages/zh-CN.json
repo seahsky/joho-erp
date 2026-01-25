@@ -3017,6 +3017,66 @@
         "costPerUnitRequired": "接收库存时需要单位成本",
         "expiryDateFuture": "到期日期必须在未来"
       }
+    },
+    "expiringList": {
+      "title": "即将过期库存",
+      "subtitle": "{expired} 已过期，{expiring} 将在 {days} 天内过期",
+      "totalValue": "风险总价值",
+      "filters": {
+        "all": "全部",
+        "expired": "已过期",
+        "expiringSoon": "即将过期",
+        "allCategories": "所有类别",
+        "allSuppliers": "所有供应商"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "expiryDateAsc": "到期日期（最近）",
+        "expiryDateDesc": "到期日期（最远）",
+        "valueDesc": "价值（最高）",
+        "valueAsc": "价值（最低）",
+        "productNameAsc": "产品名称（A-Z）",
+        "productNameDesc": "产品名称（Z-A）",
+        "quantityDesc": "数量（最多）",
+        "quantityAsc": "数量（最少）"
+      },
+      "columns": {
+        "product": "产品",
+        "category": "类别",
+        "expiry": "到期日期",
+        "quantity": "数量",
+        "received": "收货日期",
+        "supplier": "供应商",
+        "value": "价值",
+        "actions": "操作"
+      },
+      "emptyState": "没有即将过期的批次",
+      "emptyStateDescription": "没有符合筛选条件的批次",
+      "pagination": {
+        "showing": "显示 {start}-{end}，共 {total} 个即将过期批次",
+        "previous": "上一页",
+        "next": "下一页",
+        "pageOf": "第 {page} 页，共 {total} 页"
+      },
+      "actions": {
+        "markConsumed": "标记为已消耗",
+        "adjust": "调整数量",
+        "markConsumedTitle": "标记批次为已消耗",
+        "markConsumedDescription": "这将标记 {quantity} {unit} 的 {product} 为完全消耗并从库存中移除。",
+        "markConsumedSuccess": "批次已标记为已消耗",
+        "markConsumedError": "标记批次失败",
+        "adjustTitle": "调整批次数量",
+        "adjustDescription": "更新 {product} 的剩余数量",
+        "currentQuantity": "当前数量",
+        "newQuantity": "新数量",
+        "adjustSuccess": "数量更新成功",
+        "adjustError": "更新数量失败",
+        "invalidQuantity": "请输入有效的数量",
+        "cancel": "取消",
+        "confirm": "确认",
+        "save": "保存",
+        "processing": "处理中..."
+      }
     }
   },
   "customerDetail": {
