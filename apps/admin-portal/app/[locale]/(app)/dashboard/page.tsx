@@ -41,10 +41,10 @@ export default function DashboardPage() {
   const attentionItems = [
     {
       label: t('needsAttention.pendingApprovalLabel'),
-      count: statusCounts?.pending || 0,
-      href: '/orders?status=pending',
+      count: statusCounts?.awaitingApproval || 0,
+      href: '/orders?status=awaiting_approval',
       icon: 'pending' as const,
-      urgency: (statusCounts?.pending || 0) > 5 ? 'critical' as const : 'warning' as const,
+      urgency: (statusCounts?.awaitingApproval || 0) > 5 ? 'critical' as const : 'warning' as const,
     },
     {
       label: t('needsAttention.backordersLabel'),

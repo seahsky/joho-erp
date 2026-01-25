@@ -569,7 +569,8 @@ export const dashboardRouter = router({
 
     // Map to dashboard categories
     const statusMap: Record<string, number> = {
-      pending: 0,
+      awaitingApproval: 0, // Only awaiting_approval orders
+      pending: 0, // awaiting_approval + confirmed (for backward compatibility)
       ready: 0,
       delivering: 0,
       completed: 0,
@@ -578,6 +579,9 @@ export const dashboardRouter = router({
     counts.forEach((item) => {
       switch (item.status) {
         case 'awaiting_approval':
+          statusMap.awaitingApproval += item._count;
+          statusMap.pending += item._count;
+          break;
         case 'confirmed':
           statusMap.pending += item._count;
           break;
