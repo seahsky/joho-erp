@@ -4,13 +4,14 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
-import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList } from 'lucide-react';
+import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
 import { OrderListView } from './components/OrderListView';
 import { AreaLabelFilter } from './components/AreaLabelFilter';
 import { StatsBar, FilterBar, OperationsLayout, type StatItem } from '@/components/operations';
+import { PermissionGate } from '@/components/permission-gate';
 import type { ProductCategory } from '@joho-erp/shared';
 
 export default function PackingPage() {
@@ -25,6 +26,7 @@ export default function PackingPage() {
 
   const [deliveryDate, setDeliveryDate] = useState<Date>(today);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isRecalculatingRoute, setIsRecalculatingRoute] = useState(false);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [hasShownResumeDialog, setHasShownResumeDialog] = useState(false);
   const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
@@ -89,6 +91,29 @@ export default function PackingPage() {
   // Handle resuming an order from the dialog
   const handleResumeOrder = async (orderId: string) => {
     await resumeOrderMutation.mutateAsync({ orderId });
+  };
+
+  // Handler for manual route recalculation
+  const handleRecalculateRoute = async () => {
+    if (!deliveryDate) return;
+    setIsRecalculatingRoute(true);
+    try {
+      await optimizeRouteMutation.mutateAsync({
+        deliveryDate: deliveryDate.toISOString(),
+        force: true,
+      });
+      await refetch();
+      toast({
+        title: t('routeOptimized'),
+      });
+    } catch (error) {
+      toast({
+        title: tErrors('optimizationFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRecalculatingRoute(false);
+    }
   };
 
   // Trigger auto-optimization when session data changes
@@ -235,11 +260,32 @@ export default function PackingPage() {
     <div className="container mx-auto px-4 py-6 md:py-10">
       <div className="space-y-6">
         {/* Standard Header */}
-        <div>
-          <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            {t('subtitle')}
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-bold">{t('title')}</h1>
+            <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+              {t('subtitle')}
+            </p>
+          </div>
+          <PermissionGate permission="packing:manage">
+            <Button
+              onClick={handleRecalculateRoute}
+              variant="outline"
+              disabled={isRecalculatingRoute || !deliveryDate}
+            >
+              {isRecalculatingRoute ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('optimizingRoute')}
+                </>
+              ) : (
+                <>
+                  <Navigation className="h-4 w-4 mr-2" />
+                  {t('regenerateRoute')}
+                </>
+              )}
+            </Button>
+          </PermissionGate>
         </div>
 
         {/* Date Selector */}
