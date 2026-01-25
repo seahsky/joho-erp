@@ -119,15 +119,15 @@ export interface SignatureCoordinate {
 
 export const SIGNATURE_COORDINATES = {
   // Page 6 - Applicant signatures
-  applicant1Signature: { x: 165, y: 315, width: 180, height: 50 },
-  applicant2Signature: { x: 165, y: 150, width: 180, height: 50 },
-  applicant3Signature: { x: 165, y: 766, width: 180, height: 50 }, // Continues from page 6
+  applicant1Signature: { x: 175, y: 375, width: 180, height: 45 },
+  applicant2Signature: { x: 175, y: 225, width: 180, height: 45 },
+  applicant3Signature: { x: 175, y: 175, width: 180, height: 45 }, // Continues from page 6
 
   // Page 8 - Guarantor and witness signatures
-  guarantor1Signature: { x: 165, y: 635, width: 180, height: 50 },
-  witness1Signature: { x: 165, y: 490, width: 180, height: 50 },
-  guarantor2Signature: { x: 165, y: 320, width: 180, height: 50 },
-  witness2Signature: { x: 165, y: 175, width: 180, height: 50 },
+  guarantor1Signature: { x: 175, y: 600, width: 180, height: 45 },
+  witness1Signature: { x: 175, y: 550, width: 180, height: 45 },
+  guarantor2Signature: { x: 175, y: 320, width: 180, height: 45 },
+  witness2Signature: { x: 175, y: 175, width: 180, height: 45 },
 } as const;
 
 export type TextFieldKey = keyof typeof TEXT_FIELDS;

@@ -9,7 +9,7 @@ import { AlertCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import type { ProductWithPricing, StockStatus } from '@joho-erp/shared';
 import { StickyCartSummary } from './sticky-cart-summary';
-import { CategoryChipBar } from './category-chip-bar';
+import { MobileCategorySidebar } from './mobile-category-sidebar';
 import { ProductRow } from './product-row';
 import { MiniCartDrawer } from '@/components/mini-cart/mini-cart-drawer';
 import { MiniCartSheet } from '@/components/mini-cart/mini-cart-sheet';
@@ -271,7 +271,7 @@ export function ProductList() {
         isHidden={miniCartOpen}
       />
 
-      {/* Main Layout - Sidebar + Content on desktop */}
+      {/* Main Layout - Sidebar + Content */}
       <div className="flex min-h-screen">
         {/* Desktop Sidebar */}
         {!isLoading && isMobile === false && (
@@ -283,10 +283,23 @@ export function ProductList() {
           />
         )}
 
+        {/* Mobile Category Sidebar */}
+        {!isLoading && isMobile === true && (
+          <MobileCategorySidebar
+            categories={categoriesWithCounts}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            totalProductCount={totalProducts}
+          />
+        )}
+
         {/* Main Container */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-screen overflow-x-hidden"
+          className={cn(
+            "flex-1 min-h-screen overflow-x-hidden",
+            isMobile && "w-[calc(100vw-60px)]"
+          )}
           {...touchHandlers}
         >
           <div className="container mx-auto px-4 max-w-full">
@@ -298,16 +311,6 @@ export function ProductList() {
                 isRefreshing={isRefreshing}
               />
             </div>
-
-            {/* Category Chip Bar - Mobile only */}
-            {!isLoading && isMobile && (
-              <CategoryChipBar
-                categories={categoriesWithCounts}
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-                totalProductCount={totalProducts}
-              />
-            )}
 
           {/* Status Banner */}
           {!isLoading && (
