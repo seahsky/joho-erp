@@ -394,7 +394,7 @@ export function InlineQuantityControls({
           size="sm"
           onClick={handleAdd5}
           disabled={disabled || isPending}
-          className="gap-1.5 px-4"
+          className="gap-1 px-2.5"
           title={t('quantity.quickAdd5')}
           aria-label={t('quantity.quickAdd5')}
         >
@@ -403,7 +403,7 @@ export function InlineQuantityControls({
           ) : (
             <Plus className="h-3.5 w-3.5" />
           )}
-          {t('quantity.add5')}
+          <span className="text-xs">5</span>
         </Button>
       </div>
     );
@@ -462,21 +462,9 @@ export function InlineQuantityControls({
     );
   }
 
-  // State 3: Precision edit mode - show [-5] [input] [+5]
+  // State 3: Precision edit mode - show [input] [✓] [✗] (simplified for mobile)
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleSubtract5}
-        disabled={disabled || isPending}
-        className="h-9 w-9 p-0"
-        title={t('quantity.remove5')}
-        aria-label={t('quantity.remove5')}
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </Button>
-
       <input
         ref={inputRef}
         type="number"
@@ -487,7 +475,7 @@ export function InlineQuantityControls({
         min={MIN_QUANTITY}
         max={MAX_QUANTITY}
         className={cn(
-          'h-9 w-14 border-2 border-primary text-center font-bold text-sm',
+          'h-9 w-16 border-2 border-primary rounded-md text-center font-bold text-sm',
           'focus:outline-none focus:ring-2 focus:ring-ring',
           'transition-all duration-200',
           disabled && 'opacity-50 cursor-not-allowed'
@@ -509,7 +497,11 @@ export function InlineQuantityControls({
         title={t('quantity.confirm')}
         aria-label={t('quantity.confirm')}
       >
-        <Check className="h-3.5 w-3.5 text-green-600" />
+        {isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Check className="h-3.5 w-3.5 text-green-600" />
+        )}
       </Button>
 
       <Button
@@ -522,18 +514,6 @@ export function InlineQuantityControls({
         aria-label={t('quantity.cancel')}
       >
         <X className="h-3.5 w-3.5 text-muted-foreground" />
-      </Button>
-
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleAdd5}
-        disabled={disabled || isPending}
-        className="h-9 w-9 p-0"
-        title={t('quantity.add5')}
-        aria-label={t('quantity.add5')}
-      >
-        <Plus className="h-3.5 w-3.5" />
       </Button>
     </div>
   );

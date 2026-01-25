@@ -286,10 +286,10 @@ export function ProductList() {
         {/* Main Container */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-screen"
+          className="flex-1 min-h-screen overflow-x-hidden"
           {...touchHandlers}
         >
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 max-w-full">
             {/* Pull-to-refresh indicator (mobile only) */}
             <div className="md:hidden">
               <PullToRefreshIndicator

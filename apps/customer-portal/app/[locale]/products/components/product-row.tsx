@@ -157,10 +157,10 @@ export function ProductRow({
         </div>
 
         {/* Quantity Controls (Right Section) */}
-        <div className="flex items-center justify-between md:justify-end gap-4">
+        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 md:gap-4 min-w-0">
           {/* Price + Stock (Mobile) */}
-          <div className="flex flex-col md:hidden">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col md:hidden min-w-0 flex-shrink">
+            <div className="flex items-center gap-1.5">
               <Large className="font-bold text-sm">
                 {formatAUD(displayPrice)}
               </Large>
@@ -168,7 +168,7 @@ export function ProductRow({
                 / {product.unit}
               </Muted>
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-1.5 mt-1">
               {getStockBadge(product.stockStatus)}
               {product.applyGst && (
                 <Muted className="text-xs">
@@ -179,7 +179,7 @@ export function ProductRow({
           </div>
 
           {/* Inline Quantity Controls */}
-          <div className="md:w-44 md:flex-shrink-0 flex md:justify-end">
+          <div className="md:w-44 md:flex-shrink-0 flex md:justify-end flex-shrink-0">
             <InlineQuantityControls
               productId={product.id}
               productName={product.name}
