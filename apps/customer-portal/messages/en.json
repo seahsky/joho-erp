@@ -504,8 +504,10 @@
       "referencesShort": "Refs",
       "review": "Review",
       "reviewShort": "Review",
-      "termsAgreement": "Terms & Conditions",
-      "termsAgreementShort": "T&C",
+      "terms-conditions": "Terms & Conditions",
+      "terms-conditionsShort": "T&C",
+      "guarantee-indemnity": "Guarantee",
+      "guarantee-indemnityShort": "Guarantee",
       "signatures": "Signature",
       "signaturesShort": "Sign"
     },
@@ -726,24 +728,232 @@
         "submitting": "Submitting..."
       }
     },
-    "termsAgreement": {
+    "termsConditions": {
       "title": "Terms & Conditions",
-      "description": "Please review the terms and conditions before proceeding",
-      "pdfViewer": {
-        "loading": "Loading application form...",
-        "loadError": "Failed to load application form",
-        "retry": "Retry",
-        "page": "Page {current} of {total}",
-        "previousPage": "Previous Page",
-        "nextPage": "Next Page",
-        "downloadPdf": "Download PDF"
+      "description": "Please review and agree to the terms and conditions",
+      "intro": "I/WE HEREBY AGREE TO BE BOUND BY THE FOLLOWING TERMS AND CONDITIONS IN CONSIDERATION OF THE SUPPLIER PROVIDING CREDIT FACILITY TO THE APPLICANT.",
+      "definitions": {
+        "title": "Definitions",
+        "applicant": {
+          "term": "\"Applicant\"",
+          "meaning": "means the person, partnership, corporation, trust or other entity described as such on this credit application form."
+        },
+        "conditions": {
+          "term": "\"Conditions\"",
+          "meaning": "means these terms and conditions."
+        },
+        "supplier": {
+          "term": "\"Supplier\"",
+          "meaning": "means JIMMY'S BEEF PTY LTD ABN 78 673 178 615."
+        },
+        "goods": {
+          "term": "\"Goods/Services\"",
+          "meaning": "means all goods and/or services supplied by the Supplier to the Applicant."
+        }
+      },
+      "clauses": {
+        "1": {
+          "title": "1. Credit Facility",
+          "a": "The Supplier may, at its absolute discretion, grant the Applicant a credit facility.",
+          "b": "The Supplier may, at any time and without notice, vary or cancel the credit facility.",
+          "c": "The Applicant acknowledges that the Supplier is under no obligation to provide credit to the Applicant.",
+          "d": "The Supplier reserves the right to refuse to supply goods or services to the Applicant at any time.",
+          "e": "The Applicant agrees to pay for all goods and services supplied by the Supplier in accordance with these Conditions.",
+          "f": "The Applicant acknowledges that the prices of goods and services may change from time to time without notice.",
+          "g": "The credit limit may be varied by the Supplier at any time without notice to the Applicant."
+        },
+        "2": {
+          "title": "2. Payment and Default",
+          "a": "Payment terms are strictly 7 days from the date of invoice unless otherwise agreed in writing by the Supplier.",
+          "b": {
+            "intro": "If the Applicant fails to pay any amount when due, or is in breach of any of these Conditions, the Supplier may (without prejudice to any other rights it may have):",
+            "i": "charge interest on overdue amounts at the rate of 2% per month (or part thereof) calculated daily and compounding monthly;",
+            "ii": "suspend or cancel any credit facility;",
+            "iii": "require the Applicant to pay cash on delivery for any further goods or services;",
+            "iv": "refuse to supply any further goods or services to the Applicant;",
+            "v": "repossess any goods for which payment has not been received;",
+            "vi": "recover from the Applicant all costs and expenses (including legal costs on a solicitor/client basis) incurred in recovering any amounts owed;",
+            "vii": "register a default on the Applicant's credit file;",
+            "viii": "appoint a debt collection agency to recover outstanding amounts;",
+            "ix": "take any other action permitted by law."
+          },
+          "c": {
+            "intro": "The Applicant shall be in default if:",
+            "i": "the Applicant fails to pay any amount when due;",
+            "ii": "the Applicant breaches any of these Conditions;",
+            "iii": "the Applicant becomes insolvent, enters into liquidation or administration, or has a receiver or manager appointed;",
+            "iv": "the Applicant ceases or threatens to cease carrying on business;",
+            "v": "any information provided by the Applicant is false, misleading or incomplete."
+          },
+          "d": "The Applicant agrees that any representation of authority to purchase on behalf of the Applicant shall bind the Applicant for payment.",
+          "e": "The Applicant waives any right to set-off or counterclaim against amounts owed to the Supplier."
+        },
+        "3": {
+          "title": "3. Personal Guarantee",
+          "a": "If the Applicant is a company, trust or partnership, each director, trustee or partner (as applicable) personally guarantees the payment of all amounts owed by the Applicant to the Supplier.",
+          "b": "The personal guarantee is a continuing guarantee and remains in force until all amounts owed are paid in full."
+        },
+        "4": {
+          "title": "4. Title",
+          "a": "Title to goods does not pass to the Applicant until payment in full has been received by the Supplier.",
+          "b": "Until title passes, the Applicant holds the goods as bailee for the Supplier.",
+          "c": "The Applicant grants the Supplier an irrevocable licence to enter any premises where goods may be stored to repossess goods for which payment has not been received.",
+          "d": "If goods are mixed with other goods or processed, the Supplier retains title to the goods to the extent of the value of the Supplier's goods."
+        },
+        "5": {
+          "title": "5. Supplier's Rights",
+          "a": "The Supplier may at any time and without notice set off any amount owed to the Applicant against any amount owed by the Applicant to the Supplier.",
+          "b": "The Supplier may assign or otherwise deal with its rights under these Conditions without the consent of the Applicant.",
+          "c": "The Supplier's failure to exercise any right under these Conditions does not constitute a waiver of that right.",
+          "d": "The Supplier may vary these Conditions at any time by giving written notice to the Applicant.",
+          "e": "Any variation to these Conditions applies to all transactions after notice is given."
+        },
+        "6": {
+          "title": "6. General Lien",
+          "a": "The Supplier has a general lien over all goods in its possession for any amounts owed by the Applicant."
+        },
+        "7": {
+          "title": "7. Risk",
+          "a": "Risk in the goods passes to the Applicant upon delivery.",
+          "b": "The Applicant must insure the goods from the time risk passes until title passes.",
+          "c": "The Applicant is liable for any loss or damage to goods after risk passes, regardless of whether title has passed."
+        },
+        "8": {
+          "title": "8. Force Majeure",
+          "a": "The Supplier is not liable for any delay or failure to perform its obligations if the delay or failure is caused by circumstances beyond its reasonable control."
+        },
+        "9": {
+          "title": "9. Personal Property Securities Act 2009 (PPSA)",
+          "a": "The Applicant acknowledges that these Conditions create a security interest in the goods supplied by the Supplier.",
+          "b": "The Applicant agrees to do all things necessary to ensure the Supplier has a perfected security interest in the goods.",
+          "c": "The Applicant waives its right to receive a verification statement under the PPSA.",
+          "d": "The Applicant agrees that the Supplier may register a financing statement on the Personal Property Securities Register (PPSR) in respect of goods supplied.",
+          "e": "The Applicant agrees not to change its name, ABN or other identifying details without first giving 14 days written notice to the Supplier.",
+          "f": "The Applicant agrees to pay all costs associated with the registration and maintenance of the Supplier's security interest.",
+          "g": "The Applicant agrees that the Supplier may exercise all rights available to a secured party under the PPSA.",
+          "h": "To the extent permitted by law, the Applicant and Supplier agree to contract out of sections 95, 96, 117, 118, 120, 121(4), 125, 130, 132(3)(d), 132(4), 135, 142 and 143 of the PPSA.",
+          "i": "The Applicant agrees not to register a financing statement in respect of any security interest in goods supplied without the Supplier's prior written consent.",
+          "j": "The Applicant agrees to provide all information required by the Supplier to register a financing statement.",
+          "k": "The Applicant acknowledges that it has received value and has not agreed to postpone the time for attachment of the security interest."
+        },
+        "10": {
+          "title": "10. Severance",
+          "a": "If any provision of these Conditions is invalid or unenforceable, it will be severed and the remaining provisions will continue in full force and effect."
+        },
+        "11": {
+          "title": "11. Governing Law",
+          "a": "These Conditions are governed by the laws of Victoria, Australia, and the parties submit to the exclusive jurisdiction of the courts of Victoria."
+        }
+      },
+      "declaration": {
+        "title": "Declaration",
+        "intro": "By agreeing to these terms, I/we declare and affirm that:",
+        "1": "I/We have read and understood the terms of this application and confirm that the terms will apply to any credit facility provided by the Supplier to me/us.",
+        "2": "The information supplied by me/us, the Applicant, in this application is true and correct.",
+        "3": "I/We acknowledge the Supplier and related parties will use this information for the purpose of assessing my/our commercial credit application.",
+        "4": "I/We consent to the Supplier obtaining from a credit reporting agency a credit report containing personal credit information about me/us in relation to commercial credit provided by the Supplier.",
+        "5": "I/We consent to the Supplier disclosing personal information to credit reporting agencies and other credit providers for the purposes of assessing creditworthiness and debt recovery."
       },
       "agreement": {
-        "label": "I have read and agree to the terms and conditions outlined in the credit application form above",
+        "label": "I have read and agree to the Terms & Conditions outlined above",
         "required": "Required"
       },
       "validation": {
-        "mustAgree": "You must agree to the terms and conditions to proceed"
+        "mustAgree": "You must agree to the Terms & Conditions to proceed"
+      },
+      "buttons": {
+        "back": "Back",
+        "next": "Next"
+      }
+    },
+    "guaranteeIndemnity": {
+      "title": "Guarantee & Indemnity",
+      "description": "Please review and agree to the guarantee and indemnity deed",
+      "header": "To: JIMMY'S BEEF PTY LTD ABN 78 673 178 615 (\"the Supplier\")",
+      "recitals": {
+        "title": "Recitals",
+        "a": "The Applicant ({businessName}) has submitted an application to be supplied credit by the Supplier.",
+        "b": "This Guarantee and Indemnity applies to all credit supplied by the Supplier to the Applicant, including all branches, divisions and related entities."
+      },
+      "operativePart": {
+        "title": "Operative Part"
+      },
+      "clauses": {
+        "1": {
+          "title": "1. Guarantor Obligations",
+          "intro": "In consideration of the Supplier agreeing to supply credit to the Applicant, each Guarantor:",
+          "a": "unconditionally and irrevocably guarantees to the Supplier the due and punctual payment by the Applicant of all amounts payable to the Supplier;",
+          "b": "unconditionally and irrevocably guarantees to the Supplier the due and punctual performance by the Applicant of all its obligations to the Supplier;",
+          "c": "unconditionally and irrevocably indemnifies the Supplier against all loss, damage, costs and expenses arising from any default by the Applicant."
+        },
+        "2": {
+          "title": "2. Principal Obligation",
+          "content": "This guarantee and indemnity is a principal obligation and not ancillary to any obligation of the Applicant. The Guarantor's liability is not affected by any other security or guarantee held by the Supplier."
+        },
+        "3": {
+          "title": "3. Enforceability",
+          "intro": "This guarantee and indemnity remains enforceable against the Guarantor notwithstanding:",
+          "a": "any variation, extension or renewal of any credit facility or payment terms;",
+          "b": "any release or discharge of the Applicant or any other guarantor;",
+          "c": "any failure to enforce or delay in enforcing any rights against the Applicant;",
+          "d": "any arrangement or compromise with the Applicant or any other guarantor;",
+          "e": "the insolvency, liquidation, administration or death of the Applicant or any other guarantor;",
+          "f": "any change in the constitution of the Applicant or Supplier;",
+          "g": "any security interest being void, invalid or unenforceable;",
+          "h": "any other act, omission or circumstance which might otherwise affect or discharge the Guarantor's liability."
+        },
+        "4": {
+          "title": "4. Continuing Guarantee",
+          "content": "This is a continuing guarantee and remains in force until all amounts owing by the Applicant are paid in full and the Supplier has no further obligation to provide credit."
+        },
+        "5": {
+          "title": "5. Joint and Several Liability",
+          "a": "If more than one person signs as Guarantor, each is jointly and severally liable under this guarantee and indemnity.",
+          "b": "The Supplier may release or compromise with any Guarantor without affecting the liability of any other Guarantor.",
+          "c": "Each Guarantor waives any rights to claim contribution from any other Guarantor."
+        },
+        "6": {
+          "title": "6. Waiver of Rights",
+          "content": "Each Guarantor waives any right to require the Supplier to proceed first against the Applicant or any other guarantor or to enforce any other security before enforcing this guarantee."
+        },
+        "7": {
+          "title": "7. Property Charge",
+          "content": "Each Guarantor charges all of their estate and interest in any real property owned by them (whether solely or jointly) with the payment of all amounts payable under this guarantee and indemnity."
+        },
+        "8": {
+          "title": "8. Credit Reporting Consent",
+          "content": "Each Guarantor consents to the Supplier obtaining credit reports and disclosing personal information to credit reporting agencies for the purposes of assessing creditworthiness and debt recovery."
+        },
+        "9": {
+          "title": "9. Trust Authority",
+          "content": "If a Guarantor is a trustee, the Guarantor warrants that it has full power and authority to enter into this guarantee and indemnity and to bind the trust assets."
+        },
+        "10": {
+          "title": "10. Notices",
+          "content": "Any notice under this guarantee and indemnity must be in writing and may be served by post, email or personal delivery to the last known address of the party."
+        },
+        "11": {
+          "title": "11. Definitions",
+          "supplier": {
+            "term": "\"Supplier\"",
+            "meaning": "means JIMMY'S BEEF PTY LTD ABN 78 673 178 615."
+          },
+          "applicant": {
+            "term": "\"Applicant\"",
+            "meaning": "means the person, partnership, corporation, trust or other entity applying for credit."
+          },
+          "guarantors": {
+            "term": "\"Guarantors\"",
+            "meaning": "means each person who signs this guarantee and indemnity as a guarantor."
+          }
+        }
+      },
+      "agreement": {
+        "label": "I have read and agree to the Guarantee & Indemnity deed outlined above",
+        "required": "Required"
+      },
+      "validation": {
+        "mustAgree": "You must agree to the Guarantee & Indemnity to proceed"
       },
       "buttons": {
         "back": "Back",

@@ -13,15 +13,16 @@ import { DirectorsStep } from './components/directors-step';
 import { FinancialStep } from './components/financial-step';
 import { TradeReferencesStep } from './components/trade-references-step';
 import { ReviewStep } from './components/review-step';
-import { TermsAgreementStep } from './components/terms-agreement-step';
+import { TermsConditionsStep } from './components/terms-conditions-step';
+import { GuaranteeIndemnityStep } from './components/guarantee-indemnity-step';
 import { SignatureStep, type SignatureData } from './components/signature-step';
 
 const STORAGE_KEY = 'onboarding-form-data';
 
-type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'terms-agreement' | 'signatures';
+type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'terms-conditions' | 'guarantee-indemnity' | 'signatures';
 
 // Step IDs defined outside component to avoid React hook dependency issues
-const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'terms-agreement', 'signatures'];
+const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'terms-conditions', 'guarantee-indemnity', 'signatures'];
 
 export interface BusinessInfo {
   accountType: 'sole_trader' | 'partnership' | 'company' | 'other';
@@ -118,8 +119,11 @@ interface SavedFormData {
   directors: DirectorInfo[];
   financialInfo: Partial<FinancialInfo>;
   tradeReferences: TradeReferenceInfo[];
-  termsAgreement: { hasAgreed: boolean };
+  termsConditionsAgreed: boolean;
+  guaranteeIndemnityAgreed: boolean;
   signatureData?: SignatureState[];  // Added for signature persistence
+  // Legacy field for migration
+  termsAgreement?: { hasAgreed: boolean };
 }
 
 export default function OnboardingPage() {
@@ -133,9 +137,8 @@ export default function OnboardingPage() {
   const [directors, setDirectors] = useState<DirectorInfo[]>([]);
   const [financialInfo, setFinancialInfo] = useState<Partial<FinancialInfo>>({});
   const [tradeReferences, setTradeReferences] = useState<TradeReferenceInfo[]>([]);
-  const [termsAgreement, setTermsAgreement] = useState<{ hasAgreed: boolean }>({
-    hasAgreed: false,
-  });
+  const [termsConditionsAgreed, setTermsConditionsAgreed] = useState(false);
+  const [guaranteeIndemnityAgreed, setGuaranteeIndemnityAgreed] = useState(false);
   const [signatureData, setSignatureData] = useState<SignatureState[]>([]);
   const [isRestored, setIsRestored] = useState(false);
 
@@ -145,12 +148,26 @@ export default function OnboardingPage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed: SavedFormData = JSON.parse(saved);
-        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+        // Handle migration from old step format
+        let restoredStep = parsed.currentStep;
+        if (restoredStep === 'terms-agreement' as OnboardingStep) {
+          restoredStep = 'terms-conditions';
+        }
+        if (restoredStep) setCurrentStep(restoredStep);
         if (parsed.businessInfo) setBusinessInfo(parsed.businessInfo);
         if (parsed.directors) setDirectors(parsed.directors);
         if (parsed.financialInfo) setFinancialInfo(parsed.financialInfo);
         if (parsed.tradeReferences) setTradeReferences(parsed.tradeReferences);
-        if (parsed.termsAgreement) setTermsAgreement(parsed.termsAgreement);
+        // Handle new fields
+        if (parsed.termsConditionsAgreed !== undefined) {
+          setTermsConditionsAgreed(parsed.termsConditionsAgreed);
+        } else if (parsed.termsAgreement?.hasAgreed) {
+          // Migrate from old format
+          setTermsConditionsAgreed(parsed.termsAgreement.hasAgreed);
+        }
+        if (parsed.guaranteeIndemnityAgreed !== undefined) {
+          setGuaranteeIndemnityAgreed(parsed.guaranteeIndemnityAgreed);
+        }
         if (parsed.signatureData) setSignatureData(parsed.signatureData);
       }
     } catch (e) {
@@ -170,7 +187,8 @@ export default function OnboardingPage() {
       directors,
       financialInfo,
       tradeReferences,
-      termsAgreement,
+      termsConditionsAgreed,
+      guaranteeIndemnityAgreed,
       signatureData,
     };
     try {
@@ -178,7 +196,7 @@ export default function OnboardingPage() {
     } catch (e) {
       console.warn('Failed to save onboarding data:', e);
     }
-  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsAgreement, signatureData, isRestored]);
+  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsConditionsAgreed, guaranteeIndemnityAgreed, signatureData, isRestored]);
 
   // Clear localStorage on successful submission
   const clearSavedData = useCallback(() => {
@@ -325,7 +343,7 @@ export default function OnboardingPage() {
             directors={directors}
             financialInfo={financialInfo as FinancialInfo}
             tradeReferences={tradeReferences}
-            onNext={() => setCurrentStep('terms-agreement')}
+            onNext={() => setCurrentStep('terms-conditions')}
             onBack={() => setCurrentStep('references')}
             onStepClick={(stepIndex) => {
               const stepMap: OnboardingStep[] = ['business', 'directors', 'financial', 'references'];
@@ -336,12 +354,22 @@ export default function OnboardingPage() {
           />
         )}
 
-        {currentStep === 'terms-agreement' && (
-          <TermsAgreementStep
-            data={termsAgreement}
-            onChange={setTermsAgreement}
-            onNext={() => setCurrentStep('signatures')}
+        {currentStep === 'terms-conditions' && (
+          <TermsConditionsStep
+            agreed={termsConditionsAgreed}
+            onChange={setTermsConditionsAgreed}
+            onNext={() => setCurrentStep('guarantee-indemnity')}
             onBack={() => setCurrentStep('review')}
+          />
+        )}
+
+        {currentStep === 'guarantee-indemnity' && (
+          <GuaranteeIndemnityStep
+            businessName={(businessInfo as BusinessInfo).businessName || ''}
+            agreed={guaranteeIndemnityAgreed}
+            onChange={setGuaranteeIndemnityAgreed}
+            onNext={() => setCurrentStep('signatures')}
+            onBack={() => setCurrentStep('terms-conditions')}
           />
         )}
 
@@ -350,7 +378,7 @@ export default function OnboardingPage() {
             directors={directors}
             businessName={(businessInfo as BusinessInfo).businessName}
             onComplete={handleSignaturesComplete}
-            onBack={() => setCurrentStep('terms-agreement')}
+            onBack={() => setCurrentStep('guarantee-indemnity')}
             isSubmitting={registerMutation.isPending}
           />
         )}
