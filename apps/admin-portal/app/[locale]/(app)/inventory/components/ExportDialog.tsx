@@ -25,7 +25,7 @@ type DataScope = 'current' | 'all';
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentTab: 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts';
+  currentTab: 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry';
   currentFilters: {
     transactionType?: 'sale' | 'adjustment' | 'return';
     productSearch?: string;
@@ -50,9 +50,9 @@ export function ExportDialog({
 
   const useCurrentFilters = dataScope === 'current';
 
-  // Map stockCounts to overview for export (stockCounts export not yet implemented)
+  // Map stockCounts and stockExpiry to overview for export (not yet implemented)
   const exportTab: 'overview' | 'trends' | 'turnover' | 'comparison' =
-    currentTab === 'stockCounts' ? 'overview' : currentTab;
+    currentTab === 'stockCounts' || currentTab === 'stockExpiry' ? 'overview' : currentTab;
 
   const { data, isLoading } = api.inventory.export.getData.useQuery(
     {

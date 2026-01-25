@@ -42,7 +42,7 @@ type SortBy = 'expiryDate' | 'value' | 'productName' | 'quantity';
 type SortDirection = 'asc' | 'desc';
 
 interface ExpiringBatchesListProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
@@ -150,9 +150,11 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={onBack}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
+              {onBack && (
+                <Button variant="ghost" size="icon" onClick={onBack}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+              )}
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-warning" />

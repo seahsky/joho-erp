@@ -2880,7 +2880,8 @@
       "trends": "趨勢",
       "turnover": "週轉率",
       "comparison": "對比分析",
-      "stockCounts": "庫存盤點"
+      "stockCounts": "庫存盤點",
+      "stockExpiry": "庫存保質期"
     },
     "stats": {
       "periods": {
@@ -3097,12 +3098,14 @@
         "pageOf": "第 {page} 頁，共 {total} 頁"
       },
       "actions": {
-        "markConsumed": "標記為已消耗",
+        "writeOff": "報廢",
         "adjust": "調整數量",
-        "markConsumedTitle": "標記批次為已消耗",
-        "markConsumedDescription": "這將標記 {quantity} {unit} 的 {product} 為完全消耗並從庫存中移除。",
-        "markConsumedSuccess": "批次已標記為已消耗",
-        "markConsumedError": "標記批次失敗",
+        "writeOffTitle": "庫存報廢",
+        "writeOffDescription": "這將報廢 {quantity} {unit} 的 {product} 並從庫存中移除。",
+        "writeOffReason": "報廢原因",
+        "writeOffReasonPlaceholder": "例如：過期、損壞、品質問題...",
+        "writeOffSuccess": "庫存報廢成功",
+        "writeOffError": "庫存報廢失敗",
         "adjustTitle": "調整批次數量",
         "adjustDescription": "更新 {product} 的剩餘數量",
         "currentQuantity": "當前數量",

@@ -2874,7 +2874,8 @@
       "trends": "Trends",
       "turnover": "Turnover",
       "comparison": "Comparison",
-      "stockCounts": "Stock Counts"
+      "stockCounts": "Stock Counts",
+      "stockExpiry": "Stock Expiry"
     },
     "stats": {
       "periods": {
@@ -3091,12 +3092,14 @@
         "pageOf": "Page {page} of {total}"
       },
       "actions": {
-        "markConsumed": "Mark Consumed",
+        "writeOff": "Write Off",
         "adjust": "Adjust Quantity",
-        "markConsumedTitle": "Mark Batch as Consumed",
-        "markConsumedDescription": "This will mark {quantity} {unit} of {product} as fully consumed and remove it from inventory.",
-        "markConsumedSuccess": "Batch marked as consumed",
-        "markConsumedError": "Failed to mark batch as consumed",
+        "writeOffTitle": "Write Off Stock",
+        "writeOffDescription": "This will write off {quantity} {unit} of {product} and remove it from inventory.",
+        "writeOffReason": "Reason for Write Off",
+        "writeOffReasonPlaceholder": "e.g., Expired, Damaged, Quality issue...",
+        "writeOffSuccess": "Stock written off successfully",
+        "writeOffError": "Failed to write off stock",
         "adjustTitle": "Adjust Batch Quantity",
         "adjustDescription": "Update the remaining quantity for {product}",
         "currentQuantity": "Current Quantity",

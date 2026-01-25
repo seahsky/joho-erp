@@ -74,7 +74,7 @@ export default function InventoryPage() {
 
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts'>('overview');
+  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry'>('overview');
 
   // Stock adjustment state
   const [showStockDialog, setShowStockDialog] = useState(false);
@@ -97,9 +97,6 @@ export default function InventoryPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchInfoDialog, setShowBatchInfoDialog] = useState(false);
 
-  // Expiring batches list state
-  const [showExpiringList, setShowExpiringList] = useState(false);
-
   // Handle query parameters from URL (e.g., from dashboard alerts)
   useEffect(() => {
     const batchId = searchParams.get('batchId');
@@ -111,7 +108,7 @@ export default function InventoryPage() {
       // Clear the URL parameter after opening the dialog
       router.replace('/inventory', { scroll: false });
     } else if (expiryFilter === 'alert') {
-      setShowExpiringList(true);
+      setCurrentTab('stockExpiry');
       // Clear the URL parameter after setting state
       router.replace('/inventory', { scroll: false });
     }
@@ -175,15 +172,6 @@ export default function InventoryPage() {
     });
     setShowStockDialog(true);
   };
-
-  // If showing expiring list, render that instead
-  if (showExpiringList) {
-    return (
-      <div className="container mx-auto px-4 py-6 md:py-10">
-        <ExpiringBatchesList onBack={() => setShowExpiringList(false)} />
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
@@ -289,13 +277,14 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabbed Content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts')} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry')} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="trends">{t('tabs.trends')}</TabsTrigger>
           <TabsTrigger value="turnover">{t('tabs.turnover')}</TabsTrigger>
           <TabsTrigger value="comparison">{t('tabs.comparison')}</TabsTrigger>
           <TabsTrigger value="stockCounts">{t('tabs.stockCounts')}</TabsTrigger>
+          <TabsTrigger value="stockExpiry">{t('tabs.stockExpiry')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Existing content */}
@@ -524,6 +513,11 @@ export default function InventoryPage() {
         {/* Stock Counts Tab - Product stock levels */}
         <TabsContent value="stockCounts">
           <StockCountsTable />
+        </TabsContent>
+
+        {/* Stock Expiry Tab - Expiring batches list */}
+        <TabsContent value="stockExpiry">
+          <ExpiringBatchesList />
         </TabsContent>
       </Tabs>
 

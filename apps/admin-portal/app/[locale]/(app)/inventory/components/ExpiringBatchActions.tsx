@@ -11,17 +11,9 @@ import {
   DialogTitle,
   Input,
   Label,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   useToast,
 } from '@joho-erp/ui';
-import { Check, Minus } from 'lucide-react';
+import { Trash2, Minus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
@@ -43,8 +35,9 @@ export function ExpiringBatchActions({
   const t = useTranslations('inventory.expiringList.actions');
   const { toast } = useToast();
 
-  // Mark consumed confirmation state
-  const [showConsumedConfirm, setShowConsumedConfirm] = useState(false);
+  // Write off dialog state
+  const [showWriteOffDialog, setShowWriteOffDialog] = useState(false);
+  const [writeOffReason, setWriteOffReason] = useState('');
 
   // Adjust quantity dialog state
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
@@ -54,14 +47,15 @@ export function ExpiringBatchActions({
   const markConsumedMutation = api.inventory.markBatchConsumed.useMutation({
     onSuccess: () => {
       toast({
-        title: t('markConsumedSuccess'),
+        title: t('writeOffSuccess'),
       });
-      setShowConsumedConfirm(false);
+      setShowWriteOffDialog(false);
+      setWriteOffReason('');
       onSuccess();
     },
     onError: (error) => {
       toast({
-        title: t('markConsumedError'),
+        title: t('writeOffError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -85,8 +79,8 @@ export function ExpiringBatchActions({
     },
   });
 
-  const handleMarkConsumed = () => {
-    markConsumedMutation.mutate({ batchId });
+  const handleWriteOff = () => {
+    markConsumedMutation.mutate({ batchId, reason: writeOffReason || undefined });
   };
 
   const handleAdjustQuantity = () => {
@@ -107,10 +101,10 @@ export function ExpiringBatchActions({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowConsumedConfirm(true)}
-          title={t('markConsumed')}
+          onClick={() => setShowWriteOffDialog(true)}
+          title={t('writeOff')}
         >
-          <Check className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
@@ -125,32 +119,57 @@ export function ExpiringBatchActions({
         </Button>
       </div>
 
-      {/* Mark Consumed Confirmation */}
-      <AlertDialog open={showConsumedConfirm} onOpenChange={setShowConsumedConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('markConsumedTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('markConsumedDescription', {
+      {/* Write Off Dialog */}
+      <Dialog
+        open={showWriteOffDialog}
+        onOpenChange={(open) => {
+          setShowWriteOffDialog(open);
+          if (!open) setWriteOffReason('');
+        }}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{t('writeOffTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('writeOffDescription', {
                 product: productName,
                 quantity: currentQuantity.toFixed(1),
                 unit,
               })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={markConsumedMutation.isPending}>
-              {t('cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleMarkConsumed}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="writeOffReason">{t('writeOffReason')}</Label>
+              <Input
+                id="writeOffReason"
+                value={writeOffReason}
+                onChange={(e) => setWriteOffReason(e.target.value)}
+                placeholder={t('writeOffReasonPlaceholder')}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowWriteOffDialog(false);
+                setWriteOffReason('');
+              }}
               disabled={markConsumedMutation.isPending}
             >
-              {markConsumedMutation.isPending ? t('processing') : t('confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleWriteOff}
+              disabled={markConsumedMutation.isPending}
+            >
+              {markConsumedMutation.isPending ? t('processing') : t('writeOff')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Adjust Quantity Dialog */}
       <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>

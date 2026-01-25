@@ -822,10 +822,13 @@ export const inventoryRouter = router({
     }),
 
   /**
-   * Mark a batch as fully consumed
+   * Mark a batch as fully consumed (stock write-off)
    */
   markBatchConsumed: requirePermission('products:adjust_stock')
-    .input(z.object({ batchId: z.string() }))
+    .input(z.object({
+      batchId: z.string(),
+      reason: z.string().optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
       const batch = await prisma.inventoryBatch.findUnique({
         where: { id: input.batchId },
@@ -873,7 +876,9 @@ export const inventoryRouter = router({
             previousStock: batch.product.currentStock,
             newStock: batch.product.currentStock - quantityToDeduct,
             costPerUnit: batch.costPerUnit,
-            notes: `Batch marked as consumed (expiry management)`,
+            notes: input.reason
+              ? `Stock writeoff: ${input.reason}`
+              : 'Stock writeoff (expiry management)',
             createdBy: ctx.userId || 'system',
           },
         }),

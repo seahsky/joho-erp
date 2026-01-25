@@ -2874,7 +2874,8 @@
       "trends": "趋势",
       "turnover": "周转率",
       "comparison": "对比分析",
-      "stockCounts": "库存盘点"
+      "stockCounts": "库存盘点",
+      "stockExpiry": "库存保质期"
     },
     "stats": {
       "periods": {
@@ -3091,12 +3092,14 @@
         "pageOf": "第 {page} 页，共 {total} 页"
       },
       "actions": {
-        "markConsumed": "标记为已消耗",
+        "writeOff": "报废",
         "adjust": "调整数量",
-        "markConsumedTitle": "标记批次为已消耗",
-        "markConsumedDescription": "这将标记 {quantity} {unit} 的 {product} 为完全消耗并从库存中移除。",
-        "markConsumedSuccess": "批次已标记为已消耗",
-        "markConsumedError": "标记批次失败",
+        "writeOffTitle": "库存报废",
+        "writeOffDescription": "这将报废 {quantity} {unit} 的 {product} 并从库存中移除。",
+        "writeOffReason": "报废原因",
+        "writeOffReasonPlaceholder": "例如：过期、损坏、质量问题...",
+        "writeOffSuccess": "库存报废成功",
+        "writeOffError": "库存报废失败",
         "adjustTitle": "调整批次数量",
         "adjustDescription": "更新 {product} 的剩余数量",
         "currentQuantity": "当前数量",
