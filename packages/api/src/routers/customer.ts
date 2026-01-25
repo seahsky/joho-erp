@@ -1025,6 +1025,174 @@ export const customerRouter = router({
       return customer;
     }),
 
+
+  regenerateCreditApplicationPdf: requirePermission('customers:approve_credit')
+    .input(z.object({ customerId: z.string() }))
+    .mutation(async ({ input }) => {
+      const resolvedCustomerId = await resolveCustomerId(input.customerId);
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: resolvedCustomerId },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      const creditApp = customer.creditApplication;
+      if (!creditApp?.signatures?.length) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No credit application signatures found. Cannot generate PDF without signatures.',
+        });
+      }
+
+      if (!isR2Configured()) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'R2 storage is not configured. Cannot generate PDF.',
+        });
+      }
+
+      // Build director data from stored directors
+      const directors = (customer.directors || []).map((d) => ({
+        familyName: d.familyName,
+        givenNames: d.givenNames,
+        residentialAddress: d.residentialAddress,
+        dateOfBirth: d.dateOfBirth,
+        driverLicenseNumber: d.driverLicenseNumber,
+        licenseState: d.licenseState,
+        licenseExpiry: d.licenseExpiry,
+        position: d.position ?? undefined,
+      }));
+
+      // Build signature data from credit application signatures
+      // The stored format has flattened signatures, we need to reconstruct the input format
+      const signaturesByDirector = new Map<number, {
+        directorIndex: number;
+        applicantSignatureUrl?: string;
+        applicantSignedAt?: Date;
+        guarantorSignatureUrl?: string;
+        guarantorSignedAt?: Date;
+        witnessName?: string;
+        witnessSignatureUrl?: string;
+        witnessSignedAt?: Date;
+      }>();
+
+      for (const sig of creditApp.signatures) {
+        // Find director index by matching signer name
+        const directorIndex = directors.findIndex(
+          (d) => `${d.givenNames} ${d.familyName}` === sig.signerName
+        );
+        if (directorIndex === -1) continue;
+
+        const existing = signaturesByDirector.get(directorIndex) || { directorIndex };
+        
+        if (sig.signatureType === 'APPLICANT') {
+          existing.applicantSignatureUrl = sig.signatureUrl;
+          existing.applicantSignedAt = sig.signedAt;
+        } else if (sig.signatureType === 'GUARANTOR') {
+          existing.guarantorSignatureUrl = sig.signatureUrl;
+          existing.guarantorSignedAt = sig.signedAt;
+          existing.witnessName = sig.witnessName ?? undefined;
+          existing.witnessSignatureUrl = sig.witnessSignatureUrl ?? undefined;
+          existing.witnessSignedAt = sig.witnessSignedAt ?? undefined;
+        }
+
+        signaturesByDirector.set(directorIndex, existing);
+      }
+
+      const signatures = Array.from(signaturesByDirector.values()).filter(
+        (s) => s.applicantSignatureUrl && s.guarantorSignatureUrl
+      ) as Array<{
+        directorIndex: number;
+        applicantSignatureUrl: string;
+        applicantSignedAt: Date;
+        guarantorSignatureUrl: string;
+        guarantorSignedAt: Date;
+        witnessName: string;
+        witnessSignatureUrl: string;
+        witnessSignedAt: Date;
+      }>;
+
+      if (signatures.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Could not reconstruct valid signature data. Cannot generate PDF.',
+        });
+      }
+
+      const contactPerson = customer.contactPerson as {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        mobile?: string;
+      };
+
+      try {
+        const pdfBytes = await generateCreditApplicationPdf({
+          accountType: customer.accountType,
+          businessName: customer.businessName,
+          abn: customer.abn,
+          acn: customer.acn ?? undefined,
+          tradingName: customer.tradingName ?? undefined,
+          deliveryAddress: {
+            street: customer.deliveryAddress.street,
+            suburb: customer.deliveryAddress.suburb,
+            state: customer.deliveryAddress.state,
+            postcode: customer.deliveryAddress.postcode,
+          },
+          postalAddress: customer.postalAddress
+            ? {
+                street: customer.postalAddress.street,
+                suburb: customer.postalAddress.suburb,
+                state: customer.postalAddress.state,
+                postcode: customer.postalAddress.postcode,
+              }
+            : undefined,
+          contactFirstName: contactPerson.firstName,
+          contactLastName: contactPerson.lastName,
+          contactPhone: contactPerson.phone,
+          contactMobile: contactPerson.mobile,
+          contactEmail: contactPerson.email,
+          requestedCreditLimit: creditApp.requestedCreditLimit ?? undefined,
+          forecastPurchaseAmount: creditApp.forecastPurchase ?? undefined,
+          directors,
+          financialDetails: customer.financialDetails ?? undefined,
+          tradeReferences: customer.tradeReferences ?? undefined,
+          signatures,
+          submissionDate: creditApp.submittedAt ?? creditApp.appliedAt ?? new Date(),
+        });
+
+        // Upload PDF to R2
+        const { publicUrl } = await uploadPdfToR2({
+          path: `credit-applications/${customer.id}`,
+          filename: `credit-application-${customer.businessName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+          buffer: pdfBytes,
+        });
+
+        // Update customer with PDF URL
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: { creditApplicationPdfUrl: publicUrl },
+        });
+
+        console.log(`Credit application PDF regenerated for customer ${customer.id}: ${publicUrl}`);
+
+        return { pdfUrl: publicUrl };
+      } catch (error) {
+        console.error('Failed to generate or upload credit application PDF:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to generate credit application PDF. Please try again.',
+        });
+      }
+    }),
+
   // Admin: Suspend customer account
   suspend: requirePermission('customers:suspend')
     .input(

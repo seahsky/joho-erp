@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@joho-erp/ui';
-import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine } from 'lucide-react';
+import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine, RefreshCw } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
 import { formatAUD, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
 
@@ -95,6 +95,25 @@ export default function CreditReviewPage({ params }: PageProps) {
       toast({
         title: t('messages.rejectError'),
         description: error.message || t('messages.rejectErrorDescription'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Regenerate PDF mutation
+  const utils = api.useUtils();
+  const regeneratePdfMutation = api.customer.regenerateCreditApplicationPdf.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('messages.generatePdfSuccess'),
+        description: t('messages.generatePdfSuccessDescription'),
+      });
+      utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+    },
+    onError: (error: { message?: string }) => {
+      toast({
+        title: t('messages.generatePdfError'),
+        description: error.message || t('messages.generatePdfErrorDescription'),
         variant: 'destructive',
       });
     },
@@ -254,25 +273,47 @@ export default function CreditReviewPage({ params }: PageProps) {
         {/* Left Column - Application Details */}
         <div className="space-y-6">
           {/* Credit Application PDF */}
-          {customer.creditApplicationPdfUrl && (
-            <Card className="p-6 border-primary/50">
-              <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
-                <Download className="h-5 w-5" />
-                {t('creditApplicationPdf.title')}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('creditApplicationPdf.description')}
-              </p>
+          <Card className="p-6 border-primary/50">
+            <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t('creditApplicationPdf.title')}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t('creditApplicationPdf.description')}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {customer.creditApplicationPdfUrl && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+                  className="flex-1"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {t('creditApplicationPdf.viewButton')}
+                </Button>
+              )}
               <Button
-                variant="outline"
-                onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
-                className="w-full"
+                variant={customer.creditApplicationPdfUrl ? 'secondary' : 'default'}
+                onClick={() => regeneratePdfMutation.mutate({ customerId: resolvedParams.id })}
+                disabled={regeneratePdfMutation.isPending}
+                className="flex-1"
               >
-                <Download className="mr-2 h-4 w-4" />
-                {t('creditApplicationPdf.viewButton')}
+                {regeneratePdfMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('creditApplicationPdf.generating')}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {customer.creditApplicationPdfUrl
+                      ? t('creditApplicationPdf.regenerateButton')
+                      : t('creditApplicationPdf.generateButton')}
+                  </>
+                )}
               </Button>
-            </Card>
-          )}
+            </div>
+          </Card>
 
           {/* Terms Agreement */}
           {creditApp.agreedToTermsAt && (

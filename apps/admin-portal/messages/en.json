@@ -1627,7 +1627,11 @@
       "approveError": "Approval Failed",
       "approveErrorDescription": "Failed to approve credit application. Please try again.",
       "rejectError": "Rejection Failed",
-      "rejectErrorDescription": "Failed to reject credit application. Please try again."
+      "rejectErrorDescription": "Failed to reject credit application. Please try again.",
+      "generatePdfSuccess": "PDF Generated",
+      "generatePdfSuccessDescription": "Credit application PDF has been generated successfully.",
+      "generatePdfError": "PDF Generation Failed",
+      "generatePdfErrorDescription": "Failed to generate credit application PDF. Please try again."
     },
     "validation": {
       "creditLimitRequired": "Credit Limit Required",
@@ -1662,7 +1666,10 @@
     "creditApplicationPdf": {
       "title": "Credit Application PDF",
       "description": "Original credit application document submitted by the customer",
-      "viewButton": "View Credit Application PDF"
+      "viewButton": "View Credit Application PDF",
+      "generateButton": "Generate PDF",
+      "regenerateButton": "Regenerate PDF",
+      "generating": "Generating..."
     },
     "termsAgreement": {
       "title": "Terms & Conditions Agreement",

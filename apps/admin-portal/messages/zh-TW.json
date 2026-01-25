@@ -1627,7 +1627,11 @@
       "approveError": "批准失敗",
       "approveErrorDescription": "批准信用申請失敗。請重試。",
       "rejectError": "拒絕失敗",
-      "rejectErrorDescription": "拒絕信用申請失敗。請重試。"
+      "rejectErrorDescription": "拒絕信用申請失敗。請重試。",
+      "generatePdfSuccess": "PDF已生成",
+      "generatePdfSuccessDescription": "信用申請PDF已成功生成。",
+      "generatePdfError": "PDF生成失敗",
+      "generatePdfErrorDescription": "生成信用申請PDF失敗。請重試。"
     },
     "validation": {
       "creditLimitRequired": "需要信用額度",
@@ -1662,7 +1666,10 @@
     "creditApplicationPdf": {
       "title": "信用申請PDF",
       "description": "客戶提交的原始信用申請文件",
-      "viewButton": "檢視信用申請PDF"
+      "viewButton": "檢視信用申請PDF",
+      "generateButton": "生成PDF",
+      "regenerateButton": "重新生成PDF",
+      "generating": "生成中..."
     },
     "termsAgreement": {
       "title": "條款與條件協議",
