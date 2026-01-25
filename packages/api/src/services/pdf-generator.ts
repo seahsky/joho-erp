@@ -482,8 +482,8 @@ export async function generateCreditApplicationPdf(
     guarantorIndex++;
   }
 
-  // Flatten the form to make fields non-editable (optional)
-  // form.flatten();
+  // Flatten the form to make fields non-editable
+  form.flatten();
 
   // Save and return PDF bytes
   return pdfDoc.save();
