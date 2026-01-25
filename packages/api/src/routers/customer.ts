@@ -47,7 +47,12 @@ const directorDetailsSchema = z.object({
   licenseState: z.enum(['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']),
   licenseExpiry: licenseExpirySchema,
   position: z.string().optional(),
-});
+  // ID document fields for verification photos
+  idDocumentType: z.enum(['DRIVER_LICENSE', 'PASSPORT']).optional(),
+  idDocumentFrontUrl: z.string().url().optional(),
+  idDocumentBackUrl: z.string().url().optional(),
+  idDocumentUploadedAt: z.date().or(z.string().transform((str) => new Date(str))).optional(),
+});;
 
 const financialDetailsSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required'),
