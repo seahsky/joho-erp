@@ -107,27 +107,56 @@ export const TEXT_FIELDS = {
 } as const;
 
 /**
- * Signature image coordinates (not form fields - embedded as images)
- * These are still needed because PDF form signature fields have limited support in pdf-lib.
+ * Signature field names for deriving image placement positions.
+ * These are the text fields that accompany each signature area.
+ * The signature image will be placed relative to the date field position.
  */
-export interface SignatureCoordinate {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+export const SIGNATURE_FIELDS = {
+  // Page 6 - Applicant signatures (signature goes above the date field)
+  applicant1: {
+    nameField: 'sig1_name',
+    positionField: 'sig1_position',
+    dateField: 'sig1_date',
+  },
+  applicant2: {
+    nameField: 'sig2_name',
+    positionField: 'sig2_position',
+    dateField: 'sig2_date',
+  },
+  applicant3: {
+    nameField: 'sig3_name',
+    positionField: 'sig3_position',
+    dateField: 'sig3_date',
+  },
 
-export const SIGNATURE_COORDINATES = {
-  // Page 6 - Applicant signatures
-  applicant1Signature: { x: 175, y: 375, width: 180, height: 45 },
-  applicant2Signature: { x: 175, y: 225, width: 180, height: 45 },
-  applicant3Signature: { x: 175, y: 175, width: 180, height: 45 }, // Continues from page 6
+  // Page 8 - Guarantor signatures (signature goes above the date field)
+  guarantor1: {
+    nameField: 'guarantor1_name',
+    dateField: 'guarantor1_date',
+  },
+  witness1: {
+    nameField: 'witness1_name',
+    dateField: 'witness1_date',
+  },
+  guarantor2: {
+    nameField: 'guarantor2_name',
+    dateField: 'guarantor2_date',
+  },
+  witness2: {
+    nameField: 'witness2_name',
+    dateField: 'witness2_date',
+  },
+} as const;
 
-  // Page 8 - Guarantor and witness signatures
-  guarantor1Signature: { x: 175, y: 600, width: 180, height: 45 },
-  witness1Signature: { x: 175, y: 550, width: 180, height: 45 },
-  guarantor2Signature: { x: 175, y: 320, width: 180, height: 45 },
-  witness2Signature: { x: 175, y: 175, width: 180, height: 45 },
+/**
+ * Signature placement configuration
+ */
+export const SIGNATURE_CONFIG = {
+  // Height of signature image above the date field
+  heightAboveDateField: 45,
+  // Default signature image dimensions
+  defaultWidth: 180,
+  defaultHeight: 45,
 } as const;
 
 export type TextFieldKey = keyof typeof TEXT_FIELDS;

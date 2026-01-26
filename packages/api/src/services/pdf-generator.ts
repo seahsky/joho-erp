@@ -8,12 +8,12 @@
  * Signature images are still embedded at specific coordinates as pdf-lib has limited signature field support.
  */
 
-import { PDFDocument, PDFPage } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFForm } from 'pdf-lib';
 import {
   CHECKBOX_FIELDS,
   TEXT_FIELDS,
-  SIGNATURE_COORDINATES,
-  SignatureCoordinate,
+  SIGNATURE_FIELDS,
+  SIGNATURE_CONFIG,
 } from './pdf-field-mapping';
 
 // ============================================================================
@@ -200,24 +200,58 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
 }
 
 /**
- * Embed a signature image on the PDF page
+ * Get the rectangle coordinates for a form field
  */
-async function embedSignature(
+function getFieldRectangle(
+  form: PDFForm,
+  fieldName: string
+): { x: number; y: number; width: number; height: number } | null {
+  try {
+    const field = form.getTextField(fieldName);
+    const widgets = field.acroField.getWidgets();
+    if (widgets.length > 0) {
+      const rect = widgets[0].getRectangle();
+      return {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+  } catch (error) {
+    console.warn(`Failed to get rectangle for field '${fieldName}':`, error);
+  }
+  return null;
+}
+
+/**
+ * Embed a signature image on the PDF page using field-based positioning.
+ * The signature is placed above the specified reference field (typically the date field).
+ */
+async function embedSignatureAtField(
   pdfDoc: PDFDocument,
+  form: PDFForm,
   page: PDFPage,
   signatureUrl: string,
-  coords: SignatureCoordinate
+  referenceFieldName: string
 ): Promise<void> {
   if (!signatureUrl) return;
 
   try {
+    // Get the reference field's position (usually the date field)
+    const fieldRect = getFieldRectangle(form, referenceFieldName);
+    if (!fieldRect) {
+      console.warn(`Could not find field '${referenceFieldName}' for signature placement`);
+      return;
+    }
+
     const imageBuffer = await fetchImageBuffer(signatureUrl);
     if (!imageBuffer) return;
 
     // Detect image type and embed
     let image;
     const isPng = signatureUrl.toLowerCase().includes('.png') ||
-      imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50; // PNG magic bytes
+      (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50); // PNG magic bytes
 
     if (isPng) {
       image = await pdfDoc.embedPng(imageBuffer);
@@ -226,12 +260,20 @@ async function embedSignature(
       image = await pdfDoc.embedJpg(imageBuffer);
     }
 
+    // Calculate signature position: place it above the reference field
+    const sigWidth = SIGNATURE_CONFIG.defaultWidth;
+    const sigHeight = SIGNATURE_CONFIG.defaultHeight;
+
+    // Position signature above the date field
+    const x = fieldRect.x;
+    const y = fieldRect.y + fieldRect.height + 5; // 5px gap above the field
+
     // Scale to fit the signature box while maintaining aspect ratio
     const aspectRatio = image.width / image.height;
-    let drawWidth = coords.width;
-    let drawHeight = coords.height;
+    let drawWidth = sigWidth;
+    let drawHeight = sigHeight;
 
-    if (aspectRatio > coords.width / coords.height) {
+    if (aspectRatio > sigWidth / sigHeight) {
       // Image is wider than box
       drawHeight = drawWidth / aspectRatio;
     } else {
@@ -240,8 +282,8 @@ async function embedSignature(
     }
 
     page.drawImage(image, {
-      x: coords.x,
-      y: coords.y,
+      x,
+      y,
       width: drawWidth,
       height: drawHeight,
     });
@@ -426,19 +468,19 @@ export async function generateCreditApplicationPdf(
       setTextField(form, TEXT_FIELDS.sig1Name, fullName);
       setTextField(form, TEXT_FIELDS.sig1Position, position);
       setTextField(form, TEXT_FIELDS.sig1Date, signedDate);
-      await embedSignature(pdfDoc, page6, sig.applicantSignatureUrl, SIGNATURE_COORDINATES.applicant1Signature);
+      await embedSignatureAtField(pdfDoc, form, page6, sig.applicantSignatureUrl, SIGNATURE_FIELDS.applicant1.dateField);
     } else if (directorIndex === 1) {
       // Applicant 2
       setTextField(form, TEXT_FIELDS.sig2Name, fullName);
       setTextField(form, TEXT_FIELDS.sig2Position, position);
       setTextField(form, TEXT_FIELDS.sig2Date, signedDate);
-      await embedSignature(pdfDoc, page6, sig.applicantSignatureUrl, SIGNATURE_COORDINATES.applicant2Signature);
+      await embedSignatureAtField(pdfDoc, form, page6, sig.applicantSignatureUrl, SIGNATURE_FIELDS.applicant2.dateField);
     } else if (directorIndex === 2) {
       // Applicant 3
       setTextField(form, TEXT_FIELDS.sig3Name, fullName);
       setTextField(form, TEXT_FIELDS.sig3Position, position);
       setTextField(form, TEXT_FIELDS.sig3Date, signedDate);
-      await embedSignature(pdfDoc, page6, sig.applicantSignatureUrl, SIGNATURE_COORDINATES.applicant3Signature);
+      await embedSignatureAtField(pdfDoc, form, page6, sig.applicantSignatureUrl, SIGNATURE_FIELDS.applicant3.dateField);
     }
   }
 
@@ -466,16 +508,16 @@ export async function generateCreditApplicationPdf(
       setTextField(form, TEXT_FIELDS.guarantor1Date, guarantorSignedDate);
       setTextField(form, TEXT_FIELDS.witness1Name, sig.witnessName);
       setTextField(form, TEXT_FIELDS.witness1Date, witnessSignedDate);
-      await embedSignature(pdfDoc, page8, sig.guarantorSignatureUrl, SIGNATURE_COORDINATES.guarantor1Signature);
-      await embedSignature(pdfDoc, page8, sig.witnessSignatureUrl, SIGNATURE_COORDINATES.witness1Signature);
+      await embedSignatureAtField(pdfDoc, form, page8, sig.guarantorSignatureUrl, SIGNATURE_FIELDS.guarantor1.dateField);
+      await embedSignatureAtField(pdfDoc, form, page8, sig.witnessSignatureUrl, SIGNATURE_FIELDS.witness1.dateField);
     } else if (guarantorIndex === 1) {
       // Guarantor 2
       setTextField(form, TEXT_FIELDS.guarantor2Name, guarantorName);
       setTextField(form, TEXT_FIELDS.guarantor2Date, guarantorSignedDate);
       setTextField(form, TEXT_FIELDS.witness2Name, sig.witnessName);
       setTextField(form, TEXT_FIELDS.witness2Date, witnessSignedDate);
-      await embedSignature(pdfDoc, page8, sig.guarantorSignatureUrl, SIGNATURE_COORDINATES.guarantor2Signature);
-      await embedSignature(pdfDoc, page8, sig.witnessSignatureUrl, SIGNATURE_COORDINATES.witness2Signature);
+      await embedSignatureAtField(pdfDoc, form, page8, sig.guarantorSignatureUrl, SIGNATURE_FIELDS.guarantor2.dateField);
+      await embedSignatureAtField(pdfDoc, form, page8, sig.witnessSignatureUrl, SIGNATURE_FIELDS.witness2.dateField);
     }
     // Note: Template only supports 2 guarantors on page 8
 
