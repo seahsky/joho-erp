@@ -22,6 +22,80 @@ const XERO_CONNECTIONS_URL = 'https://api.xero.com/connections';
 const XERO_API_BASE = 'https://api.xero.com/api.xro/2.0';
 
 // Configuration from environment variables
+
+/**
+ * Custom error class for Xero API errors with detailed context.
+ * Includes status code, endpoint, and response body for debugging.
+ * The isRetryable flag indicates if the error is transient (429, 5xx).
+ */
+
+// Token refresh mutex to prevent race conditions when multiple requests
+// try to refresh the token simultaneously
+let tokenRefreshPromise: Promise<{ accessToken: string; tenantId: string }> | null = null;
+
+// Rate limiting configuration and state
+// Xero's limit is 60 calls/minute, we use 55 for safety margin
+const RATE_LIMIT = {
+  maxCalls: 55,
+  windowMs: 60000, // 1 minute
+  minDelayMs: 100, // Minimum delay between calls
+};
+let lastApiCallTime = 0;
+let apiCallsInWindow: number[] = [];
+
+/**
+ * Enforce rate limiting before making Xero API calls.
+ * Tracks calls within a sliding window and delays if necessary.
+ */
+async function enforceRateLimit(): Promise<void> {
+  const now = Date.now();
+  
+  // Remove calls outside the current window
+  apiCallsInWindow = apiCallsInWindow.filter(
+    (timestamp) => now - timestamp < RATE_LIMIT.windowMs
+  );
+
+  // Check if we've hit the rate limit
+  if (apiCallsInWindow.length >= RATE_LIMIT.maxCalls) {
+    // Calculate how long to wait until the oldest call exits the window
+    const oldestCall = Math.min(...apiCallsInWindow);
+    const waitTime = RATE_LIMIT.windowMs - (now - oldestCall) + 100; // +100ms buffer
+    console.log(`[Xero] Rate limit reached, waiting ${waitTime}ms`);
+    await new Promise((resolve) => setTimeout(resolve, waitTime));
+    // Recurse to recheck after waiting
+    return enforceRateLimit();
+  }
+
+  // Enforce minimum delay between calls to avoid bursts
+  const timeSinceLastCall = now - lastApiCallTime;
+  if (timeSinceLastCall < RATE_LIMIT.minDelayMs && lastApiCallTime > 0) {
+    await new Promise((resolve) => 
+      setTimeout(resolve, RATE_LIMIT.minDelayMs - timeSinceLastCall)
+    );
+  }
+
+  // Record this call
+  apiCallsInWindow.push(Date.now());
+  lastApiCallTime = Date.now();
+}
+
+export class XeroApiError extends Error {
+  readonly statusCode: number;
+  readonly endpoint: string;
+  readonly responseBody: string;
+  readonly isRetryable: boolean;
+
+  constructor(statusCode: number, endpoint: string, responseBody: string) {
+    super(`Xero API request failed: ${statusCode} on ${endpoint} - ${responseBody}`);
+    this.name = 'XeroApiError';
+    this.statusCode = statusCode;
+    this.endpoint = endpoint;
+    this.responseBody = responseBody;
+    // 429 (rate limit) and 5xx (server errors) are retryable
+    this.isRetryable = statusCode === 429 || statusCode >= 500;
+  }
+}
+
 const getConfig = () => ({
   clientId: process.env.XERO_CLIENT_ID || '',
   clientSecret: process.env.XERO_CLIENT_SECRET || '',
@@ -288,30 +362,51 @@ export async function getValidAccessToken(): Promise<{ accessToken: string; tena
     throw new Error('Xero tenant not selected. Please reconnect to Xero.');
   }
 
-  // If token is still valid, return it
+  // Capture values for use in async closure (TypeScript type narrowing)
+  const tenantId = tokens.tenantId;
+  const refreshToken = tokens.refreshToken;
+
+  // If token is still valid, return it (fast path)
   if (tokens.accessToken && !isTokenExpired(tokens.tokenExpiry)) {
     return {
       accessToken: tokens.accessToken,
-      tenantId: tokens.tenantId,
+      tenantId,
     };
   }
 
-  // Token is expired or about to expire, refresh it
+  // Token is expired or about to expire, need to refresh
+  // Use mutex to prevent concurrent refresh requests from invalidating each other
+  if (tokenRefreshPromise) {
+    // Another request is already refreshing the token, wait for it
+    console.log('Xero token refresh already in progress, waiting...');
+    return tokenRefreshPromise;
+  }
+
+  // Start the refresh and store the promise as a mutex
   console.log('Xero access token expired, refreshing...');
-  const newTokens = await refreshAccessToken(tokens.refreshToken);
+  tokenRefreshPromise = (async () => {
+    try {
+      const newTokens = await refreshAccessToken(refreshToken);
 
-  // Store the new tokens
-  await storeTokens(
-    newTokens.access_token,
-    newTokens.refresh_token,
-    newTokens.expires_in,
-    tokens.tenantId
-  );
+      // Store the new tokens
+      await storeTokens(
+        newTokens.access_token,
+        newTokens.refresh_token,
+        newTokens.expires_in,
+        tenantId
+      );
 
-  return {
-    accessToken: newTokens.access_token,
-    tenantId: tokens.tenantId,
-  };
+      return {
+        accessToken: newTokens.access_token,
+        tenantId,
+      };
+    } finally {
+      // Clear the mutex when done (success or failure)
+      tokenRefreshPromise = null;
+    }
+  })();
+
+  return tokenRefreshPromise;
 }
 
 /**
@@ -599,6 +694,9 @@ export async function xeroApiRequest<T>(
     body?: unknown;
   } = {}
 ): Promise<T> {
+  // Enforce rate limiting before making the request
+  await enforceRateLimit();
+  
   const { accessToken, tenantId } = await getValidAccessToken();
 
   const response = await fetch(`${XERO_API_BASE}${endpoint}`, {
@@ -615,7 +713,7 @@ export async function xeroApiRequest<T>(
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[Xero] API ERROR (${endpoint}):`, errorText);
-    throw new Error(`Xero API request failed: ${response.status}`);
+    throw new XeroApiError(response.status, endpoint, errorText);
   }
 
   return response.json();
@@ -992,10 +1090,11 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
     console.log(`[Xero] Contact CREATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
     return { success: true, contactId: response.Contacts[0].ContactID };
   } catch (error) {
-    console.error('[Xero] Contact Sync FAILED:', error);
+    console.error(`[Xero] Contact Sync FAILED for customer ${customer.id} (${customer.businessName}):`, error);
+    const baseMessage = error instanceof Error ? error.message : 'Failed to sync contact';
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to sync contact',
+      error: `Customer "${customer.businessName}" (${customer.id}): ${baseMessage}`,
     };
   }
 }

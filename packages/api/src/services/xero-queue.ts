@@ -14,8 +14,137 @@ import {
   createCreditNoteInXero,
   isConnected,
   isXeroIntegrationEnabled,
+  XeroApiError,
 } from './xero';
-import { sendCreditNoteIssuedEmail } from './email';
+import { sendCreditNoteIssuedEmail, sendXeroSyncErrorEmail } from './email';
+
+// ============================================================================
+// Retry Helpers
+// ============================================================================
+
+/**
+ * Determine if an error is retryable (transient errors that may succeed on retry)
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof XeroApiError) {
+    return error.isRetryable;
+  }
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    // Network errors and timeouts are retryable
+    return msg.includes('network') || 
+           msg.includes('timeout') || 
+           msg.includes('econnreset') ||
+           msg.includes('econnrefused') ||
+           msg.includes('socket hang up');
+  }
+  return false;
+}
+
+/**
+ * Calculate exponential backoff delay for retry attempts
+ * Returns delay in milliseconds, capped at 60 seconds
+ */
+function calculateNextAttemptDelay(attempt: number): number {
+  // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, 60s (capped)
+  return Math.min(1000 * Math.pow(2, attempt - 1), 60000);
+}
+
+/**
+ * Handle job failure - either schedule retry or mark as permanently failed
+ */
+async function handleJobFailure(
+  job: XeroSyncJob,
+  error: unknown,
+  currentAttempt: number
+): Promise<void> {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  const canRetry = isRetryableError(error) && currentAttempt < job.maxAttempts;
+
+  if (canRetry) {
+    // Schedule retry with exponential backoff
+    const delayMs = calculateNextAttemptDelay(currentAttempt);
+    const nextAttemptAt = new Date(Date.now() + delayMs);
+    
+    console.log(`[Xero Queue] Job ${job.id} failed (attempt ${currentAttempt}/${job.maxAttempts}), retrying in ${delayMs}ms`);
+    
+    await prisma.xeroSyncJob.update({
+      where: { id: job.id },
+      data: {
+        status: 'pending',
+        error: errorMessage,
+        nextAttemptAt,
+      },
+    });
+
+    // Schedule the retry
+    setTimeout(() => {
+      prisma.xeroSyncJob.findUnique({ where: { id: job.id } })
+        .then((updatedJob) => {
+          if (updatedJob && updatedJob.status === 'pending') {
+            processJob(updatedJob).catch((err) => {
+              console.error(`[Xero Queue] Retry failed for job ${job.id}:`, err);
+            });
+          }
+        })
+        .catch((err) => {
+          console.error(`[Xero Queue] Failed to fetch job for retry ${job.id}:`, err);
+        });
+    }, delayMs);
+  } else {
+    // Permanent failure - mark as failed and notify
+    console.error(`[Xero Queue] Job ${job.id} permanently failed after ${currentAttempt} attempts: ${errorMessage}`);
+    
+    await prisma.xeroSyncJob.update({
+      where: { id: job.id },
+      data: {
+        status: 'failed',
+        error: errorMessage,
+      },
+    });
+
+    // Send failure notification email
+    await notifyJobFailure(job, errorMessage, currentAttempt);
+  }
+}
+
+/**
+ * Send email notification for permanent job failures
+ */
+async function notifyJobFailure(
+  job: XeroSyncJob,
+  errorMessage: string,
+  attempts: number
+): Promise<void> {
+  try {
+    // Get entity name for the notification
+    let entityName = job.entityId;
+    
+    if (job.entityType === 'customer') {
+      const customer = await prisma.customer.findUnique({
+        where: { id: job.entityId },
+        select: { businessName: true },
+      });
+      entityName = customer?.businessName || job.entityId;
+    } else if (job.entityType === 'order') {
+      const order = await prisma.order.findUnique({
+        where: { id: job.entityId },
+        select: { orderNumber: true },
+      });
+      entityName = order?.orderNumber || job.entityId;
+    }
+
+    await sendXeroSyncErrorEmail({
+      entityType: job.entityType as 'customer' | 'order',
+      entityId: job.entityId,
+      entityName,
+      errorMessage,
+      attempts,
+    });
+  } catch (emailError) {
+    console.error(`[Xero Queue] Failed to send failure notification email for job ${job.id}:`, emailError);
+  }
+}
 
 // ============================================================================
 // Job Enqueueing
@@ -65,17 +194,21 @@ export async function enqueueXeroJob(
  * Process a single Xero sync job
  */
 async function processJob(job: XeroSyncJob): Promise<void> {
+  const currentAttempt = job.attempts + 1;
+
   // Check if Xero is connected
   const connected = await isConnected();
   if (!connected) {
+    // Connection errors are potentially retryable (user may reconnect)
+    await handleJobFailure(
+      job,
+      new Error('Xero is not connected'),
+      currentAttempt
+    );
+    // Still update attempt count
     await prisma.xeroSyncJob.update({
       where: { id: job.id },
-      data: {
-        status: 'failed',
-        error: 'Xero is not connected',
-        lastAttemptAt: new Date(),
-        attempts: job.attempts + 1,
-      },
+      data: { lastAttemptAt: new Date(), attempts: currentAttempt },
     });
     return;
   }
@@ -86,7 +219,7 @@ async function processJob(job: XeroSyncJob): Promise<void> {
     data: {
       status: 'processing',
       lastAttemptAt: new Date(),
-      attempts: job.attempts + 1,
+      attempts: currentAttempt,
     },
   });
 
@@ -122,6 +255,8 @@ async function processJob(job: XeroSyncJob): Promise<void> {
         },
       });
     } else {
+      // Application-level errors (validation, business logic) are not retryable
+      // These typically indicate bad data that won't be fixed by retrying
       await prisma.xeroSyncJob.update({
         where: { id: job.id },
         data: {
@@ -129,15 +264,12 @@ async function processJob(job: XeroSyncJob): Promise<void> {
           error: result.error || 'Unknown error',
         },
       });
+      // Still notify about the failure
+      await notifyJobFailure(job, result.error || 'Unknown error', currentAttempt);
     }
   } catch (error) {
-    await prisma.xeroSyncJob.update({
-      where: { id: job.id },
-      data: {
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-    });
+    // Use handleJobFailure for caught exceptions - it will determine if retryable
+    await handleJobFailure(job, error, currentAttempt);
   }
 }
 
@@ -309,21 +441,43 @@ async function processCreateInvoice(
 
   if (result.success) {
     // Update order with Xero invoice info
-    const currentXero = (order.xero as Record<string, unknown>) || {};
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        xero: {
-          ...currentXero,
+    // Use try-catch to handle DB failures after successful Xero creation
+    // Note: createInvoiceInXero checks for existing invoices, so retries are safe
+    try {
+      const currentXero = (order.xero as Record<string, unknown>) || {};
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          xero: {
+            ...currentXero,
+            invoiceId: result.invoiceId,
+            invoiceNumber: result.invoiceNumber,
+            invoiceStatus: 'AUTHORISED',
+            syncedAt: new Date(),
+            syncError: null,
+            lastSyncJobId: jobId,
+          },
+        },
+      });
+    } catch (dbError) {
+      // CRITICAL: Xero invoice was created but we failed to record it in our DB
+      // Log all details needed for manual recovery
+      console.error(
+        `[Xero Queue] CRITICAL: Invoice created in Xero but DB update failed!`,
+        {
+          orderId,
+          orderNumber: order.orderNumber,
           invoiceId: result.invoiceId,
           invoiceNumber: result.invoiceNumber,
-          invoiceStatus: 'AUTHORISED',
-          syncedAt: new Date(),
-          syncError: null,
-          lastSyncJobId: jobId,
-        },
-      },
-    });
+          dbError: dbError instanceof Error ? dbError.message : String(dbError),
+        }
+      );
+      // Return failure so the job can be retried - createInvoiceInXero will find the existing invoice
+      return {
+        success: false,
+        error: `Invoice created in Xero (${result.invoiceNumber}) but failed to update local database. Invoice ID: ${result.invoiceId}. Please retry - the existing invoice will be detected.`,
+      };
+    }
   } else {
     // Record error in order
     const currentXero = (order.xero as Record<string, unknown>) || {};
@@ -501,6 +655,11 @@ export async function retryJob(jobId: string): Promise<{
   }
 
   // Reset job for retry
+  // Note: attempts is reset to 0 intentionally for manual retries.
+  // This gives the user a fresh set of automatic retry attempts after
+  // they've investigated and potentially fixed the underlying issue.
+  // Without this reset, a job that failed after max attempts would
+  // immediately fail again without any retries.
   const updatedJob = await prisma.xeroSyncJob.update({
     where: { id: jobId },
     data: {
