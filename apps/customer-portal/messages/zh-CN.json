@@ -633,8 +633,8 @@
       "terms-conditionsShort": "条款",
       "guarantee-indemnity": "担保",
       "guarantee-indemnityShort": "担保",
-      "signatures": "签名",
-      "signaturesShort": "签名"
+      "witness": "见证人",
+      "witnessShort": "见证"
     },
     "messages": {
       "success": "信用申请已成功提交！",
@@ -984,7 +984,15 @@
         "required": "必填"
       },
       "validation": {
-        "mustAgree": "您必须同意条款和条件才能继续"
+        "mustAgree": "您必须同意条款和条件才能继续",
+        "signatureRequired": "需要签名"
+      },
+      "directorSignatures": {
+        "title": "董事签名",
+        "description": "每位董事必须在下方签名以确认同意条款和条件。",
+        "directorLabel": "董事 {number}：{name}",
+        "signatureLabel": "签名",
+        "signatureComplete": "签名已捕获"
       },
       "buttons": {
         "back": "返回",
@@ -1078,11 +1086,51 @@
         "required": "必填"
       },
       "validation": {
-        "mustAgree": "您必须同意担保和赔偿才能继续"
+        "mustAgree": "您必须同意担保和赔偿才能继续",
+        "signatureRequired": "需要签名"
+      },
+      "guarantorSignatures": {
+        "title": "担保人签名",
+        "description": "每位董事/担保人必须在下方签名以确认担保和赔偿。",
+        "guarantorLabel": "担保人 {number}：{name}",
+        "signatureLabel": "签名",
+        "signatureComplete": "签名已捕获"
       },
       "buttons": {
         "back": "返回",
-        "next": "继续签名"
+        "next": "下一步"
+      }
+    },
+    "witness": {
+      "title": "见证人",
+      "description": "需要见证人验证担保人签名。",
+      "uploadTimeout": "上传超时。请重试。",
+      "retrying": "正在重试上传... ({attempt}/{maxRetries})",
+      "uploadSuccess": "签名上传成功",
+      "uploadFailed": "上传失败",
+      "uploadErrorDescription": "签名上传失败。请检查您的网络连接后重试。",
+      "guarantorsList": {
+        "title": "需要见证的担保人",
+        "description": "以下董事已签署担保和赔偿契约，需要见证人签名："
+      },
+      "witnessDetails": {
+        "title": "见证人信息",
+        "description": "见证人必须是成年人，且不是本协议的当事方。",
+        "nameLabel": "见证人全名",
+        "namePlaceholder": "请输入见证人全名",
+        "signatureLabel": "见证人签名",
+        "signatureDescription": "请在下方签名以见证担保人签名。",
+        "signatureComplete": "签名已捕获"
+      },
+      "validation": {
+        "nameRequired": "见证人姓名是必填项",
+        "signatureRequired": "见证人签名是必填项"
+      },
+      "buttons": {
+        "back": "返回",
+        "submit": "提交申请",
+        "uploading": "正在上传...",
+        "submitting": "正在提交..."
       }
     },
     "signatures": {

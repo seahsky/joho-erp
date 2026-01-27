@@ -508,8 +508,8 @@
       "terms-conditionsShort": "T&C",
       "guarantee-indemnity": "Guarantee",
       "guarantee-indemnityShort": "Guarantee",
-      "signatures": "Signature",
-      "signaturesShort": "Sign"
+      "witness": "Witness",
+      "witnessShort": "Witness"
     },
     "messages": {
       "success": "Credit application submitted successfully!",
@@ -859,7 +859,15 @@
         "required": "Required"
       },
       "validation": {
-        "mustAgree": "You must agree to the Terms & Conditions to proceed"
+        "mustAgree": "You must agree to the Terms & Conditions to proceed",
+        "signatureRequired": "Signature is required"
+      },
+      "directorSignatures": {
+        "title": "Director Signatures",
+        "description": "Each director must sign below to acknowledge agreement to the terms and conditions.",
+        "directorLabel": "Director {number}: {name}",
+        "signatureLabel": "Signature",
+        "signatureComplete": "Signature captured"
       },
       "buttons": {
         "back": "Back",
@@ -953,11 +961,51 @@
         "required": "Required"
       },
       "validation": {
-        "mustAgree": "You must agree to the Guarantee & Indemnity to proceed"
+        "mustAgree": "You must agree to the Guarantee & Indemnity to proceed",
+        "signatureRequired": "Signature is required"
+      },
+      "guarantorSignatures": {
+        "title": "Guarantor Signatures",
+        "description": "Each director/guarantor must sign below to acknowledge the guarantee and indemnity.",
+        "guarantorLabel": "Guarantor {number}: {name}",
+        "signatureLabel": "Signature",
+        "signatureComplete": "Signature captured"
       },
       "buttons": {
         "back": "Back",
-        "next": "Proceed to Signatures"
+        "next": "Next"
+      }
+    },
+    "witness": {
+      "title": "Witness",
+      "description": "A witness is required to verify the guarantor signatures.",
+      "uploadTimeout": "Upload timed out. Please try again.",
+      "retrying": "Retrying upload... ({attempt}/{maxRetries})",
+      "uploadSuccess": "Signatures uploaded successfully",
+      "uploadFailed": "Upload Failed",
+      "uploadErrorDescription": "Failed to upload signatures. Please check your internet connection and try again.",
+      "guarantorsList": {
+        "title": "Guarantors Requiring Witness",
+        "description": "The following directors have signed the Guarantee & Indemnity and require a witness signature:"
+      },
+      "witnessDetails": {
+        "title": "Witness Details",
+        "description": "The witness must be an adult who is not a party to this agreement.",
+        "nameLabel": "Witness Full Name",
+        "namePlaceholder": "Enter witness full name",
+        "signatureLabel": "Witness Signature",
+        "signatureDescription": "Sign in the box below to witness the guarantor signatures.",
+        "signatureComplete": "Signature captured"
+      },
+      "validation": {
+        "nameRequired": "Witness name is required",
+        "signatureRequired": "Witness signature is required"
+      },
+      "buttons": {
+        "back": "Back",
+        "submit": "Submit Application",
+        "uploading": "Uploading...",
+        "submitting": "Submitting..."
       }
     },
     "signatures": {

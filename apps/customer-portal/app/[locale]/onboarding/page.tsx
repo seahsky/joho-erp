@@ -15,14 +15,14 @@ import { TradeReferencesStep } from './components/trade-references-step';
 import { ReviewStep } from './components/review-step';
 import { TermsConditionsStep } from './components/terms-conditions-step';
 import { GuaranteeIndemnityStep } from './components/guarantee-indemnity-step';
-import { SignatureStep, type SignatureData } from './components/signature-step';
+import { WitnessStep } from './components/witness-step';
 
 const STORAGE_KEY = 'onboarding-form-data';
 
-type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'terms-conditions' | 'guarantee-indemnity' | 'signatures';
+type OnboardingStep = 'business' | 'directors' | 'financial' | 'references' | 'review' | 'terms-conditions' | 'guarantee-indemnity' | 'witness';
 
 // Step IDs defined outside component to avoid React hook dependency issues
-const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'terms-conditions', 'guarantee-indemnity', 'signatures'];
+const STEP_IDS: OnboardingStep[] = ['business', 'directors', 'financial', 'references', 'review', 'terms-conditions', 'guarantee-indemnity', 'witness'];
 
 export interface BusinessInfo {
   accountType: 'sole_trader' | 'partnership' | 'company' | 'other';
@@ -98,19 +98,29 @@ export interface TradeReferenceInfo {
   email: string;
 }
 
-interface SignatureState {
+// Per-director signature data (applicant from T&C step, guarantor from Guarantee step)
+export interface DirectorSignature {
   directorIndex: number;
-  applicantSignature: string | null;  // Base64 data URL
+  applicantSignature: string | null;      // Base64 data URL from T&C step
   applicantSignedAt: Date | null;
-  guarantorSignature: string | null;  // Base64 data URL
+  applicantSignatureUrl?: string;         // Uploaded URL
+  guarantorSignature: string | null;      // Base64 data URL from Guarantee step
   guarantorSignedAt: Date | null;
-  witnessName: string;
-  witnessSignature: string | null;    // Base64 data URL
-  witnessSignedAt: Date | null;
-  // Store upload URLs separately
-  applicantSignatureUrl?: string;
-  guarantorSignatureUrl?: string;
-  witnessSignatureUrl?: string;
+  guarantorSignatureUrl?: string;         // Uploaded URL
+}
+
+// Single witness for all guarantors (from Witness step)
+export interface WitnessData {
+  name: string;
+  signature: string | null;               // Base64 data URL
+  signedAt: Date | null;
+  signatureUrl?: string;                  // Uploaded URL
+}
+
+// Combined signature state for localStorage persistence
+interface SignatureState {
+  directorSignatures: DirectorSignature[];
+  witness: WitnessData;
 }
 
 interface SavedFormData {
@@ -121,9 +131,11 @@ interface SavedFormData {
   tradeReferences: TradeReferenceInfo[];
   termsConditionsAgreed: boolean;
   guaranteeIndemnityAgreed: boolean;
-  signatureData?: SignatureState[];  // Added for signature persistence
-  // Legacy field for migration
+  directorSignatures?: DirectorSignature[];  // Per-director signatures from T&C and Guarantee steps
+  witnessData?: WitnessData;                  // Single witness data
+  // Legacy fields for migration
   termsAgreement?: { hasAgreed: boolean };
+  signatureData?: SignatureState;             // Legacy format - converted on load
 }
 
 export default function OnboardingPage() {
@@ -139,7 +151,8 @@ export default function OnboardingPage() {
   const [tradeReferences, setTradeReferences] = useState<TradeReferenceInfo[]>([]);
   const [termsConditionsAgreed, setTermsConditionsAgreed] = useState(false);
   const [guaranteeIndemnityAgreed, setGuaranteeIndemnityAgreed] = useState(false);
-  const [signatureData, setSignatureData] = useState<SignatureState[]>([]);
+  const [directorSignatures, setDirectorSignatures] = useState<DirectorSignature[]>([]);
+  const [witnessData, setWitnessData] = useState<WitnessData>({ name: '', signature: null, signedAt: null });
   const [isRestored, setIsRestored] = useState(false);
 
   // Restore form data from localStorage on mount
@@ -152,6 +165,10 @@ export default function OnboardingPage() {
         let restoredStep = parsed.currentStep;
         if (restoredStep === 'terms-agreement' as OnboardingStep) {
           restoredStep = 'terms-conditions';
+        }
+        // Handle migration from old 'signatures' step to 'witness'
+        if (restoredStep === 'signatures' as OnboardingStep) {
+          restoredStep = 'witness';
         }
         if (restoredStep) setCurrentStep(restoredStep);
         if (parsed.businessInfo) setBusinessInfo(parsed.businessInfo);
@@ -168,7 +185,13 @@ export default function OnboardingPage() {
         if (parsed.guaranteeIndemnityAgreed !== undefined) {
           setGuaranteeIndemnityAgreed(parsed.guaranteeIndemnityAgreed);
         }
-        if (parsed.signatureData) setSignatureData(parsed.signatureData);
+        // Restore new signature data structure
+        if (parsed.directorSignatures) {
+          setDirectorSignatures(parsed.directorSignatures);
+        }
+        if (parsed.witnessData) {
+          setWitnessData(parsed.witnessData);
+        }
       }
     } catch (e) {
       // Ignore parsing errors
@@ -189,14 +212,15 @@ export default function OnboardingPage() {
       tradeReferences,
       termsConditionsAgreed,
       guaranteeIndemnityAgreed,
-      signatureData,
+      directorSignatures,
+      witnessData,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     } catch (e) {
       console.warn('Failed to save onboarding data:', e);
     }
-  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsConditionsAgreed, guaranteeIndemnityAgreed, signatureData, isRestored]);
+  }, [currentStep, businessInfo, directors, financialInfo, tradeReferences, termsConditionsAgreed, guaranteeIndemnityAgreed, directorSignatures, witnessData, isRestored]);
 
   // Clear localStorage on successful submission
   const clearSavedData = useCallback(() => {
@@ -223,7 +247,19 @@ export default function OnboardingPage() {
     },
   });
 
-  const handleSignaturesComplete = (signatureData: SignatureData[]) => {
+  // API submission signature data type
+  interface SignatureSubmissionData {
+    directorIndex: number;
+    applicantSignatureUrl: string;
+    applicantSignedAt: Date;
+    guarantorSignatureUrl: string;
+    guarantorSignedAt: Date;
+    witnessName: string;
+    witnessSignatureUrl: string;
+    witnessSignedAt: Date;
+  }
+
+  const handleSubmitApplication = (finalWitnessData: WitnessData, finalDirectorSignatures: DirectorSignature[]) => {
     if (!user) {
       toast({
         title: t('messages.notAuthenticated'),
@@ -231,6 +267,18 @@ export default function OnboardingPage() {
       });
       return;
     }
+
+    // Convert to API format - each director gets the same witness info
+    const signatures: SignatureSubmissionData[] = finalDirectorSignatures.map((sig) => ({
+      directorIndex: sig.directorIndex,
+      applicantSignatureUrl: sig.applicantSignatureUrl!,
+      applicantSignedAt: sig.applicantSignedAt!,
+      guarantorSignatureUrl: sig.guarantorSignatureUrl!,
+      guarantorSignedAt: sig.guarantorSignedAt!,
+      witnessName: finalWitnessData.name,
+      witnessSignatureUrl: finalWitnessData.signatureUrl!,
+      witnessSignedAt: finalWitnessData.signedAt!,
+    }));
 
     registerMutation.mutate({
       clerkUserId: user.id,
@@ -248,7 +296,7 @@ export default function OnboardingPage() {
       })),
       financialDetails: financialInfo as FinancialInfo,
       tradeReferences,
-      signatures: signatureData,
+      signatures,
     });
   };
 
@@ -356,8 +404,9 @@ export default function OnboardingPage() {
 
         {currentStep === 'terms-conditions' && (
           <TermsConditionsStep
-            agreed={termsConditionsAgreed}
-            onChange={setTermsConditionsAgreed}
+            directors={directors}
+            directorSignatures={directorSignatures}
+            onSignaturesChange={setDirectorSignatures}
             onNext={() => setCurrentStep('guarantee-indemnity')}
             onBack={() => setCurrentStep('review')}
           />
@@ -366,18 +415,21 @@ export default function OnboardingPage() {
         {currentStep === 'guarantee-indemnity' && (
           <GuaranteeIndemnityStep
             businessName={(businessInfo as BusinessInfo).businessName || ''}
-            agreed={guaranteeIndemnityAgreed}
-            onChange={setGuaranteeIndemnityAgreed}
-            onNext={() => setCurrentStep('signatures')}
+            directors={directors}
+            directorSignatures={directorSignatures}
+            onSignaturesChange={setDirectorSignatures}
+            onNext={() => setCurrentStep('witness')}
             onBack={() => setCurrentStep('terms-conditions')}
           />
         )}
 
-        {currentStep === 'signatures' && (
-          <SignatureStep
+        {currentStep === 'witness' && (
+          <WitnessStep
             directors={directors}
-            businessName={(businessInfo as BusinessInfo).businessName}
-            onComplete={handleSignaturesComplete}
+            directorSignatures={directorSignatures}
+            witnessData={witnessData}
+            onWitnessDataChange={setWitnessData}
+            onSubmit={handleSubmitApplication}
             onBack={() => setCurrentStep('guarantee-indemnity')}
             isSubmitting={registerMutation.isPending}
           />
