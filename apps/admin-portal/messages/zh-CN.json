@@ -2198,6 +2198,13 @@
         "testSuccess": "连接成功",
         "testSuccessDescription": "已成功连接到Xero",
         "testFailed": "连接失败",
+        "connectButton": "连接到Xero",
+        "connectDescription": "授权此应用程序访问您的Xero账户",
+        "connectionSuccess": "连接成功",
+        "connectionSuccessDescription": "您的Xero账户已连接",
+        "connectedToTenant": "已连接到 {tenant}",
+        "connectionError": "连接失败",
+        "connectionErrorDescription": "无法连接到Xero，请重试。",
         "lastSync": "上次同步",
         "never": "从未",
         "testResults": {

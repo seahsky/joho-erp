@@ -2204,6 +2204,13 @@
         "testSuccess": "連接成功",
         "testSuccessDescription": "已成功連接到Xero",
         "testFailed": "連接失敗",
+        "connectButton": "連接到Xero",
+        "connectDescription": "授權此應用程式存取您的Xero帳戶",
+        "connectionSuccess": "連接成功",
+        "connectionSuccessDescription": "您的Xero帳戶已連接",
+        "connectedToTenant": "已連接到 {tenant}",
+        "connectionError": "連接失敗",
+        "connectionErrorDescription": "無法連接到Xero，請重試。",
         "lastSync": "上次同步",
         "never": "從未",
         "testResults": {

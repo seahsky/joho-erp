@@ -2198,6 +2198,13 @@
         "testSuccess": "Connection Successful",
         "testSuccessDescription": "Successfully connected to Xero",
         "testFailed": "Connection Failed",
+        "connectButton": "Connect to Xero",
+        "connectDescription": "Authorize this application to access your Xero account",
+        "connectionSuccess": "Successfully Connected",
+        "connectionSuccessDescription": "Your Xero account has been connected",
+        "connectedToTenant": "Connected to {tenant}",
+        "connectionError": "Connection Failed",
+        "connectionErrorDescription": "Failed to connect to Xero. Please try again.",
         "lastSync": "Last Sync",
         "never": "Never",
         "testResults": {
