@@ -201,7 +201,25 @@ export async function exchangeCodeForTokens(code: string): Promise<XeroTokenResp
     throw new Error(`Failed to exchange code for tokens: ${response.status} ${errorText}`);
   }
 
-  return response.json();
+  const tokenResponse = await response.json();
+
+  // Validate required fields are present
+  if (!tokenResponse.access_token || typeof tokenResponse.access_token !== 'string') {
+    xeroLogger.error('Invalid token response: missing access_token', { response: tokenResponse });
+    throw new Error('Invalid token response from Xero: missing access_token');
+  }
+
+  if (!tokenResponse.refresh_token || typeof tokenResponse.refresh_token !== 'string') {
+    xeroLogger.error('Invalid token response: missing refresh_token', { response: tokenResponse });
+    throw new Error('Invalid token response from Xero: missing refresh_token');
+  }
+
+  if (typeof tokenResponse.expires_in !== 'number') {
+    xeroLogger.error('Invalid token response: missing expires_in', { response: tokenResponse });
+    throw new Error('Invalid token response from Xero: missing expires_in');
+  }
+
+  return tokenResponse as XeroTokenResponse;
 }
 
 /**

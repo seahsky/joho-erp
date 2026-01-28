@@ -53,6 +53,15 @@ export function isEncryptionEnabled(): boolean {
  *          Returns the original plaintext if encryption is not enabled
  */
 export function encrypt(plaintext: string): string {
+  // Validate input
+  if (plaintext === undefined || plaintext === null) {
+    throw new Error('Cannot encrypt undefined or null value');
+  }
+
+  if (typeof plaintext !== 'string') {
+    throw new Error(`Cannot encrypt non-string value: ${typeof plaintext}`);
+  }
+
   const key = getEncryptionKey();
 
   // If encryption is not enabled, return plaintext
