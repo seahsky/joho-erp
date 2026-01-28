@@ -101,12 +101,15 @@ export function ProcessStockDialog({
   );
 
   // Form state
+  const [sourceQuantity, setSourceQuantity] = useState<string>('');
   const [targetOutputQuantity, setTargetOutputQuantity] = useState('');
+  const [lossPercentage, setLossPercentage] = useState<string>('0');
+  // Track which field was last changed for potential future bidirectional calculation features
+  const [_lastChangedField, setLastChangedField] = useState<'input' | 'output' | 'loss'>('input');
   const [costPerUnit, setCostPerUnit] = useState('');
   const [expirySelection, setExpirySelection] = useState<string>('');
   const [customExpiryDate, setCustomExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
-  const [lossPercentage, setLossPercentage] = useState<string>('0');
 
   // Calculate actual expiry date from selection
   const getExpiryDate = (): Date | undefined => {
@@ -130,25 +133,61 @@ export function ProcessStockDialog({
 
   const expiryDate = getExpiryDate();
 
-  // Set default loss percentage from SOURCE product's category
+  // Set default loss percentage from SOURCE product's category when source changes
   useEffect(() => {
     if (sourceProduct) {
       const defaultLoss = sourceProduct.categoryRelation?.processingLossPercentage ?? 0;
       setLossPercentage(String(defaultLoss));
+      // Reset quantities when source product changes
+      setSourceQuantity('');
+      setTargetOutputQuantity('');
     } else {
       setLossPercentage('0');
     }
   }, [sourceProduct]);
 
-  // Calculate required raw material from target output quantity
-  const requiredRawMaterial = useMemo(() => {
-    if (!targetOutputQuantity || !sourceProduct) return 0;
-    const targetQty = parseFloat(targetOutputQuantity) || 0;
+  // Bidirectional calculation handlers
+  const handleSourceQuantityChange = (value: string) => {
+    setSourceQuantity(value);
+    setLastChangedField('input');
+    
+    // Recalculate target output: output = input × (1 - loss% / 100)
+    const input = parseFloat(value) || 0;
     const loss = parseFloat(lossPercentage) || 0;
-    // requiredRawMaterial = targetOutput ÷ (1 - lossPercentage / 100)
-    if (loss >= 100) return Infinity; // Avoid division by zero
-    return parseFloat((targetQty / (1 - loss / 100)).toFixed(2));
-  }, [targetOutputQuantity, sourceProduct, lossPercentage]);
+    if (input > 0 && loss < 100) {
+      const output = input * (1 - loss / 100);
+      setTargetOutputQuantity(output.toFixed(2));
+    }
+  };
+
+  const handleTargetOutputChange = (value: string) => {
+    setTargetOutputQuantity(value);
+    setLastChangedField('output');
+    
+    // Recalculate source quantity: input = output ÷ (1 - loss% / 100)
+    const output = parseFloat(value) || 0;
+    const loss = parseFloat(lossPercentage) || 0;
+    if (output > 0 && loss < 100) {
+      const input = output / (1 - loss / 100);
+      setSourceQuantity(input.toFixed(2));
+    }
+  };
+
+  const handleLossPercentageChange = (value: string) => {
+    setLossPercentage(value);
+    setLastChangedField('loss');
+    
+    const loss = parseFloat(value) || 0;
+    if (loss >= 100) return; // Can't calculate with 100% loss
+    
+    // Recalculate based on which field has a valid value
+    // Prefer to recalculate output from input
+    const input = parseFloat(sourceQuantity) || 0;
+    if (input > 0) {
+      const output = input * (1 - loss / 100);
+      setTargetOutputQuantity(output.toFixed(2));
+    }
+  };
 
   // Calculate max achievable output based on available stock
   const maxOutput = useMemo(() => {
@@ -157,6 +196,13 @@ export function ProcessStockDialog({
     // maxOutput = availableStock × (1 - lossPercentage / 100)
     return parseFloat((sourceProduct.currentStock * (1 - loss / 100)).toFixed(2));
   }, [sourceProduct, lossPercentage]);
+
+  // Computed loss amount for display
+  const lossAmount = useMemo(() => {
+    const input = parseFloat(sourceQuantity) || 0;
+    const output = parseFloat(targetOutputQuantity) || 0;
+    return Math.max(0, input - output);
+  }, [sourceQuantity, targetOutputQuantity]);
 
   // Validation errors
   const validationErrors = useMemo(() => {
@@ -168,12 +214,20 @@ export function ProcessStockDialog({
       errors.push(t('validation.sameProduct'));
     }
 
+    const sourceQty = parseFloat(sourceQuantity) || 0;
     const targetQty = parseFloat(targetOutputQuantity) || 0;
+    
+    if (sourceQty <= 0) errors.push(t('validation.sourceQuantityRequired'));
     if (targetQty <= 0) errors.push(t('validation.quantityPositive'));
 
-    // Check if target output exceeds max achievable
-    if (sourceProduct && targetQty > maxOutput) {
-      errors.push(t('validation.exceedsAvailableStock', { max: maxOutput.toFixed(2) }));
+    // Check if source quantity exceeds available stock
+    if (sourceProduct && sourceQty > sourceProduct.currentStock) {
+      errors.push(t('validation.sourceQuantityExceedsStock', { available: sourceProduct.currentStock.toFixed(2) }));
+    }
+
+    // Check if output exceeds input (should not happen)
+    if (targetQty > sourceQty && sourceQty > 0) {
+      errors.push(t('validation.outputExceedsInput'));
     }
 
     const cost = parseToCents(costPerUnit);
@@ -184,10 +238,8 @@ export function ProcessStockDialog({
       errors.push(t('validation.lossPercentageRange'));
     }
 
-    if (targetQty > 0 && requiredRawMaterial <= 0) errors.push(t('validation.zeroOutput'));
-
     return errors;
-  }, [sourceProduct, targetProduct, targetOutputQuantity, costPerUnit, lossPercentage, maxOutput, requiredRawMaterial, t]);
+  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, costPerUnit, lossPercentage, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -238,6 +290,7 @@ export function ProcessStockDialog({
     await processStockMutation.mutateAsync({
       sourceProductId: sourceProduct.id,
       targetProductId: targetProduct.id,
+      sourceQuantity: parseFloat(sourceQuantity),
       targetOutputQuantity: parseFloat(targetOutputQuantity),
       lossPercentage: parseFloat(lossPercentage) || 0,
       costPerUnit: costInCents,
@@ -249,12 +302,14 @@ export function ProcessStockDialog({
   const handleReset = () => {
     setSourceProduct(null);
     setTargetProduct(null);
+    setSourceQuantity('');
     setTargetOutputQuantity('');
+    setLossPercentage('0');
+    setLastChangedField('input');
     setCostPerUnit('');
     setExpirySelection('');
     setCustomExpiryDate(undefined);
     setNotes('');
-    setLossPercentage('0');
     setProductSearch('');
     setSelectionMode('none');
   };
@@ -343,7 +398,7 @@ export function ProcessStockDialog({
                           {t('preview.source')}: <span className="font-medium">{targetProduct.currentStock} {targetProduct.unit}</span>
                         </p>
                         {targetProduct.estimatedLossPercentage !== null && targetProduct.estimatedLossPercentage !== undefined && (
-                          <p className="text-sm text-orange-600 mt-1">
+                          <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                             {t('preview.loss')}: {targetProduct.estimatedLossPercentage}%
                           </p>
                         )}
@@ -434,29 +489,29 @@ export function ProcessStockDialog({
           </div>
 
           {/* Conversion Preview */}
-          {sourceProduct && targetProduct && targetOutputQuantity && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          {sourceProduct && targetProduct && sourceQuantity && targetOutputQuantity && (
+            <div className="bg-primary/10 dark:bg-primary/20 border border-primary/30 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="text-center flex-1">
                   <div className="text-sm text-muted-foreground">{t('fields.willConsume')}</div>
-                  <div className="text-2xl font-bold">{requiredRawMaterial.toFixed(2)} {sourceProduct.unit}</div>
+                  <div className="text-2xl font-bold">{parseFloat(sourceQuantity).toFixed(2)} {sourceProduct.unit}</div>
                   <div className="text-sm">{sourceProduct.name}</div>
                 </div>
                 <div className="mx-4">
-                  <ArrowRight className="h-8 w-8 text-blue-600" />
+                  <ArrowRight className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center flex-1">
                   <div className="text-sm text-muted-foreground">{t('preview.output')}</div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {targetOutputQuantity} {targetProduct.unit}
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {parseFloat(targetOutputQuantity).toFixed(2)} {targetProduct.unit}
                   </div>
                   <div className="text-sm">{targetProduct.name}</div>
                 </div>
               </div>
-              {parseFloat(lossPercentage) > 0 && (
+              {lossAmount > 0 && (
                 <div className="mt-3 text-center text-sm text-muted-foreground">
                   <TrendingDown className="inline h-4 w-4 mr-1" />
-                  {t('preview.loss')}: {lossPercentage}% = {(requiredRawMaterial - parseFloat(targetOutputQuantity || '0')).toFixed(2)} {sourceProduct.unit}
+                  {t('preview.loss')}: {lossPercentage}% = {lossAmount.toFixed(2)} {sourceProduct.unit}
                 </div>
               )}
             </div>
@@ -467,23 +522,46 @@ export function ProcessStockDialog({
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">{t('dialog.processingDetails')}</h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Quantity Fields with Bidirectional Calculation */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="sourceQuantity">{t('fields.sourceQuantity')}</Label>
+                  <Input
+                    id="sourceQuantity"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={sourceQuantity}
+                    onChange={(e) => handleSourceQuantityChange(e.target.value)}
+                    placeholder="0"
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('fields.sourceQuantityHint')}
+                    {sourceProduct && (
+                      <> • {t('preview.available')}: {sourceProduct.currentStock} {sourceProduct.unit}</>
+                    )}
+                  </p>
+                </div>
+
                 <div>
                   <Label htmlFor="targetOutputQuantity">{t('fields.targetOutputQuantity')}</Label>
                   <Input
                     id="targetOutputQuantity"
                     type="number"
                     step="0.01"
+                    min="0"
                     value={targetOutputQuantity}
-                    onChange={(e) => setTargetOutputQuantity(e.target.value)}
+                    onChange={(e) => handleTargetOutputChange(e.target.value)}
                     placeholder="0"
                     disabled={isLoading}
                   />
-                  {sourceProduct && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t('fields.maxOutput')}: {maxOutput.toFixed(2)} {targetProduct?.unit}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('fields.targetOutputHint')}
+                    {sourceProduct && (
+                      <> • {t('fields.maxOutput')}: {maxOutput.toFixed(2)}</>
+                    )}
+                  </p>
                 </div>
 
                 <div>
@@ -495,7 +573,7 @@ export function ProcessStockDialog({
                     min="0"
                     max="100"
                     value={lossPercentage}
-                    onChange={(e) => setLossPercentage(e.target.value)}
+                    onChange={(e) => handleLossPercentageChange(e.target.value)}
                     placeholder="0"
                     disabled={isLoading}
                   />
@@ -503,7 +581,6 @@ export function ProcessStockDialog({
                     {sourceProduct?.categoryRelation?.processingLossPercentage != null
                       ? t('fields.defaultFromCategory', { name: sourceProduct.categoryRelation.name })
                       : t('fields.lossPercentageHint')}
-                    {' • '}{t('fields.expectedYield')}: {(100 - (parseFloat(lossPercentage) || 0)).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -572,12 +649,12 @@ export function ProcessStockDialog({
 
           {/* Validation Errors */}
           {validationErrors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <div className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/30 rounded-md p-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900">{t('validation.fixErrors')}</p>
-                  <ul className="text-sm text-red-700 list-disc list-inside mt-1">
+                  <p className="text-sm font-medium text-destructive">{t('validation.fixErrors')}</p>
+                  <ul className="text-sm text-destructive/90 list-disc list-inside mt-1">
                     {validationErrors.map((error, index) => (
                       <li key={index}>{error}</li>
                     ))}

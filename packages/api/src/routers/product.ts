@@ -821,8 +821,9 @@ export const productRouter = router({
       z.object({
         sourceProductId: z.string(),
         targetProductId: z.string(),
+        sourceQuantity: z.number().positive(), // Raw material to consume (input quantity)
         targetOutputQuantity: z.number().positive(), // Desired output quantity (processed goods)
-        lossPercentage: z.number().min(0).max(100).optional(), // Processing loss percentage
+        lossPercentage: z.number().min(0).max(100).optional(), // Processing loss percentage (calculated if not provided)
         costPerUnit: z.number().int().positive(), // In cents - cost for target product
         expiryDate: z.date().optional(),
         notes: z.string().optional(),
@@ -837,9 +838,19 @@ export const productRouter = router({
             path: ['targetProductId'],
           }
         )
+        .refine(
+          (data) => {
+            // Output cannot exceed input
+            return data.targetOutputQuantity <= data.sourceQuantity;
+          },
+          {
+            message: 'Output quantity cannot exceed raw material input',
+            path: ['targetOutputQuantity'],
+          }
+        )
     )
     .mutation(async ({ input, ctx }) => {
-      const { sourceProductId, targetProductId, targetOutputQuantity, lossPercentage: inputLossPercentage, costPerUnit, expiryDate, notes } = input;
+      const { sourceProductId, targetProductId, sourceQuantity, targetOutputQuantity, lossPercentage: inputLossPercentage, costPerUnit, expiryDate, notes } = input;
 
       // Use transaction to process stock atomically - ALL validation inside transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -866,29 +877,33 @@ export const productRouter = router({
           });
         }
 
-        // STEP 2: Calculate required raw material from target output quantity
-        // Loss percentage comes from input, or falls back to source product's category
-        const lossPercentage = inputLossPercentage ?? sourceProduct.categoryRelation?.processingLossPercentage ?? 0;
+        // STEP 2: Use sourceQuantity directly (provided by user)
+        // Calculate loss percentage if not provided: ((input - output) / input) * 100
+        const calculatedLoss = sourceQuantity > 0 
+          ? ((sourceQuantity - targetOutputQuantity) / sourceQuantity) * 100 
+          : 0;
+        const lossPercentage = inputLossPercentage ?? calculatedLoss;
 
-        // Calculate required raw material: requiredRawMaterial = targetOutput ÷ (1 - lossPercentage / 100)
-        if (lossPercentage >= 100) {
+        // Validate loss percentage
+        if (lossPercentage < 0 || lossPercentage > 100) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Loss percentage cannot be 100% or more.',
+            message: 'Loss percentage must be between 0 and 100.',
           });
         }
-        const requiredRawMaterial = parseFloat((targetOutputQuantity / (1 - lossPercentage / 100)).toFixed(2));
 
-        // Validate source has enough stock for required raw material
+        // Use sourceQuantity directly as the raw material to consume
+        const requiredRawMaterial = parseFloat(sourceQuantity.toFixed(2));
+
+        // Validate source has enough stock
         if (sourceProduct.currentStock < requiredRawMaterial) {
-          const maxOutput = parseFloat((sourceProduct.currentStock * (1 - lossPercentage / 100)).toFixed(2));
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, required: ${requiredRawMaterial}. Maximum output: ${maxOutput}`,
+            message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, required: ${requiredRawMaterial}.`,
           });
         }
 
-        // Output quantity is simply the target output quantity requested
+        // Output quantity is the target output quantity requested
         const outputQty = targetOutputQuantity;
 
         // Validate output is not zero
