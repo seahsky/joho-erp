@@ -383,3 +383,16 @@ export function formatCentsForInput(cents: number | null | undefined): string {
 
   return (cents / 100).toFixed(2);
 }
+
+/**
+ * Format cents as whole dollars for input fields (no decimals).
+ * Use for fields where cents aren't relevant (e.g., credit limits).
+ * @param cents - Amount in cents
+ * @returns Whole dollar string (e.g., 500000 → "5000")
+ */
+export function formatCentsForWholeInput(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) {
+    return '';
+  }
+  return Math.round(cents / 100).toString();
+}

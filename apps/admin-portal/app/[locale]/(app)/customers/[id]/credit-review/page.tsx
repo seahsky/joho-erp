@@ -26,7 +26,7 @@ import {
 } from '@joho-erp/ui';
 import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine, RefreshCw } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
-import { formatAUD, formatDate, parseToCents, formatCentsForInput } from '@joho-erp/shared';
+import { formatAUD, formatDate, parseToCents, formatCentsForWholeInput } from '@joho-erp/shared';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -723,7 +723,7 @@ export default function CreditReviewPage({ params }: PageProps) {
                       type="number"
                       min="0"
                       step="100"
-                      value={formatCentsForInput(approveData.creditLimit) || '0'}
+                      value={formatCentsForWholeInput(approveData.creditLimit) || '0'}
                       onChange={(e) =>
                         setApproveData({
                           ...approveData,

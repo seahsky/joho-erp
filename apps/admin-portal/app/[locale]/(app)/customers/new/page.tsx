@@ -18,7 +18,7 @@ import {
 import { ArrowLeft, Loader2, Plus, X, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/trpc/client';
-import { parseToCents, validateABN, validateACN, validateAustralianPhone } from '@joho-erp/shared';
+import { parseToCents, validateABN, validateACN, validateAustralianPhone, formatCentsForWholeInput } from '@joho-erp/shared';
 import { AddressSearch, type AddressResult } from '@/components/address-search';
 
 // Type definitions
@@ -1155,7 +1155,7 @@ export default function NewCustomerPage() {
                       min="0"
                       step="100"
                       placeholder={t('creditApplication.forecastPurchasePlaceholder')}
-                      value={formData.forecastPurchase ? (formData.forecastPurchase / 100).toFixed(0) : ''}
+                      value={formatCentsForWholeInput(formData.forecastPurchase)}
                       onChange={(e) => {
                         setFormData({
                           ...formData,
@@ -1177,7 +1177,7 @@ export default function NewCustomerPage() {
                       min="0"
                       step="100"
                       placeholder={t('creditApplication.approvedCreditLimitPlaceholder')}
-                      value={formData.creditLimit ? (formData.creditLimit / 100).toFixed(0) : '0'}
+                      value={formatCentsForWholeInput(formData.creditLimit) || '0'}
                       onChange={(e) => {
                         setFormData({ ...formData, creditLimit: parseToCents(e.target.value) || 0 });
                         clearCreditError('creditLimit');

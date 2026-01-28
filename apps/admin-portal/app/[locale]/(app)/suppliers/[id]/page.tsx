@@ -4,7 +4,7 @@ import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { formatAUD, formatCentsForInput, parseToCents, validateABN } from '@joho-erp/shared';
+import { formatAUD, formatCentsForInput, formatCentsForWholeInput, parseToCents, validateABN } from '@joho-erp/shared';
 import {
   Card,
   CardContent,
@@ -176,7 +176,7 @@ export default function SupplierDetailPage({ params }: PageProps) {
       },
       paymentTerms: supplier.paymentTerms || '',
       paymentMethod: supplier.paymentMethod,
-      creditLimit: formatCentsForInput(supplier.creditLimit),
+      creditLimit: formatCentsForWholeInput(supplier.creditLimit),
       minimumOrderValue: supplier.minimumOrderValue
         ? formatCentsForInput(supplier.minimumOrderValue)
         : '',

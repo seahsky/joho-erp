@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent } from '@joho-erp/ui';
 import { Building2, User, MapPin, CreditCard } from 'lucide-react';
-import { parseToCents, validateABN } from '@joho-erp/shared';
+import { parseToCents, validateABN, formatCentsForWholeInput } from '@joho-erp/shared';
 import type { BusinessInfo } from '../page';
 import { AddressSearch, type AddressResult } from '@/components/address-search';
 
@@ -339,7 +339,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
                 type="number"
                 min="0"
                 step="100"
-                value={formData.requestedCreditLimit ? (formData.requestedCreditLimit / 100).toFixed(0) : ''}
+                value={formatCentsForWholeInput(formData.requestedCreditLimit)}
                 onChange={(e) => {
                   const cents = parseToCents(e.target.value) || 0;
                   setFormData({ ...formData, requestedCreditLimit: cents });
@@ -355,7 +355,7 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
                 type="number"
                 min="0"
                 step="100"
-                value={formData.forecastPurchase ? (formData.forecastPurchase / 100).toFixed(0) : ''}
+                value={formatCentsForWholeInput(formData.forecastPurchase)}
                 onChange={(e) => {
                   const cents = parseToCents(e.target.value) || 0;
                   setFormData({ ...formData, forecastPurchase: cents });
