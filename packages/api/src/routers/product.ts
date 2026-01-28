@@ -815,7 +815,8 @@ export const productRouter = router({
       z.object({
         sourceProductId: z.string(),
         targetProductId: z.string(),
-        quantityToProcess: z.number().positive(),
+        targetOutputQuantity: z.number().positive(), // Desired output quantity (processed goods)
+        lossPercentage: z.number().min(0).max(100).optional(), // Processing loss percentage
         costPerUnit: z.number().int().positive(), // In cents - cost for target product
         expiryDate: z.date().optional(),
         notes: z.string().optional(),
@@ -832,13 +833,16 @@ export const productRouter = router({
         )
     )
     .mutation(async ({ input, ctx }) => {
-      const { sourceProductId, targetProductId, quantityToProcess, costPerUnit, expiryDate, notes } = input;
+      const { sourceProductId, targetProductId, targetOutputQuantity, lossPercentage: inputLossPercentage, costPerUnit, expiryDate, notes } = input;
 
       // Use transaction to process stock atomically - ALL validation inside transaction
       const result = await prisma.$transaction(async (tx) => {
         // STEP 1: Get both products INSIDE transaction (prevents TOCTOU)
         const [sourceProduct, targetProduct] = await Promise.all([
-          tx.product.findUnique({ where: { id: sourceProductId } }),
+          tx.product.findUnique({
+            where: { id: sourceProductId },
+            include: { categoryRelation: true },
+          }),
           tx.product.findUnique({ where: { id: targetProductId } }),
         ]);
 
@@ -856,23 +860,36 @@ export const productRouter = router({
           });
         }
 
-        // STEP 2: Check sufficient source stock (validated inside transaction)
-        if (sourceProduct.currentStock < quantityToProcess) {
+        // STEP 2: Calculate required raw material from target output quantity
+        // Loss percentage comes from input, or falls back to source product's category
+        const lossPercentage = inputLossPercentage ?? sourceProduct.categoryRelation?.processingLossPercentage ?? 0;
+
+        // Calculate required raw material: requiredRawMaterial = targetOutput ÷ (1 - lossPercentage / 100)
+        if (lossPercentage >= 100) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, requested: ${quantityToProcess}`,
+            message: 'Loss percentage cannot be 100% or more.',
+          });
+        }
+        const requiredRawMaterial = parseFloat((targetOutputQuantity / (1 - lossPercentage / 100)).toFixed(2));
+
+        // Validate source has enough stock for required raw material
+        if (sourceProduct.currentStock < requiredRawMaterial) {
+          const maxOutput = parseFloat((sourceProduct.currentStock * (1 - lossPercentage / 100)).toFixed(2));
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Insufficient stock in source product. Available: ${sourceProduct.currentStock}, required: ${requiredRawMaterial}. Maximum output: ${maxOutput}`,
           });
         }
 
-        // Calculate output quantity based on target's estimated loss percentage
-        const lossPercentage = targetProduct.estimatedLossPercentage || 0;
-        const outputQty = parseFloat((quantityToProcess * (1 - lossPercentage / 100)).toFixed(2));
+        // Output quantity is simply the target output quantity requested
+        const outputQty = targetOutputQuantity;
 
         // Validate output is not zero
         if (outputQty <= 0) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Output quantity would be zero or negative. Check loss percentage configuration.',
+            message: 'Output quantity must be greater than zero.',
           });
         }
 
@@ -882,9 +899,9 @@ export const productRouter = router({
             productId: sourceProductId,
             type: 'adjustment',
             adjustmentType: 'packing_adjustment', // Processing/transformation adjustment
-            quantity: -quantityToProcess,
+            quantity: -requiredRawMaterial,
             previousStock: sourceProduct.currentStock,
-            newStock: sourceProduct.currentStock - quantityToProcess,
+            newStock: sourceProduct.currentStock - requiredRawMaterial,
             referenceType: 'manual',
             notes: `Processed to ${targetProduct.name} (${targetProduct.sku})${notes ? ' - ' + notes : ''}`,
             createdBy: ctx.userId || 'system',
@@ -895,7 +912,7 @@ export const productRouter = router({
         const { consumeStock } = await import('../services/inventory-batch');
         const consumptionResult = await consumeStock(
           sourceProductId,
-          quantityToProcess,
+          requiredRawMaterial,
           sourceTransaction.id,
           undefined,
           undefined,
@@ -906,9 +923,9 @@ export const productRouter = router({
         const sourceUpdateResult = await tx.product.updateMany({
           where: {
             id: sourceProductId,
-            currentStock: { gte: quantityToProcess }, // Atomic guard - ensure stock still available
+            currentStock: { gte: requiredRawMaterial }, // Atomic guard - ensure stock still available
           },
-          data: { currentStock: { decrement: quantityToProcess } },
+          data: { currentStock: { decrement: requiredRawMaterial } },
         });
 
         if (sourceUpdateResult.count === 0) {
@@ -958,7 +975,7 @@ export const productRouter = router({
         return {
           sourceTransaction,
           targetTransaction,
-          quantityProcessed: quantityToProcess,
+          quantityProcessed: requiredRawMaterial,
           quantityProduced: outputQty,
           lossPercentage,
           sourceCOGS: consumptionResult.totalCost,
@@ -974,8 +991,8 @@ export const productRouter = router({
           sku: result.sourceProduct.sku,
           adjustmentType: 'packing_adjustment',
           previousStock: result.sourceProduct.currentStock,
-          newStock: result.sourceProduct.currentStock - quantityToProcess,
-          quantity: -quantityToProcess,
+          newStock: result.sourceProduct.currentStock - result.quantityProcessed,
+          quantity: -result.quantityProcessed,
           notes: `Processed to ${result.targetProduct.name}`,
         }).catch((error) => {
           console.error('Audit log failed for source product:', error);
@@ -998,7 +1015,7 @@ export const productRouter = router({
           id: result.sourceProduct.id,
           name: result.sourceProduct.name,
           sku: result.sourceProduct.sku,
-          newStock: result.sourceProduct.currentStock - quantityToProcess,
+          newStock: result.sourceProduct.currentStock - result.quantityProcessed,
         },
         targetProduct: {
           id: result.targetProduct.id,

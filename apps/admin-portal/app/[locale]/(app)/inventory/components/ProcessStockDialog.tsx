@@ -101,7 +101,7 @@ export function ProcessStockDialog({
   );
 
   // Form state
-  const [quantityToProcess, setQuantityToProcess] = useState('');
+  const [targetOutputQuantity, setTargetOutputQuantity] = useState('');
   const [costPerUnit, setCostPerUnit] = useState('');
   const [expirySelection, setExpirySelection] = useState<string>('');
   const [customExpiryDate, setCustomExpiryDate] = useState<Date | undefined>();
@@ -130,26 +130,33 @@ export function ProcessStockDialog({
 
   const expiryDate = getExpiryDate();
 
-  // Set default loss percentage when target product changes
+  // Set default loss percentage from SOURCE product's category
   useEffect(() => {
-    if (targetProduct) {
-      const defaultLoss =
-        targetProduct.estimatedLossPercentage ??
-        targetProduct.categoryRelation?.processingLossPercentage ??
-        0;
+    if (sourceProduct) {
+      const defaultLoss = sourceProduct.categoryRelation?.processingLossPercentage ?? 0;
       setLossPercentage(String(defaultLoss));
     } else {
       setLossPercentage('0');
     }
-  }, [targetProduct]);
+  }, [sourceProduct]);
 
-  // Calculate output quantity based on loss percentage state
-  const calculatedOutput = useMemo(() => {
-    if (!quantityToProcess || !targetProduct) return 0;
-    const qty = parseFloat(quantityToProcess) || 0;
+  // Calculate required raw material from target output quantity
+  const requiredRawMaterial = useMemo(() => {
+    if (!targetOutputQuantity || !sourceProduct) return 0;
+    const targetQty = parseFloat(targetOutputQuantity) || 0;
     const loss = parseFloat(lossPercentage) || 0;
-    return parseFloat((qty * (1 - loss / 100)).toFixed(2));
-  }, [quantityToProcess, targetProduct, lossPercentage]);
+    // requiredRawMaterial = targetOutput ÷ (1 - lossPercentage / 100)
+    if (loss >= 100) return Infinity; // Avoid division by zero
+    return parseFloat((targetQty / (1 - loss / 100)).toFixed(2));
+  }, [targetOutputQuantity, sourceProduct, lossPercentage]);
+
+  // Calculate max achievable output based on available stock
+  const maxOutput = useMemo(() => {
+    if (!sourceProduct) return 0;
+    const loss = parseFloat(lossPercentage) || 0;
+    // maxOutput = availableStock × (1 - lossPercentage / 100)
+    return parseFloat((sourceProduct.currentStock * (1 - loss / 100)).toFixed(2));
+  }, [sourceProduct, lossPercentage]);
 
   // Validation errors
   const validationErrors = useMemo(() => {
@@ -161,10 +168,12 @@ export function ProcessStockDialog({
       errors.push(t('validation.sameProduct'));
     }
 
-    const qty = parseFloat(quantityToProcess) || 0;
-    if (qty <= 0) errors.push(t('validation.quantityPositive'));
-    if (sourceProduct && qty > sourceProduct.currentStock) {
-      errors.push(t('validation.insufficientStock'));
+    const targetQty = parseFloat(targetOutputQuantity) || 0;
+    if (targetQty <= 0) errors.push(t('validation.quantityPositive'));
+
+    // Check if target output exceeds max achievable
+    if (sourceProduct && targetQty > maxOutput) {
+      errors.push(t('validation.exceedsAvailableStock', { max: maxOutput.toFixed(2) }));
     }
 
     const cost = parseToCents(costPerUnit);
@@ -175,10 +184,10 @@ export function ProcessStockDialog({
       errors.push(t('validation.lossPercentageRange'));
     }
 
-    if (calculatedOutput <= 0) errors.push(t('validation.zeroOutput'));
+    if (targetQty > 0 && requiredRawMaterial <= 0) errors.push(t('validation.zeroOutput'));
 
     return errors;
-  }, [sourceProduct, targetProduct, quantityToProcess, costPerUnit, lossPercentage, calculatedOutput, t]);
+  }, [sourceProduct, targetProduct, targetOutputQuantity, costPerUnit, lossPercentage, maxOutput, requiredRawMaterial, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -229,7 +238,8 @@ export function ProcessStockDialog({
     await processStockMutation.mutateAsync({
       sourceProductId: sourceProduct.id,
       targetProductId: targetProduct.id,
-      quantityToProcess: parseFloat(quantityToProcess),
+      targetOutputQuantity: parseFloat(targetOutputQuantity),
+      lossPercentage: parseFloat(lossPercentage) || 0,
       costPerUnit: costInCents,
       expiryDate: expiryDate || undefined,
       notes: notes.trim() || undefined,
@@ -239,7 +249,7 @@ export function ProcessStockDialog({
   const handleReset = () => {
     setSourceProduct(null);
     setTargetProduct(null);
-    setQuantityToProcess('');
+    setTargetOutputQuantity('');
     setCostPerUnit('');
     setExpirySelection('');
     setCustomExpiryDate(undefined);
@@ -424,12 +434,12 @@ export function ProcessStockDialog({
           </div>
 
           {/* Conversion Preview */}
-          {sourceProduct && targetProduct && quantityToProcess && (
+          {sourceProduct && targetProduct && targetOutputQuantity && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="text-center flex-1">
-                  <div className="text-sm text-muted-foreground">{t('preview.source')}</div>
-                  <div className="text-2xl font-bold">{quantityToProcess} {sourceProduct.unit}</div>
+                  <div className="text-sm text-muted-foreground">{t('fields.willConsume')}</div>
+                  <div className="text-2xl font-bold">{requiredRawMaterial.toFixed(2)} {sourceProduct.unit}</div>
                   <div className="text-sm">{sourceProduct.name}</div>
                 </div>
                 <div className="mx-4">
@@ -438,7 +448,7 @@ export function ProcessStockDialog({
                 <div className="text-center flex-1">
                   <div className="text-sm text-muted-foreground">{t('preview.output')}</div>
                   <div className="text-2xl font-bold text-green-600">
-                    {calculatedOutput.toFixed(2)} {targetProduct.unit}
+                    {targetOutputQuantity} {targetProduct.unit}
                   </div>
                   <div className="text-sm">{targetProduct.name}</div>
                 </div>
@@ -446,8 +456,7 @@ export function ProcessStockDialog({
               {parseFloat(lossPercentage) > 0 && (
                 <div className="mt-3 text-center text-sm text-muted-foreground">
                   <TrendingDown className="inline h-4 w-4 mr-1" />
-                  {t('preview.loss')}: {lossPercentage}% =
-                  {(parseFloat(quantityToProcess || '0') - calculatedOutput).toFixed(2)} {targetProduct.unit}
+                  {t('preview.loss')}: {lossPercentage}% = {(requiredRawMaterial - parseFloat(targetOutputQuantity || '0')).toFixed(2)} {sourceProduct.unit}
                 </div>
               )}
             </div>
@@ -460,19 +469,19 @@ export function ProcessStockDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="quantityToProcess">{t('fields.quantityToProcess')}</Label>
+                  <Label htmlFor="targetOutputQuantity">{t('fields.targetOutputQuantity')}</Label>
                   <Input
-                    id="quantityToProcess"
+                    id="targetOutputQuantity"
                     type="number"
                     step="0.01"
-                    value={quantityToProcess}
-                    onChange={(e) => setQuantityToProcess(e.target.value)}
+                    value={targetOutputQuantity}
+                    onChange={(e) => setTargetOutputQuantity(e.target.value)}
                     placeholder="0"
                     disabled={isLoading}
                   />
                   {sourceProduct && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t('preview.available')}: {sourceProduct.currentStock} {sourceProduct.unit}
+                      {t('fields.maxOutput')}: {maxOutput.toFixed(2)} {targetProduct?.unit}
                     </p>
                   )}
                 </div>
@@ -491,11 +500,9 @@ export function ProcessStockDialog({
                     disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {targetProduct?.estimatedLossPercentage != null
-                      ? t('fields.defaultFromProduct')
-                      : targetProduct?.categoryRelation?.processingLossPercentage != null
-                        ? t('fields.defaultFromCategory', { name: targetProduct.categoryRelation.name })
-                        : t('fields.lossPercentageHint')}
+                    {sourceProduct?.categoryRelation?.processingLossPercentage != null
+                      ? t('fields.defaultFromCategory', { name: sourceProduct.categoryRelation.name })
+                      : t('fields.lossPercentageHint')}
                     {' • '}{t('fields.expectedYield')}: {(100 - (parseFloat(lossPercentage) || 0)).toFixed(1)}%
                   </p>
                 </div>
