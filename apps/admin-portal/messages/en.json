@@ -3246,7 +3246,12 @@
       "balance": "Outstanding Balance",
       "available": "Available Credit",
       "paymentTerms": "Payment Terms",
-      "downloadApplication": "Download Credit Application"
+      "downloadApplication": "Download Credit Application",
+      "generateApplication": "Generate Credit Application PDF",
+      "regenerateApplication": "Regenerate PDF",
+      "generateSuccess": "PDF Generated",
+      "generateSuccessDescription": "Credit application PDF has been generated successfully.",
+      "generateError": "Generation Failed"
     },
     "stats": {
       "title": "Account Statistics",

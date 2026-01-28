@@ -384,6 +384,10 @@
     "settings": "设置",
     "darkMode": "深色模式",
     "comingSoon": "即将推出",
+    "creditApplication": {
+      "title": "信用申请",
+      "download": "下载信用申请 PDF"
+    },
     "edit": {
       "editProfile": "编辑资料",
       "mobile": "手机",

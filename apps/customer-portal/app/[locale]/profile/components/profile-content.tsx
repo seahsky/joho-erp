@@ -13,6 +13,8 @@ import {
   Settings,
   LogOut,
   Loader2,
+  FileText,
+  Download,
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
 import { api } from '@/trpc/client';
@@ -159,6 +161,28 @@ export function ProfileContent({ user }: { user: UserDisplayData }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Credit Application - Only show if approved and PDF exists */}
+      {customer.creditApplication?.status === 'approved' && customer.creditApplicationPdfUrl && (
+        <Card className="shadow-sm hover:shadow-md transition-all duration-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t('creditApplication.title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {t('creditApplication.download')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Settings & Actions */}
       <Card className="shadow-sm hover:shadow-md transition-all duration-200">

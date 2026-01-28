@@ -3246,7 +3246,12 @@
       "balance": "未结余额",
       "available": "可用信用",
       "paymentTerms": "付款条款",
-      "downloadApplication": "下载信用申请表"
+      "downloadApplication": "下载信用申请表",
+      "generateApplication": "生成信用申请 PDF",
+      "regenerateApplication": "重新生成 PDF",
+      "generateSuccess": "PDF 已生成",
+      "generateSuccessDescription": "信用申请 PDF 已成功生成。",
+      "generateError": "生成失败"
     },
     "stats": {
       "title": "账户统计",

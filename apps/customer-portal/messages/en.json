@@ -384,6 +384,10 @@
     "settings": "Settings",
     "darkMode": "Dark Mode",
     "comingSoon": "Coming soon",
+    "creditApplication": {
+      "title": "Credit Application",
+      "download": "Download Credit Application PDF"
+    },
     "edit": {
       "editProfile": "Edit Profile",
       "mobile": "Mobile",

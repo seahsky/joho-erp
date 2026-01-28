@@ -3252,7 +3252,12 @@
       "balance": "未結餘額",
       "available": "可用信用",
       "paymentTerms": "付款條款",
-      "downloadApplication": "下載信用申請表"
+      "downloadApplication": "下載信用申請表",
+      "generateApplication": "生成信用申請 PDF",
+      "regenerateApplication": "重新生成 PDF",
+      "generateSuccess": "PDF 已生成",
+      "generateSuccessDescription": "信用申請 PDF 已成功生成。",
+      "generateError": "生成失敗"
     },
     "stats": {
       "title": "帳戶統計",

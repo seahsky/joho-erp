@@ -60,6 +60,7 @@ import {
   MessageSquare,
   IdCard,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek, validateABN } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
@@ -294,6 +295,25 @@ export default function CustomerDetailPage({ params }: PageProps) {
       console.error('Update customer error:', error.message);
       toast({
         title: t('edit.updateError'),
+        description: tErrors('operationFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Regenerate PDF mutation
+  const regeneratePdfMutation = api.customer.regenerateCreditApplicationPdf.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('credit.generateSuccess'),
+        description: t('credit.generateSuccessDescription'),
+      });
+      void utils.customer.getById.invalidate({ customerId: resolvedParams.id });
+    },
+    onError: (error) => {
+      console.error('Regenerate PDF error:', error.message);
+      toast({
+        title: t('credit.generateError'),
         description: tErrors('operationFailed'),
         variant: 'destructive',
       });
@@ -1628,18 +1648,47 @@ export default function CustomerDetailPage({ params }: PageProps) {
                   <span className="font-medium">{creditApp.paymentTerms}</span>
                 </div>
               )}
-              {customer.creditApplicationPdfUrl && (
-                <div className="pt-4 border-t mt-4">
+              <div className="pt-4 border-t mt-4 space-y-2">
+                {customer.creditApplicationPdfUrl ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {t('credit.downloadApplication')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => regeneratePdfMutation.mutate({ customerId: resolvedParams.id })}
+                      disabled={regeneratePdfMutation.isPending}
+                    >
+                      {regeneratePdfMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                      )}
+                      {t('credit.regenerateApplication')}
+                    </Button>
+                  </>
+                ) : (
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => window.open(customer.creditApplicationPdfUrl!, '_blank')}
+                    onClick={() => regeneratePdfMutation.mutate({ customerId: resolvedParams.id })}
+                    disabled={regeneratePdfMutation.isPending}
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    {t('credit.downloadApplication')}
+                    {regeneratePdfMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="mr-2 h-4 w-4" />
+                    )}
+                    {t('credit.generateApplication')}
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
 
