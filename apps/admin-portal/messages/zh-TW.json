@@ -2678,7 +2678,8 @@
     "type": {
       "syncContact": "同步聯絡人",
       "createInvoice": "建立發票",
-      "createCreditNote": "建立貸項通知單"
+      "createCreditNote": "建立貸項通知單",
+      "updateInvoice": "更新發票"
     },
     "retrySuccess": "任務已加入重試佇列",
     "retrySuccessDescription": "同步任務將很快處理",
@@ -2702,7 +2703,19 @@
     "creditNote": "貸項通知單",
     "createInvoice": "建立發票",
     "syncContact": "同步聯絡人",
-    "xeroContact": "Xero 聯絡人"
+    "xeroContact": "Xero 聯絡人",
+    "resync": "重新同步",
+    "resyncInvoice": "重新同步發票",
+    "resyncContact": "重新同步聯絡人",
+    "resyncQueued": "重新同步已排隊",
+    "resyncQueuedMessage": "實體將很快重新同步到 Xero",
+    "resyncError": "重新同步排隊失敗",
+    "resyncConfirmTitle": "確認重新同步",
+    "resyncConfirmMessage": "這將使用目前訂單資料更新 Xero 中的發票。Xero 中的任何手動變更可能會被覆蓋。",
+    "resyncConfirm": "重新同步",
+    "resyncContactConfirmMessage": "這將使用目前客戶資料更新 Xero 中的聯絡人。Xero 中的任何手動變更可能會被覆蓋。",
+    "resyncJob": "重新同步任務",
+    "lastSyncedAt": "上次同步：{date}"
   },
   "driver": {
     "title": "我的配送",

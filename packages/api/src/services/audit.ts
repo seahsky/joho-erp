@@ -1642,7 +1642,7 @@ export async function logXeroSyncTrigger(
   userRole: string | undefined,
   userName: string | null | undefined,
   metadata: {
-    jobType: 'create_invoice' | 'create_credit_note' | 'sync_contact';
+    jobType: 'create_invoice' | 'create_credit_note' | 'sync_contact' | 'update_invoice';
     entityType: string;
     entityId: string;
   }

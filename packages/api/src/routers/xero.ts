@@ -28,7 +28,7 @@ export const xeroRouter = router({
           .enum(['pending', 'processing', 'completed', 'failed'])
           .optional(),
         type: z
-          .enum(['sync_contact', 'create_invoice', 'create_credit_note'])
+          .enum(['sync_contact', 'create_invoice', 'create_credit_note', 'update_invoice'])
           .optional(),
         page: z.number().int().min(1).default(1),
         limit: z.number().int().min(1).max(100).default(20),
@@ -221,6 +221,95 @@ export const xeroRouter = router({
         entityId: input.orderId,
       }).catch((error) => {
         console.error('Audit log failed for Xero credit note trigger:', error);
+      });
+
+      return { success: true, jobId };
+    }),
+
+
+  /**
+   * Resync an existing invoice in Xero (update with current order data)
+   */
+  resyncInvoice: requirePermission('settings.xero:sync')
+    .input(z.object({ orderId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: { id: true, status: true, xero: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      const xeroInfo = order.xero as { invoiceId?: string | null; invoiceStatus?: string | null } | null;
+      if (!xeroInfo?.invoiceId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Order has no existing invoice to resync',
+        });
+      }
+
+      // Check if invoice status allows updates (DRAFT or AUTHORISED only)
+      const status = xeroInfo.invoiceStatus?.toUpperCase();
+      if (status === 'PAID' || status === 'VOIDED' || status === 'DELETED') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot resync invoice with status ${status}. Only DRAFT or AUTHORISED invoices can be updated.`,
+        });
+      }
+
+      const jobId = await enqueueXeroJob('update_invoice', 'order', input.orderId);
+
+      // Audit log - MEDIUM: Xero resync trigger tracked
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
+        jobType: 'update_invoice',
+        entityType: 'order',
+        entityId: input.orderId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero invoice resync trigger:', error);
+      });
+
+      return { success: true, jobId };
+    }),
+
+  /**
+   * Resync an existing contact in Xero (update with current customer data)
+   */
+  resyncContact: requirePermission('settings.xero:sync')
+    .input(z.object({ customerId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, xeroContactId: true, creditApplication: true },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      if (!customer.xeroContactId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Customer has no existing Xero contact to resync',
+        });
+      }
+
+      const jobId = await enqueueXeroJob('sync_contact', 'customer', input.customerId);
+
+      // Audit log - MEDIUM: Xero resync trigger tracked
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
+        jobType: 'sync_contact',
+        entityType: 'customer',
+        entityId: input.customerId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero contact resync trigger:', error);
       });
 
       return { success: true, jobId };

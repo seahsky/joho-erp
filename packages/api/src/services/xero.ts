@@ -14,6 +14,7 @@
 import { prisma } from '@joho-erp/database';
 import crypto from 'crypto';
 import { encrypt, decrypt, isEncryptionEnabled } from '../utils/encryption';
+import { xeroLogger, startTimer } from '../utils/logger';
 
 // Xero OAuth endpoints
 const XERO_AUTH_URL = 'https://login.xero.com/identity/connect/authorize';
@@ -60,7 +61,7 @@ async function enforceRateLimit(): Promise<void> {
     // Calculate how long to wait until the oldest call exits the window
     const oldestCall = Math.min(...apiCallsInWindow);
     const waitTime = RATE_LIMIT.windowMs - (now - oldestCall) + 100; // +100ms buffer
-    console.log(`[Xero] Rate limit reached, waiting ${waitTime}ms`);
+    xeroLogger.rateLimit.waiting(waitTime);
     await new Promise((resolve) => setTimeout(resolve, waitTime));
     // Recurse to recheck after waiting
     return enforceRateLimit();
@@ -196,7 +197,7 @@ export async function exchangeCodeForTokens(code: string): Promise<XeroTokenResp
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[Xero] Token Exchange FAILED:', errorText);
+    xeroLogger.error('Token exchange failed', { statusCode: response.status, error: errorText });
     throw new Error(`Failed to exchange code for tokens: ${response.status} ${errorText}`);
   }
 
@@ -229,7 +230,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<XeroToke
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[Xero] Token Refresh FAILED:', errorText);
+    xeroLogger.token.refreshFailed(errorText, { statusCode: response.status });
     throw new Error(`Failed to refresh token: ${response.status} ${errorText}`);
   }
 
@@ -250,7 +251,7 @@ export async function getConnectedTenants(accessToken: string): Promise<XeroTena
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[Xero] Get Tenants FAILED:', errorText);
+    xeroLogger.error('Failed to get connected tenants', { statusCode: response.status, error: errorText });
     throw new Error(`Failed to get connected tenants: ${response.status}`);
   }
 
@@ -378,12 +379,12 @@ export async function getValidAccessToken(): Promise<{ accessToken: string; tena
   // Use mutex to prevent concurrent refresh requests from invalidating each other
   if (tokenRefreshPromise) {
     // Another request is already refreshing the token, wait for it
-    console.log('Xero token refresh already in progress, waiting...');
+    xeroLogger.debug('Token refresh already in progress, waiting...');
     return tokenRefreshPromise;
   }
 
   // Start the refresh and store the promise as a mutex
-  console.log('Xero access token expired, refreshing...');
+  xeroLogger.token.refreshing();
   tokenRefreshPromise = (async () => {
     try {
       const newTokens = await refreshAccessToken(refreshToken);
@@ -395,6 +396,8 @@ export async function getValidAccessToken(): Promise<{ accessToken: string; tena
         newTokens.expires_in,
         tenantId
       );
+      xeroLogger.token.refreshed();
+      xeroLogger.token.stored();
 
       return {
         accessToken: newTokens.access_token,
@@ -696,11 +699,15 @@ export async function xeroApiRequest<T>(
 ): Promise<T> {
   // Enforce rate limiting before making the request
   await enforceRateLimit();
-  
+
   const { accessToken, tenantId } = await getValidAccessToken();
+  const method = options.method || 'GET';
+  const timer = startTimer();
+
+  xeroLogger.apiRequest(endpoint, method);
 
   const response = await fetch(`${XERO_API_BASE}${endpoint}`, {
-    method: options.method || 'GET',
+    method,
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'xero-tenant-id': tenantId,
@@ -710,12 +717,15 @@ export async function xeroApiRequest<T>(
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
+  const duration = timer.stop();
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[Xero] API ERROR (${endpoint}):`, errorText);
+    xeroLogger.apiResponse(endpoint, response.status, duration, { error: errorText });
     throw new XeroApiError(response.status, endpoint, errorText);
   }
 
+  xeroLogger.apiResponse(endpoint, response.status, duration);
   return response.json();
 }
 
@@ -843,7 +853,7 @@ function getXeroSalesAccountCode(): string {
 // Customer Type (for sync functions)
 // ============================================================================
 
-interface CustomerForXeroSync {
+export interface CustomerForXeroSync {
   id: string;
   businessName: string;
   xeroContactId?: string | null;
@@ -871,7 +881,7 @@ interface CustomerForXeroSync {
   };
 }
 
-interface OrderItemForXeroSync {
+export interface OrderItemForXeroSync {
   productId: string;
   sku: string;
   productName: string;
@@ -881,7 +891,7 @@ interface OrderItemForXeroSync {
   subtotal: number; // In cents
 }
 
-interface OrderForXeroSync {
+export interface OrderForXeroSync {
   id: string;
   orderNumber: string;
   items: OrderItemForXeroSync[];
@@ -1064,7 +1074,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
         `/Contacts/${customer.xeroContactId}`,
         { method: 'POST', body: { Contacts: [contactPayload] } }
       );
-      console.log(`[Xero] Contact UPDATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
+      xeroLogger.sync.contactUpdated(response.Contacts[0].ContactID!, customer.id, customer.businessName);
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
@@ -1077,7 +1087,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
         `/Contacts/${existingContactId}`,
         { method: 'POST', body: { Contacts: [contactPayload] } }
       );
-      console.log(`[Xero] Contact UPDATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
+      xeroLogger.sync.contactUpdated(response.Contacts[0].ContactID!, customer.id, customer.businessName);
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
@@ -1087,10 +1097,13 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
       body: { Contacts: [contactPayload] },
     });
 
-    console.log(`[Xero] Contact CREATED: ${response.Contacts[0].ContactID} for customer ${customer.id} (${customer.businessName})`);
+    xeroLogger.sync.contactCreated(response.Contacts[0].ContactID!, customer.id, customer.businessName);
     return { success: true, contactId: response.Contacts[0].ContactID };
   } catch (error) {
-    console.error(`[Xero] Contact Sync FAILED for customer ${customer.id} (${customer.businessName}):`, error);
+    xeroLogger.error(`Contact sync failed for customer ${customer.id} (${customer.businessName})`, {
+      customerId: customer.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     const baseMessage = error instanceof Error ? error.message : 'Failed to sync contact';
     return {
       success: false,
@@ -1176,17 +1189,129 @@ export async function createInvoiceInXero(
     });
 
     const createdInvoice = response.Invoices[0];
-    console.log(`[Xero] Invoice CREATED: ${createdInvoice.InvoiceID} (${createdInvoice.InvoiceNumber}) for order ${order.orderNumber}`);
+    xeroLogger.sync.invoiceCreated(
+      createdInvoice.InvoiceID!,
+      createdInvoice.InvoiceNumber!,
+      order.id,
+      order.orderNumber
+    );
     return {
       success: true,
       invoiceId: createdInvoice.InvoiceID,
       invoiceNumber: createdInvoice.InvoiceNumber,
     };
   } catch (error) {
-    console.error('[Xero] Invoice Creation FAILED:', error);
+    xeroLogger.error('Invoice creation failed', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create invoice',
+    };
+  }
+}
+
+/**
+ * Update an existing invoice in Xero with current order data
+ * Only works for DRAFT or AUTHORISED invoices (not PAID, VOIDED, or DELETED)
+ */
+export async function updateInvoiceInXero(
+  order: OrderForXeroSync,
+  customer: CustomerForXeroSync
+): Promise<{
+  success: boolean;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  error?: string;
+}> {
+  try {
+    if (!customer.xeroContactId) {
+      return { success: false, error: 'Customer not synced to Xero' };
+    }
+
+    if (!order.xero?.invoiceId) {
+      return { success: false, error: 'Order has no existing invoice to update' };
+    }
+
+    // Fetch current invoice to check status
+    const existingInvoiceResponse = await xeroApiRequest<XeroInvoicesResponse>(
+      `/Invoices/${order.xero.invoiceId}`
+    );
+
+    if (!existingInvoiceResponse.Invoices || existingInvoiceResponse.Invoices.length === 0) {
+      return { success: false, error: 'Invoice not found in Xero' };
+    }
+
+    const existingInvoice = existingInvoiceResponse.Invoices[0];
+    const currentStatus = existingInvoice.Status;
+
+    // Check if invoice can be updated
+    const nonUpdatableStatuses = ['PAID', 'VOIDED', 'DELETED'];
+    if (nonUpdatableStatuses.includes(currentStatus)) {
+      return {
+        success: false,
+        error: `Cannot update invoice with status "${currentStatus}". Only DRAFT or AUTHORISED invoices can be updated.`,
+      };
+    }
+
+    // Calculate due date from payment terms
+    const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms) || 30;
+    const invoiceDate = order.delivery?.deliveredAt || new Date();
+    const dueDate = new Date(invoiceDate);
+    dueDate.setDate(dueDate.getDate() + paymentDays);
+
+    // Map order items to Xero line items
+    const lineItems: XeroLineItem[] = order.items.map((item) => ({
+      Description: `${item.productName} (${item.sku})`,
+      Quantity: item.quantity,
+      UnitAmount: item.unitPrice / 100, // Convert cents to dollars
+      AccountCode: getXeroSalesAccountCode(),
+      TaxType: 'OUTPUT', // 10% GST for Australian sales
+      ItemCode: item.sku,
+    }));
+
+    const invoice: XeroInvoice = {
+      InvoiceID: order.xero.invoiceId,
+      Type: 'ACCREC',
+      Contact: { ContactID: customer.xeroContactId },
+      LineItems: lineItems,
+      Date: formatXeroDate(invoiceDate),
+      DueDate: formatXeroDate(dueDate),
+      Status: currentStatus as 'DRAFT' | 'SUBMITTED' | 'AUTHORISED', // Preserve current status
+      CurrencyCode: 'AUD',
+      Reference: order.orderNumber,
+      LineAmountTypes: 'Exclusive',
+    };
+
+    const response = await xeroApiRequest<XeroInvoicesResponse>('/Invoices', {
+      method: 'POST',
+      body: { Invoices: [invoice] },
+    });
+
+    const updatedInvoice = response.Invoices[0];
+    xeroLogger.sync.invoiceUpdated(
+      updatedInvoice.InvoiceID!,
+      updatedInvoice.InvoiceNumber!,
+      order.id,
+      order.orderNumber
+    );
+    return {
+      success: true,
+      invoiceId: updatedInvoice.InvoiceID,
+      invoiceNumber: updatedInvoice.InvoiceNumber,
+    };
+  } catch (error) {
+    xeroLogger.error('Invoice update failed', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      invoiceId: order.xero?.invoiceId || undefined,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update invoice',
     };
   }
 }
@@ -1286,7 +1411,12 @@ export async function createCreditNoteInXero(
     });
 
     const createdCreditNote = response.CreditNotes[0];
-    console.log(`[Xero] Credit Note CREATED: ${createdCreditNote.CreditNoteID} (${createdCreditNote.CreditNoteNumber}) for order ${order.orderNumber}`);
+    xeroLogger.sync.creditNoteCreated(
+      createdCreditNote.CreditNoteID!,
+      createdCreditNote.CreditNoteNumber!,
+      order.id,
+      order.orderNumber
+    );
 
     // Allocate credit note to original invoice
     if (createdCreditNote.CreditNoteID && order.xero.invoiceId) {
@@ -1296,9 +1426,16 @@ export async function createCreditNoteInXero(
           order.xero.invoiceId,
           order.totalAmount / 100 // Convert cents to dollars
         );
-        console.log(`[Xero] Credit Note ALLOCATED: ${createdCreditNote.CreditNoteNumber} to invoice ${order.xero.invoiceNumber || order.xero.invoiceId}`);
+        xeroLogger.sync.creditNoteAllocated(
+          createdCreditNote.CreditNoteNumber!,
+          order.xero.invoiceNumber || order.xero.invoiceId
+        );
       } catch (allocError) {
-        console.error('[Xero] Credit Note Allocation FAILED:', allocError);
+        xeroLogger.error('Credit note allocation failed', {
+          creditNoteId: createdCreditNote.CreditNoteID,
+          invoiceId: order.xero.invoiceId,
+          error: allocError instanceof Error ? allocError.message : 'Unknown error',
+        });
         // Continue even if allocation fails - credit note is still created
       }
     }
@@ -1309,7 +1446,11 @@ export async function createCreditNoteInXero(
       creditNoteNumber: createdCreditNote.CreditNoteNumber,
     };
   } catch (error) {
-    console.error('[Xero] Credit Note Creation FAILED:', error);
+    xeroLogger.error('Credit note creation failed', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create credit note',
@@ -1347,8 +1488,11 @@ export async function getCachedInvoice(
   // Check cache first
   const cached = invoiceCache.get(invoiceId);
   if (cached && cached.expires > Date.now()) {
+    xeroLogger.cache.hit(`invoice:${invoiceId}`, { invoiceId });
     return cached.data;
   }
+
+  xeroLogger.cache.miss(`invoice:${invoiceId}`, { invoiceId });
 
   try {
     const response = await xeroApiRequest<XeroInvoicesResponse>(`/Invoices/${invoiceId}`);
@@ -1364,10 +1508,14 @@ export async function getCachedInvoice(
       data: invoice as any,
       expires: Date.now() + 5 * 60 * 1000,
     });
+    xeroLogger.cache.set(`invoice:${invoiceId}`, { invoiceId });
 
     return invoice as any;
   } catch (error) {
-    console.error(`[Xero] Failed to fetch invoice ${invoiceId}:`, error);
+    xeroLogger.error(`Failed to fetch invoice ${invoiceId}`, {
+      invoiceId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     throw error;
   }
 }
@@ -1394,7 +1542,10 @@ export async function getInvoicePdfUrl(invoiceId: string): Promise<string | null
 
     return null;
   } catch (error) {
-    console.error(`[Xero] Failed to get PDF URL for invoice ${invoiceId}:`, error);
+    xeroLogger.error(`Failed to get PDF URL for invoice ${invoiceId}`, {
+      invoiceId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     throw error;
   }
 }

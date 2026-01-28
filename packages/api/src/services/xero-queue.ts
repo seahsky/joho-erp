@@ -12,11 +12,13 @@ import {
   syncContactToXero,
   createInvoiceInXero,
   createCreditNoteInXero,
+  updateInvoiceInXero,
   isConnected,
   isXeroIntegrationEnabled,
   XeroApiError,
 } from './xero';
 import { sendCreditNoteIssuedEmail, sendXeroSyncErrorEmail } from './email';
+import { xeroLogger, startTimer } from '../utils/logger';
 
 // ============================================================================
 // Retry Helpers
@@ -66,8 +68,11 @@ async function handleJobFailure(
     const delayMs = calculateNextAttemptDelay(currentAttempt);
     const nextAttemptAt = new Date(Date.now() + delayMs);
     
-    console.log(`[Xero Queue] Job ${job.id} failed (attempt ${currentAttempt}/${job.maxAttempts}), retrying in ${delayMs}ms`);
-    
+    xeroLogger.job.retrying(job.id, job.type, currentAttempt, job.maxAttempts, delayMs, {
+      entityType: job.entityType,
+      entityId: job.entityId,
+    });
+
     await prisma.xeroSyncJob.update({
       where: { id: job.id },
       data: {
@@ -83,17 +88,26 @@ async function handleJobFailure(
         .then((updatedJob) => {
           if (updatedJob && updatedJob.status === 'pending') {
             processJob(updatedJob).catch((err) => {
-              console.error(`[Xero Queue] Retry failed for job ${job.id}:`, err);
+              xeroLogger.error(`Retry failed for job ${job.id}`, {
+                jobId: job.id,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
           }
         })
         .catch((err) => {
-          console.error(`[Xero Queue] Failed to fetch job for retry ${job.id}:`, err);
+          xeroLogger.error(`Failed to fetch job for retry ${job.id}`, {
+            jobId: job.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
     }, delayMs);
   } else {
     // Permanent failure - mark as failed and notify
-    console.error(`[Xero Queue] Job ${job.id} permanently failed after ${currentAttempt} attempts: ${errorMessage}`);
+    xeroLogger.job.failed(job.id, job.type, errorMessage, currentAttempt, job.maxAttempts, {
+      entityType: job.entityType,
+      entityId: job.entityId,
+    });
     
     await prisma.xeroSyncJob.update({
       where: { id: job.id },
@@ -142,7 +156,10 @@ async function notifyJobFailure(
       attempts,
     });
   } catch (emailError) {
-    console.error(`[Xero Queue] Failed to send failure notification email for job ${job.id}:`, emailError);
+    xeroLogger.error(`Failed to send failure notification email for job ${job.id}`, {
+      jobId: job.id,
+      error: emailError instanceof Error ? emailError.message : String(emailError),
+    });
   }
 }
 
@@ -155,14 +172,14 @@ async function notifyJobFailure(
  * Returns the job ID for tracking, or null if Xero integration is disabled
  */
 export async function enqueueXeroJob(
-  type: 'sync_contact' | 'create_invoice' | 'create_credit_note',
+  type: 'sync_contact' | 'create_invoice' | 'create_credit_note' | 'update_invoice',
   entityType: 'customer' | 'order',
   entityId: string,
   payload?: Record<string, unknown>
 ): Promise<string | null> {
   // Skip if Xero integration is disabled
   if (!isXeroIntegrationEnabled()) {
-    console.log('Xero integration is disabled, skipping job creation');
+    xeroLogger.debug('Xero integration is disabled, skipping job creation', { type, entityType, entityId });
     return null;
   }
 
@@ -178,9 +195,14 @@ export async function enqueueXeroJob(
     },
   });
 
+  xeroLogger.job.queued(job.id, type, { entityType, entityId });
+
   // Process immediately (fire and forget)
   processJob(job).catch((error) => {
-    console.error(`Failed to process Xero job ${job.id}:`, error);
+    xeroLogger.error(`Failed to process Xero job ${job.id}`, {
+      jobId: job.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
 
   return job.id;
@@ -195,6 +217,14 @@ export async function enqueueXeroJob(
  */
 async function processJob(job: XeroSyncJob): Promise<void> {
   const currentAttempt = job.attempts + 1;
+  const timer = startTimer();
+
+  xeroLogger.job.started(job.id, job.type, {
+    entityType: job.entityType,
+    entityId: job.entityId,
+    attempt: currentAttempt,
+    maxAttempts: job.maxAttempts,
+  });
 
   // Check if Xero is connected
   const connected = await isConnected();
@@ -240,11 +270,15 @@ async function processJob(job: XeroSyncJob): Promise<void> {
       case 'create_credit_note':
         result = await processCreateCreditNote(job.entityId, job.id);
         break;
+      case 'update_invoice':
+        result = await processUpdateInvoice(job.entityId, job.id);
+        break;
       default:
         throw new Error(`Unknown job type: ${job.type}`);
     }
 
     if (result.success) {
+      const duration = timer.stop();
       await prisma.xeroSyncJob.update({
         where: { id: job.id },
         data: {
@@ -253,6 +287,10 @@ async function processJob(job: XeroSyncJob): Promise<void> {
           completedAt: new Date(),
           error: null,
         },
+      });
+      xeroLogger.job.completed(job.id, job.type, duration, {
+        entityType: job.entityType,
+        entityId: job.entityId,
       });
     } else {
       // Application-level errors (validation, business logic) are not retryable
@@ -462,22 +500,148 @@ async function processCreateInvoice(
     } catch (dbError) {
       // CRITICAL: Xero invoice was created but we failed to record it in our DB
       // Log all details needed for manual recovery
-      console.error(
-        `[Xero Queue] CRITICAL: Invoice created in Xero but DB update failed!`,
-        {
-          orderId,
-          orderNumber: order.orderNumber,
-          invoiceId: result.invoiceId,
-          invoiceNumber: result.invoiceNumber,
-          dbError: dbError instanceof Error ? dbError.message : String(dbError),
-        }
-      );
+      xeroLogger.error('CRITICAL: Invoice created in Xero but DB update failed!', {
+        orderId,
+        orderNumber: order.orderNumber,
+        invoiceId: result.invoiceId,
+        invoiceNumber: result.invoiceNumber,
+        error: dbError instanceof Error ? dbError.message : String(dbError),
+      });
       // Return failure so the job can be retried - createInvoiceInXero will find the existing invoice
       return {
         success: false,
         error: `Invoice created in Xero (${result.invoiceNumber}) but failed to update local database. Invoice ID: ${result.invoiceId}. Please retry - the existing invoice will be detected.`,
       };
     }
+  } else {
+    // Record error in order
+    const currentXero = (order.xero as Record<string, unknown>) || {};
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        xero: {
+          ...currentXero,
+          syncError: result.error,
+          lastSyncJobId: jobId,
+        },
+      },
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Process an update_invoice job
+ * Updates an existing invoice in Xero with current order data
+ */
+async function processUpdateInvoice(
+  orderId: string,
+  jobId: string
+): Promise<{
+  success: boolean;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  error?: string;
+}> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { customer: true },
+  });
+
+  if (!order) {
+    return { success: false, error: 'Order not found' };
+  }
+
+  if (!order.xero || !(order.xero as Record<string, unknown>).invoiceId) {
+    return { success: false, error: 'Order has no existing invoice to update' };
+  }
+
+  // Check if customer is synced to Xero
+  if (!order.customer.xeroContactId) {
+    return { success: false, error: 'Customer not synced to Xero' };
+  }
+
+  // Cast to the expected types for sync
+  const orderForSync = {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    items: (order.items as Array<{
+      productId: string;
+      sku: string;
+      productName: string;
+      unit: string;
+      quantity: number;
+      unitPrice: number;
+      subtotal: number;
+    }>).map((item) => ({
+      productId: item.productId,
+      sku: item.sku,
+      productName: item.productName,
+      unit: item.unit,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.subtotal,
+    })),
+    subtotal: order.subtotal,
+    taxAmount: order.taxAmount,
+    totalAmount: order.totalAmount,
+    xero: order.xero as {
+      invoiceId?: string | null;
+      invoiceNumber?: string | null;
+      invoiceStatus?: string | null;
+    } | null,
+    delivery: order.delivery as {
+      deliveredAt?: Date | null;
+    } | null,
+  };
+
+  const customerForSync = {
+    id: order.customer.id,
+    businessName: order.customer.businessName,
+    xeroContactId: order.customer.xeroContactId,
+    contactPerson: order.customer.contactPerson as {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      mobile?: string | null;
+    },
+    deliveryAddress: order.customer.deliveryAddress as {
+      street: string;
+      suburb: string;
+      state: string;
+      postcode: string;
+    },
+    billingAddress: order.customer.billingAddress as {
+      street: string;
+      suburb: string;
+      state: string;
+      postcode: string;
+    } | null,
+    creditApplication: order.customer.creditApplication as {
+      paymentTerms?: string | null;
+    },
+  };
+
+  const result = await updateInvoiceInXero(orderForSync, customerForSync);
+
+  if (result.success) {
+    // Update order with Xero invoice info
+    const currentXero = (order.xero as Record<string, unknown>) || {};
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        xero: {
+          ...currentXero,
+          invoiceId: result.invoiceId,
+          invoiceNumber: result.invoiceNumber,
+          syncedAt: new Date(),
+          syncError: null,
+          lastSyncJobId: jobId,
+        },
+      },
+    });
   } else {
     // Record error in order
     const currentXero = (order.xero as Record<string, unknown>) || {};
@@ -610,7 +774,11 @@ async function processCreateCreditNote(
       refundAmount: order.totalAmount,
       reason: cancellationReason || 'Order cancelled',
     }).catch((error) => {
-      console.error('Failed to send credit note issued email:', error);
+      xeroLogger.error('Failed to send credit note issued email', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
   } else {
     // Record error in order
@@ -670,9 +838,14 @@ export async function retryJob(jobId: string): Promise<{
     },
   });
 
+  xeroLogger.info(`Manual retry initiated for job ${jobId}`, { jobId });
+
   // Process immediately
   processJob(updatedJob).catch((error) => {
-    console.error(`Failed to process Xero job ${jobId}:`, error);
+    xeroLogger.error(`Failed to process Xero job ${jobId}`, {
+      jobId,
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
 
   return { success: true };

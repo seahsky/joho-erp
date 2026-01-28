@@ -10,6 +10,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
   cn,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@joho-erp/ui';
 import {
   XCircle,
@@ -101,6 +110,24 @@ export function XeroOrderSyncBadge({
       toast({
         title: t('invoiceError'),
         description: tErrors('syncFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const resyncInvoiceMutation = api.xero.resyncInvoice.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('resyncQueued'),
+        description: t('resyncQueuedMessage'),
+      });
+      refetch();
+    },
+    onError: (error) => {
+      console.error('Invoice resync error:', error.message);
+      toast({
+        title: t('resyncError'),
+        description: error.message || tErrors('syncFailed'),
         variant: 'destructive',
       });
     },
@@ -230,7 +257,12 @@ export function XeroOrderSyncBadge({
       );
     }
 
-    // Just has invoice
+    // Just has invoice - show resync button if not PAID/VOIDED/DELETED
+    const canResync =
+      syncStatus.invoiceStatus?.toUpperCase() !== 'PAID' &&
+      syncStatus.invoiceStatus?.toUpperCase() !== 'VOIDED' &&
+      syncStatus.invoiceStatus?.toUpperCase() !== 'DELETED';
+
     if (compact) {
       return (
         <CompactIcon
@@ -250,13 +282,48 @@ export function XeroOrderSyncBadge({
       );
     }
     return (
-      <Badge
-        variant="success"
-        title={`${t('invoice')}: ${syncStatus.invoiceNumber}\n${t('status')}: ${syncStatus.invoiceStatus}`}
-      >
-        <FileText className="h-3 w-3 mr-1" />
-        {syncStatus.invoiceNumber || t('invoiced')}
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="success"
+          title={`${t('invoice')}: ${syncStatus.invoiceNumber}\n${t('status')}: ${syncStatus.invoiceStatus}`}
+        >
+          <FileText className="h-3 w-3 mr-1" />
+          {syncStatus.invoiceNumber || t('invoiced')}
+        </Badge>
+        {canResync && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={resyncInvoiceMutation.isPending}
+              >
+                {resyncInvoiceMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCcw className="h-4 w-4" />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('resyncConfirmTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('resyncConfirmMessage')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resyncInvoiceMutation.mutate({ orderId })}
+                >
+                  {t('resyncConfirm')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
     );
   }
 
@@ -332,6 +399,24 @@ export function XeroCustomerSyncBadge({
     },
   });
 
+  const resyncContactMutation = api.xero.resyncContact.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('resyncQueued'),
+        description: t('resyncQueuedMessage'),
+      });
+      refetch();
+    },
+    onError: (error) => {
+      console.error('Contact resync error:', error.message);
+      toast({
+        title: t('resyncError'),
+        description: error.message || tErrors('syncFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <Badge variant="secondary">
@@ -358,13 +443,46 @@ export function XeroCustomerSyncBadge({
   // Customer synced to Xero
   if (syncStatus.synced && syncStatus.contactId) {
     return (
-      <Badge
-        variant="success"
-        title={`${t('xeroContact')}: ${syncStatus.contactId.slice(-8)}`}
-      >
-        <User className="h-3 w-3 mr-1" />
-        {t('synced')}
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="success"
+          title={`${t('xeroContact')}: ${syncStatus.contactId.slice(-8)}`}
+        >
+          <User className="h-3 w-3 mr-1" />
+          {t('synced')}
+        </Badge>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resyncContactMutation.isPending}
+            >
+              {resyncContactMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4" />
+              )}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('resyncConfirmTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('resyncContactConfirmMessage')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => resyncContactMutation.mutate({ customerId })}
+              >
+                {t('resyncConfirm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     );
   }
 

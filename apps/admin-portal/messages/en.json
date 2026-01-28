@@ -2672,7 +2672,8 @@
     "type": {
       "syncContact": "Sync Contact",
       "createInvoice": "Create Invoice",
-      "createCreditNote": "Create Credit Note"
+      "createCreditNote": "Create Credit Note",
+      "updateInvoice": "Update Invoice"
     },
     "retrySuccess": "Job queued for retry",
     "retrySuccessDescription": "The sync job will be processed shortly",
@@ -2696,7 +2697,19 @@
     "creditNote": "Credit Note",
     "createInvoice": "Create Invoice",
     "syncContact": "Sync Contact",
-    "xeroContact": "Xero Contact"
+    "xeroContact": "Xero Contact",
+    "resync": "Resync",
+    "resyncInvoice": "Resync Invoice",
+    "resyncContact": "Resync Contact",
+    "resyncQueued": "Resync queued",
+    "resyncQueuedMessage": "The entity will be resynced to Xero shortly",
+    "resyncError": "Failed to queue resync",
+    "resyncConfirmTitle": "Confirm Resync",
+    "resyncConfirmMessage": "This will update the invoice in Xero with the current order data. Any manual changes in Xero may be overwritten.",
+    "resyncConfirm": "Resync",
+    "resyncContactConfirmMessage": "This will update the contact in Xero with the current customer data. Any manual changes in Xero may be overwritten.",
+    "resyncJob": "Resync Job",
+    "lastSyncedAt": "Last synced: {date}"
   },
   "driver": {
     "title": "My Deliveries",
