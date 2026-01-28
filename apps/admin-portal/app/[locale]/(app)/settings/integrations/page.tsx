@@ -48,8 +48,8 @@ export default function IntegrationsSettingsPage() {
   const [testResults, setTestResults] = useState<TestResult | null>(null);
   const [showTestResults, setShowTestResults] = useState(false);
 
-  // Load data
-  const { data: settings, isLoading } = api.company.getSettings.useQuery();
+  // Load data - use getXeroStatus which properly checks env var for enabled state
+  const { data: xeroStatus, isLoading } = api.company.getXeroStatus.useQuery();
 
   // Handle OAuth redirect params
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function IntegrationsSettingsPage() {
       // Clean up URL params
       router.replace(window.location.pathname);
       // Refresh data to update connection status
-      void utils.company.getSettings.invalidate();
+      void utils.company.getXeroStatus.invalidate();
     } else if (xeroStatus === 'error') {
       toast({
         title: t('xero.connectionError'),
@@ -102,8 +102,9 @@ export default function IntegrationsSettingsPage() {
     await testConnectionMutation.mutateAsync();
   };
 
-  // Check if OAuth is completed (has access token)
-  const isConnected = !!settings?.xeroSettings?.accessToken;
+  // Check if integration is enabled (from env var) and OAuth is completed
+  const isEnabled = xeroStatus?.enabled ?? false;
+  const isConnected = xeroStatus?.connected ?? false;
 
   if (isLoading) {
     return (
@@ -133,7 +134,12 @@ export default function IntegrationsSettingsPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   {t('xero.title')}
-                  {isConnected ? (
+                  {!isEnabled ? (
+                    <Badge variant="outline">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      {t('xero.disabled')}
+                    </Badge>
+                  ) : isConnected ? (
                     <Badge variant="success">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       {t('xero.connected')}
@@ -152,7 +158,18 @@ export default function IntegrationsSettingsPage() {
           <CardContent className="space-y-6">
             {/* Connection Actions */}
             <div className="flex flex-col gap-4">
-              {!isConnected ? (
+              {!isEnabled ? (
+                // Show disabled message when integration is disabled via env var
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h4 className="font-medium text-sm">{t('xero.disabledTitle')}</h4>
+                      <p className="text-xs text-muted-foreground">{t('xero.disabledDescription')}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : !isConnected ? (
                 // Show connect button when not connected
                 <div className="border rounded-lg p-4 bg-muted/50">
                   <div className="flex items-center justify-between">
