@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '@/trpc/client';
 import {
   Card,
@@ -9,27 +11,12 @@ import {
   CardHeader,
   CardTitle,
   Button,
-  Input,
-  Label,
   useToast,
   Badge,
 } from '@joho-erp/ui';
-import { Plug, Save, Loader2, CheckCircle2, XCircle, TestTube2, ChevronRight, ChevronDown, Shield, Clock, Users, FileText, Edit3, AlertCircle } from 'lucide-react';
+import { Plug, Loader2, CheckCircle2, XCircle, TestTube2, ChevronRight, ChevronDown, Shield, Clock, Users, FileText, Edit3, AlertCircle, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SettingsPageHeader } from '@/components/settings/settings-page-header';
-
-// Simple Switch component using checkbox
-function Switch({ id, checked, onCheckedChange }: { id: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
-  return (
-    <input
-      id={id}
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onCheckedChange(e.target.checked)}
-      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-    />
-  );
-}
 
 // Type for detailed test results
 interface TestResultDetails {
@@ -54,14 +41,8 @@ export default function IntegrationsSettingsPage() {
   const t = useTranslations('settings.integrations');
   const { toast } = useToast();
   const utils = api.useUtils();
-  const [hasChanges, setHasChanges] = useState(false);
-
-  // Form state
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [tenantId, setTenantId] = useState('');
-  const [autoSync, setAutoSync] = useState(true);
-  const [syncFrequency, setSyncFrequency] = useState('hourly');
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Test results state
   const [testResults, setTestResults] = useState<TestResult | null>(null);
@@ -70,24 +51,31 @@ export default function IntegrationsSettingsPage() {
   // Load data
   const { data: settings, isLoading } = api.company.getSettings.useQuery();
 
-  // Save mutation
-  const saveMutation = api.company.updateXeroSettings.useMutation({
-    onSuccess: () => {
+  // Handle OAuth redirect params
+  useEffect(() => {
+    const xeroStatus = searchParams.get('xero');
+    const message = searchParams.get('message');
+    const tenantName = searchParams.get('tenant');
+
+    if (xeroStatus === 'success') {
       toast({
-        title: t('settingsSaved'),
-        description: t('settingsSavedDescription'),
+        title: t('xero.connectionSuccess'),
+        description: tenantName ? `${t('xero.connectedToTenant', { tenant: tenantName })}` : t('xero.connectionSuccessDescription'),
       });
-      setHasChanges(false);
+      // Clean up URL params
+      router.replace(window.location.pathname);
+      // Refresh data to update connection status
       void utils.company.getSettings.invalidate();
-    },
-    onError: (error) => {
+    } else if (xeroStatus === 'error') {
       toast({
-        title: t('saveError'),
-        description: error.message,
+        title: t('xero.connectionError'),
+        description: message || t('xero.connectionErrorDescription'),
         variant: 'destructive',
       });
-    },
-  });
+      // Clean up URL params
+      router.replace(window.location.pathname);
+    }
+  }, [searchParams, toast, t, router, utils]);
 
   // Test connection mutation
   const testConnectionMutation = api.company.testXeroConnection.useMutation({
@@ -110,41 +98,12 @@ export default function IntegrationsSettingsPage() {
     },
   });
 
-  // Load settings into form
-  useEffect(() => {
-    if (settings?.xeroSettings) {
-      setClientId(settings.xeroSettings.clientId || '');
-      setClientSecret(settings.xeroSettings.clientSecret || '');
-      setTenantId(settings.xeroSettings.tenantId || '');
-    }
-  }, [settings]);
-
-  // Track changes
-  useEffect(() => {
-    if (settings?.xeroSettings) {
-      const modified =
-        clientId !== (settings.xeroSettings.clientId || '') ||
-        clientSecret !== (settings.xeroSettings.clientSecret || '') ||
-        tenantId !== (settings.xeroSettings.tenantId || '');
-      setHasChanges(modified);
-    }
-  }, [clientId, clientSecret, tenantId, settings]);
-
-  const handleSave = async () => {
-    await saveMutation.mutateAsync({
-      clientId,
-      clientSecret,
-      tenantId: tenantId || undefined,
-    });
-  };
-
   const handleTestConnection = async () => {
     await testConnectionMutation.mutateAsync();
   };
 
-  const isConnected = settings?.xeroSettings &&
-    settings.xeroSettings.clientId &&
-    settings.xeroSettings.clientSecret;
+  // Check if OAuth is completed (has access token)
+  const isConnected = !!settings?.xeroSettings?.accessToken;
 
   if (isLoading) {
     return (
@@ -191,111 +150,47 @@ export default function IntegrationsSettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Credentials Section */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm">{t('xero.credentials')}</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="clientId">{t('xero.clientId')} *</Label>
-                  <Input
-                    id="clientId"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder={t('xero.clientId')}
-                    type="password"
-                  />
+            {/* Connection Actions */}
+            <div className="flex flex-col gap-4">
+              {!isConnected ? (
+                // Show connect button when not connected
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-sm">{t('xero.connectButton')}</h4>
+                      <p className="text-xs text-muted-foreground">{t('xero.connectDescription')}</p>
+                    </div>
+                    <Button asChild variant="default">
+                      <Link href="/api/xero/connect">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {t('xero.connectButton')}
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clientSecret">{t('xero.clientSecret')} *</Label>
-                  <Input
-                    id="clientSecret"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder={t('xero.clientSecret')}
-                    type="password"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tenantId">{t('xero.tenantId')}</Label>
-                <Input
-                  id="tenantId"
-                  value={tenantId}
-                  onChange={(e) => setTenantId(e.target.value)}
-                  placeholder={t('xero.tenantId')}
-                />
-                <p className="text-xs text-muted-foreground">{t('xero.tenantIdHint')}</p>
-              </div>
-            </div>
-
-            {/* Sync Settings Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold text-sm">{t('xero.syncSettings')}</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="autoSync">{t('xero.autoSync')}</Label>
-                  <p className="text-xs text-muted-foreground">{t('xero.autoSyncDescription')}</p>
-                </div>
-                <Switch
-                  id="autoSync"
-                  checked={autoSync}
-                  onCheckedChange={setAutoSync}
-                />
-              </div>
-              {autoSync && (
-                <div className="space-y-2">
-                  <Label htmlFor="syncFrequency">{t('xero.syncFrequency')}</Label>
-                  <select
-                    id="syncFrequency"
-                    value={syncFrequency}
-                    onChange={(e) => setSyncFrequency(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              ) : (
+                // Show test connection button when connected
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleTestConnection}
+                    disabled={testConnectionMutation.isPending}
+                    variant="outline"
+                    className="flex-1"
                   >
-                    <option value="realtime">{t('xero.realtime')}</option>
-                    <option value="hourly">{t('xero.hourly')}</option>
-                    <option value="daily">{t('xero.daily')}</option>
-                  </select>
+                    {testConnectionMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        {t('xero.testing')}
+                      </>
+                    ) : (
+                      <>
+                        <TestTube2 className="h-4 w-4 mr-2" />
+                        {t('xero.testConnection')}
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || saveMutation.isPending}
-                className="flex-1"
-              >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    {t('saving')}
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    {t('saveChanges')}
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleTestConnection}
-                disabled={!isConnected || testConnectionMutation.isPending}
-                variant="outline"
-                className="flex-1"
-              >
-                {testConnectionMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    {t('xero.testing')}
-                  </>
-                ) : (
-                  <>
-                    <TestTube2 className="h-4 w-4 mr-2" />
-                    {t('xero.testConnection')}
-                  </>
-                )}
-              </Button>
             </div>
 
             {/* Test Results Section */}
@@ -477,13 +372,6 @@ export default function IntegrationsSettingsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Unsaved Changes Indicator */}
-      {hasChanges && (
-        <div className="fixed bottom-6 right-6 bg-warning text-warning-foreground px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
-          {t('unsavedChanges')}
-        </div>
-      )}
     </div>
   );
 }
