@@ -353,8 +353,14 @@ export const productRouter = router({
       // Use transaction to create product and pricing atomically
       const result = await prisma.$transaction(async (tx) => {
         // Create the product
+        // Explicitly set parentProductId: null to ensure the field exists in MongoDB.
+        // This is required because the getAll query filters with parentProductId: null,
+        // which won't match documents where the field is missing entirely.
         const product = await tx.product.create({
-          data: productData,
+          data: {
+            ...productData,
+            parentProductId: null,
+          },
         });
 
         // Create customer pricing records if provided
