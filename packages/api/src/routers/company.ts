@@ -163,53 +163,6 @@ export const companyRouter = router({
     }),
 
   /**
-   * Update Xero integration settings
-   */
-  updateXeroSettings: requirePermission('settings.integrations:edit')
-    .input(
-      z.object({
-        clientId: z.string().min(1, 'Client ID is required'),
-        clientSecret: z.string().min(1, 'Client Secret is required'),
-        tenantId: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      const company = await prisma.company.findFirst();
-
-      if (!company) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Company not found',
-        });
-      }
-
-      const updated = await prisma.company.update({
-        where: { id: company.id },
-        data: {
-          xeroSettings: {
-            clientId: input.clientId,
-            clientSecret: input.clientSecret,
-            tenantId: input.tenantId || null,
-          },
-        },
-      });
-
-      // Audit log - CRITICAL: Xero credential changes must be tracked
-      await logXeroSettingsUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, {
-        action: 'update',
-        fieldsChanged: ['clientId', 'clientSecret', ...(input.tenantId ? ['tenantId'] : [])],
-      }).catch((error) => {
-        console.error('Audit log failed for Xero settings update:', error);
-      });
-
-      return {
-        success: true,
-        message: 'Xero settings updated successfully',
-        settings: updated.xeroSettings,
-      };
-    }),
-
-  /**
    * Test Xero connection with detailed verification
    */
   testXeroConnection: requirePermission('settings.xero:sync').mutation(async () => {
@@ -242,6 +195,7 @@ export const companyRouter = router({
     const status = await xeroService.getConnectionStatus();
 
     return {
+      enabled: status.enabled,
       connected: status.connected,
       tenantId: status.tenantId,
       tokenExpiry: status.tokenExpiry,

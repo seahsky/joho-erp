@@ -276,12 +276,6 @@ export async function storeTokens(
 
   const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
 
-  // Get existing xeroSettings to preserve clientId and clientSecret
-  const existingSettings = company.xeroSettings as {
-    clientId?: string;
-    clientSecret?: string;
-  } | null;
-
   // Encrypt tokens before storage
   const encryptedAccessToken = encrypt(accessToken);
   const encryptedRefreshToken = encrypt(refreshToken);
@@ -290,8 +284,6 @@ export async function storeTokens(
     where: { id: company.id },
     data: {
       xeroSettings: {
-        clientId: existingSettings?.clientId || '',
-        clientSecret: existingSettings?.clientSecret || '',
         tenantId: tenantId || null,
         refreshToken: encryptedRefreshToken,
         tokenExpiry: tokenExpiry,
@@ -623,18 +615,10 @@ export async function disconnect(): Promise<void> {
     throw new Error('Company not found');
   }
 
-  // Get existing xeroSettings to preserve clientId and clientSecret
-  const existingSettings = company.xeroSettings as {
-    clientId?: string;
-    clientSecret?: string;
-  } | null;
-
   await prisma.company.update({
     where: { id: company.id },
     data: {
       xeroSettings: {
-        clientId: existingSettings?.clientId || '',
-        clientSecret: existingSettings?.clientSecret || '',
         tenantId: null,
         refreshToken: null,
         tokenExpiry: null,
@@ -659,15 +643,29 @@ export async function isConnected(): Promise<boolean> {
  * Get the connection status with details
  */
 export async function getConnectionStatus(): Promise<{
+  enabled: boolean;
   connected: boolean;
   tenantId: string | null;
   tokenExpiry: Date | null;
   needsRefresh: boolean;
 }> {
+  const enabled = isXeroIntegrationEnabled();
+  
+  if (!enabled) {
+    return {
+      enabled: false,
+      connected: false,
+      tenantId: null,
+      tokenExpiry: null,
+      needsRefresh: false,
+    };
+  }
+
   const tokens = await getStoredTokens();
 
   if (!tokens || !tokens.refreshToken) {
     return {
+      enabled: true,
       connected: false,
       tenantId: null,
       tokenExpiry: null,
@@ -676,6 +674,7 @@ export async function getConnectionStatus(): Promise<{
   }
 
   return {
+    enabled: true,
     connected: true,
     tenantId: tokens.tenantId,
     tokenExpiry: tokens.tokenExpiry,
