@@ -20,6 +20,7 @@ import {
   FileText,
   MapPin,
   Map,
+  RefreshCcw,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -77,6 +78,14 @@ export default function SettingsPage() {
       titleKey: 'categories.integrations',
       descriptionKey: 'categories.integrationsDescription',
       href: `/${locale}/settings/integrations`,
+      available: true,
+    },
+    {
+      id: 'xero',
+      icon: RefreshCcw,
+      titleKey: 'categories.xero',
+      descriptionKey: 'categories.xeroDescription',
+      href: `/${locale}/settings/xero`,
       available: true,
     },
     {

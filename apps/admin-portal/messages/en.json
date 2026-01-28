@@ -2048,6 +2048,8 @@
       "driverAreasDescription": "Assign drivers to delivery areas for auto-assignment",
       "integrations": "Integrations",
       "integrationsDescription": "Connect with Xero and other third-party services",
+      "xero": "Xero Status",
+      "xeroDescription": "Monitor Xero connection and sync job status",
       "users": "User Management",
       "usersDescription": "Manage admin users, roles, and permissions",
       "permissions": "Permission Management",
@@ -2710,6 +2712,74 @@
     "resyncContactConfirmMessage": "This will update the contact in Xero with the current customer data. Any manual changes in Xero may be overwritten.",
     "resyncJob": "Resync Job",
     "lastSyncedAt": "Last synced: {date}"
+  },
+  "xeroStatus": {
+    "title": "Xero Status",
+    "subtitle": "Monitor connection status and sync jobs",
+    "connectionStatus": {
+      "title": "Connection Status",
+      "description": "Xero API connection status and capabilities",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "tenant": "Tenant",
+      "tokenExpiry": "Token Expires",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "testResults": {
+        "title": "Test Results",
+        "allPassed": "All Passed",
+        "someFailed": "Some Failed",
+        "tokenValid": "Token Valid",
+        "expiresIn": "Expires in {minutes} min",
+        "tenantConnected": "Tenant Connected",
+        "canReadContacts": "Read Contacts",
+        "canReadInvoices": "Read Invoices",
+        "canWriteContacts": "Write Contacts",
+        "encryptionEnabled": "Encryption Enabled",
+        "notConfigured": "Not Configured",
+        "errors": "Errors"
+      }
+    },
+    "stats": {
+      "pending": "Pending Jobs",
+      "failed": "Failed Jobs",
+      "completedToday": "Completed Today"
+    },
+    "jobs": {
+      "title": "Sync Jobs",
+      "description": "View and manage all Xero sync jobs",
+      "columns": {
+        "type": "Type",
+        "entity": "Entity",
+        "status": "Status",
+        "created": "Created",
+        "error": "Error",
+        "actions": "Actions"
+      },
+      "filter": {
+        "allStatus": "All Status",
+        "allTypes": "All Types"
+      },
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "type": {
+        "syncContact": "Sync Contact",
+        "createInvoice": "Create Invoice",
+        "createCreditNote": "Create Credit Note",
+        "updateInvoice": "Update Invoice"
+      },
+      "empty": "No sync jobs found",
+      "page": "Page {page} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "retrySuccess": "Job queued for retry",
+      "retrySuccessDescription": "The sync job will be processed shortly",
+      "retryError": "Failed to retry job"
+    }
   },
   "driver": {
     "title": "My Deliveries",

@@ -2048,6 +2048,8 @@
       "driverAreasDescription": "为自动分配指定司机负责的配送区域",
       "integrations": "集成",
       "integrationsDescription": "连接Xero和其他第三方服务",
+      "xero": "Xero 状态",
+      "xeroDescription": "监控 Xero 连接和同步作业状态",
       "users": "用户管理",
       "usersDescription": "管理管理员用户、角色和权限",
       "notifications": "通知",
@@ -2710,6 +2712,74 @@
     "resyncContactConfirmMessage": "这将使用当前客户数据更新 Xero 中的联系人。Xero 中的任何手动更改可能会被覆盖。",
     "resyncJob": "重新同步任务",
     "lastSyncedAt": "上次同步：{date}"
+  },
+  "xeroStatus": {
+    "title": "Xero 状态",
+    "subtitle": "监控连接状态和同步作业",
+    "connectionStatus": {
+      "title": "连接状态",
+      "description": "Xero API 连接状态和功能",
+      "connected": "已连接",
+      "disconnected": "未连接",
+      "tenant": "租户",
+      "tokenExpiry": "令牌过期",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "testResults": {
+        "title": "测试结果",
+        "allPassed": "全部通过",
+        "someFailed": "部分失败",
+        "tokenValid": "令牌有效",
+        "expiresIn": "{minutes}分钟后过期",
+        "tenantConnected": "租户已连接",
+        "canReadContacts": "读取联系人",
+        "canReadInvoices": "读取发票",
+        "canWriteContacts": "写入联系人",
+        "encryptionEnabled": "加密已启用",
+        "notConfigured": "未配置",
+        "errors": "错误"
+      }
+    },
+    "stats": {
+      "pending": "待处理作业",
+      "failed": "失败作业",
+      "completedToday": "今日完成"
+    },
+    "jobs": {
+      "title": "同步作业",
+      "description": "查看和管理所有 Xero 同步作业",
+      "columns": {
+        "type": "类型",
+        "entity": "实体",
+        "status": "状态",
+        "created": "创建时间",
+        "error": "错误",
+        "actions": "操作"
+      },
+      "filter": {
+        "allStatus": "所有状态",
+        "allTypes": "所有类型"
+      },
+      "status": {
+        "pending": "待处理",
+        "processing": "处理中",
+        "completed": "已完成",
+        "failed": "失败"
+      },
+      "type": {
+        "syncContact": "同步联系人",
+        "createInvoice": "创建发票",
+        "createCreditNote": "创建贷项通知单",
+        "updateInvoice": "更新发票"
+      },
+      "empty": "未找到同步作业",
+      "page": "第 {page} 页，共 {total} 页",
+      "previous": "上一页",
+      "next": "下一页",
+      "retrySuccess": "作业已加入重试队列",
+      "retrySuccessDescription": "同步作业将很快被处理",
+      "retryError": "重试作业失败"
+    }
   },
   "driver": {
     "title": "我的配送",
