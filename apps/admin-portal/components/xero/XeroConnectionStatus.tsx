@@ -69,10 +69,7 @@ export function XeroConnectionStatus() {
     await testConnectionMutation.mutateAsync();
   };
 
-  const isConnected =
-    settings?.xeroSettings &&
-    settings.xeroSettings.clientId &&
-    settings.xeroSettings.clientSecret;
+  const isConnected = !!settings?.xeroSettings?.accessToken;
 
   if (isLoading) {
     return (
