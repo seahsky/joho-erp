@@ -294,19 +294,52 @@ export const dashboardRouter = router({
 
   // Get inventory breakdown by category
   getInventoryByCategory: requirePermission('inventory:view').query(async () => {
-    const categoryBreakdown = await prisma.product.aggregateRaw({
+    // Get category breakdown from inventory batches (correct cost-based value)
+    const batchBreakdown = await prisma.inventoryBatch.aggregateRaw({
       pipeline: [
+        // Filter non-consumed batches only
+        { $match: { isConsumed: false } },
+        // Join with products
         {
-          $match: {
-            status: 'active',
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        // Filter for active products
+        { $match: { 'product.status': 'active' } },
+        // Group by category with correct value calculation
+        {
+          $group: {
+            _id: '$product.category',
+            products: { $addToSet: '$productId' },
+            totalStock: { $sum: '$quantityRemaining' },
+            totalValue: { $sum: { $multiply: ['$quantityRemaining', '$costPerUnit'] } },
           },
         },
         {
+          $project: {
+            category: '$_id',
+            productCount: { $size: '$products' },
+            totalStock: 1,
+            totalValue: 1,
+            _id: 0,
+          },
+        },
+        { $sort: { category: 1 } },
+      ],
+    });
+
+    // Get low stock counts per category from products
+    const lowStockByCategory = await prisma.product.aggregateRaw({
+      pipeline: [
+        { $match: { status: 'active' } },
+        {
           $group: {
             _id: '$category',
-            productCount: { $sum: 1 },
-            totalStock: { $sum: '$currentStock' },
-            totalValue: { $sum: { $multiply: ['$currentStock', '$basePrice'] } },
             lowStockCount: {
               $sum: {
                 $cond: [
@@ -323,27 +356,22 @@ export const dashboardRouter = router({
             },
           },
         },
-        {
-          $project: {
-            category: '$_id',
-            productCount: 1,
-            totalStock: 1,
-            totalValue: 1,
-            lowStockCount: 1,
-            _id: 0,
-          },
-        },
-        { $sort: { category: 1 } },
       ],
-    });
+    }) as unknown as Array<{ _id: string; lowStockCount: number }>;
 
-    return categoryBreakdown as unknown as Array<{
+    // Merge lowStockCount into batch breakdown
+    const lowStockMap = new Map(lowStockByCategory.map((c) => [c._id, c.lowStockCount]));
+    const breakdown = batchBreakdown as unknown as Array<{
       category: string;
       productCount: number;
       totalStock: number;
       totalValue: number;
-      lowStockCount: number;
     }>;
+
+    return breakdown.map((cat) => ({
+      ...cat,
+      lowStockCount: lowStockMap.get(cat.category) || 0,
+    }));
   }),
 
   // Get inventory transactions with filters
