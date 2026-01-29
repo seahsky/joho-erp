@@ -1,34 +1,19 @@
-import { StyleSheet, Font } from '@react-pdf/renderer';
+import { StyleSheet } from '@react-pdf/renderer';
 
-// Register fonts for consistent rendering
-Font.register({
-  family: 'Inter',
-  fonts: [
-    {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2',
-      fontWeight: 400,
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hjp-Ek-_EeA.woff2',
-      fontWeight: 600,
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hjp-Ek-_EeA.woff2',
-      fontWeight: 700,
-    },
-  ],
-});
+// Use built-in Helvetica font to avoid network dependency issues
+// External fonts (like Inter from Google Fonts) can cause "Unknown font format" errors
+// when the CDN is slow or unreachable
 
 export const styles = StyleSheet.create({
   // Page styles
   page: {
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 10,
     padding: 30,
     backgroundColor: '#FFFFFF',
   },
   pageCompact: {
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 9,
     padding: 25,
     backgroundColor: '#FFFFFF',
@@ -51,7 +36,7 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 5,
   },
@@ -66,7 +51,7 @@ export const styles = StyleSheet.create({
   },
   headerInfoBold: {
     fontSize: 10,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#1a1a1a',
   },
 
@@ -76,7 +61,7 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 8,
     paddingBottom: 4,
@@ -100,12 +85,12 @@ export const styles = StyleSheet.create({
   },
   stopNumber: {
     fontSize: 14,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
   },
   orderNumber: {
     fontSize: 11,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#333333',
   },
 
@@ -115,7 +100,7 @@ export const styles = StyleSheet.create({
   },
   customerName: {
     fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 2,
   },
@@ -133,7 +118,7 @@ export const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 8,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#666666',
     marginBottom: 3,
     textTransform: 'uppercase',
@@ -152,7 +137,7 @@ export const styles = StyleSheet.create({
   },
   instructionsLabel: {
     fontSize: 8,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#cc6600',
     marginBottom: 3,
     textTransform: 'uppercase',
@@ -176,7 +161,7 @@ export const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     fontSize: 8,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -200,7 +185,7 @@ export const styles = StyleSheet.create({
   },
   tableCellBold: {
     fontSize: 9,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#1a1a1a',
   },
 
@@ -260,7 +245,7 @@ export const styles = StyleSheet.create({
   },
   totalsFinalLabel: {
     fontSize: 11,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     width: 100,
     textAlign: 'right',
@@ -268,7 +253,7 @@ export const styles = StyleSheet.create({
   },
   totalsFinalValue: {
     fontSize: 11,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
     width: 80,
     textAlign: 'right',
@@ -283,7 +268,7 @@ export const styles = StyleSheet.create({
   },
   signatureTitle: {
     fontSize: 10,
-    fontWeight: 600,
+    fontWeight: 'bold',
     color: '#666666',
     marginBottom: 12,
     textTransform: 'uppercase',
@@ -330,7 +315,7 @@ export const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 18,
-    fontWeight: 700,
+    fontWeight: 'bold',
     color: '#1a1a1a',
   },
   summaryLabel: {
