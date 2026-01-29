@@ -260,8 +260,8 @@ export const xeroRouter = router({
 
       if (!url) {
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to get invoice URL from Xero',
+          code: 'NOT_FOUND',
+          message: 'Invoice online URL is not available. Check server logs for details.',
         });
       }
 

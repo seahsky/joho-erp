@@ -1557,18 +1557,30 @@ export async function getCachedInvoice(
 export async function getInvoicePdfUrl(invoiceId: string): Promise<string | null> {
   // Check if Xero integration is enabled
   if (!isXeroIntegrationEnabled()) {
+    xeroLogger.warn('Cannot get PDF URL: Xero integration is disabled');
     return null;
   }
 
   try {
-    const response = await xeroApiRequest<{ OnlineInvoices: [{ Url: string }] }>(
+    const response = await xeroApiRequest<{ OnlineInvoices: Array<{ Url: string }> }>(
       `/Invoices/${invoiceId}/OnlineInvoice`
     );
+
+    // Log raw response to diagnose structure issues
+    xeroLogger.debug('OnlineInvoice API response', {
+      invoiceId,
+      responseKeys: Object.keys(response || {}),
+      onlineInvoices: response.OnlineInvoices,
+    });
 
     if (response.OnlineInvoices && response.OnlineInvoices.length > 0) {
       return response.OnlineInvoices[0].Url;
     }
 
+    xeroLogger.warn('No OnlineInvoice URL in response', {
+      invoiceId,
+      response: JSON.stringify(response),
+    });
     return null;
   } catch (error) {
     xeroLogger.error(`Failed to get PDF URL for invoice ${invoiceId}`, {
