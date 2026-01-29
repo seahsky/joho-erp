@@ -1206,6 +1206,20 @@ export const packingRouter = router({
         }).catch((error) => {
           console.error('Audit log failed for mark order ready:', error);
         });
+
+        // Trigger Xero invoice creation when order becomes ready_for_delivery
+        // Check if invoice doesn't already exist before enqueuing
+        const orderForXero = await prisma.order.findUnique({
+          where: { id: input.orderId },
+          select: { xero: true },
+        });
+        const xeroInfo = orderForXero?.xero as { invoiceId?: string | null } | null;
+        if (!xeroInfo?.invoiceId) {
+          const { enqueueXeroJob } = await import('../services/xero-queue');
+          await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
+            console.error('Failed to enqueue Xero invoice creation:', error);
+          });
+        }
       }
 
       // After transaction, fetch updated product stocks for the items in this order
