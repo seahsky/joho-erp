@@ -52,12 +52,6 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
     },
   });
 
-  // Query for invoice PDF URL - only enabled when invoice exists
-  const { data: pdfData, isLoading: isPdfLoading, refetch: refetchPdf } = api.xero.getInvoicePdfUrlForOrder.useQuery(
-    { orderId },
-    { enabled: !!xero?.invoiceId }
-  );
-
   const handleRetry = () => {
     if (xero?.lastSyncJobId) {
       retryMutation.mutate({ jobId: xero.lastSyncJobId });
@@ -65,12 +59,8 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
   };
 
   const handleDownloadInvoice = () => {
-    if (pdfData?.url) {
-      window.open(pdfData.url, '_blank');
-    } else {
-      // Try to refetch if URL not available
-      void refetchPdf();
-    }
+    // Open the local PDF proxy endpoint which fetches from Xero
+    window.open(`/api/invoices/${orderId}/pdf`, '_blank');
   };
 
   const getSyncStatus = () => {
@@ -190,20 +180,10 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
             variant="outline"
             size="sm"
             onClick={handleDownloadInvoice}
-            disabled={isPdfLoading}
             className="w-full"
           >
-            {isPdfLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('xero.loading')}
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                {t('xero.downloadInvoice')}
-              </>
-            )}
+            <Download className="h-4 w-4 mr-2" />
+            {t('xero.downloadInvoice')}
           </Button>
         )}
       </CardContent>

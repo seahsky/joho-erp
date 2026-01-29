@@ -782,36 +782,20 @@ export const deliveryRouter = router({
         return xero?.invoiceId;
       });
 
-      // Get invoice URLs from Xero for each order
-      const { getInvoicePdfUrl } = await import('../services/xero');
-
-      const invoiceData = await Promise.all(
-        ordersWithInvoices.map(async (order) => {
-          const xero = order.xero as { invoiceId: string; invoiceNumber?: string | null };
-          try {
-            const url = await getInvoicePdfUrl(xero.invoiceId);
-            return {
-              orderId: order.id,
-              orderNumber: order.orderNumber,
-              customerName: order.customerName,
-              invoiceNumber: xero.invoiceNumber || null,
-              url: url,
-              sequence: order.delivery?.deliverySequence || 0,
-            };
-          } catch (error) {
-            console.error(`Failed to get invoice URL for order ${order.orderNumber}:`, error);
-            return {
-              orderId: order.id,
-              orderNumber: order.orderNumber,
-              customerName: order.customerName,
-              invoiceNumber: xero.invoiceNumber || null,
-              url: null,
-              sequence: order.delivery?.deliverySequence || 0,
-              error: 'Failed to get invoice URL',
-            };
-          }
-        })
-      );
+      // Build invoice data with local PDF proxy URLs
+      // No need to call Xero API - the local endpoint handles PDF fetching
+      const invoiceData = ordersWithInvoices.map((order) => {
+        const xero = order.xero as { invoiceId: string; invoiceNumber?: string | null };
+        return {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          invoiceNumber: xero.invoiceNumber || null,
+          // Use local PDF proxy endpoint instead of Xero's OnlineInvoice URL
+          url: `/api/invoices/${order.id}/pdf`,
+          sequence: order.delivery?.deliverySequence || 0,
+        };
+      });
 
       // Sort by delivery sequence
       invoiceData.sort((a, b) => a.sequence - b.sequence);
