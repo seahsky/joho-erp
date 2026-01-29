@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
+import { createMoney, multiplyMoney, sumMoney, toCents } from '@joho-erp/shared';
 
 export const dashboardRouter = router({
   // Get dashboard statistics
@@ -169,6 +170,11 @@ export const dashboardRouter = router({
       );
       const isExpired = batch.expiryDate! < now;
 
+      // Calculate batch value using dinero.js (costPerUnit is in cents)
+      const batchValue = toCents(
+        multiplyMoney(createMoney(batch.costPerUnit), batch.quantityRemaining)
+      );
+
       return {
         id: batch.id,
         productId: batch.product.id,
@@ -180,8 +186,8 @@ export const dashboardRouter = router({
         expiryDate: batch.expiryDate,
         daysUntilExpiry,
         isExpired,
-        costPerUnit: batch.costPerUnit,
-        totalValue: batch.quantityRemaining * batch.costPerUnit,
+        costPerUnit: batch.costPerUnit, // in cents
+        totalValue: batchValue, // in cents
       };
     });
 
@@ -189,13 +195,18 @@ export const dashboardRouter = router({
     const expiredBatches = enrichedBatches.filter((b) => b.isExpired);
     const expiringSoonBatches = enrichedBatches.filter((b) => !b.isExpired);
 
+    // Sum total value using dinero.js
+    const totalExpiringValue = toCents(
+      sumMoney(enrichedBatches.map((b) => createMoney(b.totalValue)))
+    );
+
     return {
       batches: enrichedBatches,
       summary: {
         totalCount: enrichedBatches.length,
         expiredCount: expiredBatches.length,
         expiringSoonCount: expiringSoonBatches.length,
-        totalValue: enrichedBatches.reduce((sum, b) => sum + b.totalValue, 0),
+        totalValue: totalExpiringValue, // in cents
         thresholdDays: daysThreshold,
       },
     };
@@ -294,7 +305,8 @@ export const dashboardRouter = router({
 
   // Get inventory breakdown by category
   getInventoryByCategory: requirePermission('inventory:view').query(async () => {
-    const categoryBreakdown = await prisma.product.aggregateRaw({
+    // Get product counts and stock info by category
+    const productStats = await prisma.product.aggregateRaw({
       pipeline: [
         {
           $match: {
@@ -306,7 +318,6 @@ export const dashboardRouter = router({
             _id: '$category',
             productCount: { $sum: 1 },
             totalStock: { $sum: '$currentStock' },
-            totalValue: { $sum: { $multiply: ['$currentStock', '$basePrice'] } },
             lowStockCount: {
               $sum: {
                 $cond: [
@@ -328,7 +339,6 @@ export const dashboardRouter = router({
             category: '$_id',
             productCount: 1,
             totalStock: 1,
-            totalValue: 1,
             lowStockCount: 1,
             _id: 0,
           },
@@ -337,7 +347,71 @@ export const dashboardRouter = router({
       ],
     });
 
-    return categoryBreakdown as unknown as Array<{
+    // Get inventory value by category from batch costs (quantityRemaining * costPerUnit)
+    // This is the correct way to value inventory - at cost, not at selling price
+    const inventoryValues = await prisma.inventoryBatch.aggregateRaw({
+      pipeline: [
+        // Filter for non-consumed batches with remaining quantity
+        {
+          $match: {
+            isConsumed: false,
+            quantityRemaining: { $gt: 0 },
+          },
+        },
+        // Join with products to get category and filter active products
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        {
+          $match: {
+            'product.status': 'active',
+          },
+        },
+        // Group by category and sum batch values (quantityRemaining * costPerUnit in cents)
+        {
+          $group: {
+            _id: '$product.category',
+            totalValue: {
+              $sum: { $multiply: ['$quantityRemaining', '$costPerUnit'] },
+            },
+          },
+        },
+        {
+          $project: {
+            category: '$_id',
+            totalValue: 1,
+            _id: 0,
+          },
+        },
+      ],
+    });
+
+    // Merge product stats with inventory values
+    const valueMap = new Map(
+      (inventoryValues as unknown as Array<{ category: string; totalValue: number }>).map(
+        (v) => [v.category, v.totalValue]
+      )
+    );
+
+    const categoryBreakdown = (
+      productStats as unknown as Array<{
+        category: string;
+        productCount: number;
+        totalStock: number;
+        lowStockCount: number;
+      }>
+    ).map((stat) => ({
+      ...stat,
+      totalValue: valueMap.get(stat.category) || 0, // Value in cents
+    }));
+
+    return categoryBreakdown as Array<{
       category: string;
       productCount: number;
       totalStock: number;
