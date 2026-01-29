@@ -127,15 +127,12 @@ export function ProductList() {
     return item?.quantity || 0;
   }, [cart?.items]);
 
-  // Helper to flatten products and filter in-stock items
-  const flattenInStockProducts = (items: ProductWithSubProducts[]) => {
+  // Helper to flatten products and subproducts into a single list
+  const flattenAllProducts = (items: ProductWithSubProducts[]) => {
     return items.flatMap(product => {
-      // Skip products without stock (subproducts derive stock from parent, so skip those too)
-      if (!product.hasStock) return [];
-
+      // Show all products - admin reviews backorders for approval
       const subProducts = product.subProducts || [];
-      const inStockSubs = subProducts.filter(sub => sub.hasStock);
-      return [product, ...inStockSubs];
+      return [product, ...subProducts];
     });
   };
 
@@ -143,13 +140,13 @@ export function ProductList() {
   // Used for category counts so they remain accurate when a category is selected
   const allProductsForCounts = React.useMemo(() => {
     const items = (allProductsData?.items || []) as unknown as ProductWithSubProducts[];
-    return flattenInStockProducts(items);
+    return flattenAllProducts(items);
   }, [allProductsData]);
 
   // Products for DISPLAY - from filtered query (selected category)
   const allInStockProducts = React.useMemo(() => {
     const items = (products?.items || []) as unknown as ProductWithSubProducts[];
-    return flattenInStockProducts(items);
+    return flattenAllProducts(items);
   }, [products]);
 
   // Category counts use allProductsForCounts (unfiltered) so counts stay accurate

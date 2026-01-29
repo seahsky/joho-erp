@@ -240,7 +240,9 @@ export function getCustomerStockStatus(
   lowStockThreshold?: number | null
 ): 'in_stock' | 'low_stock' | 'out_of_stock' {
   const threshold = lowStockThreshold ?? 10;
-  if (currentStock <= 0) return 'out_of_stock';
+  // Out of stock products display as low stock for customers
+  // Admin will review backorders for approval
+  if (currentStock <= 0) return 'low_stock';
   if (currentStock <= threshold) return 'low_stock';
   return 'in_stock';
 }
