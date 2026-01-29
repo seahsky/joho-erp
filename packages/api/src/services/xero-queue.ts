@@ -447,6 +447,10 @@ async function processCreateInvoice(
     delivery: order.delivery as {
       deliveredAt?: Date | null;
     } | null,
+    statusHistory: order.statusHistory as Array<{
+      status: string;
+      changedAt: Date | string;
+    }>,
   };
 
   const customerForSync = {

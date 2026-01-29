@@ -1570,6 +1570,16 @@ export const orderRouter = router({
                 }).catch((error) => {
                   console.error('Failed to send out for delivery email:', error);
                 });
+
+                // Trigger Xero invoice creation only when order becomes ready_for_delivery
+                // (not when transitioning to out_for_delivery since invoice should already exist)
+                const xeroInfo = result.order.xero as { invoiceId?: string | null } | null;
+                if (input.newStatus === 'ready_for_delivery' && !xeroInfo?.invoiceId) {
+                  const { enqueueXeroJob } = await import('../services/xero-queue');
+                  await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
+                    console.error('Failed to enqueue Xero invoice creation:', error);
+                  });
+                }
               }
               break;
 

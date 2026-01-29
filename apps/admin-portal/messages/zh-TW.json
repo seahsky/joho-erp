@@ -270,7 +270,8 @@
     "updateFailed": "更新失敗，請重試。",
     "generationFailed": "生成失敗，請重試。",
     "optimizationFailed": "最佳化失敗，請重試。",
-    "searchError": "搜尋失敗，請重試。"
+    "searchError": "搜尋失敗，請重試。",
+    "noInvoices": "未找到所選訂單的發票。"
   },
   "suppliers": {
     "title": "供應商管理",
@@ -677,7 +678,11 @@
         "printedName": "姓名",
         "timeReceived": "簽收時間",
         "driverNotes": "司機備註"
-      }
+      },
+      "downloadInvoices": "下載發票",
+      "downloadingInvoices": "正在開啟發票...",
+      "invoicesOpened": "發票已開啟",
+      "invoicesOpenedDescription": "正在新分頁中開啟 {count} 張發票"
     },
     "autoAssignDrivers": "自動分配司機",
     "autoAssignment": {
@@ -3518,7 +3523,9 @@
       "retrying": "重試中...",
       "retrySuccess": "同步已排隊",
       "retrySuccessMessage": "同步任務已加入重試佇列",
-      "retryError": "重試失敗"
+      "retryError": "重試失敗",
+      "downloadInvoice": "下載發票",
+      "loading": "載入中..."
     },
     "internalNotes": {
       "title": "內部備註"

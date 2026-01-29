@@ -298,11 +298,8 @@ export const deliveryRouter = router({
 
       // Only trigger side effects if not already completed (idempotent)
       if (!result.alreadyCompleted) {
-        // Enqueue Xero invoice creation
-        const { enqueueXeroJob } = await import('../services/xero-queue');
-        await enqueueXeroJob('create_invoice', 'order', input.orderId).catch((error) => {
-          console.error('Failed to enqueue Xero invoice creation:', error);
-        });
+        // Note: Xero invoice creation is now triggered when order becomes ready_for_delivery
+        // (in order.updateStatus) so that invoices can be printed with deliveries
 
         // Audit log
         await logDeliveryStatusChange(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
@@ -725,6 +722,104 @@ export const deliveryRouter = router({
         },
         stops,
         productAggregation,
+      };
+    }),
+
+  /**
+   * Download all invoices for a delivery run as a merged PDF
+   * Returns invoice URLs for orders that have Xero invoices
+   */
+  getInvoiceUrlsForDelivery: requirePermission('deliveries:view')
+    .input(
+      z.object({
+        deliveryDate: z.string().datetime(),
+        areaId: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deliveryDate = new Date(input.deliveryDate);
+      const startOfDay = new Date(deliveryDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(deliveryDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      // Build where clause for orders with invoices
+      const where: any = {
+        requestedDeliveryDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: {
+          in: ['ready_for_delivery', 'out_for_delivery', 'delivered'],
+        },
+      };
+
+      if (input.areaId) {
+        where.deliveryAddress = {
+          is: { areaId: input.areaId },
+        };
+      }
+
+      // Get orders that have Xero invoices
+      const orders = await prisma.order.findMany({
+        where,
+        orderBy: [
+          { delivery: { deliverySequence: 'asc' } },
+          { orderNumber: 'asc' },
+        ],
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          xero: true,
+          delivery: true,
+        },
+      });
+
+      // Filter orders that have invoices
+      const ordersWithInvoices = orders.filter((order) => {
+        const xero = order.xero as { invoiceId?: string | null; invoiceNumber?: string | null } | null;
+        return xero?.invoiceId;
+      });
+
+      // Get invoice URLs from Xero for each order
+      const { getInvoicePdfUrl } = await import('../services/xero');
+
+      const invoiceData = await Promise.all(
+        ordersWithInvoices.map(async (order) => {
+          const xero = order.xero as { invoiceId: string; invoiceNumber?: string | null };
+          try {
+            const url = await getInvoicePdfUrl(xero.invoiceId);
+            return {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              invoiceNumber: xero.invoiceNumber || null,
+              url: url,
+              sequence: order.delivery?.deliverySequence || 0,
+            };
+          } catch (error) {
+            console.error(`Failed to get invoice URL for order ${order.orderNumber}:`, error);
+            return {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              invoiceNumber: xero.invoiceNumber || null,
+              url: null,
+              sequence: order.delivery?.deliverySequence || 0,
+              error: 'Failed to get invoice URL',
+            };
+          }
+        })
+      );
+
+      // Sort by delivery sequence
+      invoiceData.sort((a, b) => a.sequence - b.sequence);
+
+      return {
+        totalOrders: orders.length,
+        ordersWithInvoices: ordersWithInvoices.length,
+        invoices: invoiceData,
       };
     }),
 

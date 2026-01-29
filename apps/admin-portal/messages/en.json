@@ -270,7 +270,8 @@
     "updateFailed": "Failed to update. Please try again.",
     "generationFailed": "Generation failed. Please try again.",
     "optimizationFailed": "Optimization failed. Please try again.",
-    "searchError": "Search failed. Please try again."
+    "searchError": "Search failed. Please try again.",
+    "noInvoices": "No invoices found for the selected orders."
   },
   "suppliers": {
     "title": "Supplier Management",
@@ -677,7 +678,11 @@
         "printedName": "Printed Name",
         "timeReceived": "Time Received",
         "driverNotes": "Driver Notes"
-      }
+      },
+      "downloadInvoices": "Download Invoices",
+      "downloadingInvoices": "Opening Invoices...",
+      "invoicesOpened": "Invoices Opened",
+      "invoicesOpenedDescription": "Opening {count} invoice(s) in new tabs"
     },
     "autoAssignDrivers": "Auto-Assign Drivers",
     "autoAssignment": {
@@ -3512,7 +3517,9 @@
       "retrying": "Retrying...",
       "retrySuccess": "Sync Queued",
       "retrySuccessMessage": "The sync job has been queued for retry",
-      "retryError": "Retry Failed"
+      "retryError": "Retry Failed",
+      "downloadInvoice": "Download Invoice",
+      "loading": "Loading..."
     },
     "internalNotes": {
       "title": "Internal Notes"

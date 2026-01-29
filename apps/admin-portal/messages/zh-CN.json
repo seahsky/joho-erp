@@ -270,7 +270,8 @@
     "updateFailed": "更新失败，请重试。",
     "generationFailed": "生成失败，请重试。",
     "optimizationFailed": "优化失败，请重试。",
-    "searchError": "搜索失败，请重试。"
+    "searchError": "搜索失败，请重试。",
+    "noInvoices": "未找到所选订单的发票。"
   },
   "suppliers": {
     "title": "供应商管理",
@@ -677,7 +678,11 @@
         "printedName": "姓名",
         "timeReceived": "签收时间",
         "driverNotes": "司机备注"
-      }
+      },
+      "downloadInvoices": "下载发票",
+      "downloadingInvoices": "正在打开发票...",
+      "invoicesOpened": "发票已打开",
+      "invoicesOpenedDescription": "正在新标签页中打开 {count} 张发票"
     },
     "autoAssignDrivers": "自动分配司机",
     "autoAssignment": {
@@ -3512,7 +3517,9 @@
       "retrying": "重试中...",
       "retrySuccess": "同步已排队",
       "retrySuccessMessage": "同步任务已加入重试队列",
-      "retryError": "重试失败"
+      "retryError": "重试失败",
+      "downloadInvoice": "下载发票",
+      "loading": "加载中..."
     },
     "internalNotes": {
       "title": "内部备注"

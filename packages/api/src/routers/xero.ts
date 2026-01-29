@@ -143,10 +143,12 @@ export const xeroRouter = router({
         });
       }
 
-      if (order.status !== 'delivered') {
+      // Allow invoice creation for ready_for_delivery and later statuses
+      const allowedStatuses = ['ready_for_delivery', 'out_for_delivery', 'delivered'];
+      if (!allowedStatuses.includes(order.status)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Order must be delivered to create an invoice',
+          message: 'Order must be at least ready for delivery to create an invoice',
         });
       }
 
@@ -226,6 +228,45 @@ export const xeroRouter = router({
       return { success: true, jobId };
     }),
 
+  /**
+   * Get invoice PDF URL for an order (admin use)
+   * Returns the Xero online invoice URL that can be used to view/download the invoice
+   */
+  getInvoicePdfUrlForOrder: requirePermission('orders:view')
+    .input(z.object({ orderId: z.string() }))
+    .query(async ({ input }) => {
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: { xero: true },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      const xeroInfo = order.xero as { invoiceId?: string | null; invoiceNumber?: string | null } | null;
+      if (!xeroInfo?.invoiceId) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No invoice exists for this order',
+        });
+      }
+
+      const { getInvoicePdfUrl } = await import('../services/xero');
+      const url = await getInvoicePdfUrl(xeroInfo.invoiceId);
+
+      if (!url) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get invoice URL from Xero',
+        });
+      }
+
+      return { url, invoiceNumber: xeroInfo.invoiceNumber };
+    }),
 
   /**
    * Resync an existing invoice in Xero (update with current order data)

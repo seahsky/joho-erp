@@ -926,6 +926,10 @@ export interface OrderForXeroSync {
   delivery?: {
     deliveredAt?: Date | null;
   } | null;
+  statusHistory?: Array<{
+    status: string;
+    changedAt: Date | string;
+  }>;
 }
 
 // ============================================================================
@@ -1175,7 +1179,14 @@ export async function createInvoiceInXero(
 
     // Calculate due date from payment terms
     const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms) || 30;
-    const invoiceDate = order.delivery?.deliveredAt || new Date();
+    // Use the date when order became ready_for_delivery (when invoice should be created)
+    // Fall back to delivery date or current date for backwards compatibility
+    const readyForDeliveryEntry = order.statusHistory?.find(
+      (h) => h.status === 'ready_for_delivery'
+    );
+    const invoiceDate = readyForDeliveryEntry?.changedAt
+      ? new Date(readyForDeliveryEntry.changedAt)
+      : order.delivery?.deliveredAt || new Date();
     const dueDate = new Date(invoiceDate);
     dueDate.setDate(dueDate.getDate() + paymentDays);
 

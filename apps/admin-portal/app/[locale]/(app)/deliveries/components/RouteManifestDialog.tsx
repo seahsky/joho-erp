@@ -18,7 +18,7 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, Download } from 'lucide-react';
+import { Loader2, FileText, Download, FileStack } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
@@ -91,6 +91,62 @@ export function RouteManifestDialog({
       enabled: open,
     }
   );
+
+  // Query for invoice URLs when there are orders
+  const { data: invoiceData, isLoading: isLoadingInvoices } = api.delivery.getInvoiceUrlsForDelivery.useQuery(
+    {
+      deliveryDate: selectedDate.toISOString(),
+      areaId: areaFilter !== 'all' ? areaFilter : undefined,
+    },
+    {
+      enabled: open && !!manifestData?.stops?.length,
+    }
+  );
+
+  const [isDownloadingInvoices, setIsDownloadingInvoices] = useState(false);
+
+  const downloadAllInvoices = useCallback(async () => {
+    if (!invoiceData?.invoices?.length) return;
+
+    setIsDownloadingInvoices(true);
+
+    try {
+      // Filter invoices that have URLs
+      const invoicesWithUrls = invoiceData.invoices.filter((inv) => inv.url);
+
+      if (invoicesWithUrls.length === 0) {
+        toast({
+          title: tErrors('noInvoices'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Open each invoice URL in a new tab (browsers may block multiple popups)
+      // Show toast with count
+      invoicesWithUrls.forEach((inv, index) => {
+        // Stagger the opening to avoid popup blockers
+        setTimeout(() => {
+          if (inv.url) {
+            window.open(inv.url, `_blank_${index}`);
+          }
+        }, index * 200);
+      });
+
+      toast({
+        title: t('invoicesOpened'),
+        description: t('invoicesOpenedDescription', { count: invoicesWithUrls.length }),
+      });
+    } catch (error) {
+      console.error('Error downloading invoices:', error);
+      toast({
+        title: tErrors('generationFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloadingInvoices(false);
+    }
+  }, [invoiceData, toast, tErrors, t]);
 
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('en-AU', {
@@ -303,9 +359,26 @@ export function RouteManifestDialog({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating || isDownloadingInvoices}>
             {tCommon('cancel')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={downloadAllInvoices}
+            disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+          >
+            {isDownloadingInvoices ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('downloadingInvoices')}
+              </>
+            ) : (
+              <>
+                <FileStack className="h-4 w-4 mr-2" />
+                {t('downloadInvoices')} {invoiceData?.ordersWithInvoices ? `(${invoiceData.ordersWithInvoices})` : ''}
+              </>
+            )}
           </Button>
           <Button onClick={generatePdf} disabled={isGenerating || isLoading || !hasOrders}>
             {isGenerating ? (
