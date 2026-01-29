@@ -906,6 +906,7 @@ export interface OrderItemForXeroSync {
   quantity: number;
   unitPrice: number; // In cents
   subtotal: number; // In cents
+  applyGst: boolean; // Whether GST should be applied to this item
 }
 
 export interface OrderForXeroSync {
@@ -1184,7 +1185,7 @@ export async function createInvoiceInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: 'OUTPUT', // 10% GST for Australian sales
+      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
       ItemCode: item.sku,
     }));
 
@@ -1285,7 +1286,7 @@ export async function updateInvoiceInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: 'OUTPUT', // 10% GST for Australian sales
+      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
       ItemCode: item.sku,
     }));
 
@@ -1408,7 +1409,7 @@ export async function createCreditNoteInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: 'OUTPUT',
+      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
     }));
 
     const creditNote: XeroCreditNote = {

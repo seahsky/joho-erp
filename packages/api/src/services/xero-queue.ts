@@ -425,6 +425,7 @@ async function processCreateInvoice(
       quantity: number;
       unitPrice: number;
       subtotal: number;
+      applyGst: boolean;
     }>).map((item) => ({
       productId: item.productId,
       sku: item.sku,
@@ -433,6 +434,7 @@ async function processCreateInvoice(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       subtotal: item.subtotal,
+      applyGst: item.applyGst ?? false, // Default to false for backwards compatibility
     })),
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
@@ -574,6 +576,7 @@ async function processUpdateInvoice(
       quantity: number;
       unitPrice: number;
       subtotal: number;
+      applyGst: boolean;
     }>).map((item) => ({
       productId: item.productId,
       sku: item.sku,
@@ -582,6 +585,7 @@ async function processUpdateInvoice(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       subtotal: item.subtotal,
+      applyGst: item.applyGst ?? false, // Default to false for backwards compatibility
     })),
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
@@ -694,6 +698,7 @@ async function processCreateCreditNote(
       quantity: number;
       unitPrice: number;
       subtotal: number;
+      applyGst: boolean;
     }>).map((item) => ({
       productId: item.productId,
       sku: item.sku,
@@ -702,6 +707,7 @@ async function processCreateCreditNote(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       subtotal: item.subtotal,
+      applyGst: item.applyGst ?? false, // Default to false for backwards compatibility
     })),
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
