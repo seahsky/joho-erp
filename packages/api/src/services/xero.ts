@@ -1555,18 +1555,24 @@ export async function getCachedInvoice(
  * Returns null if integration is disabled
  */
 export async function getInvoicePdfUrl(invoiceId: string): Promise<string | null> {
+  // TEMPORARY DEBUG - remove after fixing
+  console.log('>>> getInvoicePdfUrl called with:', invoiceId);
+
   // Check if Xero integration is enabled
   if (!isXeroIntegrationEnabled()) {
+    console.log('>>> Xero integration disabled');
     xeroLogger.warn('Cannot get PDF URL: Xero integration is disabled');
     return null;
   }
 
   try {
+    console.log('>>> Making OnlineInvoice API request');
     const response = await xeroApiRequest<{ OnlineInvoices: Array<{ Url: string }> }>(
       `/Invoices/${invoiceId}/OnlineInvoice`
     );
 
     // Log raw response to diagnose structure issues
+    console.log('>>> OnlineInvoice API response:', JSON.stringify(response, null, 2));
     xeroLogger.debug('OnlineInvoice API response', {
       invoiceId,
       responseKeys: Object.keys(response || {}),
@@ -1574,15 +1580,18 @@ export async function getInvoicePdfUrl(invoiceId: string): Promise<string | null
     });
 
     if (response.OnlineInvoices && response.OnlineInvoices.length > 0) {
+      console.log('>>> Found URL:', response.OnlineInvoices[0].Url);
       return response.OnlineInvoices[0].Url;
     }
 
+    console.log('>>> No OnlineInvoice URL in response');
     xeroLogger.warn('No OnlineInvoice URL in response', {
       invoiceId,
       response: JSON.stringify(response),
     });
     return null;
   } catch (error) {
+    console.log('>>> Error getting PDF URL:', error);
     xeroLogger.error(`Failed to get PDF URL for invoice ${invoiceId}`, {
       invoiceId,
       error: error instanceof Error ? error.message : 'Unknown error',
