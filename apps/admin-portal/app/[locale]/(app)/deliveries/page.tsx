@@ -110,15 +110,22 @@ export default function DeliveriesPage() {
     if (!deliveryDate) return;
     setIsRecalculatingRoute(true);
     try {
-      await optimizeRouteMutation.mutateAsync({
+      const result = await optimizeRouteMutation.mutateAsync({
         deliveryDate: deliveryDate.toISOString(),
         force: true,
       });
-      await utils.delivery.getOptimizedRoute.invalidate();
-      await utils.delivery.getAll.invalidate();
-      toast({
-        title: tPacking('routeOptimized'),
-      });
+      if (result.noOrders) {
+        console.warn('Route optimization skipped: no orders found for the delivery date');
+        toast({
+          title: tErrors('noOrdersToOptimize'),
+        });
+      } else {
+        await utils.delivery.getOptimizedRoute.invalidate();
+        await utils.delivery.getAll.invalidate();
+        toast({
+          title: tPacking('routeOptimized'),
+        });
+      }
     } catch (error) {
       toast({
         title: tErrors('optimizationFailed'),

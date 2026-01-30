@@ -271,7 +271,8 @@
     "generationFailed": "Generation failed. Please try again.",
     "optimizationFailed": "Optimization failed. Please try again.",
     "searchError": "Search failed. Please try again.",
-    "noInvoices": "No invoices found for the selected orders."
+    "noInvoices": "No invoices found for the selected orders.",
+    "noOrdersToOptimize": "No orders found for the selected date to optimize."
   },
   "suppliers": {
     "title": "Supplier Management",

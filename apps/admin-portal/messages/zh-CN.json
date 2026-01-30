@@ -271,7 +271,8 @@
     "generationFailed": "生成失败，请重试。",
     "optimizationFailed": "优化失败，请重试。",
     "searchError": "搜索失败，请重试。",
-    "noInvoices": "未找到所选订单的发票。"
+    "noInvoices": "未找到所选订单的发票。",
+    "noOrdersToOptimize": "所选日期没有可优化的订单。"
   },
   "suppliers": {
     "title": "供应商管理",

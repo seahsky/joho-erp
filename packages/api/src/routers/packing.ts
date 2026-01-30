@@ -1864,6 +1864,7 @@ export const packingRouter = router({
               message: "Route already optimized",
               routeId: existingRoute.id,
               alreadyOptimized: true,
+              noOrders: false,
             };
           }
         }
@@ -1881,8 +1882,20 @@ export const packingRouter = router({
           routeId: result.routeOptimizationId,
           summary: result.routeSummary,
           alreadyOptimized: false,
+          noOrders: false,
         };
       } catch (error) {
+        // Return a warning response instead of throwing when there are no orders
+        if (error instanceof Error && error.message.includes("No orders found")) {
+          return {
+            success: true,
+            message: error.message,
+            routeId: null,
+            summary: null,
+            alreadyOptimized: false,
+            noOrders: true,
+          };
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Route optimization failed",

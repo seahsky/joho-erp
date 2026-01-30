@@ -271,7 +271,8 @@
     "generationFailed": "生成失敗，請重試。",
     "optimizationFailed": "最佳化失敗，請重試。",
     "searchError": "搜尋失敗，請重試。",
-    "noInvoices": "未找到所選訂單的發票。"
+    "noInvoices": "未找到所選訂單的發票。",
+    "noOrdersToOptimize": "所選日期沒有可優化的訂單。"
   },
   "suppliers": {
     "title": "供應商管理",

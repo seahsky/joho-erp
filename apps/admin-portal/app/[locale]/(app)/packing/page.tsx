@@ -98,14 +98,21 @@ export default function PackingPage() {
     if (!deliveryDate) return;
     setIsRecalculatingRoute(true);
     try {
-      await optimizeRouteMutation.mutateAsync({
+      const result = await optimizeRouteMutation.mutateAsync({
         deliveryDate: deliveryDate.toISOString(),
         force: true,
       });
-      await refetch();
-      toast({
-        title: t('routeOptimized'),
-      });
+      if (result.noOrders) {
+        console.warn('Route optimization skipped: no orders found for the delivery date');
+        toast({
+          title: tErrors('noOrdersToOptimize'),
+        });
+      } else {
+        await refetch();
+        toast({
+          title: t('routeOptimized'),
+        });
+      }
     } catch (error) {
       toast({
         title: tErrors('optimizationFailed'),
@@ -128,11 +135,15 @@ export default function PackingPage() {
 
       setIsOptimizing(true);
       try {
-        await optimizeRouteMutation.mutateAsync({
+        const result = await optimizeRouteMutation.mutateAsync({
           deliveryDate: deliveryDate.toISOString(),
           force: false,
         });
-        await refetch(); // Refresh session data
+        if (result.noOrders) {
+          console.warn('Auto-optimization skipped: no orders found for the delivery date');
+        } else {
+          await refetch(); // Refresh session data
+        }
       } catch (error) {
         console.error('Auto-optimization failed:', error);
         toast({
