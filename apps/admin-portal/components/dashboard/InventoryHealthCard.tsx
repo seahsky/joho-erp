@@ -24,7 +24,7 @@ interface ExpiringItem {
   productUnit: string;
   quantityRemaining: number;
   expiryDate: Date | null;
-  daysUntilExpiry: number;
+  daysUntilExpiry: number | null;
   isExpired: boolean;
 }
 
@@ -193,9 +193,11 @@ export function InventoryHealthCard({
                           <span className="font-medium truncate">{item.productName}</span>
                           <span className="text-muted-foreground text-xs">{item.productSku}</span>
                           <span className={item.isExpired ? 'text-destructive text-xs' : 'text-warning text-xs'}>
-                            {item.isExpired
-                              ? t('expiringInventory.expiredDays', { days: Math.abs(item.daysUntilExpiry) })
-                              : t('expiringInventory.expiresIn', { days: item.daysUntilExpiry })}
+                            {item.daysUntilExpiry != null
+                              ? (item.isExpired
+                                ? t('expiringInventory.expiredDays', { days: Math.abs(item.daysUntilExpiry) })
+                                : t('expiringInventory.expiresIn', { days: item.daysUntilExpiry }))
+                              : '-'}
                           </span>
                           <span className="text-muted-foreground text-xs">
                             {item.quantityRemaining} {item.productUnit}

@@ -89,7 +89,11 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
     });
   };
 
-  const getExpiryBadge = (daysUntilExpiry: number, isExpired: boolean) => {
+  const getExpiryBadge = (daysUntilExpiry: number | null, isExpired: boolean) => {
+    if (daysUntilExpiry == null) {
+      return <Badge variant="outline">-</Badge>;
+    }
+
     if (isExpired) {
       return (
         <Badge variant="destructive">
