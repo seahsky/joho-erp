@@ -2733,7 +2733,30 @@
     "resyncConfirm": "Resync",
     "resyncContactConfirmMessage": "This will update the contact in Xero with the current customer data. Any manual changes in Xero may be overwritten.",
     "resyncJob": "Resync Job",
-    "lastSyncedAt": "Last synced: {date}"
+    "lastSyncedAt": "Last synced: {date}",
+    "syncPreview": {
+      "title": "Sync Customer to Xero",
+      "description": "Review the customer data before syncing to Xero.",
+      "loading": "Checking Xero for existing contacts...",
+      "xeroMatchStatus": "Xero Contact Status",
+      "existingContactFound": "Existing Contact Found",
+      "newContactWillBeCreated": "New Contact Will Be Created",
+      "resyncWarning": "This will update the existing contact. Any manual changes in Xero may be overwritten.",
+      "customerDataSummary": "Data to Send to Xero",
+      "fields": {
+        "businessName": "Business Name",
+        "tradingName": "Trading Name",
+        "contact": "Contact Person",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "syncing": "Syncing..."
+    },
+    "resyncPreview": {
+      "title": "Resync Customer to Xero",
+      "description": "Review the updated customer data before resyncing to Xero."
+    }
   },
   "xeroStatus": {
     "title": "Xero Status",

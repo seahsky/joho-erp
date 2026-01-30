@@ -2739,7 +2739,30 @@
     "resyncConfirm": "重新同步",
     "resyncContactConfirmMessage": "這將使用目前客戶資料更新 Xero 中的聯絡人。Xero 中的任何手動變更可能會被覆蓋。",
     "resyncJob": "重新同步任務",
-    "lastSyncedAt": "上次同步：{date}"
+    "lastSyncedAt": "上次同步：{date}",
+    "syncPreview": {
+      "title": "同步客戶到 Xero",
+      "description": "在同步到 Xero 之前查看客戶資料。",
+      "loading": "正在檢查 Xero 中的現有聯絡人...",
+      "xeroMatchStatus": "Xero 聯絡人狀態",
+      "existingContactFound": "找到現有聯絡人",
+      "newContactWillBeCreated": "將建立新聯絡人",
+      "resyncWarning": "這將更新現有聯絡人。Xero 中的任何手動更改都可能被覆蓋。",
+      "customerDataSummary": "發送到 Xero 的資料",
+      "fields": {
+        "businessName": "企業名稱",
+        "tradingName": "商號",
+        "contact": "聯絡人",
+        "email": "電子郵件",
+        "phone": "電話",
+        "address": "地址"
+      },
+      "syncing": "正在同步..."
+    },
+    "resyncPreview": {
+      "title": "重新同步客戶到 Xero",
+      "description": "在重新同步到 Xero 之前查看更新的客戶資料。"
+    }
   },
   "xeroStatus": {
     "title": "Xero 狀態",

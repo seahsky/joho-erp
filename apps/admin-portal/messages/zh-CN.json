@@ -2733,7 +2733,30 @@
     "resyncConfirm": "重新同步",
     "resyncContactConfirmMessage": "这将使用当前客户数据更新 Xero 中的联系人。Xero 中的任何手动更改可能会被覆盖。",
     "resyncJob": "重新同步任务",
-    "lastSyncedAt": "上次同步：{date}"
+    "lastSyncedAt": "上次同步：{date}",
+    "syncPreview": {
+      "title": "同步客户到 Xero",
+      "description": "在同步到 Xero 之前查看客户数据。",
+      "loading": "正在检查 Xero 中的现有联系人...",
+      "xeroMatchStatus": "Xero 联系人状态",
+      "existingContactFound": "找到现有联系人",
+      "newContactWillBeCreated": "将创建新联系人",
+      "resyncWarning": "这将更新现有联系人。Xero 中的任何手动更改都可能被覆盖。",
+      "customerDataSummary": "发送到 Xero 的数据",
+      "fields": {
+        "businessName": "企业名称",
+        "tradingName": "商号",
+        "contact": "联系人",
+        "email": "电子邮件",
+        "phone": "电话",
+        "address": "地址"
+      },
+      "syncing": "正在同步..."
+    },
+    "resyncPreview": {
+      "title": "重新同步客户到 Xero",
+      "description": "在重新同步到 Xero 之前查看更新的客户数据。"
+    }
   },
   "xeroStatus": {
     "title": "Xero 状态",

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { api } from '@/trpc/client';
 import {
   Badge,
@@ -19,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@joho-erp/ui';
 import {
   XCircle,
@@ -28,6 +35,8 @@ import {
   FileText,
   User,
   AlertTriangle,
+  CheckCircle2,
+  Plus,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -374,6 +383,8 @@ export function XeroCustomerSyncBadge({
   const t = useTranslations('xeroSync');
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isResync, setIsResync] = useState(false);
 
   const {
     data: syncStatus,
@@ -381,12 +392,21 @@ export function XeroCustomerSyncBadge({
     refetch,
   } = api.xero.getCustomerSyncStatus.useQuery({ customerId });
 
+  const {
+    data: previewData,
+    isLoading: isPreviewLoading,
+  } = api.xero.previewContactSync.useQuery(
+    { customerId },
+    { enabled: isPreviewDialogOpen }
+  );
+
   const syncContactMutation = api.xero.syncContact.useMutation({
     onSuccess: () => {
       toast({
         title: t('contactQueued'),
         description: t('contactQueuedDescription'),
       });
+      setIsPreviewDialogOpen(false);
       refetch();
     },
     onError: (error) => {
@@ -405,17 +425,33 @@ export function XeroCustomerSyncBadge({
         title: t('resyncQueued'),
         description: t('resyncQueuedMessage'),
       });
+      setIsPreviewDialogOpen(false);
       refetch();
     },
     onError: (error) => {
       console.error('Contact resync error:', error.message);
       toast({
         title: t('resyncError'),
-        description: tErrors('syncFailed'),
+        description: error.message || tErrors('syncFailed'),
         variant: 'destructive',
       });
     },
   });
+
+  const handleOpenPreview = (resync: boolean) => {
+    setIsResync(resync);
+    setIsPreviewDialogOpen(true);
+  };
+
+  const handleConfirmSync = () => {
+    if (isResync) {
+      resyncContactMutation.mutate({ customerId });
+    } else {
+      syncContactMutation.mutate({ customerId });
+    }
+  };
+
+  const isSyncing = syncContactMutation.isPending || resyncContactMutation.isPending;
 
   if (isLoading) {
     return (
@@ -440,6 +476,129 @@ export function XeroCustomerSyncBadge({
     );
   }
 
+  const formatAddress = (address: { street: string; suburb: string; state: string; postcode: string } | null) => {
+    if (!address) return null;
+    return [address.street, address.suburb, address.state, address.postcode]
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  const previewDialog = (
+    <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {isResync ? t('resyncPreview.title') : t('syncPreview.title')}
+          </DialogTitle>
+          <DialogDescription>
+            {isResync ? t('resyncPreview.description') : t('syncPreview.description')}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isPreviewLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            <span className="text-sm text-muted-foreground">
+              {t('syncPreview.loading')}
+            </span>
+          </div>
+        ) : previewData ? (
+          <div className="space-y-4">
+            {/* Xero Match Status */}
+            <div className="rounded-lg border p-3 space-y-2">
+              <h4 className="text-sm font-medium">{t('syncPreview.xeroMatchStatus')}</h4>
+              {previewData.existingXeroContact ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-amber-500" />
+                  <div>
+                    <p className="font-medium">{t('syncPreview.existingContactFound')}</p>
+                    <p className="text-muted-foreground">
+                      {previewData.existingXeroContact.name}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm">
+                  <Plus className="h-4 w-4 text-blue-500" />
+                  <p>{t('syncPreview.newContactWillBeCreated')}</p>
+                </div>
+              )}
+              {isResync && (
+                <p className="text-xs text-amber-600 mt-1">
+                  {t('syncPreview.resyncWarning')}
+                </p>
+              )}
+            </div>
+
+            {/* Customer Data Summary */}
+            <div className="rounded-lg border p-3 space-y-2">
+              <h4 className="text-sm font-medium">{t('syncPreview.customerDataSummary')}</h4>
+              <div className="grid gap-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('syncPreview.fields.businessName')}</span>
+                  <span className="font-medium text-right">{previewData.customerData.businessName}</span>
+                </div>
+                {previewData.customerData.tradingName && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('syncPreview.fields.tradingName')}</span>
+                    <span className="font-medium text-right">{previewData.customerData.tradingName}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('syncPreview.fields.contact')}</span>
+                  <span className="font-medium text-right">{previewData.customerData.contactName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('syncPreview.fields.email')}</span>
+                  <span className="font-medium text-right">{previewData.customerData.email}</span>
+                </div>
+                {previewData.customerData.phone && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('syncPreview.fields.phone')}</span>
+                    <span className="font-medium text-right">{previewData.customerData.phone}</span>
+                  </div>
+                )}
+                {previewData.customerData.deliveryAddress && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('syncPreview.fields.address')}</span>
+                    <span className="font-medium text-right text-xs max-w-[200px]">
+                      {formatAddress(previewData.customerData.deliveryAddress)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => setIsPreviewDialogOpen(false)}
+            disabled={isSyncing}
+          >
+            {t('cancel') || 'Cancel'}
+          </Button>
+          <Button
+            onClick={handleConfirmSync}
+            disabled={isSyncing || isPreviewLoading}
+          >
+            {isSyncing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                {t('syncPreview.syncing')}
+              </>
+            ) : isResync ? (
+              t('resyncConfirm')
+            ) : (
+              t('syncContact')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Customer synced to Xero
   if (syncStatus.synced && syncStatus.contactId) {
     return (
@@ -451,37 +610,19 @@ export function XeroCustomerSyncBadge({
           <User className="h-3 w-3 mr-1" />
           {t('synced')}
         </Badge>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={resyncContactMutation.isPending}
-            >
-              {resyncContactMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCcw className="h-4 w-4" />
-              )}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('resyncConfirmTitle')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('resyncContactConfirmMessage')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => resyncContactMutation.mutate({ customerId })}
-              >
-                {t('resyncConfirm')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={resyncContactMutation.isPending}
+          onClick={() => handleOpenPreview(true)}
+        >
+          {resyncContactMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCcw className="h-4 w-4" />
+          )}
+        </Button>
+        {previewDialog}
       </div>
     );
   }
@@ -496,7 +637,7 @@ export function XeroCustomerSyncBadge({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => syncContactMutation.mutate({ customerId })}
+        onClick={() => handleOpenPreview(false)}
         disabled={syncContactMutation.isPending}
       >
         {syncContactMutation.isPending ? (
@@ -506,6 +647,7 @@ export function XeroCustomerSyncBadge({
         )}
         {t('syncContact')}
       </Button>
+      {previewDialog}
     </div>
   );
 }

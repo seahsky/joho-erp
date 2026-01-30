@@ -426,6 +426,80 @@ export const xeroRouter = router({
       };
     }),
 
+  previewContactSync: requirePermission('settings.xero:view')
+    .input(z.object({ customerId: z.string() }))
+    .query(async ({ input }) => {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+        select: {
+          id: true,
+          businessName: true,
+          tradingName: true,
+          xeroContactId: true,
+          contactPerson: true,
+          deliveryAddress: true,
+          billingAddress: true,
+        },
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found',
+        });
+      }
+
+      const contactPerson = customer.contactPerson as {
+        email: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
+      };
+      const deliveryAddress = customer.deliveryAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+      const billingAddress = customer.billingAddress as {
+        street: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      } | null;
+
+      // Search Xero for existing contact by email
+      let existingXeroContact: { contactId: string; name: string } | null =
+        null;
+
+      try {
+        const { findExistingContactByEmailWithName } = await import(
+          '../services/xero'
+        );
+        existingXeroContact = await findExistingContactByEmailWithName(
+          contactPerson.email
+        );
+      } catch {
+        // If Xero search fails, continue with null
+      }
+
+      return {
+        customerId: customer.id,
+        customerData: {
+          businessName: customer.businessName,
+          tradingName: customer.tradingName,
+          email: contactPerson.email,
+          phone: contactPerson.phone,
+          contactName: `${contactPerson.firstName} ${contactPerson.lastName}`,
+          deliveryAddress,
+          billingAddress,
+        },
+        existingXeroContact,
+        isAlreadySynced: !!customer.xeroContactId,
+        linkedXeroContactId: customer.xeroContactId,
+      };
+    }),
+
   /**
    * Get a specific sync job by ID
    */
