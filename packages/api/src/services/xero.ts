@@ -960,6 +960,29 @@ async function findExistingContactByEmail(email: string): Promise<string | null>
   }
 }
 
+
+export async function findExistingContactByEmailWithName(
+  email: string
+): Promise<{ contactId: string; name: string } | null> {
+  try {
+    const whereClause = encodeURIComponent(`EmailAddress=="${email}"`);
+    const response = await xeroApiRequest<XeroContactsResponse>(
+      `/Contacts?where=${whereClause}`
+    );
+
+    if (response.Contacts && response.Contacts.length > 0) {
+      const contact = response.Contacts[0];
+      return {
+        contactId: contact.ContactID!,
+        name: contact.Name || 'Unknown',
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Search for an existing invoice in Xero by reference (order number)
  * Used for duplicate detection before creating new invoices
