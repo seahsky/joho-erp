@@ -9,9 +9,10 @@
  *
  * Security:
  * - Requires authenticated user via Clerk
+ * - Requires admin, manager, or sales role
  */
 
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@joho-erp/database';
 import { getInvoicePdfBuffer } from '@joho-erp/api/services/xero';
 
@@ -24,6 +25,16 @@ export async function GET(
     const authData = await auth();
     if (!authData.userId) {
       return new Response('Unauthorized', { status: 401 });
+    }
+
+    // Verify user has an authorized role
+    const client = await clerkClient();
+    const user = await client.users.getUser(authData.userId);
+    const metadata = user.publicMetadata as { role?: string };
+    const userRole = metadata?.role;
+
+    if (!userRole || !['admin', 'manager', 'sales'].includes(userRole)) {
+      return new Response('Forbidden', { status: 403 });
     }
 
     // Get order's Xero invoice ID

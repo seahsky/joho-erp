@@ -12,6 +12,7 @@
  */
 
 import { prisma } from '@joho-erp/database';
+import { formatDateForMelbourne } from '@joho-erp/shared';
 import crypto from 'crypto';
 import { encrypt, decrypt, isEncryptionEnabled } from '../utils/encryption';
 import { xeroLogger, startTimer } from '../utils/logger';
@@ -846,7 +847,7 @@ export interface XeroCreditNotesResponse {
  * Format a date for Xero API (YYYY-MM-DD)
  */
 export function formatXeroDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return formatDateForMelbourne(date);
 }
 
 /**

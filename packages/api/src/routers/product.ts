@@ -713,7 +713,13 @@ export const productRouter = router({
         quantity = targetStockLevel - previousStock;
       } else {
         // Use the provided quantity (guaranteed by validation refinements)
-        quantity = inputQuantity!;
+        if (inputQuantity == null) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Quantity is required for this adjustment type',
+          });
+        }
+        quantity = inputQuantity;
       }
       const newStock = previousStock + quantity;
 
@@ -747,12 +753,18 @@ export const productRouter = router({
 
         // 2. If receiving stock (positive quantity): Create InventoryBatch
         if (adjustmentType === 'stock_received' && quantity > 0) {
+          if (costPerUnit == null) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Cost per unit is required when receiving stock',
+            });
+          }
           await tx.inventoryBatch.create({
             data: {
               productId,
               quantityRemaining: quantity,
               initialQuantity: quantity,
-              costPerUnit: costPerUnit!,
+              costPerUnit,
               receivedAt: new Date(),
               expiryDate: expiryDate || null,
               receiveTransactionId: transaction.id,

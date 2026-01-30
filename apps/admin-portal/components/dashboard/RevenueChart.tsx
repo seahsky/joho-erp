@@ -112,7 +112,7 @@ export function RevenueChart({ data, showOrderCount = false }: RevenueChartProps
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             tickLine={false}
             axisLine={{ stroke: 'hsl(var(--border))' }}
-            tickFormatter={(value) => `$${(value / 100).toFixed(0)}`}
+            tickFormatter={(value) => formatAUD(value)}
           />
           <YAxis
             yAxisId="orders"
@@ -162,7 +162,7 @@ export function RevenueChart({ data, showOrderCount = false }: RevenueChartProps
           tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
           tickLine={false}
           axisLine={{ stroke: 'hsl(var(--border))' }}
-          tickFormatter={(value) => `$${(value / 100).toFixed(0)}`}
+          tickFormatter={(value) => formatAUD(value)}
         />
         <Tooltip content={<CustomTooltip />} />
         <Area

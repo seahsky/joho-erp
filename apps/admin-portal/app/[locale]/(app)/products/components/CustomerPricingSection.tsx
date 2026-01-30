@@ -19,7 +19,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, parseToCents } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 
@@ -289,7 +289,7 @@ export function CustomerPricingSection({
                 <span>{selectedCount} {t('pricing.selected')}</span>
                 {totalSavings > 0 && (
                   <span className="text-green-600 font-medium">
-                    {t('pricing.totalSavings')}: {formatAUD(totalSavings)}
+                    {t('pricing.totalSavings')}: {formatAUD(parseToCents(totalSavings.toFixed(2)) ?? 0)}
                   </span>
                 )}
               </div>
@@ -370,7 +370,7 @@ export function CustomerPricingSection({
                             )}
                           </td>
                           <td className="text-right p-2 text-muted-foreground">
-                            {basePrice ? `$${parseFloat(basePrice).toFixed(2)}` : '-'}
+                            {basePrice ? formatAUD(parseToCents(basePrice) ?? 0) : '-'}
                           </td>
                           <td className="text-right p-2">
                             <Input
@@ -387,7 +387,7 @@ export function CustomerPricingSection({
                             {isEnabled && amount !== 0 ? (
                               <div className={amount > 0 ? 'text-green-600' : 'text-red-600'}>
                                 <div className="font-medium">
-                                  {amount > 0 ? '-' : '+'}${Math.abs(amount).toFixed(2)}
+                                  {amount > 0 ? '-' : '+'}{formatAUD(parseToCents(Math.abs(amount).toFixed(2)) ?? 0)}
                                 </div>
                                 <div className="text-xs">
                                   ({percent.toFixed(1)}%)

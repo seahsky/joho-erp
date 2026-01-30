@@ -38,7 +38,8 @@ import {
   updateSessionActivityByPacker,
 } from "../services/packing-session";
 import { sendOrderReadyForDeliveryEmail } from "../services/email";
-import { createMoney, multiplyMoney, toCents, calculateOrderTotals } from "@joho-erp/shared";
+import { createMoney, multiplyMoney, toCents, calculateOrderTotals, validateStatusTransition } from "@joho-erp/shared";
+import type { OrderStatus, UserRole } from "@joho-erp/shared";
 import { createHash } from "crypto";
 import {
   logPackingItemUpdate,
@@ -701,6 +702,21 @@ export const packingRouter = router({
         // Get user details for audit trail
         const userDetails = await getUserDetails(ctx.userId);
 
+        // Validate state transition if moving to 'packing'
+        if (order.status === 'confirmed') {
+          const transition = validateStatusTransition(
+            order.status as OrderStatus,
+            'packing',
+            (ctx.userRole || 'packer') as UserRole
+          );
+          if (!transition.valid) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: transition.error || 'Invalid status transition',
+            });
+          }
+        }
+
         // Optimistic locking: update only if version matches
         const updateResult = await tx.order.updateMany({
           where: {
@@ -802,6 +818,19 @@ export const packingRouter = router({
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Order not found',
+          });
+        }
+
+        // Validate state transition to ready_for_delivery
+        const transition = validateStatusTransition(
+          freshOrder.status as OrderStatus,
+          'ready_for_delivery',
+          (ctx.userRole || 'packer') as UserRole
+        );
+        if (!transition.valid) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: transition.error || 'Invalid status transition to ready_for_delivery',
           });
         }
 
@@ -1322,63 +1351,92 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Only allow pausing orders that are in 'packing' status
-      if (order.status !== 'packing') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only orders in packing status can be paused',
-        });
-      }
-
-      // Must have some progress to pause
-      const packedItemsCount = order.packing?.packedItems?.length ?? 0;
-      if (packedItemsCount === 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Cannot pause order with no packed items',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          packing: {
-            ...order.packing,
-            pausedAt: new Date(),
-            notes: input.notes || order.packing?.notes,
+      const result = await prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            packing: true,
+            version: true,
           },
-          statusHistory: {
-            push: {
-              status: 'packing',
-              changedAt: new Date(),
-              changedBy: ctx.userId || 'system',
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: `Packing paused. Progress: ${packedItemsCount} items packed`,
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Only allow pausing orders that are in 'packing' status
+        if (order.status !== 'packing') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Only orders in packing status can be paused',
+          });
+        }
+
+        // Must have some progress to pause
+        const packedItemsCount = order.packing?.packedItems?.length ?? 0;
+        if (packedItemsCount === 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot pause order with no packed items',
+          });
+        }
+
+        // Atomic guard with version check to prevent TOCTOU race
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            status: 'packing',
+            version: order.version,
+          },
+          data: {
+            packing: {
+              ...order.packing,
+              pausedAt: new Date(),
+              notes: input.notes || order.packing?.notes,
+            },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please refresh and retry.',
+          });
+        }
+
+        // Push status history separately (updateMany doesn't support push)
+        await tx.order.update({
+          where: { id: input.orderId },
+          data: {
+            statusHistory: {
+              push: {
+                status: 'packing',
+                changedAt: new Date(),
+                changedBy: ctx.userId || 'system',
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: `Packing paused. Progress: ${packedItemsCount} items packed`,
+              },
             },
           },
-        },
+        });
+
+        return { orderNumber: order.orderNumber };
       });
 
       // Audit log - MEDIUM: Packing pause tracked
       await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
+        orderNumber: result.orderNumber,
         action: 'pause',
         reason: input.notes,
       }).catch((error) => {
@@ -1399,60 +1457,90 @@ export const packingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const order = await prisma.order.findUnique({
-        where: {
-          id: input.orderId,
-        },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Only allow resuming orders that are in 'packing' status
-      if (order.status !== 'packing') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only orders in packing status can be resumed',
-        });
-      }
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      await prisma.order.update({
-        where: { id: input.orderId },
-        data: {
-          packing: {
-            ...order.packing,
-            pausedAt: null,
-            lastPackedAt: new Date(),
-            lastPackedBy: ctx.userId || 'system',
+      const result = await prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            packing: true,
+            version: true,
+            requestedDeliveryDate: true,
           },
-          statusHistory: {
-            push: {
-              status: 'packing',
-              changedAt: new Date(),
-              changedBy: ctx.userId || 'system',
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: 'Packing resumed',
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Only allow resuming orders that are in 'packing' status
+        if (order.status !== 'packing') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Only orders in packing status can be resumed',
+          });
+        }
+
+        // Atomic guard with version check to prevent TOCTOU race
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: input.orderId,
+            status: 'packing',
+            version: order.version,
+          },
+          data: {
+            packing: {
+              ...order.packing,
+              pausedAt: null,
+              lastPackedAt: new Date(),
+              lastPackedBy: ctx.userId || 'system',
+            },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please refresh and retry.',
+          });
+        }
+
+        // Push status history separately (updateMany doesn't support push)
+        await tx.order.update({
+          where: { id: input.orderId },
+          data: {
+            statusHistory: {
+              push: {
+                status: 'packing',
+                changedAt: new Date(),
+                changedBy: ctx.userId || 'system',
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: 'Packing resumed',
+              },
             },
           },
-        },
+        });
+
+        return { orderNumber: order.orderNumber, requestedDeliveryDate: order.requestedDeliveryDate };
       });
 
       // Update packing session activity
       if (ctx.userId) {
-        await updateSessionActivityByPacker(ctx.userId, order.requestedDeliveryDate);
+        await updateSessionActivityByPacker(ctx.userId, result.requestedDeliveryDate);
       }
 
       // Audit log - MEDIUM: Packing resume tracked
       await logPackingOrderPauseResume(ctx.userId, undefined, ctx.userRole, ctx.userName, input.orderId, {
-        orderNumber: order.orderNumber,
+        orderNumber: result.orderNumber,
         action: 'resume',
       }).catch((error) => {
         console.error('Audit log failed for resume order:', error);

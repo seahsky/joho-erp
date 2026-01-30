@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, H3, Label, Muted, StatusBadge, type StatusType } from '@joho-erp/ui';
-import { formatCurrency } from '@joho-erp/shared';
+import { formatAUD } from '@joho-erp/shared';
 
 interface CustomerInvoiceData {
   invoiceId: string;
@@ -89,33 +89,33 @@ export function InvoiceDetailsCard({ invoice }: InvoiceDetailsCardProps) {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">{tCommon('subtotal')}</span>
-            <span className="text-sm font-medium">{formatCurrency(subtotal)}</span>
+            <span className="text-sm font-medium">{formatAUD(subtotal)}</span>
           </div>
 
           {totalTax > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{t('gst')}</span>
-              <span className="text-sm font-medium">{formatCurrency(totalTax)}</span>
+              <span className="text-sm font-medium">{formatAUD(totalTax)}</span>
             </div>
           )}
 
           <div className="flex justify-between items-center pt-2 border-t">
             <span className="text-base font-semibold">{tCommon('total')}</span>
-            <span className="text-base font-bold">{formatCurrency(invoice.total)}</span>
+            <span className="text-base font-bold">{formatAUD(invoice.total)}</span>
           </div>
 
           {/* Payment Status */}
           {invoice.status !== 'PAID' && invoice.amountDue !== undefined && invoice.amountDue > 0 && (
             <div className="flex justify-between items-center pt-2 text-orange-600">
               <span className="text-sm font-medium">{t('amountDue')}</span>
-              <span className="text-sm font-bold">{formatCurrency(invoice.amountDue)}</span>
+              <span className="text-sm font-bold">{formatAUD(invoice.amountDue)}</span>
             </div>
           )}
 
           {invoice.status === 'PAID' && invoice.amountPaid !== undefined && (
             <div className="flex justify-between items-center pt-2 text-green-600">
               <span className="text-sm font-medium">{t('amountPaid')}</span>
-              <span className="text-sm font-bold">{formatCurrency(invoice.amountPaid)}</span>
+              <span className="text-sm font-bold">{formatAUD(invoice.amountPaid)}</span>
             </div>
           )}
         </div>

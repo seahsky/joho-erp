@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { TRPCError } from '@trpc/server';
-import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct, validateStatusTransition, type UserRole as StateMachineUserRole } from '@joho-erp/shared';
+import { generateOrderNumber, calculateOrderTotals, paginatePrismaQuery, getEffectivePrice, createMoney, multiplyMoney, toCents, buildPrismaOrderBy, calculateParentConsumption, isSubproduct, validateStatusTransition, formatDateForMelbourne, type UserRole as StateMachineUserRole } from '@joho-erp/shared';
 import { sortInputSchema } from '../schemas';
 import {
   sendBackorderSubmittedEmail,
@@ -2922,8 +2922,8 @@ export const orderRouter = router({
       return {
         invoiceId: order.xero.invoiceId,
         invoiceNumber: order.xero.invoiceNumber,
-        date: order.delivery?.deliveredAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-        dueDate: order.delivery?.deliveredAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        date: order.delivery?.deliveredAt ? formatDateForMelbourne(order.delivery.deliveredAt) : formatDateForMelbourne(new Date()),
+        dueDate: order.delivery?.deliveredAt ? formatDateForMelbourne(order.delivery.deliveredAt) : formatDateForMelbourne(new Date()),
         status: order.xero.invoiceStatus || 'AUTHORISED',
         total: 0,
         totalTax: 0,
