@@ -1199,7 +1199,16 @@ export const customerRouter = router({
         );
         if (directorIndex === -1) continue;
 
-        const existing = signaturesByDirector.get(directorIndex) || { directorIndex };
+        const existing = signaturesByDirector.get(directorIndex) || { directorIndex } as {
+          directorIndex: number;
+          applicantSignatureUrl?: string;
+          applicantSignedAt?: Date;
+          guarantorSignatureUrl?: string;
+          guarantorSignedAt?: Date;
+          witnessName?: string;
+          witnessSignatureUrl?: string;
+          witnessSignedAt?: Date;
+        };
         
         if (sig.signatureType === 'APPLICANT') {
           existing.applicantSignatureUrl = sig.signatureUrl;
