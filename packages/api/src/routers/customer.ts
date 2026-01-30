@@ -1696,7 +1696,7 @@ export const customerRouter = router({
           }
         } else if (suburbChanged) {
           // Auto-assign area based on new suburb
-          const suburb = input.deliveryAddress.suburb!;
+          const suburb = input.deliveryAddress.suburb ?? '';
           const state = input.deliveryAddress.state ?? (currentAddress?.state as string);
           const suburbMapping = await prisma.suburbAreaMapping.findFirst({
             where: {

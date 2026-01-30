@@ -202,9 +202,7 @@ export default function DeliveryMap({
   }
 
 
-  // Use a public Mapbox token for demo purposes
-  // In production, this should be in environment variables
-  const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjazBjbGtwZ3IwMDAwM25xbXk5Y2swbGE3In0.example';
+  const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
   // Handle mouse enter on route lines
   const handleRouteMouseEnter = (e: MapMouseEvent) => {

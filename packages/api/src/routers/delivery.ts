@@ -1439,66 +1439,98 @@ export const deliveryRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { orderId, driverId, driverName } = input;
 
-      // Get the order
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-      });
-
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
-
-      // Validate status
-      if (!['ready_for_delivery', 'out_for_delivery'].includes(order.status)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot assign driver to order with status '${order.status}'.`,
-        });
-      }
-
-      // Get previous driver for audit
-      const previousDriverId = order.delivery?.driverId;
-
-      // Get user details for audit trail
+      // Get user details for audit trail (safe outside transaction)
       const userDetails = await getUserDetails(ctx.userId);
 
-      // Update order with driver assignment
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          delivery: {
-            ...order.delivery,
-            driverId,
-            driverName: driverName || order.delivery?.driverName,
-            assignedAt: new Date(),
+      const result = await prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            delivery: true,
+            version: true,
           },
-          statusHistory: {
-            push: {
-              status: order.status,
-              changedAt: new Date(),
-              changedBy: ctx.userId,
-              changedByName: userDetails.changedByName,
-              changedByEmail: userDetails.changedByEmail,
-              notes: `Driver assigned: ${driverName || driverId}`,
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Order not found',
+          });
+        }
+
+        // Validate status
+        if (!['ready_for_delivery', 'out_for_delivery'].includes(order.status)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot assign driver to order with status '${order.status}'.`,
+          });
+        }
+
+        const previousDriverId = order.delivery?.driverId;
+
+        // Atomic guard with version check to prevent TOCTOU race
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: { in: ['ready_for_delivery', 'out_for_delivery'] },
+            version: order.version,
+          },
+          data: {
+            delivery: {
+              ...order.delivery,
+              driverId,
+              driverName: driverName || order.delivery?.driverName,
+              assignedAt: new Date(),
+            },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Order was modified concurrently. Please refresh and retry.',
+          });
+        }
+
+        // Push status history separately (updateMany doesn't support push)
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            statusHistory: {
+              push: {
+                status: order.status,
+                changedAt: new Date(),
+                changedBy: ctx.userId,
+                changedByName: userDetails.changedByName,
+                changedByEmail: userDetails.changedByEmail,
+                notes: `Driver assigned: ${driverName || driverId}`,
+              },
             },
           },
-        },
+        });
+
+        const updatedOrder = await tx.order.findUnique({
+          where: { id: orderId },
+        });
+
+        return { updatedOrder, previousDriverId, orderNumber: order.orderNumber };
       });
 
       // Audit log - HIGH: Driver assignment must be tracked
       await logDriverAssignment(ctx.userId, undefined, ctx.userRole, ctx.userName, orderId, {
-        orderNumber: order.orderNumber,
+        orderNumber: result.orderNumber,
         driverId,
         driverName: driverName || 'Unknown',
-        previousDriverId: previousDriverId || undefined,
+        previousDriverId: result.previousDriverId || undefined,
       }).catch((error) => {
         console.error('Audit log failed for driver assignment:', error);
       });
 
-      return updatedOrder;
+      return result.updatedOrder;
     }),
 
   // Get all drivers with their assigned areas

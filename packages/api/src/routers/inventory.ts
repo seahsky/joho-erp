@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
-import { createMoney, multiplyMoney, sumMoney, toCents } from '@joho-erp/shared';
+import { createMoney, multiplyMoney, sumMoney, toCents, formatDateForMelbourne } from '@joho-erp/shared';
 
 const COMPARISON_TYPES = ['week_over_week', 'month_over_month'] as const;
 
@@ -350,7 +350,7 @@ export const inventoryRouter = router({
 
             const inventoryValue = [
               {
-                period: new Date().toISOString().split('T')[0],
+                period: formatDateForMelbourne(new Date()),
                 totalValue: currentTotalValue,
               },
             ];
@@ -674,10 +674,10 @@ export const inventoryRouter = router({
       // Enrich batches with computed fields
       let enrichedBatches = batches.map((batch) => ({
         ...batch,
-        daysUntilExpiry: Math.ceil(
-          (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
-        isExpired: batch.expiryDate! < now,
+        daysUntilExpiry: batch.expiryDate
+          ? Math.ceil((batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+        isExpired: batch.expiryDate ? batch.expiryDate < now : false,
         totalValue: calculateBatchValue(batch),
       }));
 

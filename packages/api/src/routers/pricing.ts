@@ -641,7 +641,7 @@ export const pricingRouter = router({
       // Calculate total savings (all values in cents)
       let totalSavingsCents = 0;
       pricings.forEach((pricing) => {
-        if (pricing.product?.basePrice != null) {
+        if (pricing.product?.basePrice !== null && pricing.product?.basePrice !== undefined) {
           const savings = pricing.product.basePrice - pricing.customPrice;
           if (savings > 0) {
             totalSavingsCents += savings;

@@ -258,7 +258,7 @@ export default function CreateOrderOnBehalfPage() {
       updatedItems[existingIndex] = {
         ...updatedItems[existingIndex],
         quantity: newQuantity,
-        subtotal: product.basePrice * newQuantity,
+        subtotal: toCents(multiplyMoney(createMoney(product.basePrice), newQuantity)),
       };
       setOrderItems(updatedItems);
     } else {
@@ -269,7 +269,7 @@ export default function CreateOrderOnBehalfPage() {
         sku: product.sku,
         name: product.name,
         unitPrice: product.basePrice, // In cents
-        subtotal: product.basePrice * quantity,
+        subtotal: toCents(multiplyMoney(createMoney(product.basePrice), quantity)),
         applyGst: product.applyGst,
         gstRate: product.gstRate,
       };

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button, cn, useToast } from '@joho-erp/ui';
 import { ShoppingCart, ArrowRight, Package, Sparkles, Loader2, AlertCircle } from 'lucide-react';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, formatDateForMelbourne, getTomorrowInMelbourne } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { MiniCartItem } from './mini-cart-item';
 import { CutoffReminder } from '@/components/cutoff-reminder';
@@ -41,19 +41,16 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   // Set default delivery date based on cutoff info
   React.useEffect(() => {
     if (cutoffInfo?.nextAvailableDeliveryDate && !deliveryDate) {
-      const nextDate = new Date(cutoffInfo.nextAvailableDeliveryDate);
-      setDeliveryDate(nextDate.toISOString().split('T')[0]);
+      setDeliveryDate(formatDateForMelbourne(new Date(cutoffInfo.nextAvailableDeliveryDate)));
     }
   }, [cutoffInfo, deliveryDate]);
 
   // Calculate min date for date picker
   const minDeliveryDate = React.useMemo(() => {
     if (cutoffInfo?.nextAvailableDeliveryDate) {
-      return new Date(cutoffInfo.nextAvailableDeliveryDate).toISOString().split('T')[0];
+      return formatDateForMelbourne(new Date(cutoffInfo.nextAvailableDeliveryDate));
     }
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return getTomorrowInMelbourne();
   }, [cutoffInfo]);
 
   // TRPC utils for cache invalidation

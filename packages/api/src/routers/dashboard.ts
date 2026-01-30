@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
+import { formatDateForMelbourne } from '@joho-erp/shared';
 
 export const dashboardRouter = router({
   // Get dashboard statistics
@@ -164,10 +165,10 @@ export const dashboardRouter = router({
 
     // Enrich batches with computed fields
     const enrichedBatches = batches.map((batch) => {
-      const daysUntilExpiry = Math.ceil(
-        (batch.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const isExpired = batch.expiryDate! < now;
+      const daysUntilExpiry = batch.expiryDate
+        ? Math.ceil((batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+      const isExpired = batch.expiryDate ? batch.expiryDate < now : false;
 
       return {
         id: batch.id,
@@ -673,7 +674,7 @@ export const dashboardRouter = router({
 
       for (let i = 0; i < input.days; i++) {
         const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = formatDateForMelbourne(date);
         const existing = resultMap.get(dateStr);
         trendData.push({
           date: dateStr,

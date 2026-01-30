@@ -17,7 +17,7 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { formatAUD } from '@joho-erp/shared';
+import { formatAUD, createMoney, multiplyMoney, toCents } from '@joho-erp/shared';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
 export interface ConfirmOrder {
@@ -139,7 +139,7 @@ export function ConfirmOrderDialog({
                       </p>
                     </div>
                     <p className="text-sm font-medium">
-                      {formatAUD(item.unitPrice * item.quantity)}
+                      {formatAUD(toCents(multiplyMoney(createMoney(item.unitPrice), item.quantity)))}
                     </p>
                   </div>
                 ))}

@@ -127,7 +127,7 @@ export function XeroOrderSyncBadge({
       console.error('Invoice resync error:', error.message);
       toast({
         title: t('resyncError'),
-        description: error.message || tErrors('syncFailed'),
+        description: tErrors('syncFailed'),
         variant: 'destructive',
       });
     },
@@ -411,7 +411,7 @@ export function XeroCustomerSyncBadge({
       console.error('Contact resync error:', error.message);
       toast({
         title: t('resyncError'),
-        description: error.message || tErrors('syncFailed'),
+        description: tErrors('syncFailed'),
         variant: 'destructive',
       });
     },
