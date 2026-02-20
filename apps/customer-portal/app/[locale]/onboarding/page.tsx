@@ -185,12 +185,19 @@ export default function OnboardingPage() {
         if (parsed.guaranteeIndemnityAgreed !== undefined) {
           setGuaranteeIndemnityAgreed(parsed.guaranteeIndemnityAgreed);
         }
-        // Restore new signature data structure
+        // Restore new signature data structure (re-hydrate dates from JSON strings)
         if (parsed.directorSignatures) {
-          setDirectorSignatures(parsed.directorSignatures);
+          setDirectorSignatures(parsed.directorSignatures.map((sig: DirectorSignature) => ({
+            ...sig,
+            applicantSignedAt: sig.applicantSignedAt ? new Date(sig.applicantSignedAt) : null,
+            guarantorSignedAt: sig.guarantorSignedAt ? new Date(sig.guarantorSignedAt) : null,
+          })));
         }
         if (parsed.witnessData) {
-          setWitnessData(parsed.witnessData);
+          setWitnessData({
+            ...parsed.witnessData,
+            signedAt: parsed.witnessData.signedAt ? new Date(parsed.witnessData.signedAt) : null,
+          });
         }
       }
     } catch (e) {
@@ -272,12 +279,12 @@ export default function OnboardingPage() {
     const signatures: SignatureSubmissionData[] = finalDirectorSignatures.map((sig) => ({
       directorIndex: sig.directorIndex,
       applicantSignatureUrl: sig.applicantSignatureUrl!,
-      applicantSignedAt: sig.applicantSignedAt!,
+      applicantSignedAt: new Date(sig.applicantSignedAt!),
       guarantorSignatureUrl: sig.guarantorSignatureUrl!,
-      guarantorSignedAt: sig.guarantorSignedAt!,
+      guarantorSignedAt: new Date(sig.guarantorSignedAt!),
       witnessName: finalWitnessData.name,
       witnessSignatureUrl: finalWitnessData.signatureUrl!,
-      witnessSignedAt: finalWitnessData.signedAt!,
+      witnessSignedAt: new Date(finalWitnessData.signedAt!),
     }));
 
     registerMutation.mutate({
