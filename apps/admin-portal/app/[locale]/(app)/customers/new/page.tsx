@@ -752,10 +752,9 @@ export default function NewCustomerPage() {
                       id="abn"
                       placeholder={t('businessInfo.abnPlaceholder')}
                       required
-                      maxLength={11}
                       value={formData.abn}
                       onChange={(e) => {
-                        setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') });
+                        setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '').slice(0, 11) });
                         clearBusinessError('abn');
                       }}
                     />

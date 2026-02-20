@@ -230,7 +230,7 @@ export default function CompanySettingsPage() {
                 <Input
                   id="abn"
                   value={abn}
-                  onChange={(e) => setAbn(e.target.value)}
+                  onChange={(e) => setAbn(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder={t('fields.abn')}
                 />
               </div>

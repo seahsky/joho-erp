@@ -370,9 +370,8 @@ export default function SupplierDetailPage({ params }: PageProps) {
                     <Input
                       value={editForm.abn}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, abn: e.target.value.replace(/\D/g, '') })
+                        setEditForm({ ...editForm, abn: e.target.value.replace(/\D/g, '').slice(0, 11) })
                       }
-                      maxLength={11}
                     />
                   ) : (
                     <p className="font-medium font-mono">{supplier.abn || '-'}</p>

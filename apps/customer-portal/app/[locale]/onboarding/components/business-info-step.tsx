@@ -151,11 +151,10 @@ export function BusinessInfoStep({ data, onChange, onNext }: BusinessInfoStepPro
             <Label htmlFor="abn">{t('fields.abn')}</Label>
             <Input
               id="abn"
-              maxLength={11}
               placeholder={t('placeholders.abnFormat')}
               value={formData.abn || ''}
               onChange={(e) =>
-                setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') })
+                setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '').slice(0, 11) })
               }
             />
             {errors.abn && <p className="mt-1 text-sm text-destructive">{errors.abn}</p>}

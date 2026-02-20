@@ -449,10 +449,9 @@ export default function NewSupplierPage() {
                     <Input
                       id="abn"
                       placeholder={t('fields.abnPlaceholder')}
-                      maxLength={11}
                       value={formData.abn}
                       onChange={(e) => {
-                        setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '') });
+                        setFormData({ ...formData, abn: e.target.value.replace(/\D/g, '').slice(0, 11) });
                         clearBusinessError('abn');
                       }}
                     />

@@ -786,9 +786,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     <Input
                       id="abn"
                       value={editForm.abn}
-                      onChange={(e) => setEditForm({ ...editForm, abn: e.target.value })}
+                      onChange={(e) => setEditForm({ ...editForm, abn: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                       className="mt-1"
-                      maxLength={11}
                     />
                   </div>
                   <div>
