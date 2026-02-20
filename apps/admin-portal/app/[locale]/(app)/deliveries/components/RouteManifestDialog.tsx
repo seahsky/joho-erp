@@ -18,51 +18,14 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, Download, FileStack, Printer } from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
+import { Loader2, FileText, FileStack } from 'lucide-react';
 import { api } from '@/trpc/client';
-import { formatAUD } from '@joho-erp/shared';
-import { printPdfBlob } from '@/lib/printPdf';
-import { RouteManifestDocument, type ManifestTranslations } from './manifest';
 
 interface RouteManifestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date;
   selectedArea?: string; // Area ID or 'all'
-}
-
-type LayoutOption = 'one-per-page' | 'compact';
-
-// Types for manifest data from API
-interface ManifestItem {
-  sku: string;
-  productName: string;
-  quantity: number;
-  unit: string;
-  unitPriceCents: number;
-  subtotalCents: number;
-}
-
-interface ManifestStop {
-  sequence: number;
-  orderId: string;
-  orderNumber: string;
-  customer: {
-    name: string;
-    phone: string | null;
-  };
-  address: {
-    street: string;
-    suburb: string;
-    state: string;
-    postcode: string;
-    deliveryInstructions: string | null;
-  };
-  items: ManifestItem[];
-  subtotalCents: number;
-  taxAmountCents: number;
-  totalAmountCents: number;
 }
 
 export function RouteManifestDialog({
@@ -76,32 +39,19 @@ export function RouteManifestDialog({
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
 
-  const [layout, setLayout] = useState<LayoutOption>('one-per-page');
   const [areaFilter, setAreaFilter] = useState<string>(selectedArea || 'all');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
 
   // Fetch areas dynamically
   const { data: areas } = api.area.list.useQuery();
 
-  const { data: manifestData, isLoading } = api.delivery.getManifestData.useQuery(
-    {
-      deliveryDate: selectedDate.toISOString(),
-      areaId: areaFilter !== 'all' ? areaFilter : undefined,
-    },
-    {
-      enabled: open,
-    }
-  );
-
-  // Query for invoice URLs when there are orders
+  // Query for invoice URLs
   const { data: invoiceData, isLoading: isLoadingInvoices } = api.delivery.getInvoiceUrlsForDelivery.useQuery(
     {
       deliveryDate: selectedDate.toISOString(),
       areaId: areaFilter !== 'all' ? areaFilter : undefined,
     },
     {
-      enabled: open && !!manifestData?.stops?.length,
+      enabled: open,
     }
   );
 
@@ -159,140 +109,6 @@ export function RouteManifestDialog({
     }).format(date);
   };
 
-  const getTranslations = useCallback((): ManifestTranslations => {
-    return {
-      title: t('summary.title'),
-      date: t('summary.date'),
-      area: t('summary.area'),
-      allAreas: t('allAreas'),
-      driver: t('summary.driver'),
-      unassigned: t('summary.unassigned'),
-      totalStops: t('summary.totalStops'),
-      estimatedDistance: t('summary.estimatedDistance'),
-      estimatedDuration: t('summary.estimatedDuration'),
-      warehouseStart: t('summary.warehouseStart'),
-      stopOverview: t('summary.stopOverview'),
-      productSummaryTitle: t('summary.productSummary'),
-      productSummaryDescription: t('summary.productSummaryDescription'),
-      stopNumber: t('stop.stopNumber'),
-      orderNumber: t('stop.orderNumber'),
-      customer: t('stop.customer'),
-      address: t('stop.address'),
-      phone: t('stop.phone'),
-      deliveryInstructions: t('stop.deliveryInstructions'),
-      noInstructions: t('stop.noInstructions'),
-      items: t('stop.items'),
-      stop: t('table.stop'),
-      suburb: t('table.suburb'),
-      sku: t('table.sku'),
-      product: t('table.product'),
-      quantity: t('table.quantity'),
-      unit: t('table.unit'),
-      unitPrice: t('table.unitPrice'),
-      subtotal: t('table.subtotal'),
-      totalQuantity: t('table.totalQuantity'),
-      totalsSubtotal: t('totals.subtotal'),
-      gst: t('totals.gst'),
-      total: t('totals.total'),
-      signatureTitle: t('signature.title'),
-      signatureLine: t('signature.signatureLine'),
-      printedName: t('signature.printedName'),
-      timeReceived: t('signature.timeReceived'),
-      driverNotes: t('signature.driverNotes'),
-      summaryPage: t('summary.summaryPage'),
-      stopFooter: t('stop.stopFooter'),
-    };
-  }, [t]);
-
-  const generateManifestBlob = useCallback(async (): Promise<Blob> => {
-    // Format prices for display
-    const formattedStops = manifestData!.stops.map((stop: ManifestStop) => ({
-      ...stop,
-      items: stop.items.map((item: ManifestItem) => ({
-        ...item,
-        formattedUnitPrice: formatAUD(item.unitPriceCents),
-        formattedSubtotal: formatAUD(item.subtotalCents),
-      })),
-      formattedSubtotal: formatAUD(stop.subtotalCents),
-      formattedTax: formatAUD(stop.taxAmountCents),
-      formattedTotal: formatAUD(stop.totalAmountCents),
-    }));
-
-    const doc = (
-      <RouteManifestDocument
-        manifestDate={formatDate(new Date(manifestData!.manifestDate))}
-        areaName={manifestData!.areaName}
-        warehouseAddress={manifestData!.warehouseAddress}
-        routeSummary={manifestData!.routeSummary}
-        stops={formattedStops}
-        productAggregation={manifestData!.productAggregation}
-        translations={getTranslations()}
-        layout={layout}
-      />
-    );
-
-    return pdf(doc).toBlob();
-  }, [manifestData, layout, getTranslations]);
-
-  const generatePdf = useCallback(async () => {
-    if (!manifestData || manifestData.stops.length === 0) return;
-
-    setIsGenerating(true);
-
-    try {
-      const blob = await generateManifestBlob();
-      const url = URL.createObjectURL(blob);
-
-      // Create filename
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const areaStr = areaFilter !== 'all' ? `-${areaFilter}` : '';
-      const filename = `delivery-manifest-${dateStr}${areaStr}.pdf`;
-
-      // Download the PDF
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      URL.revokeObjectURL(url);
-
-      // Close dialog after successful generation
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: tErrors('generationFailed'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [manifestData, selectedDate, areaFilter, generateManifestBlob, onOpenChange, toast, tErrors]);
-
-  const handlePrint = useCallback(async () => {
-    if (!manifestData || manifestData.stops.length === 0) return;
-
-    setIsPrinting(true);
-
-    try {
-      const blob = await generateManifestBlob();
-      printPdfBlob(blob);
-    } catch (error) {
-      console.error('Error printing PDF:', error);
-      toast({
-        title: tErrors('generationFailed'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [manifestData, generateManifestBlob, toast, tErrors]);
-
-  const hasOrders = manifestData && manifestData.stops.length > 0;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -329,52 +145,17 @@ export function RouteManifestDialog({
             </Select>
           </div>
 
-          {/* Layout Options */}
-          <div className="space-y-3">
-            <Label>{t('layoutOptions')}</Label>
-            <div className="space-y-2">
-              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                <input
-                  type="radio"
-                  name="layout"
-                  value="one-per-page"
-                  checked={layout === 'one-per-page'}
-                  onChange={() => setLayout('one-per-page')}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <p className="font-medium">{t('onePerPage')}</p>
-                  <p className="text-sm text-muted-foreground">{t('onePerPageDescription')}</p>
-                </div>
-              </label>
-              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                <input
-                  type="radio"
-                  name="layout"
-                  value="compact"
-                  checked={layout === 'compact'}
-                  onChange={() => setLayout('compact')}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <p className="font-medium">{t('compactLayout')}</p>
-                  <p className="text-sm text-muted-foreground">{t('compactLayoutDescription')}</p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Order Count Preview */}
-          {isLoading ? (
+          {/* Invoice Count Preview */}
+          {isLoadingInvoices ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               {tCommon('loading')}
             </div>
-          ) : hasOrders ? (
+          ) : invoiceData?.ordersWithInvoices ? (
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm">
-                <span className="font-semibold">{manifestData.routeSummary.totalStops}</span>{' '}
-                {t('summary.totalStops').toLowerCase()}
+                <span className="font-semibold">{invoiceData.ordersWithInvoices}</span>{' '}
+                {t('downloadInvoices').toLowerCase()}
               </p>
             </div>
           ) : (
@@ -385,13 +166,12 @@ export function RouteManifestDialog({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating || isPrinting || isDownloadingInvoices}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices}>
             {tCommon('cancel')}
           </Button>
           <Button
-            variant="secondary"
             onClick={downloadAllInvoices}
-            disabled={isDownloadingInvoices || isLoadingInvoices || isPrinting || !invoiceData?.ordersWithInvoices}
+            disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
           >
             {isDownloadingInvoices ? (
               <>
@@ -402,36 +182,6 @@ export function RouteManifestDialog({
               <>
                 <FileStack className="h-4 w-4 mr-2" />
                 {t('downloadInvoices')} {invoiceData?.ordersWithInvoices ? `(${invoiceData.ordersWithInvoices})` : ''}
-              </>
-            )}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handlePrint}
-            disabled={isPrinting || isGenerating || isLoading || !hasOrders}
-          >
-            {isPrinting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('printPdf')}
-              </>
-            ) : (
-              <>
-                <Printer className="h-4 w-4 mr-2" />
-                {t('printPdf')}
-              </>
-            )}
-          </Button>
-          <Button onClick={generatePdf} disabled={isGenerating || isPrinting || isLoading || !hasOrders}>
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('generating')}
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                {t('generatePdf')}
               </>
             )}
           </Button>
