@@ -27,6 +27,7 @@ type Product = {
   sku: string;
   name: string;
   basePrice: number;
+  parentName?: string;
 };
 
 type Pricing = {
@@ -273,7 +274,9 @@ export function SetPriceDialog({
               <option value="">{t('placeholders.selectProduct')}</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.sku} - {product.name} ({formatAUD(product.basePrice)})
+                  {product.parentName
+                    ? `  ↳ ${product.sku} - ${product.name} (${formatAUD(product.basePrice)})`
+                    : `${product.sku} - ${product.name} (${formatAUD(product.basePrice)})`}
                 </option>
               ))}
             </select>

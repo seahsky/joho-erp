@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Card,
@@ -132,12 +132,49 @@ export default function PricingPage() {
   }, 0);
 
   const customers = customersData?.customers ?? [];
-  const products = (productsData?.items ?? []) as Array<{
+  const rawProducts = (productsData?.items ?? []) as Array<{
     id: string;
     sku: string;
     name: string;
     basePrice: number;
+    subProducts?: Array<{
+      id: string;
+      sku: string;
+      name: string;
+      basePrice: number;
+    }>;
   }>;
+
+  // Flatten parent products + subproducts into a single list for dropdowns
+  const products = useMemo(() => {
+    const flattened: Array<{
+      id: string;
+      sku: string;
+      name: string;
+      basePrice: number;
+      parentName?: string;
+    }> = [];
+    for (const product of rawProducts) {
+      flattened.push({
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+        basePrice: product.basePrice,
+      });
+      if (product.subProducts) {
+        for (const sub of product.subProducts) {
+          flattened.push({
+            id: sub.id,
+            sku: sub.sku,
+            name: sub.name,
+            basePrice: sub.basePrice,
+            parentName: product.name,
+          });
+        }
+      }
+    }
+    return flattened;
+  }, [rawProducts]);
 
   if (error) {
     return (
@@ -403,9 +440,9 @@ export default function PricingPage() {
                 onChange={(e) => setSelectedProductId(e.target.value || undefined)}
               >
                 <option value="">{t('filters.allProducts')}</option>
-                {products.map((product: { id: string; sku: string; name: string }) => (
+                {products.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.sku} - {product.name}
+                    {product.parentName ? `  ↳ ${product.sku} - ${product.name}` : `${product.sku} - ${product.name}`}
                   </option>
                 ))}
               </select>
