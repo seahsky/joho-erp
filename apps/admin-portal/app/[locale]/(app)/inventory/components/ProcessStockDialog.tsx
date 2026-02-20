@@ -103,10 +103,9 @@ export function ProcessStockDialog({
   // Form state
   const [sourceQuantity, setSourceQuantity] = useState<string>('');
   const [targetOutputQuantity, setTargetOutputQuantity] = useState('');
-  const [lossPercentage, setLossPercentage] = useState<string>('0');
-  // Track which field was last changed for potential future bidirectional calculation features
-  const [_lastChangedField, setLastChangedField] = useState<'input' | 'output' | 'loss'>('input');
   const [costPerUnit, setCostPerUnit] = useState('');
+  const [laborCost, setLaborCost] = useState('');
+  const [laborCostType, setLaborCostType] = useState<'perKg' | 'total'>('perKg');
   const [expirySelection, setExpirySelection] = useState<string>('');
   const [customExpiryDate, setCustomExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
@@ -133,69 +132,36 @@ export function ProcessStockDialog({
 
   const expiryDate = getExpiryDate();
 
-  // Set default loss percentage from SOURCE product's category when source changes
+  // Reset quantities when source product changes
   useEffect(() => {
     if (sourceProduct) {
-      const defaultLoss = sourceProduct.categoryRelation?.processingLossPercentage ?? 0;
-      setLossPercentage(String(defaultLoss));
-      // Reset quantities when source product changes
       setSourceQuantity('');
       setTargetOutputQuantity('');
-    } else {
-      setLossPercentage('0');
     }
   }, [sourceProduct]);
 
-  // Bidirectional calculation handlers
-  const handleSourceQuantityChange = (value: string) => {
-    setSourceQuantity(value);
-    setLastChangedField('input');
-    
-    // Recalculate target output: output = input × (1 - loss% / 100)
-    const input = parseFloat(value) || 0;
-    const loss = parseFloat(lossPercentage) || 0;
-    if (input > 0 && loss < 100) {
-      const output = input * (1 - loss / 100);
-      setTargetOutputQuantity(output.toFixed(2));
-    }
-  };
-
-  const handleTargetOutputChange = (value: string) => {
-    setTargetOutputQuantity(value);
-    setLastChangedField('output');
-    
-    // Recalculate source quantity: input = output ÷ (1 - loss% / 100)
-    const output = parseFloat(value) || 0;
-    const loss = parseFloat(lossPercentage) || 0;
-    if (output > 0 && loss < 100) {
-      const input = output / (1 - loss / 100);
-      setSourceQuantity(input.toFixed(2));
-    }
-  };
-
-  const handleLossPercentageChange = (value: string) => {
-    setLossPercentage(value);
-    setLastChangedField('loss');
-    
-    const loss = parseFloat(value) || 0;
-    if (loss >= 100) return; // Can't calculate with 100% loss
-    
-    // Recalculate based on which field has a valid value
-    // Prefer to recalculate output from input
+  // Auto-calculated loss percentage (read-only)
+  const lossPercentage = useMemo(() => {
     const input = parseFloat(sourceQuantity) || 0;
-    if (input > 0) {
-      const output = input * (1 - loss / 100);
-      setTargetOutputQuantity(output.toFixed(2));
+    const output = parseFloat(targetOutputQuantity) || 0;
+    if (input > 0 && output >= 0 && output <= input) {
+      return ((input - output) / input) * 100;
     }
-  };
+    return 0;
+  }, [sourceQuantity, targetOutputQuantity]);
 
-  // Calculate max achievable output based on available stock
-  const maxOutput = useMemo(() => {
-    if (!sourceProduct) return 0;
-    const loss = parseFloat(lossPercentage) || 0;
-    // maxOutput = availableStock × (1 - lossPercentage / 100)
-    return parseFloat((sourceProduct.currentStock * (1 - loss / 100)).toFixed(2));
-  }, [sourceProduct, lossPercentage]);
+  // Computed labor cost per kg
+  const laborCostPerKg = useMemo(() => {
+    const cost = parseFloat(laborCost) || 0;
+    if (cost <= 0) return 0;
+    if (laborCostType === 'perKg') return cost;
+    const output = parseFloat(targetOutputQuantity) || 0;
+    return output > 0 ? cost / output : 0;
+  }, [laborCost, laborCostType, targetOutputQuantity]);
+
+  // Computed total cost per kg (material + labor)
+  const materialCostPerKg = parseFloat(costPerUnit) || 0;
+  const totalCostPerKg = materialCostPerKg + laborCostPerKg;
 
   // Computed loss amount for display
   const lossAmount = useMemo(() => {
@@ -230,16 +196,11 @@ export function ProcessStockDialog({
       errors.push(t('validation.outputExceedsInput'));
     }
 
-    const cost = parseToCents(costPerUnit);
-    if (!cost || cost <= 0) errors.push(t('validation.costRequired'));
-
-    const loss = parseFloat(lossPercentage);
-    if (isNaN(loss) || loss < 0 || loss > 100) {
-      errors.push(t('validation.lossPercentageRange'));
-    }
+    const materialCost = parseToCents(costPerUnit);
+    if (!materialCost || materialCost <= 0) errors.push(t('validation.costRequired'));
 
     return errors;
-  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, costPerUnit, lossPercentage, t]);
+  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, costPerUnit, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -284,18 +245,25 @@ export function ProcessStockDialog({
 
     if (!sourceProduct || !targetProduct || validationErrors.length > 0) return;
 
-    const costInCents = parseToCents(costPerUnit);
-    if (!costInCents) return;
+    // Total cost per kg = material + labor, converted to cents
+    const totalCostInCents = parseToCents(totalCostPerKg.toFixed(2));
+    if (!totalCostInCents) return;
+
+    // Include labor cost breakdown in notes for traceability
+    const laborNote = laborCostPerKg > 0
+      ? `[Labor: $${laborCostPerKg.toFixed(2)}/kg (${laborCostType === 'perKg' ? 'per kg' : `total $${laborCost}`}), Material: $${materialCostPerKg.toFixed(2)}/kg]`
+      : '';
+    const combinedNotes = [laborNote, notes.trim()].filter(Boolean).join(' ');
 
     await processStockMutation.mutateAsync({
       sourceProductId: sourceProduct.id,
       targetProductId: targetProduct.id,
       sourceQuantity: parseFloat(sourceQuantity),
       targetOutputQuantity: parseFloat(targetOutputQuantity),
-      lossPercentage: parseFloat(lossPercentage) || 0,
-      costPerUnit: costInCents,
+      lossPercentage: lossPercentage,
+      costPerUnit: totalCostInCents,
       expiryDate: expiryDate || undefined,
-      notes: notes.trim() || undefined,
+      notes: combinedNotes || undefined,
     });
   };
 
@@ -304,9 +272,9 @@ export function ProcessStockDialog({
     setTargetProduct(null);
     setSourceQuantity('');
     setTargetOutputQuantity('');
-    setLossPercentage('0');
-    setLastChangedField('input');
     setCostPerUnit('');
+    setLaborCost('');
+    setLaborCostType('perKg');
     setExpirySelection('');
     setCustomExpiryDate(undefined);
     setNotes('');
@@ -511,7 +479,7 @@ export function ProcessStockDialog({
               {lossAmount > 0 && (
                 <div className="mt-3 text-center text-sm text-muted-foreground">
                   <TrendingDown className="inline h-4 w-4 mr-1" />
-                  {t('preview.loss')}: {lossPercentage}% = {lossAmount.toFixed(2)} {sourceProduct.unit}
+                  {t('preview.loss')}: {lossPercentage.toFixed(1)}% = {lossAmount.toFixed(2)} {sourceProduct.unit}
                 </div>
               )}
             </div>
@@ -522,7 +490,7 @@ export function ProcessStockDialog({
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">{t('dialog.processingDetails')}</h3>
 
-              {/* Quantity Fields with Bidirectional Calculation */}
+              {/* Quantity Fields */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="sourceQuantity">{t('fields.sourceQuantity')}</Label>
@@ -532,7 +500,7 @@ export function ProcessStockDialog({
                     step="0.01"
                     min="0"
                     value={sourceQuantity}
-                    onChange={(e) => handleSourceQuantityChange(e.target.value)}
+                    onChange={(e) => setSourceQuantity(e.target.value)}
                     placeholder="0"
                     disabled={isLoading}
                   />
@@ -552,42 +520,35 @@ export function ProcessStockDialog({
                     step="0.01"
                     min="0"
                     value={targetOutputQuantity}
-                    onChange={(e) => handleTargetOutputChange(e.target.value)}
+                    onChange={(e) => setTargetOutputQuantity(e.target.value)}
                     placeholder="0"
                     disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('fields.targetOutputHint')}
-                    {sourceProduct && (
-                      <> • {t('fields.maxOutput')}: {maxOutput.toFixed(2)}</>
-                    )}
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="lossPercentage">{t('fields.lossPercentage')}</Label>
+                  <Label htmlFor="lossPercentage">{t('fields.calculatedLoss')}</Label>
                   <Input
                     id="lossPercentage"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={lossPercentage}
-                    onChange={(e) => handleLossPercentageChange(e.target.value)}
-                    placeholder="0"
-                    disabled={isLoading}
+                    type="text"
+                    value={lossPercentage.toFixed(1)}
+                    readOnly
+                    disabled
+                    className="bg-muted"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {sourceProduct?.categoryRelation?.processingLossPercentage != null
-                      ? t('fields.defaultFromCategory', { name: sourceProduct.categoryRelation.name })
-                      : t('fields.lossPercentageHint')}
+                    {t('fields.calculatedLossHint')}
                   </p>
                 </div>
               </div>
 
+              {/* Cost Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="costPerUnit">{t('fields.costPerUnit')}</Label>
+                  <Label htmlFor="costPerUnit">{t('fields.materialCostPerUnit')}</Label>
                   <Input
                     id="costPerUnit"
                     type="text"
@@ -597,10 +558,60 @@ export function ProcessStockDialog({
                     disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t('fields.costPerUnitHint')}
+                    {t('fields.materialCostHint')}
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="laborCost">{t('fields.laborCost')}</Label>
+                  <div className="flex gap-2">
+                    <Select value={laborCostType} onValueChange={(v) => setLaborCostType(v as 'perKg' | 'total')} disabled={isLoading}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="perKg">{t('fields.laborCostPerKg')}</SelectItem>
+                        <SelectItem value="total">{t('fields.laborCostTotal')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="laborCost"
+                      type="text"
+                      value={laborCost}
+                      onChange={(e) => setLaborCost(e.target.value)}
+                      placeholder="0.00"
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('fields.laborCostHint')}
                   </p>
                 </div>
               </div>
+
+              {/* Total Cost Breakdown */}
+              {(materialCostPerKg > 0 || laborCostPerKg > 0) && (
+                <div className="bg-muted/50 border rounded-md p-3">
+                  <p className="text-sm font-medium mb-2">{t('fields.totalCostBreakdown')}</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t('fields.materialCostPerUnit')}</span>
+                      <span>${materialCostPerKg.toFixed(2)}</span>
+                    </div>
+                    {laborCostPerKg > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{t('fields.laborCost')} ({t('fields.laborCostPerKg').toLowerCase()})</span>
+                        <span>${laborCostPerKg.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                      <span>{t('fields.totalCostPerKg')}</span>
+                      <span>${totalCostPerKg.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="expirySelection">{t('fields.expiryDate')}</Label>
