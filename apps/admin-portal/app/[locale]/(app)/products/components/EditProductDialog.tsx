@@ -416,7 +416,9 @@ export function EditProductDialog({
       estimatedLossPercentage: lossPercentage,
       status,
       imageUrl: imageUrl || null,
-      customerPricing, // Include customer pricing in update
+      // Only send customerPricing when existing pricing data has loaded,
+      // to prevent accidental deletion via delete-all-and-recreate logic
+      ...(existingPricing !== undefined ? { customerPricing } : {}),
     });
   };
 

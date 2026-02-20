@@ -365,7 +365,8 @@ export const pricingRouter = router({
           data: {
             customPrice: input.customPrice,
             effectiveFrom: input.effectiveFrom || new Date(),
-            effectiveTo: input.effectiveTo,
+            effectiveTo: input.effectiveTo ?? null,
+            notes: input.notes,
           },
           include: {
             customer: {
@@ -403,7 +404,9 @@ export const pricingRouter = router({
             productId: input.productId,
             customPrice: input.customPrice,
             effectiveFrom: input.effectiveFrom || new Date(),
-            effectiveTo: input.effectiveTo,
+            effectiveTo: input.effectiveTo ?? null,
+            notes: input.notes ?? null,
+            createdBy: ctx.userId ?? null,
           },
           include: {
             customer: {
@@ -580,14 +583,14 @@ export const pricingRouter = router({
             update: {
               customPrice: item.customPrice,
               effectiveFrom: item.effectiveFrom || new Date(),
-              effectiveTo: item.effectiveTo,
+              effectiveTo: item.effectiveTo ?? null,
             },
             create: {
               customerId: customer.id,
               productId: product.id,
               customPrice: item.customPrice,
               effectiveFrom: item.effectiveFrom || new Date(),
-              effectiveTo: item.effectiveTo,
+              effectiveTo: item.effectiveTo ?? null,
             },
           });
 
