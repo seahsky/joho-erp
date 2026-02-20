@@ -3092,6 +3092,7 @@
       "selectFormat": "Select Export Format",
       "dataScope": "Data to Export",
       "generating": "Generating...",
+      "print": "Print",
       "success": "Export Successful",
       "successDescription": "Report downloaded successfully",
       "error": "Export Failed",

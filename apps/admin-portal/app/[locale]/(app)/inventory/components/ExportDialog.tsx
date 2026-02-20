@@ -13,10 +13,11 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Download, FileText, FileSpreadsheet, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { api } from '@/trpc/client';
 import { generateExcel } from '../utils/exportUtils';
+import { printPdfBlob } from '@/lib/printPdf';
 import { InventoryReportDocument } from './exports/InventoryReportDocument';
 
 type ExportFormat = 'pdf' | 'excel';
@@ -47,6 +48,7 @@ export function ExportDialog({
   const [format, setFormat] = useState<ExportFormat>('excel');
   const [dataScope, setDataScope] = useState<DataScope>('current');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const useCurrentFilters = dataScope === 'current';
 
@@ -201,6 +203,34 @@ export function ExportDialog({
     }
   }, [data, format, exportTab, getTranslations, onOpenChange, t, toast]);
 
+  const handlePrint = useCallback(async () => {
+    if (!data) return;
+
+    setIsPrinting(true);
+
+    try {
+      const translations = getTranslations();
+      const doc = (
+        <InventoryReportDocument
+          tab={exportTab}
+          data={data as Parameters<typeof InventoryReportDocument>[0]['data']}
+          translations={translations}
+        />
+      );
+      const blob = await pdf(doc).toBlob();
+      printPdfBlob(blob);
+    } catch (error) {
+      console.error('Print error:', error);
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: t('errorDescription'),
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [data, exportTab, getTranslations, t, toast]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -318,11 +348,30 @@ export function ExportDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isGenerating}
+            disabled={isGenerating || isPrinting}
           >
             {tCommon('cancel')}
           </Button>
-          <Button onClick={handleExport} disabled={isGenerating || isLoading || !data}>
+          {format === 'pdf' && (
+            <Button
+              variant="secondary"
+              onClick={handlePrint}
+              disabled={isPrinting || isGenerating || isLoading || !data}
+            >
+              {isPrinting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('print')}
+                </>
+              ) : (
+                <>
+                  <Printer className="h-4 w-4 mr-2" />
+                  {t('print')}
+                </>
+              )}
+            </Button>
+          )}
+          <Button onClick={handleExport} disabled={isGenerating || isPrinting || isLoading || !data}>
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

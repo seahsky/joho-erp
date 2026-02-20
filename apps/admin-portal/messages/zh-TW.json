@@ -3098,6 +3098,7 @@
       "selectFormat": "選擇匯出格式",
       "dataScope": "匯出數據範圍",
       "generating": "生成中...",
+      "print": "列印",
       "success": "匯出成功",
       "successDescription": "報告已成功下載",
       "error": "匯出失敗",

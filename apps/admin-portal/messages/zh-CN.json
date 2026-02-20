@@ -3092,6 +3092,7 @@
       "selectFormat": "选择导出格式",
       "dataScope": "导出数据范围",
       "generating": "生成中...",
+      "print": "打印",
       "success": "导出成功",
       "successDescription": "报告已成功下载",
       "error": "导出失败",

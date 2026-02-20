@@ -18,10 +18,11 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, Download, FileStack } from 'lucide-react';
+import { Loader2, FileText, Download, FileStack, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
+import { printPdfBlob } from '@/lib/printPdf';
 import { RouteManifestDocument, type ManifestTranslations } from './manifest';
 
 interface RouteManifestDialogProps {
@@ -78,6 +79,7 @@ export function RouteManifestDialog({
   const [layout, setLayout] = useState<LayoutOption>('one-per-page');
   const [areaFilter, setAreaFilter] = useState<string>(selectedArea || 'all');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Fetch areas dynamically
   const { data: areas } = api.area.list.useQuery();
@@ -202,39 +204,43 @@ export function RouteManifestDialog({
     };
   }, [t]);
 
+  const generateManifestBlob = useCallback(async (): Promise<Blob> => {
+    // Format prices for display
+    const formattedStops = manifestData!.stops.map((stop: ManifestStop) => ({
+      ...stop,
+      items: stop.items.map((item: ManifestItem) => ({
+        ...item,
+        formattedUnitPrice: formatAUD(item.unitPriceCents),
+        formattedSubtotal: formatAUD(item.subtotalCents),
+      })),
+      formattedSubtotal: formatAUD(stop.subtotalCents),
+      formattedTax: formatAUD(stop.taxAmountCents),
+      formattedTotal: formatAUD(stop.totalAmountCents),
+    }));
+
+    const doc = (
+      <RouteManifestDocument
+        manifestDate={formatDate(new Date(manifestData!.manifestDate))}
+        areaName={manifestData!.areaName}
+        warehouseAddress={manifestData!.warehouseAddress}
+        routeSummary={manifestData!.routeSummary}
+        stops={formattedStops}
+        productAggregation={manifestData!.productAggregation}
+        translations={getTranslations()}
+        layout={layout}
+      />
+    );
+
+    return pdf(doc).toBlob();
+  }, [manifestData, layout, getTranslations]);
+
   const generatePdf = useCallback(async () => {
     if (!manifestData || manifestData.stops.length === 0) return;
 
     setIsGenerating(true);
 
     try {
-      // Format prices for display
-      const formattedStops = manifestData.stops.map((stop: ManifestStop) => ({
-        ...stop,
-        items: stop.items.map((item: ManifestItem) => ({
-          ...item,
-          formattedUnitPrice: formatAUD(item.unitPriceCents),
-          formattedSubtotal: formatAUD(item.subtotalCents),
-        })),
-        formattedSubtotal: formatAUD(stop.subtotalCents),
-        formattedTax: formatAUD(stop.taxAmountCents),
-        formattedTotal: formatAUD(stop.totalAmountCents),
-      }));
-
-      const doc = (
-        <RouteManifestDocument
-          manifestDate={formatDate(new Date(manifestData.manifestDate))}
-          areaName={manifestData.areaName}
-          warehouseAddress={manifestData.warehouseAddress}
-          routeSummary={manifestData.routeSummary}
-          stops={formattedStops}
-          productAggregation={manifestData.productAggregation}
-          translations={getTranslations()}
-          layout={layout}
-        />
-      );
-
-      const blob = await pdf(doc).toBlob();
+      const blob = await generateManifestBlob();
       const url = URL.createObjectURL(blob);
 
       // Create filename
@@ -264,7 +270,26 @@ export function RouteManifestDialog({
     } finally {
       setIsGenerating(false);
     }
-  }, [manifestData, layout, selectedDate, areaFilter, getTranslations, onOpenChange]);
+  }, [manifestData, selectedDate, areaFilter, generateManifestBlob, onOpenChange, toast, tErrors]);
+
+  const handlePrint = useCallback(async () => {
+    if (!manifestData || manifestData.stops.length === 0) return;
+
+    setIsPrinting(true);
+
+    try {
+      const blob = await generateManifestBlob();
+      printPdfBlob(blob);
+    } catch (error) {
+      console.error('Error printing PDF:', error);
+      toast({
+        title: tErrors('generationFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [manifestData, generateManifestBlob, toast, tErrors]);
 
   const hasOrders = manifestData && manifestData.stops.length > 0;
 
@@ -360,13 +385,13 @@ export function RouteManifestDialog({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating || isDownloadingInvoices}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating || isPrinting || isDownloadingInvoices}>
             {tCommon('cancel')}
           </Button>
           <Button
             variant="secondary"
             onClick={downloadAllInvoices}
-            disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+            disabled={isDownloadingInvoices || isLoadingInvoices || isPrinting || !invoiceData?.ordersWithInvoices}
           >
             {isDownloadingInvoices ? (
               <>
@@ -380,7 +405,24 @@ export function RouteManifestDialog({
               </>
             )}
           </Button>
-          <Button onClick={generatePdf} disabled={isGenerating || isLoading || !hasOrders}>
+          <Button
+            variant="secondary"
+            onClick={handlePrint}
+            disabled={isPrinting || isGenerating || isLoading || !hasOrders}
+          >
+            {isPrinting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('printPdf')}
+              </>
+            ) : (
+              <>
+                <Printer className="h-4 w-4 mr-2" />
+                {t('printPdf')}
+              </>
+            )}
+          </Button>
+          <Button onClick={generatePdf} disabled={isGenerating || isPrinting || isLoading || !hasOrders}>
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
