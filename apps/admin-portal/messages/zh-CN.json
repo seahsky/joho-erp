@@ -1904,7 +1904,7 @@
       "createSuccess": "客户创建成功！",
       "createError": "创建客户失败",
       "duplicateEmail": "此电子邮件的客户已存在",
-      "duplicateABN": "此ABN的客户已存在",
+      "duplicateABN": "此ABN已有活跃客户存在",
       "fixValidationErrors": "请在提交前修正验证错误"
     }
   },
@@ -3631,7 +3631,7 @@
     "customerNotFound": "未找到客户",
     "customerAlreadyRegistered": "客户已注册",
     "customerEmailExists": "此邮箱已被其他客户使用",
-    "customerAbnExists": "此ABN已被其他客户使用",
+    "customerAbnExists": "此ABN已有活跃客户使用",
     "customerAlreadySuspended": "客户已被暂停",
     "customerNotSuspended": "客户未被暂停",
     "customerProfileNotFound": "未找到客户资料",

@@ -336,6 +336,7 @@ async function processSyncContact(customerId: string): Promise<{
   const customerForSync = {
     id: customer.id,
     businessName: customer.businessName,
+    abn: customer.abn,
     xeroContactId: customer.xeroContactId,
     contactPerson: customer.contactPerson as {
       firstName: string;
@@ -456,6 +457,7 @@ async function processCreateInvoice(
   const customerForSync = {
     id: order.customer.id,
     businessName: order.customer.businessName,
+    abn: order.customer.abn,
     xeroContactId: order.customer.xeroContactId,
     contactPerson: order.customer.contactPerson as {
       firstName: string;
@@ -607,6 +609,7 @@ async function processUpdateInvoice(
   const customerForSync = {
     id: order.customer.id,
     businessName: order.customer.businessName,
+    abn: order.customer.abn,
     xeroContactId: order.customer.xeroContactId,
     contactPerson: order.customer.contactPerson as {
       firstName: string;
@@ -729,6 +732,7 @@ async function processCreateCreditNote(
   const customerForSync = {
     id: order.customer.id,
     businessName: order.customer.businessName,
+    abn: order.customer.abn,
     xeroContactId: order.customer.xeroContactId,
     contactPerson: order.customer.contactPerson as {
       firstName: string;

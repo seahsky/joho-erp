@@ -253,15 +253,15 @@ export const customerRouter = router({
         });
       }
 
-      // Check ABN uniqueness (Issue #4 fix)
+      // Check ABN uniqueness — only active customers block new sign-ups
       const existingByABN = await prisma.customer.findFirst({
-        where: { abn: input.abn },
+        where: { abn: input.abn, status: 'active' },
       });
 
       if (existingByABN) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'A customer with this ABN already exists',
+          message: 'An active customer with this ABN already exists',
         });
       }
 
@@ -867,15 +867,15 @@ export const customerRouter = router({
         });
       }
 
-      // Check if customer with this ABN already exists
+      // Check ABN uniqueness — only active customers block creation
       const existingByABN = await prisma.customer.findFirst({
-        where: { abn: input.abn },
+        where: { abn: input.abn, status: 'active' },
       });
 
       if (existingByABN) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'A customer with this ABN already exists',
+          message: 'An active customer with this ABN already exists',
         });
       }
 

@@ -1232,7 +1232,7 @@
     "customerNotFound": "Customer not found",
     "customerAlreadyRegistered": "Customer already registered",
     "customerEmailExists": "A customer with this email already exists",
-    "customerAbnExists": "A customer with this ABN already exists",
+    "customerAbnExists": "An active customer with this ABN already exists",
     "customerAlreadySuspended": "Customer is already suspended",
     "customerNotSuspended": "Customer is not suspended",
     "customerProfileNotFound": "Customer profile not found",

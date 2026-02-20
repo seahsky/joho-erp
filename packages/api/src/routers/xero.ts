@@ -468,20 +468,9 @@ export const xeroRouter = router({
         postcode: string;
       } | null;
 
-      // Search Xero for existing contact by email
-      let existingXeroContact: { contactId: string; name: string } | null =
-        null;
-
-      try {
-        const { findExistingContactByEmailWithName } = await import(
-          '../services/xero'
-        );
-        existingXeroContact = await findExistingContactByEmailWithName(
-          contactPerson.email
-        );
-      } catch {
-        // If Xero search fails, continue with null
-      }
+      // Only show existing Xero contact info if already linked via xeroContactId
+      const existingXeroContact =
+        null as { contactId: string; name: string } | null;
 
       return {
         customerId: customer.id,

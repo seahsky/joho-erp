@@ -1232,7 +1232,7 @@
     "customerNotFound": "未找到客户",
     "customerAlreadyRegistered": "客户已注册",
     "customerEmailExists": "此邮箱已被其他客户使用",
-    "customerAbnExists": "此ABN已被其他客户使用",
+    "customerAbnExists": "此ABN已有活跃客户使用",
     "customerAlreadySuspended": "客户已被暂停",
     "customerNotSuspended": "客户未被暂停",
     "customerProfileNotFound": "未找到客户资料",

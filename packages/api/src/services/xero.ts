@@ -756,6 +756,8 @@ export async function xeroApiRequest<T>(
  */
 export interface XeroContact {
   ContactID?: string;
+  ContactNumber?: string;  // Unique identifier — set to local customer ID
+  TaxNumber?: string;      // Maps to ABN (no uniqueness constraint in Xero)
   Name: string;
   FirstName?: string;
   LastName?: string;
@@ -874,6 +876,7 @@ function getXeroSalesAccountCode(): string {
 export interface CustomerForXeroSync {
   id: string;
   businessName: string;
+  abn: string;
   xeroContactId?: string | null;
   contactPerson: {
     firstName: string;
@@ -1065,6 +1068,8 @@ function mapCustomerToXeroContact(customer: CustomerForXeroSync): XeroContact {
   }
 
   return {
+    ContactNumber: customer.id,  // Local customer ID as unique Xero key
+    TaxNumber: customer.abn,     // ABN for reference in Xero
     Name: customer.businessName,
     FirstName: contact.firstName,
     LastName: contact.lastName,
@@ -1124,20 +1129,7 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
-    // Check for existing contact by email to prevent duplicates
-    const existingContactId = await findExistingContactByEmail(customer.contactPerson.email);
-
-    if (existingContactId) {
-      // Contact already exists in Xero - update it instead of creating duplicate
-      const response = await xeroApiRequest<XeroContactsResponse>(
-        `/Contacts/${existingContactId}`,
-        { method: 'POST', body: { Contacts: [contactPayload] } }
-      );
-      xeroLogger.sync.contactUpdated(response.Contacts[0].ContactID!, customer.id, customer.businessName);
-      return { success: true, contactId: response.Contacts[0].ContactID };
-    }
-
-    // No existing contact found - create new one
+    // Create new contact in Xero (always create, never match by email)
     const response = await xeroApiRequest<XeroContactsResponse>('/Contacts', {
       method: 'POST',
       body: { Contacts: [contactPayload] },
