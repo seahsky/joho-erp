@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { printPdfBlob } from '@/lib/printPdf';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,7 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, FileStack } from 'lucide-react';
+import { Loader2, FileText, FileStack, Printer } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 interface RouteManifestDialogProps {
@@ -56,6 +57,7 @@ export function RouteManifestDialog({
   );
 
   const [isDownloadingInvoices, setIsDownloadingInvoices] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const downloadAllInvoices = useCallback(async () => {
     if (!invoiceData?.invoices?.length) return;
@@ -97,6 +99,51 @@ export function RouteManifestDialog({
       });
     } finally {
       setIsDownloadingInvoices(false);
+    }
+  }, [invoiceData, toast, tErrors, t]);
+
+  const handlePrint = useCallback(async () => {
+    if (!invoiceData?.invoices?.length) return;
+
+    setIsPrinting(true);
+
+    try {
+      const invoicesWithUrls = invoiceData.invoices.filter((inv) => inv.url);
+
+      if (invoicesWithUrls.length === 0) {
+        toast({
+          title: tErrors('noInvoices'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      for (let i = 0; i < invoicesWithUrls.length; i++) {
+        const inv = invoicesWithUrls[i];
+        if (!inv.url) continue;
+
+        const response = await fetch(inv.url);
+        const blob = await response.blob();
+        printPdfBlob(blob);
+
+        // Small delay between prints to let the browser handle each dialog
+        if (i < invoicesWithUrls.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      toast({
+        title: t('invoicesOpened'),
+        description: t('invoicesOpenedDescription', { count: invoicesWithUrls.length }),
+      });
+    } catch (error) {
+      console.error('Error printing invoices:', error);
+      toast({
+        title: tErrors('generationFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrinting(false);
     }
   }, [invoiceData, toast, tErrors, t]);
 
@@ -166,8 +213,25 @@ export function RouteManifestDialog({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices || isPrinting}>
             {tCommon('cancel')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handlePrint}
+            disabled={isPrinting || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+          >
+            {isPrinting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('printingInvoices')}
+              </>
+            ) : (
+              <>
+                <Printer className="h-4 w-4 mr-2" />
+                {t('printInvoices')}
+              </>
+            )}
           </Button>
           <Button
             onClick={downloadAllInvoices}

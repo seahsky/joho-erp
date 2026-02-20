@@ -623,7 +623,9 @@
       "downloadInvoices": "Download Invoices",
       "downloadingInvoices": "Opening Invoices...",
       "invoicesOpened": "Invoices Opened",
-      "invoicesOpenedDescription": "Opening {count} invoice(s) in new tabs"
+      "invoicesOpenedDescription": "Opening {count} invoice(s) in new tabs",
+      "printInvoices": "Print Invoices",
+      "printingInvoices": "Printing..."
     },
     "autoAssignDrivers": "Auto-Assign Drivers",
     "autoAssignment": {

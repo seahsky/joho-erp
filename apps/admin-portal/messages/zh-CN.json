@@ -623,7 +623,9 @@
       "downloadInvoices": "下载发票",
       "downloadingInvoices": "正在打开发票...",
       "invoicesOpened": "发票已打开",
-      "invoicesOpenedDescription": "正在新标签页中打开 {count} 张发票"
+      "invoicesOpenedDescription": "正在新标签页中打开 {count} 张发票",
+      "printInvoices": "打印发票",
+      "printingInvoices": "正在打印..."
     },
     "autoAssignDrivers": "自动分配司机",
     "autoAssignment": {

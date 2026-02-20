@@ -623,7 +623,9 @@
       "downloadInvoices": "下載發票",
       "downloadingInvoices": "正在開啟發票...",
       "invoicesOpened": "發票已開啟",
-      "invoicesOpenedDescription": "正在新分頁中開啟 {count} 張發票"
+      "invoicesOpenedDescription": "正在新分頁中開啟 {count} 張發票",
+      "printInvoices": "列印發票",
+      "printingInvoices": "正在列印..."
     },
     "autoAssignDrivers": "自動分配司機",
     "autoAssignment": {
