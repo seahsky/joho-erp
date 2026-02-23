@@ -800,7 +800,7 @@ export const packingRouter = router({
       const userDetails = await getUserDetails(ctx.userId);
 
       // Import shared utilities
-      const { consumeStock } = await import('../services/inventory-batch');
+      const { consumeStock, getAvailableStockQuantity } = await import('../services/inventory-batch');
       const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
 
       // Track missing products for logging
@@ -988,6 +988,19 @@ export const packingRouter = router({
             });
           }
 
+          // Validate batch-level availability (catches expired batch mismatches)
+          const availableBatchStock = await getAvailableStockQuantity(parentId, tx);
+          if (availableBatchStock < totalConsumption) {
+            const itemDetails = items.map(i => `${i.product.name} (qty: ${i.item.quantity})`).join(', ');
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient batch stock for "${parentProduct.name}". ` +
+                `Available: ${availableBatchStock.toFixed(2)}, Required: ${totalConsumption.toFixed(2)}. ` +
+                `Affected items: ${itemDetails}. ` +
+                `Stock may include expired batches. Please receive new stock or perform a stock correction.`,
+            });
+          }
+
           // Create individual inventory transactions for each subproduct (detailed audit trail)
           for (const { product, item, consumeQuantity } of items) {
             const transactionNotes = `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${freshOrder.orderNumber}`;
@@ -1026,9 +1039,10 @@ export const packingRouter = router({
               }
             } catch (stockError) {
               console.error(`Stock consumption failed for order ${freshOrder.orderNumber}, product ${product.id}:`, stockError);
+              const detail = stockError instanceof Error ? stockError.message : 'Unknown error';
               throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
-                message: `Failed to consume stock for ${product.name}. Transaction rolled back. Please retry.`,
+                message: `Failed to consume stock for ${product.name}: ${detail}. Transaction rolled back.`,
               });
             }
           }
@@ -1084,6 +1098,17 @@ export const packingRouter = router({
             });
           }
 
+          // Validate batch-level availability (catches expired batch mismatches)
+          const availableBatchStock = await getAvailableStockQuantity(product.id, tx);
+          if (availableBatchStock < consumeQuantity) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient batch stock for "${product.name}" (SKU: ${product.sku ?? 'N/A'}). ` +
+                `Available: ${availableBatchStock.toFixed(2)}, Required: ${consumeQuantity}. ` +
+                `Stock may include expired batches. Please receive new stock or perform a stock correction.`,
+            });
+          }
+
           // Create inventory transaction
           const transactionNotes = `Stock consumed at packing for order ${freshOrder.orderNumber}`;
 
@@ -1121,9 +1146,10 @@ export const packingRouter = router({
             }
           } catch (stockError) {
             console.error(`Stock consumption failed for order ${freshOrder.orderNumber}, product ${product.id}:`, stockError);
+            const detail = stockError instanceof Error ? stockError.message : 'Unknown error';
             throw new TRPCError({
               code: 'INTERNAL_SERVER_ERROR',
-              message: `Failed to consume stock for ${product.name}. Transaction rolled back. Please retry.`,
+              message: `Failed to consume stock for ${product.name}: ${detail}. Transaction rolled back.`,
             });
           }
 

@@ -74,6 +74,10 @@ export const productRouter = router({
         .merge(paginationInputSchema)
     )
     .query(async ({ input, ctx: _ctx }) => {
+      // Sync currentStock with batch availability (handles expired batches)
+      const { syncExpiredBatchStock } = await import('../services/inventory-batch');
+      await syncExpiredBatchStock();
+
       const { page, limit, sortBy, sortOrder, showAll, includeSubproducts, onlyParents, ...filters } = input;
       const where: any = {};
 
@@ -775,6 +779,22 @@ export const productRouter = router({
               mtvNumber: mtvNumber || null,
               vehicleTemperature: vehicleTemperature || null,
               supplierId: supplierId || null,
+            },
+          });
+        }
+
+        // 2b. If stock_count_correction with positive quantity: Create batch for traceability
+        if (adjustmentType === 'stock_count_correction' && quantity > 0) {
+          await tx.inventoryBatch.create({
+            data: {
+              productId,
+              quantityRemaining: quantity,
+              initialQuantity: quantity,
+              costPerUnit: costPerUnit ?? 0,
+              receivedAt: new Date(),
+              expiryDate: null,
+              receiveTransactionId: transaction.id,
+              notes: `Stock count correction: +${quantity}. ${notes}`,
             },
           });
         }
