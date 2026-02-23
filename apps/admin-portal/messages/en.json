@@ -2014,7 +2014,16 @@
     "itemRemoved": "Item removed",
     "itemRemovedDescription": "The item has been removed and stock returned to inventory.",
     "orderCancelledByRemoval": "Order cancelled",
-    "orderCancelledByRemovalDescription": "All items were removed. The order has been cancelled."
+    "orderCancelledByRemovalDescription": "All items were removed. The order has been cancelled.",
+    "printSummary": "Print Summary",
+    "printingSummary": "Printing...",
+    "preparationSummary": "Preparation Summary",
+    "deliveryDateLabel": "Delivery Date",
+    "filterLabel": "Filter",
+    "unit": "Unit",
+    "orderReferences": "Orders",
+    "totalProducts": "Total Products",
+    "generatedAt": "Generated at"
   },
   "settings": {
     "title": "Settings",

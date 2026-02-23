@@ -2014,7 +2014,16 @@
     "itemRemoved": "商品已移除",
     "itemRemovedDescription": "商品已移除，库存已退回仓库。",
     "orderCancelledByRemoval": "订单已取消",
-    "orderCancelledByRemovalDescription": "所有商品已移除，订单已被取消。"
+    "orderCancelledByRemovalDescription": "所有商品已移除，订单已被取消。",
+    "printSummary": "打印汇总",
+    "printingSummary": "打印中...",
+    "preparationSummary": "备货汇总",
+    "deliveryDateLabel": "配送日期",
+    "filterLabel": "筛选",
+    "unit": "单位",
+    "orderReferences": "订单",
+    "totalProducts": "产品总数",
+    "generatedAt": "生成时间"
   },
   "settings": {
     "title": "设置",

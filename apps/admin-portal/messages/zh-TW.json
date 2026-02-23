@@ -2020,7 +2020,16 @@
     "itemRemoved": "商品已移除",
     "itemRemovedDescription": "商品已移除，庫存已退回倉庫。",
     "orderCancelledByRemoval": "訂單已取消",
-    "orderCancelledByRemovalDescription": "所有商品已移除，訂單已被取消。"
+    "orderCancelledByRemovalDescription": "所有商品已移除，訂單已被取消。",
+    "printSummary": "列印彙總",
+    "printingSummary": "列印中...",
+    "preparationSummary": "備貨彙總",
+    "deliveryDateLabel": "配送日期",
+    "filterLabel": "篩選",
+    "unit": "單位",
+    "orderReferences": "訂單",
+    "totalProducts": "產品總數",
+    "generatedAt": "生成時間"
   },
   "settings": {
     "title": "設定",

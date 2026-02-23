@@ -4,7 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
-import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation } from 'lucide-react';
+import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation, Printer } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
+import { printPdfBlob } from '@/lib/printPdf';
+import { PreparationSummaryDocument } from './components/exports/PreparationSummaryDocument';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
@@ -32,6 +35,7 @@ export default function PackingPage() {
   const [focusedOrderNumber, setFocusedOrderNumber] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
   const [areaFilter, setAreaFilter] = useState<string>('');
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Handlers for order badge focus functionality
   const handleFocusOrder = (orderNumber: string) => {
@@ -216,6 +220,40 @@ export default function PackingPage() {
     return labels;
   }, [categories, t]);
 
+  // Print preparation summary as PDF
+  const handlePrintSummary = async () => {
+    setIsPrinting(true);
+    try {
+      const translations: Record<string, string> = {
+        preparationSummary: t('preparationSummary'),
+        deliveryDateLabel: t('deliveryDateLabel'),
+        filterLabel: t('filterLabel'),
+        sku: t('sku'),
+        productName: t('productName'),
+        totalQuantity: t('totalQuantity'),
+        unit: t('unit') ?? 'Unit',
+        orderReferences: t('orderReferences'),
+        totalProducts: t('totalProducts'),
+        generatedAt: t('generatedAt'),
+      };
+      const formattedDate = formatDate(deliveryDate);
+      const blob = await pdf(
+        <PreparationSummaryDocument
+          productSummary={filteredProductSummary}
+          deliveryDate={formattedDate}
+          filters={{
+            category: categoryFilter !== 'all' ? categoryLabels[categoryFilter] : undefined,
+            area: areaFilter || undefined,
+          }}
+          translations={translations}
+        />
+      ).toBlob();
+      printPdfBlob(blob);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -327,7 +365,22 @@ export default function PackingPage() {
 
         {/* Stats Bar */}
         {totalOrders > 0 && (
-          <StatsBar stats={stats} />
+          <div className="flex items-center justify-between">
+            <StatsBar stats={stats} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintSummary}
+              disabled={isPrinting}
+            >
+              {isPrinting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
+              {isPrinting ? t('printingSummary') : t('printSummary')}
+            </Button>
+          </div>
         )}
 
         {/* Main Packing Interface */}
