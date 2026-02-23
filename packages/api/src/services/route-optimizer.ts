@@ -89,10 +89,7 @@ export async function optimizeDeliveryRoute(
 
   // 2. Fetch orders for the delivery date
   const startOfDay = new Date(deliveryDate);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   const orders = await prisma.order.findMany({
     where: {
@@ -362,10 +359,7 @@ export async function optimizeDeliveryRoute(
  */
 export async function getRouteOptimization(deliveryDate: Date) {
   const startOfDay = new Date(deliveryDate);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   return prisma.routeOptimization.findFirst({
     where: {
@@ -391,10 +385,7 @@ export async function checkIfRouteNeedsReoptimization(
   if (!route) return true;
 
   const startOfDay = new Date(deliveryDate);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   const currentOrderCount = await prisma.order.count({
     where: {
