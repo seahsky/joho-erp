@@ -626,6 +626,8 @@
       "downloadingInvoices": "正在開啟發票...",
       "invoicesOpened": "發票已開啟",
       "invoicesOpenedDescription": "正在新分頁中開啟 {count} 張發票",
+      "invoiceStatus": "{total} 個訂單中有 {withInvoices} 個已生成發票",
+      "invoicesPending": "{count} 個訂單的發票正在生成中",
       "printInvoices": "列印發票",
       "printingInvoices": "正在列印..."
     },

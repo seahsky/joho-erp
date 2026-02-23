@@ -626,6 +626,8 @@
       "downloadingInvoices": "Opening Invoices...",
       "invoicesOpened": "Invoices Opened",
       "invoicesOpenedDescription": "Opening {count} invoice(s) in new tabs",
+      "invoiceStatus": "{withInvoices} of {total} orders have invoices ready",
+      "invoicesPending": "{count} order(s) pending invoice creation",
       "printInvoices": "Print Invoices",
       "printingInvoices": "Printing..."
     },

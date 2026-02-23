@@ -199,12 +199,16 @@ export function RouteManifestDialog({
               <Loader2 className="h-4 w-4 animate-spin" />
               {tCommon('loading')}
             </div>
-          ) : invoiceData?.ordersWithInvoices ? (
-            <div className="p-3 bg-muted rounded-lg">
+          ) : invoiceData?.totalOrders ? (
+            <div className="p-3 bg-muted rounded-lg space-y-1">
               <p className="text-sm">
-                <span className="font-semibold">{invoiceData.ordersWithInvoices}</span>{' '}
-                {t('downloadInvoices').toLowerCase()}
+                {t('invoiceStatus', { withInvoices: invoiceData.ordersWithInvoices, total: invoiceData.totalOrders })}
               </p>
+              {invoiceData.totalOrders > invoiceData.ordersWithInvoices && (
+                <p className="text-xs text-muted-foreground">
+                  {t('invoicesPending', { count: invoiceData.totalOrders - invoiceData.ordersWithInvoices })}
+                </p>
+              )}
             </div>
           ) : (
             <div className="p-3 bg-destructive/10 text-destructive rounded-lg">
