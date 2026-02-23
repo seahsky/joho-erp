@@ -113,6 +113,7 @@ export default function PackingPage() {
     } catch (error) {
       toast({
         title: tErrors('optimizationFailed'),
+        description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
     } finally {
@@ -141,6 +142,7 @@ export default function PackingPage() {
         console.error('Auto-optimization failed:', error);
         toast({
           title: tErrors('optimizationFailed'),
+          description: error instanceof Error ? error.message : undefined,
           variant: 'destructive',
         });
       } finally {

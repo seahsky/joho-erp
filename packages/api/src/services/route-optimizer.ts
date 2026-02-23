@@ -173,8 +173,13 @@ export async function optimizeDeliveryRoute(
   const areaBreakdown: RouteOptimizationResult["routeSummary"]["areaBreakdown"] =
     [];
 
-  // Order of areas for packing (matches typical route order)
-  const areaOrder: string[] = ["north", "east", "south", "west"];
+  // Preferred area order for packing (matches typical route order)
+  const preferredAreaOrder = ["north", "east", "south", "west"];
+  const allAreas = Array.from(areaRoutes.keys());
+  const areaOrder = [
+    ...preferredAreaOrder.filter((a) => allAreas.includes(a)),
+    ...allAreas.filter((a) => !preferredAreaOrder.includes(a)),
+  ];
 
   // Process areas in order
   for (const areaName of areaOrder) {

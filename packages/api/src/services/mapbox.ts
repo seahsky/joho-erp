@@ -95,7 +95,10 @@ export async function optimizeRoute(
   url.searchParams.append("roundtrip", String(options?.roundtrip ?? false));
 
   try {
-    const response = await fetch(url.toString());
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const response = await fetch(url.toString(), { signal: controller.signal });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -157,6 +160,14 @@ export async function optimizeRoute(
  * @param accessToken - Mapbox access token
  * @returns Map of area tag to optimized route result
  */
+function splitIntoChunks<T>(items: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += chunkSize) {
+    chunks.push(items.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
 export async function optimizeRoutesByArea(
   coordinatesByArea: Map<
     string,
@@ -171,31 +182,80 @@ export async function optimizeRoutesByArea(
   >
 > {
   const results = new Map();
+  const MAX_ORDERS_PER_BATCH = 11; // 11 orders + 1 warehouse = 12 waypoints (Mapbox limit)
 
   for (const [areaName, coords] of coordinatesByArea.entries()) {
     if (coords.length === 0) continue;
 
-    // Prepend warehouse as the starting point
-    const coordinatesWithWarehouse = [
-      warehouseCoordinate,
-      ...coords.map((c) => ({ longitude: c.longitude, latitude: c.latitude })),
-    ];
+    if (coords.length <= MAX_ORDERS_PER_BATCH) {
+      // Small enough to optimize in a single call
+      const coordinatesWithWarehouse = [
+        warehouseCoordinate,
+        ...coords.map((c) => ({ longitude: c.longitude, latitude: c.latitude })),
+      ];
 
-    const result = await optimizeRoute(coordinatesWithWarehouse, accessToken, {
-      source: "first", // Warehouse is always first
-      destination: "last", // Only valid option when roundtrip=false
-      roundtrip: false, // Don't return to warehouse
-    });
+      const result = await optimizeRoute(coordinatesWithWarehouse, accessToken, {
+        source: "first",
+        destination: "last",
+        roundtrip: false,
+      });
 
-    // Map optimized indices back to coordinate IDs (skip warehouse at index 0)
-    const coordinateIds = result.optimizedOrder
-      .slice(1) // Remove warehouse from sequence
-      .map((index) => coords[index - 1].id); // Adjust for warehouse offset
+      const coordinateIds = result.optimizedOrder
+        .slice(1)
+        .map((index) => coords[index - 1].id);
 
-    results.set(areaName, {
-      ...result,
-      coordinateIds,
-    });
+      results.set(areaName, {
+        ...result,
+        coordinateIds,
+      });
+    } else {
+      // Too many orders — split into batches sorted by latitude for geographic coherence
+      const sorted = [...coords].sort((a, b) => a.latitude - b.latitude);
+      const batches = splitIntoChunks(sorted, MAX_ORDERS_PER_BATCH);
+
+      const allCoordinateIds: string[] = [];
+      let totalDistance = 0;
+      let totalDuration = 0;
+      const allSegments: OptimizedRouteResult["segments"] = [];
+      let routeGeometry = "{}";
+
+      for (const batch of batches) {
+        const coordinatesWithWarehouse = [
+          warehouseCoordinate,
+          ...batch.map((c) => ({ longitude: c.longitude, latitude: c.latitude })),
+        ];
+
+        const result = await optimizeRoute(coordinatesWithWarehouse, accessToken, {
+          source: "first",
+          destination: "last",
+          roundtrip: false,
+        });
+
+        const batchIds = result.optimizedOrder
+          .slice(1)
+          .map((index) => batch[index - 1].id);
+
+        allCoordinateIds.push(...batchIds);
+        totalDistance += result.totalDistance;
+        totalDuration += result.totalDuration;
+        allSegments.push(...result.segments);
+
+        // Use first batch's geometry as representative
+        if (routeGeometry === "{}") {
+          routeGeometry = result.routeGeometry;
+        }
+      }
+
+      results.set(areaName, {
+        optimizedOrder: [], // Not meaningful across batches
+        totalDistance,
+        totalDuration,
+        routeGeometry,
+        segments: allSegments,
+        rawResponse: {} as MapboxOptimizationResponse,
+        coordinateIds: allCoordinateIds,
+      });
+    }
   }
 
   return results;
