@@ -631,7 +631,11 @@
       "printInvoices": "打印发票",
       "printingInvoices": "正在打印...",
       "downloadingProgress": "正在打开 {current} / {total}...",
-      "printingProgress": "正在打印 {current} / {total}..."
+      "printingProgress": "正在打印 {current} / {total}...",
+      "retryFailed": "重试 {count} 个失败项",
+      "retryingProgress": "正在重试 {current} / {total}...",
+      "downloadComplete": "下载完成",
+      "downloadFailed": "{total} 个中有 {failed} 个失败"
     },
     "autoAssignDrivers": "自动分配司机",
     "autoAssignment": {

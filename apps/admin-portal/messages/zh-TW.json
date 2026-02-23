@@ -631,7 +631,11 @@
       "printInvoices": "列印發票",
       "printingInvoices": "正在列印...",
       "downloadingProgress": "正在開啟 {current} / {total}...",
-      "printingProgress": "正在列印 {current} / {total}..."
+      "printingProgress": "正在列印 {current} / {total}...",
+      "retryFailed": "重試 {count} 個失敗項",
+      "retryingProgress": "正在重試 {current} / {total}...",
+      "downloadComplete": "下載完成",
+      "downloadFailed": "{total} 個中有 {failed} 個失敗"
     },
     "autoAssignDrivers": "自動分配司機",
     "autoAssignment": {

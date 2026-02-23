@@ -631,7 +631,11 @@
       "printInvoices": "Print Invoices",
       "printingInvoices": "Printing...",
       "downloadingProgress": "Opening {current} of {total}...",
-      "printingProgress": "Printing {current} of {total}..."
+      "printingProgress": "Printing {current} of {total}...",
+      "retryFailed": "Retry {count} failed",
+      "retryingProgress": "Retrying {current} of {total}...",
+      "downloadComplete": "Download complete",
+      "downloadFailed": "{failed} of {total} failed"
     },
     "autoAssignDrivers": "Auto-Assign Drivers",
     "autoAssignment": {

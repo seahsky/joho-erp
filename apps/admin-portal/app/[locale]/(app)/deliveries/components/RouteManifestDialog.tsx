@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { printPdfBlob } from '@/lib/printPdf';
 import {
   Dialog,
@@ -19,7 +19,7 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, FileStack, Printer } from 'lucide-react';
+import { Loader2, FileText, FileStack, Printer, RefreshCw } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 interface RouteManifestDialogProps {
@@ -61,14 +61,15 @@ export function RouteManifestDialog({
   const [isPrinting, setIsPrinting] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
   const [printProgress, setPrintProgress] = useState<{ current: number; total: number } | null>(null);
+  const [failedInvoices, setFailedInvoices] = useState<Array<{ orderId: string; url: string }>>([]);
 
   const downloadAllInvoices = useCallback(async () => {
     if (!invoiceData?.invoices?.length) return;
 
     setIsDownloadingInvoices(true);
+    setFailedInvoices([]);
 
     try {
-      // Filter invoices that have URLs
       const invoicesWithUrls = invoiceData.invoices.filter((inv) => inv.url);
 
       if (invoicesWithUrls.length === 0) {
@@ -79,23 +80,39 @@ export function RouteManifestDialog({
         return;
       }
 
-      // Open each invoice URL in a new tab sequentially with progress
+      const failed: Array<{ orderId: string; url: string }> = [];
+
       for (let i = 0; i < invoicesWithUrls.length; i++) {
         const inv = invoicesWithUrls[i];
         setDownloadProgress({ current: i + 1, total: invoicesWithUrls.length });
-        if (inv.url) {
-          window.open(inv.url, `_blank_${i}`);
+        try {
+          if (inv.url) {
+            const opened = window.open(inv.url, `_blank_${i}`);
+            if (!opened) {
+              failed.push({ orderId: inv.orderId, url: inv.url });
+            }
+          }
+        } catch {
+          failed.push({ orderId: inv.orderId, url: inv.url! });
         }
-        // Stagger the opening to avoid popup blockers
         if (i < invoicesWithUrls.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 200));
         }
       }
 
-      toast({
-        title: t('invoicesOpened'),
-        description: t('invoicesOpenedDescription', { count: invoicesWithUrls.length }),
-      });
+      setFailedInvoices(failed);
+
+      if (failed.length === 0) {
+        toast({
+          title: t('invoicesOpened'),
+          description: t('invoicesOpenedDescription', { count: invoicesWithUrls.length }),
+        });
+      } else {
+        toast({
+          title: t('downloadFailed', { failed: failed.length, total: invoicesWithUrls.length }),
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       console.error('Error downloading invoices:', error);
       toast({
@@ -104,7 +121,6 @@ export function RouteManifestDialog({
       });
     } finally {
       setIsDownloadingInvoices(false);
-      setDownloadProgress(null);
     }
   }, [invoiceData, toast, tErrors, t]);
 
@@ -154,6 +170,52 @@ export function RouteManifestDialog({
       setPrintProgress(null);
     }
   }, [invoiceData, toast, tErrors, t]);
+
+  const retryFailedInvoices = useCallback(async () => {
+    if (failedInvoices.length === 0) return;
+    setIsDownloadingInvoices(true);
+
+    const stillFailed: Array<{ orderId: string; url: string }> = [];
+
+    for (let i = 0; i < failedInvoices.length; i++) {
+      const inv = failedInvoices[i];
+      setDownloadProgress({ current: i + 1, total: failedInvoices.length });
+      try {
+        const opened = window.open(inv.url, `_blank_retry_${i}`);
+        if (!opened) {
+          stillFailed.push(inv);
+        }
+      } catch {
+        stillFailed.push(inv);
+      }
+      if (i < failedInvoices.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }
+
+    setFailedInvoices(stillFailed);
+
+    if (stillFailed.length === 0) {
+      toast({ title: t('downloadComplete') });
+      setDownloadProgress(null);
+    } else {
+      toast({
+        title: t('downloadFailed', { failed: stillFailed.length, total: failedInvoices.length }),
+        variant: 'destructive',
+      });
+    }
+
+    setIsDownloadingInvoices(false);
+  }, [failedInvoices, toast, t]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setFailedInvoices([]);
+      setDownloadProgress(null);
+      setPrintProgress(null);
+    }
+  }, [open]);
 
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('en-AU', {
@@ -224,6 +286,33 @@ export function RouteManifestDialog({
           )}
         </div>
 
+        {/* Progress Bar */}
+        {(downloadProgress || printProgress) && (
+          <div className="px-6 pb-2 space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>
+                {downloadProgress
+                  ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
+                  : t('printingProgress', { current: printProgress!.current, total: printProgress!.total })}
+              </span>
+              <span>
+                {Math.round(
+                  ((downloadProgress || printProgress)!.current / (downloadProgress || printProgress)!.total) * 100
+                )}
+                %
+              </span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${((downloadProgress || printProgress)!.current / (downloadProgress || printProgress)!.total) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices || isPrinting}>
             {tCommon('cancel')}
@@ -247,24 +336,31 @@ export function RouteManifestDialog({
               </>
             )}
           </Button>
-          <Button
-            onClick={downloadAllInvoices}
-            disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
-          >
-            {isDownloadingInvoices ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {downloadProgress
-                  ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
-                  : t('downloadingInvoices')}
-              </>
-            ) : (
-              <>
-                <FileStack className="h-4 w-4 mr-2" />
-                {t('downloadInvoices')} {invoiceData?.ordersWithInvoices ? `(${invoiceData.ordersWithInvoices})` : ''}
-              </>
-            )}
-          </Button>
+          {failedInvoices.length > 0 && !isDownloadingInvoices ? (
+            <Button onClick={retryFailedInvoices}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {t('retryFailed', { count: failedInvoices.length })}
+            </Button>
+          ) : (
+            <Button
+              onClick={downloadAllInvoices}
+              disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+            >
+              {isDownloadingInvoices ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {downloadProgress
+                    ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
+                    : t('downloadingInvoices')}
+                </>
+              ) : (
+                <>
+                  <FileStack className="h-4 w-4 mr-2" />
+                  {t('downloadInvoices')} {invoiceData?.ordersWithInvoices ? `(${invoiceData.ordersWithInvoices})` : ''}
+                </>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
