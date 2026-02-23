@@ -197,6 +197,8 @@
       "backordersLabel": "Backorders",
       "expiringSoon": "{count} Expiring Soon",
       "expiringSoonLabel": "Expiring Soon",
+      "pendingCredit": "{count} Pending Credit Review",
+      "pendingCreditLabel": "Pending Credit Review",
       "allClear": "All Clear",
       "allClearDescription": "No items need your attention right now"
     },

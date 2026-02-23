@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Card,
@@ -53,11 +54,14 @@ type Customer = {
 export default function CustomersPage() {
   const t = useTranslations('customers');
   const tCommon = useTranslations('common');
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter state (server-side)
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [creditStatusFilter, setCreditStatusFilter] = useState<string>('');
+  const [creditStatusFilter, setCreditStatusFilter] = useState<string>(
+    searchParams.get('approvalStatus') || ''
+  );
   const [areaFilter, setAreaFilter] = useState<string>('');
 
   // Fetch areas dynamically for filter dropdown

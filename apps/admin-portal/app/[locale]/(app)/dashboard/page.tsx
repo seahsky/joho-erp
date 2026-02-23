@@ -34,8 +34,10 @@ export default function DashboardPage() {
   const { data: pendingBackorders } = api.order.getPendingBackorders.useQuery({});
   const { data: expiringStock } = api.dashboard.getExpiringStock.useQuery();
   const { data: lowStockItems } = api.dashboard.getLowStockItems.useQuery({ limit: 5 });
+  const { data: pendingCreditCount, isLoading: creditLoading } =
+    api.dashboard.getPendingCreditCount.useQuery();
 
-  const isLoading = financialLoading || statusLoading || healthLoading || trendLoading || ordersLoading;
+  const isLoading = financialLoading || statusLoading || healthLoading || trendLoading || ordersLoading || creditLoading;
 
   // Prepare attention items (using label-only keys to avoid duplicate count display)
   const attentionItems = [
@@ -59,6 +61,13 @@ export default function DashboardPage() {
       href: '/inventory?expiryFilter=alert',
       icon: 'expiring' as const,
       urgency: (expiringStock?.summary.expiredCount || 0) > 0 ? 'critical' as const : 'warning' as const,
+    },
+    {
+      label: t('needsAttention.pendingCreditLabel'),
+      count: pendingCreditCount || 0,
+      href: '/customers?approvalStatus=pending',
+      icon: 'credit' as const,
+      urgency: (pendingCreditCount || 0) > 3 ? 'critical' as const : 'warning' as const,
     },
   ];
 

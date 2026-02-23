@@ -197,6 +197,8 @@
       "backordersLabel": "缺货订单",
       "expiringSoon": "{count} 即将过期",
       "expiringSoonLabel": "即将过期",
+      "pendingCredit": "{count} 待审核信用申请",
+      "pendingCreditLabel": "待审核信用申请",
       "allClear": "全部完成",
       "allClearDescription": "目前没有需要处理的项目"
     },

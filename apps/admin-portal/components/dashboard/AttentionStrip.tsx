@@ -2,14 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, Clock, Package, Calendar } from 'lucide-react';
+import { AlertCircle, Clock, Package, Calendar, UserCheck } from 'lucide-react';
 import { Skeleton } from '@joho-erp/ui';
 
 interface AttentionItem {
   label: string;
   count: number;
   href: string;
-  icon: 'pending' | 'backorder' | 'expiring';
+  icon: 'pending' | 'backorder' | 'expiring' | 'credit';
   urgency: 'warning' | 'critical' | 'info';
 }
 
@@ -27,6 +27,7 @@ export function AttentionStrip({ items, isLoading }: AttentionStripProps) {
       pending: Clock,
       backorder: Package,
       expiring: Calendar,
+      credit: UserCheck,
     };
     return icons[icon];
   };

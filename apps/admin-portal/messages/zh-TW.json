@@ -197,6 +197,8 @@
       "backordersLabel": "缺貨訂單",
       "expiringSoon": "{count} 即將過期",
       "expiringSoonLabel": "即將過期",
+      "pendingCredit": "{count} 待審核信用申請",
+      "pendingCreditLabel": "待審核信用申請",
       "allClear": "全部完成",
       "allClearDescription": "目前沒有需要處理的項目"
     },

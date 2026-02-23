@@ -631,6 +631,19 @@ export const dashboardRouter = router({
     return statusMap;
   }),
 
+  // Get count of customers with pending credit applications
+  getPendingCreditCount: requirePermission('dashboard:view').query(async () => {
+    const count = await prisma.customer.count({
+      where: {
+        creditApplication: {
+          is: { status: 'pending' },
+        },
+      },
+    });
+
+    return count;
+  }),
+
   // Get daily revenue trend for chart
   getRevenueTrend: requirePermission('dashboard:view')
     .input(
