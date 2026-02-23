@@ -462,7 +462,7 @@ export default function DeliveriesPage() {
       <RouteManifestDialog
         open={manifestDialogOpen}
         onOpenChange={setManifestDialogOpen}
-        selectedDate={new Date()}
+        selectedDate={deliveryDate}
         selectedArea={areaFilter || undefined}
       />
 

@@ -568,15 +568,20 @@ export const deliveryRouter = router({
     .query(async ({ input }) => {
       const deliveryDate = new Date(input.deliveryDate);
       const startOfDay = new Date(deliveryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
+      startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(deliveryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      endOfDay.setHours(23, 59, 59, 999);
 
       // Build where clause for orders with invoices
+      // Filter by packing date (packedAt) to match getAll endpoint behavior
       const where: any = {
-        requestedDeliveryDate: {
-          gte: startOfDay,
-          lte: endOfDay,
+        packing: {
+          is: {
+            packedAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
         },
         status: {
           in: ['ready_for_delivery', 'out_for_delivery', 'delivered'],
