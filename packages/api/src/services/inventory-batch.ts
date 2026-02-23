@@ -61,17 +61,14 @@ export async function consumeStock(
   while (retryCount < MAX_RETRIES) {
     try {
       // Step 1: Get available batches in FIFO order (oldest receivedAt first)
-      // Filter: quantityRemaining > 0, isConsumed = false, not expired
+      // Filter: quantityRemaining > 0, isConsumed = false
+      // Note: Expired batches are included — stock only decreases via manual write-off
       const now = new Date();
       const availableBatches = await client.inventoryBatch.findMany({
         where: {
           productId,
           isConsumed: false,
           quantityRemaining: { gt: 0 },
-          OR: [
-            { expiryDate: null }, // No expiry date
-            { expiryDate: { gt: now } }, // Not yet expired
-          ],
         },
         orderBy: { receivedAt: 'asc' }, // FIFO: oldest first
       });
@@ -98,7 +95,7 @@ export async function consumeStock(
       for (const batch of availableBatches) {
         if (remainingToConsume <= 0) break;
 
-        // Check if batch expires soon (within 7 days)
+        // Check if batch is expired or expires soon (within 7 days)
         if (batch.expiryDate) {
           const daysUntilExpiry = Math.ceil(
             (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -108,7 +105,7 @@ export async function consumeStock(
               batchId: batch.id,
               expiryDate: batch.expiryDate,
               quantityRemaining: batch.quantityRemaining,
-              daysUntilExpiry,
+              daysUntilExpiry, // Negative means already expired
             });
           }
         }
@@ -237,13 +234,11 @@ export async function hasAvailableStock(
   const client = tx || prisma;
 
   try {
-    const now = new Date();
     const availableBatches = await client.inventoryBatch.findMany({
       where: {
         productId,
         isConsumed: false,
         quantityRemaining: { gt: 0 },
-        OR: [{ expiryDate: null }, { expiryDate: { gt: now } }],
       },
       select: { quantityRemaining: true },
     });
@@ -269,65 +264,7 @@ export async function hasAvailableStock(
  * @param tx - Optional Prisma transaction context
  * @returns Number of products whose stock was synced
  */
-export async function syncExpiredBatchStock(
-  tx?: Omit<
-    PrismaClient,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >
-): Promise<number> {
-  const client = tx || prisma;
-  const now = new Date();
 
-  // Get all non-subproduct products with positive stock
-  const products = await client.product.findMany({
-    where: { currentStock: { gt: 0 }, parentProductId: null },
-    select: { id: true, currentStock: true },
-  });
-
-  if (products.length === 0) return 0;
-
-  // Get available batch totals grouped by productId
-  const batchGroups = await client.inventoryBatch.groupBy({
-    by: ['productId'],
-    where: {
-      isConsumed: false,
-      quantityRemaining: { gt: 0 },
-      OR: [{ expiryDate: null }, { expiryDate: { gt: now } }],
-    },
-    _sum: { quantityRemaining: true },
-  });
-
-  const batchStockMap = new Map(
-    batchGroups.map((b) => [b.productId, b._sum.quantityRemaining || 0])
-  );
-
-  let synced = 0;
-  for (const product of products) {
-    const batchStock = batchStockMap.get(product.id) ?? 0;
-    if (Math.abs(product.currentStock - batchStock) > 0.01) {
-      await client.product.update({
-        where: { id: product.id },
-        data: { currentStock: batchStock },
-      });
-      // Recalculate subproduct stocks
-      const subproducts = await client.product.findMany({
-        where: { parentProductId: product.id },
-        select: { id: true, estimatedLossPercentage: true, parentProductId: true },
-      });
-      if (subproducts.length > 0) {
-        const { calculateAllSubproductStocks } = await import(
-          '@joho-erp/shared'
-        );
-        const updated = calculateAllSubproductStocks(batchStock, subproducts);
-        for (const { id, newStock } of updated) {
-          await client.product.update({ where: { id }, data: { currentStock: newStock } });
-        }
-      }
-      synced++;
-    }
-  }
-  return synced;
-}
 
 /**
  * Get the total available (non-expired) stock for a product
@@ -346,13 +283,11 @@ export async function getAvailableStockQuantity(
   const client = tx || prisma;
 
   try {
-    const now = new Date();
     const availableBatches = await client.inventoryBatch.findMany({
       where: {
         productId,
         isConsumed: false,
         quantityRemaining: { gt: 0 },
-        OR: [{ expiryDate: null }, { expiryDate: { gt: now } }],
       },
       select: { quantityRemaining: true },
     });

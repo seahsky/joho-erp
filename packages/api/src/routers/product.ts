@@ -75,8 +75,7 @@ export const productRouter = router({
     )
     .query(async ({ input, ctx: _ctx }) => {
       // Sync currentStock with batch availability (handles expired batches)
-      const { syncExpiredBatchStock } = await import('../services/inventory-batch');
-      await syncExpiredBatchStock();
+
 
       const { page, limit, sortBy, sortOrder, showAll, includeSubproducts, onlyParents, ...filters } = input;
       const where: any = {};
