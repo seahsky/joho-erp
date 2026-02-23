@@ -48,7 +48,8 @@ export function RouteManifestDialog({
   // Query for invoice URLs
   const { data: invoiceData, isLoading: isLoadingInvoices } = api.delivery.getInvoiceUrlsForDelivery.useQuery(
     {
-      deliveryDate: selectedDate.toISOString(),
+      dateFrom: selectedDate,
+      dateTo: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999),
       areaId: areaFilter !== 'all' ? areaFilter : undefined,
     },
     {

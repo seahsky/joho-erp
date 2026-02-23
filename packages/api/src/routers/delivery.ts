@@ -559,27 +559,22 @@ export const deliveryRouter = router({
    * Returns invoice URLs for orders that have Xero invoices
    */
   getInvoiceUrlsForDelivery: requirePermission('deliveries:view')
-    .input(
+        .input(
       z.object({
-        deliveryDate: z.string().datetime(),
+        dateFrom: z.date(),
+        dateTo: z.date(),
         areaId: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const deliveryDate = new Date(input.deliveryDate);
-      const startOfDay = new Date(deliveryDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(deliveryDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
       // Build where clause for orders with invoices
       // Filter by packing date (packedAt) to match getAll endpoint behavior
       const where: any = {
         packing: {
           is: {
             packedAt: {
-              gte: startOfDay,
-              lte: endOfDay,
+              gte: input.dateFrom,
+              lte: input.dateTo,
             },
           },
         },
