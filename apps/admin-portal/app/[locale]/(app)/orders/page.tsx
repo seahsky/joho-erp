@@ -262,6 +262,7 @@ export default function OrdersPage() {
     approvedQuantities?: Record<string, number>;
     estimatedFulfillment?: Date;
     notes?: string;
+    bypassStockCheck?: boolean;
   }) => {
     await approveMutation.mutateAsync(data);
   };

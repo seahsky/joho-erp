@@ -760,7 +760,9 @@
       "reject": "拒绝订单",
       "cancel": "取消",
       "approving": "批准中...",
-      "rejecting": "拒绝中..."
+      "rejecting": "拒绝中...",
+      "stockWarning": "当前库存不足以履行此订单。库存在拣货步骤才会扣除，如果您预计届时库存会到货，仍可批准此订单。",
+      "bypassStockCheck": "我确认库存不足，仍然要批准此订单"
     },
     "backorderValidation": {
       "quantityRequired": "请为所有项目指定批准数量",

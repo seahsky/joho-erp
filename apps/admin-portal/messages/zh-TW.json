@@ -760,7 +760,9 @@
       "reject": "拒絕訂單",
       "cancel": "取消",
       "approving": "批准中...",
-      "rejecting": "拒絕中..."
+      "rejecting": "拒絕中...",
+      "stockWarning": "目前庫存不足以履行此訂單。庫存在揀貨步驟才會扣除，如果您預計屆時庫存會到貨，仍可批准此訂單。",
+      "bypassStockCheck": "我確認庫存不足，仍然要批准此訂單"
     },
     "backorderValidation": {
       "quantityRequired": "請為所有項目指定批准數量",

@@ -760,7 +760,9 @@
       "reject": "Reject Order",
       "cancel": "Cancel",
       "approving": "Approving...",
-      "rejecting": "Rejecting..."
+      "rejecting": "Rejecting...",
+      "stockWarning": "Current stock levels are insufficient to fulfil this order. Stock is not deducted until the packing step, so you may still approve if you expect stock to arrive before then.",
+      "bypassStockCheck": "I acknowledge there is insufficient stock and want to approve this order anyway"
     },
     "backorderValidation": {
       "quantityRequired": "Please specify approved quantities for all items",

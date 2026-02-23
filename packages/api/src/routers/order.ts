@@ -1958,6 +1958,7 @@ export const orderRouter = router({
         approvedQuantities: z.record(z.number().int().positive()).optional(), // For partial approval
         expectedFulfillment: z.date().optional(),
         notes: z.string().optional(),
+        bypassStockCheck: z.boolean().default(false),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -2060,18 +2061,20 @@ export const orderRouter = router({
         }
 
         if (Object.keys(shortfalls).length > 0) {
-          // Rollback by reverting status (transaction will rollback anyway on throw)
-          const shortfallDetails = Object.entries(shortfalls)
-            .map(([productId, { requested, available }]) => {
-              const product = products.find((p) => p.id === productId);
-              return `${product?.name || productId}: need ${requested}, have ${available}`;
-            })
-            .join('; ');
-          
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Insufficient stock for some items. Stock may have changed since order was placed. ${shortfallDetails}`,
-          });
+          if (!input.bypassStockCheck) {
+            // Rollback by reverting status (transaction will rollback anyway on throw)
+            const shortfallDetails = Object.entries(shortfalls)
+              .map(([productId, { requested, available }]) => {
+                const product = products.find((p) => p.id === productId);
+                return `${product?.name || productId}: need ${requested}, have ${available}`;
+              })
+              .join('; ');
+            
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient stock for some items. Stock may have changed since order was placed. ${shortfallDetails}`,
+            });
+          }
         }
 
         // STEP 4: Handle partial approval if applicable
@@ -2141,7 +2144,7 @@ export const orderRouter = router({
                   changedBy: ctx.userId,
                   changedByName: userDetails.changedByName,
                   changedByEmail: userDetails.changedByEmail,
-                  notes: `Backorder partially approved by admin${notes ? `: ${notes}` : ''}`,
+                  notes: `Backorder partially approved by admin${input.bypassStockCheck ? ' (approved with insufficient stock — admin override)' : ''}${notes ? `: ${notes}` : ''}`,
                 },
               ],
             },
@@ -2162,7 +2165,7 @@ export const orderRouter = router({
                   changedBy: ctx.userId,
                   changedByName: userDetails.changedByName,
                   changedByEmail: userDetails.changedByEmail,
-                  notes: `Backorder approved by admin${notes ? `: ${notes}` : ''}`,
+                  notes: `Backorder approved by admin${input.bypassStockCheck ? ' (approved with insufficient stock — admin override)' : ''}${notes ? `: ${notes}` : ''}`,
                 },
               ],
             },
