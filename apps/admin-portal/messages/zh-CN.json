@@ -2005,7 +2005,16 @@
       "note": "库存会在订单数量更改时更新",
       "packedRemainingStock": "剩余库存：{count}",
       "itemPacked": "已打包 - 库存已扣除"
-    }
+    },
+    "removeItem": "移除商品",
+    "removeItemTitle": "移除商品？",
+    "removeItemDescription": "从订单 {orderNumber} 中移除 {productName}？库存将退回仓库。",
+    "removeLastItemWarning": "这是订单中的最后一个商品。移除后订单将被取消。",
+    "confirmRemove": "移除",
+    "itemRemoved": "商品已移除",
+    "itemRemovedDescription": "商品已移除，库存已退回仓库。",
+    "orderCancelledByRemoval": "订单已取消",
+    "orderCancelledByRemovalDescription": "所有商品已移除，订单已被取消。"
   },
   "settings": {
     "title": "设置",

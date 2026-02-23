@@ -2005,7 +2005,16 @@
       "note": "Stock updates when order quantity changes",
       "packedRemainingStock": "Remaining stock: {count}",
       "itemPacked": "Item packed - stock deducted"
-    }
+    },
+    "removeItem": "Remove item",
+    "removeItemTitle": "Remove item?",
+    "removeItemDescription": "Remove {productName} from order {orderNumber}? The stock will be returned to inventory.",
+    "removeLastItemWarning": "This is the last item in the order. Removing it will cancel the order.",
+    "confirmRemove": "Remove",
+    "itemRemoved": "Item removed",
+    "itemRemovedDescription": "The item has been removed and stock returned to inventory.",
+    "orderCancelledByRemoval": "Order cancelled",
+    "orderCancelledByRemovalDescription": "All items were removed. The order has been cancelled."
   },
   "settings": {
     "title": "Settings",

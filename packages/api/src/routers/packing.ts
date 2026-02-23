@@ -316,7 +316,7 @@ export const packingRouter = router({
       z.object({
         orderId: z.string(),
         productId: z.string(),
-        newQuantity: z.number().positive(),
+        newQuantity: z.number().int().min(0),
         pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits').optional(),
       })
     )
@@ -412,33 +412,40 @@ export const packingRouter = router({
       // to prevent race conditions
 
       // Calculate new subtotal for this item using dinero.js
-      const unitPriceMoney = createMoney(item.unitPrice);
-      const newSubtotalMoney = multiplyMoney(unitPriceMoney, newQuantity);
-      const newSubtotal = toCents(newSubtotalMoney);
+      const newSubtotal = newQuantity === 0
+        ? 0
+        : toCents(multiplyMoney(createMoney(item.unitPrice), newQuantity));
 
-      // Update items array with new quantity and subtotal
-      const updatedItems = order.items.map((orderItem, idx) => {
-        if (idx === itemIndex) {
-          return {
-            ...orderItem,
-            quantity: newQuantity,
-            subtotal: newSubtotal,
-          };
-        }
-        return orderItem;
-      });
+      // Update items array: remove item if quantity is 0, otherwise update
+      const updatedItems = newQuantity === 0
+        ? order.items.filter((_, idx) => idx !== itemIndex)
+        : order.items.map((orderItem, idx) => {
+            if (idx === itemIndex) {
+              return {
+                ...orderItem,
+                quantity: newQuantity,
+                subtotal: newSubtotal,
+              };
+            }
+            return orderItem;
+          });
+
+      // Check if removing this item empties the order
+      const orderWillBeCancelled = updatedItems.length === 0;
 
       // Recalculate order totals using per-product GST settings
       // Note: Uses order-time prices (i.unitPrice) stored in the order item, NOT current product prices.
       // This ensures price consistency even if product prices change after order placement. (Issue #14 clarification)
-      const newTotals = calculateOrderTotals(
-        updatedItems.map((i: any) => ({
-          quantity: i.quantity,
-          unitPrice: i.unitPrice, // Order-time price, not current product price
-          applyGst: i.applyGst ?? false,
-          gstRate: i.gstRate ?? null,
-        }))
-      );
+      const newTotals = orderWillBeCancelled
+        ? { subtotal: 0, taxAmount: 0, totalAmount: 0 }
+        : calculateOrderTotals(
+            updatedItems.map((i: any) => ({
+              quantity: i.quantity,
+              unitPrice: i.unitPrice, // Order-time price, not current product price
+              applyGst: i.applyGst ?? false,
+              gstRate: i.gstRate ?? null,
+            }))
+          );
 
       // Stock calculation now happens inside the transaction with fresh data
 
@@ -590,6 +597,7 @@ export const packingRouter = router({
             subtotal: newTotals.subtotal,
             taxAmount: newTotals.taxAmount,
             totalAmount: newTotals.totalAmount,
+            ...(orderWillBeCancelled ? { status: 'cancelled' } : {}),
             version: { increment: 1 },
             ...packingUpdate,
           },
@@ -603,17 +611,23 @@ export const packingRouter = router({
         }
 
         // Update status history separately (requires update, not updateMany)
+        const historyNote = newQuantity === 0
+          ? (orderWillBeCancelled
+              ? `Order cancelled: all items removed during packing (last item: ${item.sku})`
+              : `Item removed: ${item.sku}`)
+          : `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity} ${item.unit}`;
+
         await tx.order.update({
           where: { id: orderId },
           data: {
             statusHistory: {
               push: {
-                status: order.status,
+                status: orderWillBeCancelled ? 'cancelled' : order.status,
                 changedAt: new Date(),
                 changedBy: ctx.userId || 'system',
                 changedByName: userDetails.changedByName,
                 changedByEmail: userDetails.changedByEmail,
-                notes: `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity} ${item.unit}`,
+                notes: historyNote,
               },
             },
           },
@@ -629,7 +643,7 @@ export const packingRouter = router({
         itemSku: item.sku,
         oldQuantity,
         newQuantity,
-        reason: 'Packing adjustment',
+        reason: newQuantity === 0 ? 'Item removed during packing' : 'Packing adjustment',
       }).catch((error) => {
         console.error('Audit log failed for packing quantity update:', error);
       });
@@ -653,6 +667,8 @@ export const packingRouter = router({
         newStock: actualNewStock,
         newSubtotal,
         newOrderTotal: newTotals.totalAmount,
+        itemRemoved: newQuantity === 0,
+        orderCancelled: orderWillBeCancelled,
       };
     }),
 

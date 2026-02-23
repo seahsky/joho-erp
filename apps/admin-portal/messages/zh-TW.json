@@ -2011,7 +2011,16 @@
       "note": "庫存會在訂單數量更改時更新",
       "packedRemainingStock": "剩餘庫存：{count}",
       "itemPacked": "已打包 - 庫存已扣除"
-    }
+    },
+    "removeItem": "移除商品",
+    "removeItemTitle": "移除商品？",
+    "removeItemDescription": "從訂單 {orderNumber} 中移除 {productName}？庫存將退回倉庫。",
+    "removeLastItemWarning": "這是訂單中的最後一個商品。移除後訂單將被取消。",
+    "confirmRemove": "移除",
+    "itemRemoved": "商品已移除",
+    "itemRemovedDescription": "商品已移除，庫存已退回倉庫。",
+    "orderCancelledByRemoval": "訂單已取消",
+    "orderCancelledByRemovalDescription": "所有商品已移除，訂單已被取消。"
   },
   "settings": {
     "title": "設定",
