@@ -1299,6 +1299,8 @@
       "defaultFromCategory": "Default from category: {name}",
       "materialCostPerUnit": "Material Cost per kg",
       "materialCostHint": "Cost of raw materials per kg of processed product",
+      "materialCostPending": "Enter quantities above",
+      "materialCostAutoHint": "Auto-calculated from source batch costs",
       "laborCost": "Labor Cost",
       "laborCostHint": "Cost of labor for processing",
       "laborCostType": "Labor Cost Type",

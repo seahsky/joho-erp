@@ -100,10 +100,15 @@ export function ProcessStockDialog({
     { enabled: selectionMode !== 'none' && open }
   );
 
+  // Fetch source product batches for FIFO cost calculation
+  const { data: sourceBatches } = api.inventory.getProductBatches.useQuery(
+    { productId: sourceProduct?.id ?? '', includeConsumed: false },
+    { enabled: !!sourceProduct && open }
+  );
+
   // Form state
   const [sourceQuantity, setSourceQuantity] = useState<string>('');
   const [targetOutputQuantity, setTargetOutputQuantity] = useState('');
-  const [costPerUnit, setCostPerUnit] = useState('');
   const [laborCost, setLaborCost] = useState('');
   const [laborCostType, setLaborCostType] = useState<'perKg' | 'total'>('perKg');
   const [expirySelection, setExpirySelection] = useState<string>('');
@@ -159,8 +164,28 @@ export function ProcessStockDialog({
     return output > 0 ? cost / output : 0;
   }, [laborCost, laborCostType, targetOutputQuantity]);
 
+  // Auto-calculated material cost per kg from FIFO batch consumption
+  const materialCostPerKg = useMemo(() => {
+    const batches = sourceBatches ?? [];
+    const inputQty = parseFloat(sourceQuantity) || 0;
+    const outputQty = parseFloat(targetOutputQuantity) || 0;
+    if (inputQty <= 0 || outputQty <= 0 || batches.length === 0) return 0;
+
+    let remaining = inputQty;
+    let totalCostCents = 0;
+
+    for (const batch of batches) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, batch.quantityRemaining);
+      totalCostCents += Math.round(take * batch.costPerUnit);
+      remaining -= take;
+    }
+
+    // Convert cents to dollars, divide by output qty (accounts for loss)
+    return totalCostCents / 100 / outputQty;
+  }, [sourceBatches, sourceQuantity, targetOutputQuantity]);
+
   // Computed total cost per kg (material + labor)
-  const materialCostPerKg = parseFloat(costPerUnit) || 0;
   const totalCostPerKg = materialCostPerKg + laborCostPerKg;
 
   // Computed loss amount for display
@@ -196,11 +221,12 @@ export function ProcessStockDialog({
       errors.push(t('validation.outputExceedsInput'));
     }
 
-    const materialCost = parseToCents(costPerUnit);
-    if (!materialCost || materialCost <= 0) errors.push(t('validation.costRequired'));
+    if (materialCostPerKg <= 0 && sourceQty > 0 && targetQty > 0) {
+      errors.push(t('validation.costRequired'));
+    }
 
     return errors;
-  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, costPerUnit, t]);
+  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, materialCostPerKg, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -272,7 +298,6 @@ export function ProcessStockDialog({
     setTargetProduct(null);
     setSourceQuantity('');
     setTargetOutputQuantity('');
-    setCostPerUnit('');
     setLaborCost('');
     setLaborCostType('perKg');
     setExpirySelection('');
@@ -548,17 +573,14 @@ export function ProcessStockDialog({
               {/* Cost Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="costPerUnit">{t('fields.materialCostPerUnit')}</Label>
-                  <Input
-                    id="costPerUnit"
-                    type="text"
-                    value={costPerUnit}
-                    onChange={(e) => setCostPerUnit(e.target.value)}
-                    placeholder="25.50"
-                    disabled={isLoading}
-                  />
+                  <Label>{t('fields.materialCostPerUnit')}</Label>
+                  <div className="mt-2 p-2 border rounded-md bg-muted/30 text-sm font-medium">
+                    {materialCostPerKg > 0
+                      ? `$${materialCostPerKg.toFixed(2)}`
+                      : t('fields.materialCostPending')}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t('fields.materialCostHint')}
+                    {t('fields.materialCostAutoHint')}
                   </p>
                 </div>
 

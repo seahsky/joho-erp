@@ -1299,6 +1299,8 @@
       "defaultFromCategory": "默认来自分类：{name}",
       "materialCostPerUnit": "原材料成本/公斤",
       "materialCostHint": "每公斤加工产品的原材料成本",
+      "materialCostPending": "请先输入上方数量",
+      "materialCostAutoHint": "根据原料批次成本自动计算",
       "laborCost": "人工成本",
       "laborCostHint": "加工的人工成本",
       "laborCostType": "人工成本类型",
