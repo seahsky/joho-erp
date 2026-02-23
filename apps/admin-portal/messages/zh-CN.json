@@ -629,7 +629,9 @@
       "invoiceStatus": "{total} 个订单中有 {withInvoices} 个已生成发票",
       "invoicesPending": "{count} 个订单的发票正在生成中",
       "printInvoices": "打印发票",
-      "printingInvoices": "正在打印..."
+      "printingInvoices": "正在打印...",
+      "downloadingProgress": "正在打开 {current} / {total}...",
+      "printingProgress": "正在打印 {current} / {total}..."
     },
     "autoAssignDrivers": "自动分配司机",
     "autoAssignment": {

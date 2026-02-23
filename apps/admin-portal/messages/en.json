@@ -629,7 +629,9 @@
       "invoiceStatus": "{withInvoices} of {total} orders have invoices ready",
       "invoicesPending": "{count} order(s) pending invoice creation",
       "printInvoices": "Print Invoices",
-      "printingInvoices": "Printing..."
+      "printingInvoices": "Printing...",
+      "downloadingProgress": "Opening {current} of {total}...",
+      "printingProgress": "Printing {current} of {total}..."
     },
     "autoAssignDrivers": "Auto-Assign Drivers",
     "autoAssignment": {

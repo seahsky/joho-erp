@@ -59,6 +59,8 @@ export function RouteManifestDialog({
 
   const [isDownloadingInvoices, setIsDownloadingInvoices] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [printProgress, setPrintProgress] = useState<{ current: number; total: number } | null>(null);
 
   const downloadAllInvoices = useCallback(async () => {
     if (!invoiceData?.invoices?.length) return;
@@ -77,16 +79,18 @@ export function RouteManifestDialog({
         return;
       }
 
-      // Open each invoice URL in a new tab (browsers may block multiple popups)
-      // Show toast with count
-      invoicesWithUrls.forEach((inv, index) => {
+      // Open each invoice URL in a new tab sequentially with progress
+      for (let i = 0; i < invoicesWithUrls.length; i++) {
+        const inv = invoicesWithUrls[i];
+        setDownloadProgress({ current: i + 1, total: invoicesWithUrls.length });
+        if (inv.url) {
+          window.open(inv.url, `_blank_${i}`);
+        }
         // Stagger the opening to avoid popup blockers
-        setTimeout(() => {
-          if (inv.url) {
-            window.open(inv.url, `_blank_${index}`);
-          }
-        }, index * 200);
-      });
+        if (i < invoicesWithUrls.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
 
       toast({
         title: t('invoicesOpened'),
@@ -100,6 +104,7 @@ export function RouteManifestDialog({
       });
     } finally {
       setIsDownloadingInvoices(false);
+      setDownloadProgress(null);
     }
   }, [invoiceData, toast, tErrors, t]);
 
@@ -123,6 +128,7 @@ export function RouteManifestDialog({
         const inv = invoicesWithUrls[i];
         if (!inv.url) continue;
 
+        setPrintProgress({ current: i + 1, total: invoicesWithUrls.length });
         const response = await fetch(inv.url);
         const blob = await response.blob();
         printPdfBlob(blob);
@@ -145,6 +151,7 @@ export function RouteManifestDialog({
       });
     } finally {
       setIsPrinting(false);
+      setPrintProgress(null);
     }
   }, [invoiceData, toast, tErrors, t]);
 
@@ -229,7 +236,9 @@ export function RouteManifestDialog({
             {isPrinting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('printingInvoices')}
+                {printProgress
+                  ? t('printingProgress', { current: printProgress.current, total: printProgress.total })
+                  : t('printingInvoices')}
               </>
             ) : (
               <>
@@ -245,7 +254,9 @@ export function RouteManifestDialog({
             {isDownloadingInvoices ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('downloadingInvoices')}
+                {downloadProgress
+                  ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
+                  : t('downloadingInvoices')}
               </>
             ) : (
               <>
