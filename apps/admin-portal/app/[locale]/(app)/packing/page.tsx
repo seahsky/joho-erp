@@ -7,6 +7,7 @@ import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, D
 import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { printPdfBlob } from '@/lib/printPdf';
+import { registerPdfFonts } from '@/lib/pdfFonts';
 import { PreparationSummaryDocument } from './components/exports/PreparationSummaryDocument';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -16,6 +17,8 @@ import { AreaLabelFilter } from './components/AreaLabelFilter';
 import { StatsBar, FilterBar, OperationsLayout, type StatItem } from '@/components/operations';
 import { PermissionGate } from '@/components/permission-gate';
 import type { ProductCategory } from '@joho-erp/shared';
+
+registerPdfFonts();
 
 export default function PackingPage() {
   const t = useTranslations('packing');

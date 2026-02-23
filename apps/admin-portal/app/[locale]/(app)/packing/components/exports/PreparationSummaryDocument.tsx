@@ -1,10 +1,11 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { PDF_FONT_FAMILY } from '@/lib/pdfFonts';
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 10,
-    fontFamily: 'Helvetica',
+    fontFamily: PDF_FONT_FAMILY,
   },
   header: {
     fontSize: 20,

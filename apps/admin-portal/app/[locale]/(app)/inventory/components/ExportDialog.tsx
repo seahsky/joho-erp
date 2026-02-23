@@ -15,10 +15,13 @@ import {
 import { useTranslations } from 'next-intl';
 import { Loader2, Download, FileText, FileSpreadsheet, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
+import { registerPdfFonts } from '@/lib/pdfFonts';
 import { api } from '@/trpc/client';
 import { generateExcel } from '../utils/exportUtils';
 import { printPdfBlob } from '@/lib/printPdf';
 import { InventoryReportDocument } from './exports/InventoryReportDocument';
+
+registerPdfFonts();
 
 type ExportFormat = 'pdf' | 'excel';
 type DataScope = 'current' | 'all';
