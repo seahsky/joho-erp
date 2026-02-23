@@ -32,6 +32,7 @@ import { calculateAvailableCredit } from './order';
  */
 interface CartItem {
   productId: string;
+  parentProductId: string | null;
   sku: string;
   productName: string;
   unit: string;
@@ -413,6 +414,7 @@ export const cartRouter = router({
           gstRate: true,
           imageUrl: true,
           description: true,
+          parentProductId: true,
         },
       });
 
@@ -493,6 +495,7 @@ export const cartRouter = router({
 
         const newItem: CartItem = {
           productId: product.id,
+          parentProductId: product.parentProductId ?? null,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,

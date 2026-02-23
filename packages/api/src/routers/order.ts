@@ -53,37 +53,49 @@ function validateStockWithBackorder(
     stockShortfall: {},
   };
 
+  // Aggregate parent consumption for subproducts sharing the same parent
+  const parentConsumptions = new Map<string, { total: number; parentStock: number; items: Array<{ productId: string; quantity: number; lossPercentage: number }> }>();
+
   for (const item of items) {
     const product = products.find((p) => p.id === item.productId);
     if (!product) continue;
 
-    // Check if this is a subproduct
     const productIsSubproduct = isSubproduct(product);
 
-    // For subproducts: calculate parent consumption and check parent stock
-    // For regular products: check direct stock
-    const requiredQuantity = productIsSubproduct
-      ? calculateParentConsumption(item.quantity, product.estimatedLossPercentage ?? 0)
-      : item.quantity;
+    if (productIsSubproduct && product.parentProduct) {
+      const lossPercentage = product.estimatedLossPercentage ?? 0;
+      const requiredFromParent = calculateParentConsumption(item.quantity, lossPercentage);
+      const parentId = product.parentProduct.id;
+      const existing = parentConsumptions.get(parentId) || { total: 0, parentStock: product.parentProduct.currentStock, items: [] };
+      existing.total += requiredFromParent;
+      existing.items.push({ productId: item.productId, quantity: item.quantity, lossPercentage });
+      parentConsumptions.set(parentId, existing);
+    } else {
+      // Regular product — check directly
+      if (product.currentStock < item.quantity) {
+        result.requiresBackorder = true;
+        result.stockShortfall[item.productId] = {
+          requested: item.quantity,
+          available: product.currentStock,
+          shortfall: item.quantity - product.currentStock,
+        };
+      }
+    }
+  }
 
-    // Use currentStock from products array - this is what customers see and is the authoritative stock level
-    // Note: currentStock is kept in sync with batch operations via adjustStock, packing, etc.
-    const availableStock = productIsSubproduct && product.parentProduct
-      ? product.parentProduct.currentStock
-      : product.currentStock;
-
-    if (availableStock < requiredQuantity) {
-      // Stock insufficient - backorder needed
-      result.requiresBackorder = true;
-      result.stockShortfall[item.productId] = {
-        requested: item.quantity,
-        available: productIsSubproduct
-          ? Math.floor(availableStock * (1 - (product.estimatedLossPercentage ?? 0) / 100)) // Convert back to subproduct terms
-          : availableStock,
-        shortfall: item.quantity - (productIsSubproduct
-          ? Math.floor(availableStock * (1 - (product.estimatedLossPercentage ?? 0) / 100))
-          : availableStock),
-      };
+  // Check aggregated parent consumption
+  for (const [_parentId, { total, parentStock, items: subItems }] of parentConsumptions) {
+    if (parentStock < total) {
+      // Mark each subproduct item as having a shortfall
+      for (const subItem of subItems) {
+        const availableForSubproduct = Math.floor(parentStock * (1 - subItem.lossPercentage / 100));
+        result.requiresBackorder = true;
+        result.stockShortfall[subItem.productId] = {
+          requested: subItem.quantity,
+          available: availableForSubproduct,
+          shortfall: subItem.quantity - availableForSubproduct,
+        };
+      }
     }
   }
 
@@ -369,6 +381,7 @@ export const orderRouter = router({
 
         return {
           productId: product.id,
+          parentProductId: product.parentProductId ?? null,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,
@@ -757,6 +770,7 @@ export const orderRouter = router({
 
         return {
           productId: product.id,
+          parentProductId: product.parentProductId ?? null,
           sku: product.sku,
           productName: product.name,
           unit: product.unit,

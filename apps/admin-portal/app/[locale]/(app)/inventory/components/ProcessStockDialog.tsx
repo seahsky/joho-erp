@@ -38,6 +38,7 @@ interface Product {
   sku: string;
   currentStock: number;
   unit: string;
+  parentProductId?: string | null;
   estimatedLossPercentage?: number | null;
   categoryRelation?: {
     id: string;
@@ -317,7 +318,7 @@ export function ProcessStockDialog({
     setProductSearch('');
   };
 
-  const products = (productsData?.items || []) as unknown as Product[];
+  const products = ((productsData?.items || []) as unknown as Product[]).filter(p => !p.parentProductId);
   const isLoading = processStockMutation.isPending;
 
   return (

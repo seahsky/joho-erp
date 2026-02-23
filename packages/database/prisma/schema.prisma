@@ -926,6 +926,7 @@ type CreditSignature {
 
 type OrderItem {
   productId               String              @db.ObjectId
+  parentProductId         String?             @db.ObjectId
   sku                     String
   productName             String
   unit                    String
@@ -939,6 +940,7 @@ type OrderItem {
 
 type CartItem {
   productId           String              @db.ObjectId
+  parentProductId     String?             @db.ObjectId
   sku                 String
   productName         String
   unit                String

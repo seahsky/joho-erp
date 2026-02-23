@@ -889,6 +889,20 @@ export const productRouter = router({
           });
         }
 
+        // Block subproducts — they derive virtual stock from parent, not from Process Stock
+        if (sourceProduct.parentProductId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot use a subproduct as source in Process Stock. Use the parent product instead.',
+          });
+        }
+        if (targetProduct.parentProductId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot use a subproduct as target in Process Stock. Use the parent product instead.',
+          });
+        }
+
         // STEP 2: Use sourceQuantity directly (provided by user)
         // Calculate loss percentage if not provided: ((input - output) / input) * 100
         const calculatedLoss = sourceQuantity > 0 

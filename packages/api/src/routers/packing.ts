@@ -954,6 +954,11 @@ export const packingRouter = router({
             existing.totalConsumption += consumeQuantity;
             existing.items.push({ product, item, consumeQuantity });
             parentConsumptions.set(parentProduct.id, existing);
+          } else if (productIsSubproduct && !parentProduct) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Parent product for "${product.name}" (${product.sku}) has been deleted. Cannot pack this subproduct.`,
+            });
           } else {
             regularProductItems.push({ product, item, consumeQuantity });
           }
