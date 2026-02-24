@@ -808,7 +808,6 @@ export interface XeroItem {
   Code: string;
   Name: string;
   Description: string;
-  PurchaseDescription?: string;
   IsSold: boolean;
   IsPurchased: boolean;
   IsTrackedAsInventory: boolean;
@@ -1205,7 +1204,6 @@ function mapProductToXeroItem(product: {
     Code: code,
     Name: name,
     Description: product.description || product.name,
-    PurchaseDescription: 'Auto-created by Joho ERP',
     IsSold: true,
     IsPurchased: false,
     IsTrackedAsInventory: false,
