@@ -891,6 +891,14 @@ function getXeroSalesAccountCode(): string {
   return process.env.XERO_SALES_ACCOUNT_CODE || '200';
 }
 
+function getXeroGstTaxType(): string {
+  return process.env.XERO_GST_TAX_TYPE || 'OUTPUT';
+}
+
+function getXeroGstFreeTaxType(): string {
+  return process.env.XERO_GST_FREE_TAX_TYPE || 'EXEMPTOUTPUT';
+}
+
 // ============================================================================
 // Customer Type (for sync functions)
 // ============================================================================
@@ -1210,7 +1218,7 @@ function mapProductToXeroItem(product: {
     SalesDetails: {
       UnitPrice: product.basePrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: product.applyGst ? 'OUTPUT' : 'NONE',
+      TaxType: product.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
     },
   };
 }
@@ -1347,7 +1355,7 @@ export async function createInvoiceInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
+      TaxType: item.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
       ItemCode: item.sku,
     }));
 
@@ -1448,7 +1456,7 @@ export async function updateInvoiceInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
+      TaxType: item.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
       ItemCode: item.sku,
     }));
 
@@ -1571,7 +1579,7 @@ export async function createCreditNoteInXero(
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
       AccountCode: getXeroSalesAccountCode(),
-      TaxType: item.applyGst ? 'OUTPUT' : 'NONE', // OUTPUT = 10% GST, NONE = GST-free
+      TaxType: item.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
     }));
 
     const creditNote: XeroCreditNote = {
