@@ -993,6 +993,22 @@ async function findExistingContactByEmail(email: string): Promise<string | null>
   }
 }
 
+async function findExistingItemByCode(code: string): Promise<string | null> {
+  try {
+    const whereClause = encodeURIComponent(`Code=="${code}"`);
+    const response = await xeroApiRequest<XeroItemsResponse>(
+      `/Items?where=${whereClause}`
+    );
+
+    if (response.Items && response.Items.length > 0) {
+      return response.Items[0].ItemID || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 
 export async function findExistingContactByEmailWithName(
   email: string
@@ -1250,13 +1266,25 @@ export async function ensureXeroItemsExist(
 
   // Filter out products where xeroItemId is already cached
   const uncachedProducts = products.filter((p) => !p.xeroItemId);
-  const skippedCount = products.length - uncachedProducts.length;
+  let skippedCount = products.length - uncachedProducts.length;
 
   let createdCount = 0;
   const errors: string[] = [];
 
   for (const product of uncachedProducts) {
     try {
+      // Check if item already exists in Xero by Code/SKU
+      const existingItemId = await findExistingItemByCode(product.sku);
+      if (existingItemId) {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { xeroItemId: existingItemId },
+        });
+        xeroLogger.sync.itemCreated(existingItemId, product.id, product.sku);
+        skippedCount++;
+        continue;
+      }
+
       const itemPayload = mapProductToXeroItem(product);
       const response = await xeroApiRequest<XeroItemsResponse>('/Items', {
         method: 'PUT',
