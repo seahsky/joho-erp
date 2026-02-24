@@ -12,10 +12,10 @@ import {
   Label,
   useToast,
 } from '@joho-erp/ui';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Loader2, Download, FileText, FileSpreadsheet, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
-import { registerPdfFonts } from '@/lib/pdfFonts';
+import { registerPdfFonts, getPdfFontFamily } from '@/lib/pdfFonts';
 import { api } from '@/trpc/client';
 import { generateExcel } from '../utils/exportUtils';
 import { printPdfBlob } from '@/lib/printPdf';
@@ -46,6 +46,7 @@ export function ExportDialog({
 }: ExportDialogProps) {
   const t = useTranslations('inventory.export');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const { toast } = useToast();
 
   const [format, setFormat] = useState<ExportFormat>('excel');
@@ -164,6 +165,7 @@ export function ExportDialog({
       if (format === 'pdf') {
         const doc = (
           <InventoryReportDocument
+            fontFamily={getPdfFontFamily(locale)}
             tab={exportTab}
             data={data as Parameters<typeof InventoryReportDocument>[0]['data']}
             translations={translations}

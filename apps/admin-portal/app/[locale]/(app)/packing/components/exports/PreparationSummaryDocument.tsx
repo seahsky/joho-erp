@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
 });
 
 interface PreparationSummaryDocumentProps {
+  fontFamily?: string;
   productSummary: Array<{
     sku: string;
     productName: string;
@@ -105,6 +106,7 @@ function formatTimestamp(): string {
 }
 
 export function PreparationSummaryDocument({
+  fontFamily = PDF_FONT_FAMILY,
   productSummary,
   deliveryDate,
   filters,
@@ -130,7 +132,7 @@ export function PreparationSummaryDocument({
 
   return (
     <Document>
-      <Page size="A4" orientation="landscape" style={styles.page}>
+      <Page size="A4" orientation="landscape" style={{ ...styles.page, fontFamily }}>
         <Text style={styles.header}>
           {t.preparationSummary || 'Preparation Summary'}
         </Text>

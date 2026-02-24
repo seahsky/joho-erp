@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
 });
 
 interface InventoryReportDocumentProps {
+  fontFamily?: string;
   tab: 'overview' | 'trends' | 'turnover' | 'comparison';
   data: OverviewData | TrendsData | TurnoverData | ComparisonData;
   translations: Record<string, string>;
@@ -114,6 +115,7 @@ function formatAUD(cents: number): string {
 }
 
 export function InventoryReportDocument({
+  fontFamily = PDF_FONT_FAMILY,
   tab,
   data,
   translations: t,
@@ -125,7 +127,7 @@ export function InventoryReportDocument({
       {tab === 'overview' && (
         <>
           {/* Summary Page */}
-          <Page size="A4" style={styles.page}>
+          <Page size="A4" style={{ ...styles.page, fontFamily }}>
             <Text style={styles.header}>{t.inventoryOverview || 'Inventory Overview'}</Text>
 
             <View style={{ marginBottom: 20 }}>
@@ -181,7 +183,7 @@ export function InventoryReportDocument({
           </Page>
 
           {/* Transactions Page */}
-          <Page size="A4" orientation="landscape" style={styles.page}>
+          <Page size="A4" orientation="landscape" style={{ ...styles.page, fontFamily }}>
             <Text style={styles.header}>{t.recentTransactions || 'Recent Transactions'}</Text>
 
             <View style={styles.table}>
@@ -219,7 +221,7 @@ export function InventoryReportDocument({
       )}
 
       {tab === 'trends' && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={{ ...styles.page, fontFamily }}>
           <Text style={styles.header}>
             {t.inventoryTrends || 'Inventory Trends'} ({(data as TrendsData).granularity})
           </Text>
@@ -251,7 +253,7 @@ export function InventoryReportDocument({
       )}
 
       {tab === 'turnover' && (
-        <Page size="A4" orientation="landscape" style={styles.page}>
+        <Page size="A4" orientation="landscape" style={{ ...styles.page, fontFamily }}>
           <Text style={styles.header}>
             {t.productTurnover || 'Product Turnover'} ({(data as TurnoverData).granularity}, {(data as TurnoverData).periodDays} {t.days || 'days'})
           </Text>
@@ -286,7 +288,7 @@ export function InventoryReportDocument({
       )}
 
       {tab === 'comparison' && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={{ ...styles.page, fontFamily }}>
           <Text style={styles.header}>
             {t.comparisonAnalytics || 'Comparison Analytics'} -{' '}
             {(data as ComparisonData).comparisonType === 'week_over_week'

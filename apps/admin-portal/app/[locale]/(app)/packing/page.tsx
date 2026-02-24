@@ -7,9 +7,9 @@ import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, D
 import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { printPdfBlob } from '@/lib/printPdf';
-import { registerPdfFonts } from '@/lib/pdfFonts';
+import { registerPdfFonts, getPdfFontFamily } from '@/lib/pdfFonts';
 import { PreparationSummaryDocument } from './components/exports/PreparationSummaryDocument';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
 import { OrderListView } from './components/OrderListView';
@@ -23,6 +23,7 @@ registerPdfFonts();
 export default function PackingPage() {
   const t = useTranslations('packing');
   const tErrors = useTranslations('errors');
+  const locale = useLocale();
   const { toast } = useToast();
 
   // Default to today for delivery date (using local timezone)
@@ -244,6 +245,7 @@ export default function PackingPage() {
       const formattedDate = formatDate(deliveryDate);
       const blob = await pdf(
         <PreparationSummaryDocument
+          fontFamily={getPdfFontFamily(locale)}
           productSummary={filteredProductSummary}
           deliveryDate={formattedDate}
           filters={{
