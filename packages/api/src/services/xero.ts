@@ -801,6 +801,29 @@ export interface XeroLineItem {
 }
 
 /**
+ * Xero Item structure for creating/upserting items
+ */
+export interface XeroItem {
+  ItemID?: string;
+  Code: string;
+  Name: string;
+  Description: string;
+  PurchaseDescription?: string;
+  IsSold: boolean;
+  IsPurchased: boolean;
+  IsTrackedAsInventory: boolean;
+  SalesDetails: {
+    UnitPrice: number;
+    AccountCode: string;
+    TaxType: string;
+  };
+}
+
+export interface XeroItemsResponse {
+  Items: XeroItem[];
+}
+
+/**
  * Xero Invoice structure
  */
 export interface XeroInvoice {
@@ -1151,6 +1174,111 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
 }
 
 // ============================================================================
+// Item Sync (auto-create Xero Items before invoicing)
+// ============================================================================
+
+/**
+ * Map a Product record to a Xero Item payload for upsert
+ */
+function mapProductToXeroItem(product: {
+  sku: string;
+  name: string;
+  description: string | null;
+  basePrice: number; // In cents
+  applyGst: boolean;
+}): XeroItem {
+  const code = product.sku.slice(0, 30);
+  if (product.sku.length > 30) {
+    xeroLogger.warn(`SKU truncated from ${product.sku.length} to 30 chars: "${product.sku}"`, {
+      sku: product.sku,
+    } as any);
+  }
+
+  const name = product.name.slice(0, 50);
+  if (product.name.length > 50) {
+    xeroLogger.warn(`Product name truncated from ${product.name.length} to 50 chars: "${product.name}"`, {
+      sku: product.sku,
+    } as any);
+  }
+
+  return {
+    Code: code,
+    Name: name,
+    Description: product.description || product.name,
+    PurchaseDescription: 'Auto-created by Joho ERP',
+    IsSold: true,
+    IsPurchased: false,
+    IsTrackedAsInventory: false,
+    SalesDetails: {
+      UnitPrice: product.basePrice / 100, // Convert cents to dollars
+      AccountCode: getXeroSalesAccountCode(),
+      TaxType: product.applyGst ? 'OUTPUT' : 'NONE',
+    },
+  };
+}
+
+/**
+ * Ensure all Xero Items exist for the given order items.
+ * Auto-creates missing items via PUT /Items (upsert) and caches the Xero Item ID
+ * on the Product record to skip future API calls.
+ */
+export async function ensureXeroItemsExist(
+  orderItems: OrderItemForXeroSync[]
+): Promise<{ success: boolean; createdCount: number; skippedCount: number; errors: string[] }> {
+  // Deduplicate by productId
+  const uniqueProductIds = [...new Set(orderItems.map((item) => item.productId))];
+
+  // Batch-fetch product records from DB
+  const products = await prisma.product.findMany({
+    where: { id: { in: uniqueProductIds } },
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+      description: true,
+      basePrice: true,
+      applyGst: true,
+      xeroItemId: true,
+    },
+  });
+
+  // Filter out products where xeroItemId is already cached
+  const uncachedProducts = products.filter((p) => !p.xeroItemId);
+  const skippedCount = products.length - uncachedProducts.length;
+
+  let createdCount = 0;
+  const errors: string[] = [];
+
+  for (const product of uncachedProducts) {
+    try {
+      const itemPayload = mapProductToXeroItem(product);
+      const response = await xeroApiRequest<XeroItemsResponse>('/Items', {
+        method: 'PUT',
+        body: { Items: [itemPayload] },
+      });
+
+      const createdItem = response.Items[0];
+      if (createdItem?.ItemID) {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { xeroItemId: createdItem.ItemID },
+        });
+        xeroLogger.sync.itemCreated(createdItem.ItemID, product.id, product.sku);
+        createdCount++;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      errors.push(`SKU "${product.sku}": ${message}`);
+      xeroLogger.error(`Failed to create Xero item for SKU "${product.sku}"`, {
+        error: message,
+      } as any);
+    }
+  }
+
+  return { success: errors.length === 0, createdCount, skippedCount, errors };
+}
+
+// ============================================================================
 // Invoice Creation
 // ============================================================================
 
@@ -1190,6 +1318,15 @@ export async function createInvoiceInXero(
         success: true,
         invoiceId: existingInvoice.invoiceId,
         invoiceNumber: existingInvoice.invoiceNumber,
+      };
+    }
+
+    // Ensure all Xero Items exist before creating the invoice
+    const itemsResult = await ensureXeroItemsExist(order.items);
+    if (!itemsResult.success) {
+      return {
+        success: false,
+        error: `Failed to create Xero items: ${itemsResult.errors.join('; ')}`,
       };
     }
 

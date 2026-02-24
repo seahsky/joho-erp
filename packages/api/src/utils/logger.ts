@@ -365,6 +365,9 @@ export const xeroLogger = {
     creditNoteAllocated: (creditNoteNumber: string, invoiceNumber: string) => {
       log('INFO', `Credit note allocated to invoice`, { creditNoteNumber, invoiceNumber });
     },
+    itemCreated: (itemId: string, productId: string, sku: string) => {
+      log('INFO', `Item created in Xero`, { itemId, productId, sku });
+    },
   },
 };
 
