@@ -611,6 +611,12 @@ export const deliveryRouter = router({
         return xero?.invoiceId;
       });
 
+      // Filter orders that don't have invoices yet
+      const ordersWithoutInvoices = orders.filter((order) => {
+        const xero = order.xero as { invoiceId?: string | null } | null;
+        return !xero?.invoiceId;
+      });
+
       // Build invoice data with local PDF proxy URLs
       // No need to call Xero API - the local endpoint handles PDF fetching
       const invoiceData = ordersWithInvoices.map((order) => {
@@ -633,6 +639,11 @@ export const deliveryRouter = router({
         totalOrders: orders.length,
         ordersWithInvoices: ordersWithInvoices.length,
         invoices: invoiceData,
+        ordersWithoutInvoices: ordersWithoutInvoices.map((order) => ({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+        })),
       };
     }),
 

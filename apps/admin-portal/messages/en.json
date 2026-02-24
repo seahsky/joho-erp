@@ -635,7 +635,13 @@
       "retryFailed": "Retry {count} failed",
       "retryingProgress": "Retrying {current} of {total}...",
       "downloadComplete": "Download complete",
-      "downloadFailed": "{failed} of {total} failed"
+      "downloadFailed": "{failed} of {total} failed",
+      "generateInvoices": "Generate Invoices",
+      "generatingInvoices": "Generating...",
+      "generatingProgress": "Generating {current} of {total}...",
+      "generateSuccess": "Invoices Generated",
+      "generateSuccessDescription": "{count} invoice(s) created successfully",
+      "generatePartialSuccess": "{success} of {total} invoices created, {failed} failed"
     },
     "autoAssignDrivers": "Auto-Assign Drivers",
     "autoAssignment": {

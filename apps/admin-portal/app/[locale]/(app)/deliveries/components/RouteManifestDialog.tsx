@@ -19,7 +19,7 @@ import {
   useToast,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { Loader2, FileText, FileStack, Printer, RefreshCw } from 'lucide-react';
+import { Loader2, FileText, FileStack, Printer, RefreshCw, Zap } from 'lucide-react';
 import { api } from '@/trpc/client';
 
 interface RouteManifestDialogProps {
@@ -62,6 +62,11 @@ export function RouteManifestDialog({
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
   const [printProgress, setPrintProgress] = useState<{ current: number; total: number } | null>(null);
   const [failedInvoices, setFailedInvoices] = useState<Array<{ orderId: string; url: string }>>([]);
+  const [isGeneratingInvoices, setIsGeneratingInvoices] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const utils = api.useUtils();
+  const createInvoiceMutation = api.xero.createInvoice.useMutation();
 
   const downloadAllInvoices = useCallback(async () => {
     if (!invoiceData?.invoices?.length) return;
@@ -208,12 +213,56 @@ export function RouteManifestDialog({
     setIsDownloadingInvoices(false);
   }, [failedInvoices, toast, t]);
 
+  const generateMissingInvoices = useCallback(async () => {
+    const orders = invoiceData?.ordersWithoutInvoices;
+    if (!orders?.length) return;
+
+    setIsGeneratingInvoices(true);
+    setGenerateProgress({ current: 0, total: orders.length });
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < orders.length; i++) {
+      setGenerateProgress({ current: i + 1, total: orders.length });
+      try {
+        await createInvoiceMutation.mutateAsync({ orderId: orders[i].orderId });
+        successCount++;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    // Refresh data
+    await utils.delivery.getInvoiceUrlsForDelivery.invalidate();
+
+    if (failedCount === 0) {
+      toast({
+        title: t('generateSuccess'),
+        description: t('generateSuccessDescription', { count: successCount }),
+      });
+    } else {
+      toast({
+        title: t('generatePartialSuccess', {
+          success: successCount,
+          total: orders.length,
+          failed: failedCount,
+        }),
+        variant: 'destructive',
+      });
+    }
+
+    setIsGeneratingInvoices(false);
+    setGenerateProgress(null);
+  }, [invoiceData, createInvoiceMutation, utils, toast, t]);
+
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setFailedInvoices([]);
       setDownloadProgress(null);
       setPrintProgress(null);
+      setGenerateProgress(null);
     }
   }, [open]);
 
@@ -278,6 +327,27 @@ export function RouteManifestDialog({
                   {t('invoicesPending', { count: invoiceData.totalOrders - invoiceData.ordersWithInvoices })}
                 </p>
               )}
+              {invoiceData.ordersWithoutInvoices && invoiceData.ordersWithoutInvoices.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  disabled={isGeneratingInvoices || isPrinting || isDownloadingInvoices}
+                  onClick={generateMissingInvoices}
+                >
+                  {isGeneratingInvoices ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      {t('generatingInvoices')}
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3 w-3 mr-1" />
+                      {t('generateInvoices')} ({invoiceData.ordersWithoutInvoices.length})
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="p-3 bg-destructive/10 text-destructive rounded-lg">
@@ -287,40 +357,38 @@ export function RouteManifestDialog({
         </div>
 
         {/* Progress Bar */}
-        {(downloadProgress || printProgress) && (
-          <div className="px-6 pb-2 space-y-1">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {downloadProgress
-                  ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
-                  : t('printingProgress', { current: printProgress!.current, total: printProgress!.total })}
-              </span>
-              <span>
-                {Math.round(
-                  ((downloadProgress || printProgress)!.current / (downloadProgress || printProgress)!.total) * 100
-                )}
-                %
-              </span>
+        {(downloadProgress || printProgress || generateProgress) && (() => {
+          const progress = downloadProgress || printProgress || generateProgress;
+          const label = generateProgress
+            ? t('generatingProgress', { current: generateProgress.current, total: generateProgress.total })
+            : downloadProgress
+              ? t('downloadingProgress', { current: downloadProgress.current, total: downloadProgress.total })
+              : t('printingProgress', { current: printProgress!.current, total: printProgress!.total });
+          const pct = Math.round((progress!.current / progress!.total) * 100);
+          return (
+            <div className="px-6 pb-2 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{label}</span>
+                <span>{pct}%</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full bg-secondary rounded-full h-2">
-              <div
-                className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
-                style={{
-                  width: `${((downloadProgress || printProgress)!.current / (downloadProgress || printProgress)!.total) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices || isPrinting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingInvoices || isPrinting || isGeneratingInvoices}>
             {tCommon('cancel')}
           </Button>
           <Button
             variant="secondary"
             onClick={handlePrint}
-            disabled={isPrinting || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+            disabled={isPrinting || isLoadingInvoices || !invoiceData?.ordersWithInvoices || isGeneratingInvoices}
           >
             {isPrinting ? (
               <>
@@ -344,7 +412,7 @@ export function RouteManifestDialog({
           ) : (
             <Button
               onClick={downloadAllInvoices}
-              disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices}
+              disabled={isDownloadingInvoices || isLoadingInvoices || !invoiceData?.ordersWithInvoices || isGeneratingInvoices}
             >
               {isDownloadingInvoices ? (
                 <>

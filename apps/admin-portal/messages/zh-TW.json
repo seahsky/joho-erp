@@ -635,7 +635,13 @@
       "retryFailed": "重試 {count} 個失敗項",
       "retryingProgress": "正在重試 {current} / {total}...",
       "downloadComplete": "下載完成",
-      "downloadFailed": "{total} 個中有 {failed} 個失敗"
+      "downloadFailed": "{total} 個中有 {failed} 個失敗",
+      "generateInvoices": "生成發票",
+      "generatingInvoices": "正在生成...",
+      "generatingProgress": "正在生成 {current} / {total}...",
+      "generateSuccess": "發票已生成",
+      "generateSuccessDescription": "成功建立 {count} 張發票",
+      "generatePartialSuccess": "{total} 張發票中成功建立 {success} 張，{failed} 張失敗"
     },
     "autoAssignDrivers": "自動分配司機",
     "autoAssignment": {
