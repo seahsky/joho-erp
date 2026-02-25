@@ -94,6 +94,11 @@ type DirectorFormData = {
   licenseState: string;
   licenseExpiry: string;
   position: string;
+  // ID document fields (read-only pass-through to prevent data loss on save)
+  idDocumentType?: string;
+  idDocumentFrontUrl?: string;
+  idDocumentBackUrl?: string;
+  idDocumentUploadedAt?: string;
 };
 
 type TradeReferenceFormData = {
@@ -375,6 +380,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
       licenseState: d.licenseState || '',
       licenseExpiry: d.licenseExpiry ? new Date(d.licenseExpiry).toISOString().split('T')[0] : '',
       position: d.position || '',
+      // Preserve ID document fields
+      idDocumentType: d.idDocumentType || undefined,
+      idDocumentFrontUrl: d.idDocumentFrontUrl || undefined,
+      idDocumentBackUrl: d.idDocumentBackUrl || undefined,
+      idDocumentUploadedAt: d.idDocumentUploadedAt ? new Date(d.idDocumentUploadedAt).toISOString() : undefined,
     }));
 
     // Map trade references to form data
@@ -515,6 +525,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
         licenseState: d.licenseState as 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT',
         licenseExpiry: new Date(d.licenseExpiry),
         position: d.position || undefined,
+        // Preserve ID document fields
+        idDocumentType: d.idDocumentType as 'DRIVER_LICENSE' | 'PASSPORT' | undefined,
+        idDocumentFrontUrl: d.idDocumentFrontUrl || undefined,
+        idDocumentBackUrl: d.idDocumentBackUrl || undefined,
+        idDocumentUploadedAt: d.idDocumentUploadedAt ? new Date(d.idDocumentUploadedAt) : undefined,
       }));
     }
 

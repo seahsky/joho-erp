@@ -1566,6 +1566,11 @@ export const customerRouter = router({
               licenseState: z.enum(['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT']),
               licenseExpiry: z.coerce.date(),
               position: z.string().optional(),
+              // ID document fields (pass-through to prevent data loss on save)
+              idDocumentType: z.enum(['DRIVER_LICENSE', 'PASSPORT']).optional(),
+              idDocumentFrontUrl: z.string().url().optional(),
+              idDocumentBackUrl: z.string().url().optional(),
+              idDocumentUploadedAt: z.coerce.date().optional(),
             })
           )
           .optional(),
