@@ -929,9 +929,15 @@ export const packingRouter = router({
 
         // First pass: categorize and aggregate
         for (const item of freshOrder.items as any[]) {
-          // Skip items zeroed out during packing — their stock was already
-          // returned by updateItemQuantity, no consumption needed
-          if (item.quantity === 0) continue;
+          // Skip items with zero quantity ONLY if no packing adjustment was made.
+          // When adjustments exist, updateItemQuantity already "returned" stock for
+          // the delta, so we must still consume the ORIGINAL quantity here to keep
+          // the ledger balanced. Without this, adjusting qty to 0 would create
+          // phantom stock (the returned amount is never offset by consumption).
+          if (item.quantity === 0) {
+            const origQty = originalQuantityMap.get(item.productId);
+            if (!origQty || origQty === 0) continue;
+          }
 
           const product = productMap.get(item.productId);
           
