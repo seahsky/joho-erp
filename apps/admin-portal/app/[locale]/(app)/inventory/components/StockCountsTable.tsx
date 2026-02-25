@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
   Card,
   CardContent,
@@ -23,10 +23,12 @@ import {
   Skeleton,
   EmptyState,
 } from '@joho-erp/ui';
-import { Package, Search } from 'lucide-react';
+import { formatAUD } from '@joho-erp/shared';
+import { ChevronDown, ChevronRight, Package, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useDebounce } from 'use-debounce';
+import { BatchInfoDialog } from './BatchInfoDialog';
 
 type StockStatus = 'all' | 'healthy' | 'low_stock' | 'out_of_stock';
 
@@ -79,19 +81,169 @@ function getProductStockInfo(product: Record<string, unknown>): {
   };
 }
 
+function ProductBatchRows({
+  productId,
+  tBatches,
+  tExpiry,
+  onBatchClick,
+}: {
+  productId: string;
+  tBatches: (key: string) => string;
+  tExpiry: (key: string, values?: Record<string, string | number | Date>) => string;
+  onBatchClick: (batchId: string) => void;
+}) {
+  const { data: batches, isLoading } = api.inventory.getProductBatches.useQuery({
+    productId,
+  });
+
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getExpiryBadge = (batch: {
+    expiryDate: string | Date | null;
+    daysUntilExpiry: number | null;
+    isExpired: boolean;
+  }) => {
+    if (!batch.expiryDate || batch.daysUntilExpiry === null) return null;
+
+    if (batch.isExpired) {
+      return (
+        <Badge variant="destructive">
+          {tExpiry('expiredDays', { days: Math.abs(batch.daysUntilExpiry) })}
+        </Badge>
+      );
+    }
+
+    if (batch.daysUntilExpiry <= 7) {
+      return (
+        <Badge variant="warning">
+          {tExpiry('expiresIn', { days: batch.daysUntilExpiry })}
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="success">
+        {tExpiry('expiresIn', { days: batch.daysUntilExpiry })}
+      </Badge>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <TableRow>
+        <TableCell colSpan={7} className="bg-muted/30 py-3 pl-12">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  if (!batches || batches.length === 0) {
+    return (
+      <TableRow>
+        <TableCell colSpan={7} className="bg-muted/30 py-3 pl-12 text-sm text-muted-foreground">
+          {tBatches('batches.noBatches')}
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  return (
+    <>
+      {/* Batch sub-header */}
+      <TableRow className="bg-muted/30 hover:bg-muted/30">
+        <TableCell />
+        <TableCell className="pl-8 text-xs font-medium text-muted-foreground">
+          {tBatches('batches.expiry')}
+        </TableCell>
+        <TableCell className="text-xs font-medium text-muted-foreground">
+          {tBatches('batches.supplier')}
+        </TableCell>
+        <TableCell className="text-right text-xs font-medium text-muted-foreground">
+          {tBatches('batches.quantity')}
+        </TableCell>
+        <TableCell className="text-xs font-medium text-muted-foreground">
+          {tBatches('batches.costPerUnit')}
+        </TableCell>
+        <TableCell className="text-xs font-medium text-muted-foreground" colSpan={2}>
+          {tBatches('batches.received')}
+        </TableCell>
+      </TableRow>
+      {/* Batch rows */}
+      {batches.map((batch) => (
+        <TableRow
+          key={batch.id}
+          className="cursor-pointer bg-muted/30 hover:bg-muted/50"
+          onClick={(e) => {
+            e.stopPropagation();
+            onBatchClick(batch.id);
+          }}
+        >
+          <TableCell />
+          <TableCell className="pl-8">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">
+                {batch.expiryDate ? formatDate(batch.expiryDate) : '-'}
+              </span>
+              {getExpiryBadge(batch)}
+            </div>
+          </TableCell>
+          <TableCell className="text-sm">
+            {batch.supplier?.businessName ?? '-'}
+          </TableCell>
+          <TableCell className="text-right text-sm tabular-nums">
+            {batch.quantityRemaining.toFixed(1)}
+          </TableCell>
+          <TableCell className="text-sm">
+            {formatAUD(batch.costPerUnit)}
+          </TableCell>
+          <TableCell className="text-sm" colSpan={2}>
+            {formatDate(batch.receivedAt)}
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export function StockCountsTable() {
   const t = useTranslations('inventory.stockCounts');
+  const tExpiry = useTranslations('dashboard.expiringInventory');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StockStatus>('all');
   const [debouncedSearch] = useDebounce(search, 300);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
 
   const { data, isLoading } = api.product.getAll.useQuery({
     showAll: true,
     includeSubproducts: false,
-    onlyParents: false, // Get all products including subproducts
-    limit: 500, // Get all products for client-side filtering
+    onlyParents: false,
+    limit: 500,
     page: 1,
   });
+
+  const toggleExpanded = (productId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
 
   // Client-side filtering for search and status
   const filteredProducts = useMemo(() => {
@@ -181,6 +333,7 @@ export function StockCountsTable() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8" />
                 <TableHead>{t('columns.productName')}</TableHead>
                 <TableHead>{t('columns.sku')}</TableHead>
                 <TableHead className="text-right">{t('columns.currentStock')}</TableHead>
@@ -192,35 +345,59 @@ export function StockCountsTable() {
             <TableBody>
               {filteredProducts.map((product) => {
                 const stockInfo = getProductStockInfo(product as unknown as Record<string, unknown>);
+                const isExpanded = expandedRows.has(product.id);
                 return (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <p className="font-medium">{product.name}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="text-sm text-muted-foreground">{product.sku}</p>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {stockInfo.currentStock.toFixed(1)}
-                    </TableCell>
-                    <TableCell>{product.unit}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {stockInfo.lowStockThreshold !== null
-                        ? stockInfo.lowStockThreshold.toFixed(1)
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <StockStatusBadge
-                        currentStock={stockInfo.currentStock}
-                        lowStockThreshold={stockInfo.lowStockThreshold}
+                  <Fragment key={product.id}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => toggleExpanded(product.id)}
+                    >
+                      <TableCell className="w-8 pr-0">
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium">{product.name}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-muted-foreground">{product.sku}</p>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {stockInfo.currentStock.toFixed(1)}
+                      </TableCell>
+                      <TableCell>{product.unit}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {stockInfo.lowStockThreshold !== null
+                          ? stockInfo.lowStockThreshold.toFixed(1)
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <StockStatusBadge
+                          currentStock={stockInfo.currentStock}
+                          lowStockThreshold={stockInfo.lowStockThreshold}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <ProductBatchRows
+                        productId={product.id}
+                        tBatches={t}
+                        tExpiry={tExpiry}
+                        onBatchClick={(batchId) => {
+                          setSelectedBatchId(batchId);
+                          setShowBatchDialog(true);
+                        }}
                       />
-                    </TableCell>
-                  </TableRow>
+                    )}
+                  </Fragment>
                 );
               })}
               {filteredProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
+                  <TableCell colSpan={7} className="py-8 text-center">
                     <EmptyState icon={Package} title={t('emptyState')} />
                   </TableCell>
                 </TableRow>
@@ -229,6 +406,12 @@ export function StockCountsTable() {
           </Table>
         </div>
       </CardContent>
+
+      <BatchInfoDialog
+        open={showBatchDialog}
+        onOpenChange={setShowBatchDialog}
+        batchId={selectedBatchId}
+      />
     </Card>
   );
 }

@@ -801,6 +801,7 @@ export const inventoryRouter = router({
           isConsumed: input.includeConsumed ? undefined : false,
         },
         include: {
+          supplier: { select: { id: true, businessName: true } },
           consumptions: {
             take: 10,
             orderBy: { consumedAt: 'desc' },
@@ -809,16 +810,27 @@ export const inventoryRouter = router({
         orderBy: { receivedAt: 'asc' },
       });
 
-      return batches.map((batch) => ({
-        ...batch,
-        totalValue: calculateBatchValue(batch),
-        utilizationRate:
-          batch.initialQuantity > 0
-            ? ((batch.initialQuantity - batch.quantityRemaining) /
-                batch.initialQuantity) *
-              100
-            : 0,
-      }));
+      const now = new Date();
+      return batches.map((batch) => {
+        const daysUntilExpiry = batch.expiryDate
+          ? Math.ceil(
+              (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          : null;
+
+        return {
+          ...batch,
+          totalValue: calculateBatchValue(batch),
+          utilizationRate:
+            batch.initialQuantity > 0
+              ? ((batch.initialQuantity - batch.quantityRemaining) /
+                  batch.initialQuantity) *
+                100
+              : 0,
+          daysUntilExpiry,
+          isExpired: daysUntilExpiry !== null && daysUntilExpiry < 0,
+        };
+      });
     }),
 
   /**

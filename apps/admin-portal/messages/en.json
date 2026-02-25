@@ -3065,7 +3065,16 @@
         "lowStock": "Low Stock",
         "outOfStock": "Out of Stock"
       },
-      "emptyState": "No products found"
+      "emptyState": "No products found",
+      "batches": {
+        "expiry": "Expiry",
+        "quantity": "Quantity",
+        "costPerUnit": "Cost/Unit",
+        "received": "Received",
+        "supplier": "Supplier",
+        "noBatches": "No active batches",
+        "loading": "Loading batches..."
+      }
     },
     "export": {
       "export": "Export",

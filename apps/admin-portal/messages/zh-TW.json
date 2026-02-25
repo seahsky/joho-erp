@@ -3071,7 +3071,16 @@
         "lowStock": "低庫存",
         "outOfStock": "缺貨"
       },
-      "emptyState": "未找到產品"
+      "emptyState": "未找到產品",
+      "batches": {
+        "expiry": "保質期",
+        "quantity": "數量",
+        "costPerUnit": "單價",
+        "received": "入庫日期",
+        "supplier": "供應商",
+        "noBatches": "無活躍批次",
+        "loading": "載入批次中..."
+      }
     },
     "export": {
       "export": "匯出",

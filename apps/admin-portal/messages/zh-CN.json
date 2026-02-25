@@ -3065,7 +3065,16 @@
         "lowStock": "低库存",
         "outOfStock": "缺货"
       },
-      "emptyState": "未找到产品"
+      "emptyState": "未找到产品",
+      "batches": {
+        "expiry": "保质期",
+        "quantity": "数量",
+        "costPerUnit": "单价",
+        "received": "入库日期",
+        "supplier": "供应商",
+        "noBatches": "无活跃批次",
+        "loading": "加载批次中..."
+      }
     },
     "export": {
       "export": "导出",
