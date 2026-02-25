@@ -1377,8 +1377,12 @@ export async function createInvoiceInXero(
     const dueDate = new Date(invoiceDate);
     dueDate.setDate(dueDate.getDate() + paymentDays);
 
-    // Map order items to Xero line items
-    const lineItems: XeroLineItem[] = order.items.map((item) => ({
+    // Separate zeroed items (qty=0 set during packing) from active items
+    const zeroedItems = order.items.filter((item) => item.quantity === 0);
+    const activeItems = order.items.filter((item) => item.quantity > 0);
+
+    // Map active order items to Xero line items
+    const lineItems: XeroLineItem[] = activeItems.map((item) => ({
       Description: `${item.productName} (${item.sku})`,
       Quantity: item.quantity,
       UnitAmount: item.unitPrice / 100, // Convert cents to dollars
@@ -1386,6 +1390,20 @@ export async function createInvoiceInXero(
       TaxType: item.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
       ItemCode: item.sku,
     }));
+
+    // Add zeroed items as descriptive $0 line items (Xero rejects Quantity=0)
+    if (zeroedItems.length > 0) {
+      for (const item of zeroedItems) {
+        lineItems.push({
+          Description: `[Removed during packing] ${item.productName} (${item.sku})`,
+          Quantity: 1,
+          UnitAmount: 0,
+          AccountCode: getXeroSalesAccountCode(),
+          TaxType: getXeroGstFreeTaxType(), // No GST on $0 items
+          ItemCode: item.sku,
+        });
+      }
+    }
 
     const invoice: XeroInvoice = {
       Type: 'ACCREC',

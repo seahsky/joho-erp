@@ -416,29 +416,22 @@ export const packingRouter = router({
         ? 0
         : toCents(multiplyMoney(createMoney(item.unitPrice), newQuantity));
 
-      // Update items array: remove item if quantity is 0, otherwise update
-      const updatedItems = newQuantity === 0
-        ? order.items.filter((_, idx) => idx !== itemIndex)
-        : order.items.map((orderItem, idx) => {
-            if (idx === itemIndex) {
-              return {
-                ...orderItem,
-                quantity: newQuantity,
-                subtotal: newSubtotal,
-              };
-            }
-            return orderItem;
-          });
-
-      // Check if removing this item empties the order
-      const orderWillBeCancelled = updatedItems.length === 0;
+      // Update items array: keep item with qty=0 (instead of removing)
+      const updatedItems = order.items.map((orderItem, idx) => {
+        if (idx === itemIndex) {
+          return {
+            ...orderItem,
+            quantity: newQuantity,
+            subtotal: newSubtotal,
+          };
+        }
+        return orderItem;
+      });
 
       // Recalculate order totals using per-product GST settings
       // Note: Uses order-time prices (i.unitPrice) stored in the order item, NOT current product prices.
       // This ensures price consistency even if product prices change after order placement. (Issue #14 clarification)
-      const newTotals = orderWillBeCancelled
-        ? { subtotal: 0, taxAmount: 0, totalAmount: 0 }
-        : calculateOrderTotals(
+      const newTotals = calculateOrderTotals(
             updatedItems.map((i: any) => ({
               quantity: i.quantity,
               unitPrice: i.unitPrice, // Order-time price, not current product price
@@ -597,7 +590,6 @@ export const packingRouter = router({
             subtotal: newTotals.subtotal,
             taxAmount: newTotals.taxAmount,
             totalAmount: newTotals.totalAmount,
-            ...(orderWillBeCancelled ? { status: 'cancelled' } : {}),
             version: { increment: 1 },
             ...packingUpdate,
           },
@@ -612,9 +604,7 @@ export const packingRouter = router({
 
         // Update status history separately (requires update, not updateMany)
         const historyNote = newQuantity === 0
-          ? (orderWillBeCancelled
-              ? `Order cancelled: all items removed during packing (last item: ${item.sku})`
-              : `Item removed: ${item.sku}`)
+          ? `Item quantity set to 0: ${item.sku}`
           : `Item quantity adjusted: ${item.sku} ${oldQuantity} → ${newQuantity} ${item.unit}`;
 
         await tx.order.update({
@@ -622,7 +612,7 @@ export const packingRouter = router({
           data: {
             statusHistory: {
               push: {
-                status: orderWillBeCancelled ? 'cancelled' : order.status,
+                status: order.status,
                 changedAt: new Date(),
                 changedBy: ctx.userId || 'system',
                 changedByName: userDetails.changedByName,
@@ -643,7 +633,7 @@ export const packingRouter = router({
         itemSku: item.sku,
         oldQuantity,
         newQuantity,
-        reason: newQuantity === 0 ? 'Item removed during packing' : 'Packing adjustment',
+        reason: newQuantity === 0 ? 'Item quantity set to 0 during packing' : 'Packing adjustment',
       }).catch((error) => {
         console.error('Audit log failed for packing quantity update:', error);
       });
@@ -667,8 +657,8 @@ export const packingRouter = router({
         newStock: actualNewStock,
         newSubtotal,
         newOrderTotal: newTotals.totalAmount,
-        itemRemoved: newQuantity === 0,
-        orderCancelled: orderWillBeCancelled,
+        itemRemoved: false,
+        orderCancelled: false,
       };
     }),
 
@@ -939,6 +929,10 @@ export const packingRouter = router({
 
         // First pass: categorize and aggregate
         for (const item of freshOrder.items as any[]) {
+          // Skip items zeroed out during packing — their stock was already
+          // returned by updateItemQuantity, no consumption needed
+          if (item.quantity === 0) continue;
+
           const product = productMap.get(item.productId);
           
           // Throw error for deleted products instead of silent skip (Issue #13 fix)

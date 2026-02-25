@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StatusBadge, type StatusType, useToast, Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, Input, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw, Plus, Minus, Package, AlertTriangle, Trash2 } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Send, StickyNote, PauseCircle, PlayCircle, RotateCcw, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useDebouncedCallback } from 'use-debounce';
 import { PinEntryDialog } from './PinEntryDialog';
@@ -52,12 +52,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     newQuantity: number;
     currentStock: number;
   } | null>(null);
-  const [removeConfirmItem, setRemoveConfirmItem] = useState<{
-    productId: string;
-    productName: string;
-    sku: string;
-    isLastItem: boolean;
-  } | null>(null);
+
   const utils = api.useUtils();
 
   // Check if PIN is required for quantity modifications
@@ -317,20 +312,18 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       // Snapshot for rollback
       const previousOrderDetails = utils.packing.getOrderDetails.getData({ orderId });
 
-      // Optimistically update quantity (or remove item if quantity is 0)
+      // Optimistically update quantity (keep item with qty=0)
       utils.packing.getOrderDetails.setData(
         { orderId },
         (old) => {
           if (!old) return old;
           return {
             ...old,
-            items: newQuantity === 0
-              ? old.items.filter((item) => item.productId !== productId)
-              : old.items.map((item) =>
-                  item.productId === productId
-                    ? { ...item, quantity: newQuantity }
-                    : item
-                ),
+            items: old.items.map((item) =>
+              item.productId === productId
+                ? { ...item, quantity: newQuantity }
+                : item
+            ),
           };
         }
       );
@@ -340,15 +333,10 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     onSuccess: (data) => {
       setEditingItemId(null);
       setEditQuantity('');
-      if (data.orderCancelled) {
+      if (data.newQuantity === 0) {
         toast({
-          title: t('orderCancelledByRemoval'),
-          description: t('orderCancelledByRemovalDescription'),
-        });
-      } else if (data.itemRemoved) {
-        toast({
-          title: t('itemRemoved'),
-          description: t('itemRemovedDescription'),
+          title: t('itemQuantityZeroed'),
+          description: t('itemQuantityZeroedDescription'),
         });
       } else {
         toast({
@@ -482,25 +470,6 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     });
   }, [pendingQuantityChange, order.orderId, updateItemQuantityMutation]);
 
-  const handleRemoveItem = (productId: string, productName: string, sku: string) => {
-    const currentItems = orderDetails?.items || [];
-    const isLastItem = currentItems.length === 1;
-    setRemoveConfirmItem({ productId, productName, sku, isLastItem });
-  };
-
-  const confirmRemoveItem = () => {
-    if (!removeConfirmItem) return;
-    const { productId } = removeConfirmItem;
-    setRemoveConfirmItem(null);
-
-    if (isPinRequired) {
-      setPendingQuantityChange({ productId, newQuantity: 0, currentStock: 0 });
-      setPinDialogOpen(true);
-    } else {
-      executeQuantityChange(productId, 0);
-    }
-  };
-
   const handleQuantityChange = (productId: string, newQuantity: number, currentStock: number) => {
     if (newQuantity < 0) {
       toast({
@@ -510,16 +479,9 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
       return;
     }
 
-    if (newQuantity === 0) {
-      // Find the item to get name/sku for confirmation dialog
-      const itemToRemove = orderDetails?.items.find((i) => i.productId === productId);
-      if (itemToRemove) {
-        handleRemoveItem(productId, itemToRemove.productName, itemToRemove.sku);
-      }
-      return;
-    }
-
-    if (newQuantity > currentStock) {
+    // Allow qty=0 (zeroes out the item instead of removing it)
+    // Only check stock when increasing quantity above 0
+    if (newQuantity > 0 && newQuantity > currentStock) {
       toast({
         title: t('insufficientStock'),
         description: t('stockAvailable', { count: currentStock }),
@@ -553,14 +515,8 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
 
   const handleDecrement = (productId: string, currentQuantity: number, currentStock: number) => {
     const newQuantity = currentQuantity - 1;
-    if (newQuantity > 0) {
+    if (newQuantity >= 0) {
       handleQuantityChange(productId, newQuantity, currentStock);
-    } else {
-      // At quantity 1, decrement triggers item removal
-      const itemToRemove = orderDetails?.items.find((i) => i.productId === productId);
-      if (itemToRemove) {
-        handleRemoveItem(productId, itemToRemove.productName, itemToRemove.sku);
-      }
     }
   };
 
@@ -944,19 +900,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
                       )}
                     </Button>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveItem(item.productId, item.productName, item.sku);
-                      }}
-                      disabled={isPacked || isReadyForDelivery || isUpdating}
-                      title={t('removeItem')}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+
                   </div>
                 )}
               </div>
@@ -1180,31 +1124,7 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
         }
       `}</style>
 
-      {/* Item Removal Confirmation Dialog */}
-      <AlertDialog open={!!removeConfirmItem} onOpenChange={(open) => !open && setRemoveConfirmItem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('removeItemTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('removeItemDescription', { productName: removeConfirmItem?.productName ?? '', orderNumber: order.orderNumber })}
-              {removeConfirmItem?.isLastItem && (
-                <span className="block mt-2 font-semibold text-destructive">
-                  {t('removeLastItemWarning')}
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmRemoveItem}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('confirmRemove')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
 
       {/* PIN Entry Dialog */}
       <PinEntryDialog

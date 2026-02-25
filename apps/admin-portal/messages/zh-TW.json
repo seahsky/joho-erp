@@ -2004,6 +2004,8 @@
     "cancelEdit": "取消",
     "quantityUpdated": "數量已更新",
     "quantityUpdatedDescription": "商品數量和訂單總額已更新",
+    "itemQuantityZeroed": "商品數量已設為0",
+    "itemQuantityZeroedDescription": "商品數量已設為0，庫存已退回倉庫。",
     "errorUpdatingQuantity": "更新數量失敗",
     "insufficientStock": "庫存不足",
     "quantityMustBePositive": "數量必須大於零",

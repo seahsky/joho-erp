@@ -1998,6 +1998,8 @@
     "cancelEdit": "取消",
     "quantityUpdated": "数量已更新",
     "quantityUpdatedDescription": "商品数量和订单总额已更新",
+    "itemQuantityZeroed": "商品数量已设为0",
+    "itemQuantityZeroedDescription": "商品数量已设为0，库存已退回仓库。",
     "errorUpdatingQuantity": "更新数量失败",
     "insufficientStock": "库存不足",
     "quantityMustBePositive": "数量必须大于零",
