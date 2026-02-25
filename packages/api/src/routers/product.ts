@@ -577,11 +577,9 @@ export const productRouter = router({
         productId: z.string(),
         adjustmentType: z.enum([
           'stock_received',
-          'stock_count_correction',
           'stock_write_off',
         ]),
-        quantity: z.number().optional(), // Positive to add, negative to reduce (optional for stock_count_correction with targetStockLevel)
-        targetStockLevel: z.number().int().min(0).optional(), // For stock_count_correction: the actual stock count from stocktake
+        quantity: z.number(), // Positive to add, negative to reduce
         notes: z.string().min(1, 'Notes are required'),
         // NEW: Required for stock_received
         costPerUnit: z.number().int().positive().optional(), // In cents
@@ -658,35 +656,9 @@ export const productRouter = router({
             path: ['vehicleTemperature'],
           }
         )
-        .refine(
-          (data) => {
-            // For stock_received and stock_write_off, quantity is required
-            if (data.adjustmentType === 'stock_received' || data.adjustmentType === 'stock_write_off') {
-              return data.quantity !== undefined;
-            }
-            return true;
-          },
-          {
-            message: 'quantity is required for this adjustment type',
-            path: ['quantity'],
-          }
-        )
-        .refine(
-          (data) => {
-            // For stock_count_correction, either quantity or targetStockLevel must be provided
-            if (data.adjustmentType === 'stock_count_correction') {
-              return data.quantity !== undefined || data.targetStockLevel !== undefined;
-            }
-            return true;
-          },
-          {
-            message: 'Either quantity or targetStockLevel is required for stock count correction',
-            path: ['quantity'],
-          }
-        )
     )
     .mutation(async ({ input, ctx }) => {
-      const { productId, adjustmentType, quantity: inputQuantity, targetStockLevel, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
+      const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
 
       // Get current product
       const product = await prisma.product.findUnique({
@@ -708,22 +680,7 @@ export const productRouter = router({
         });
       }
 
-      // Calculate quantity - for stock_count_correction, use targetStockLevel if provided
       const previousStock = product.currentStock;
-      let quantity: number;
-      if (adjustmentType === 'stock_count_correction' && targetStockLevel !== undefined) {
-        // Calculate the difference needed to reach target
-        quantity = targetStockLevel - previousStock;
-      } else {
-        // Use the provided quantity (guaranteed by validation refinements)
-        if (inputQuantity == null) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Quantity is required for this adjustment type',
-          });
-        }
-        quantity = inputQuantity;
-      }
       const newStock = previousStock + quantity;
 
       // Prevent negative stock
@@ -778,22 +735,6 @@ export const productRouter = router({
               mtvNumber: mtvNumber || null,
               vehicleTemperature: vehicleTemperature || null,
               supplierId: supplierId || null,
-            },
-          });
-        }
-
-        // 2b. If stock_count_correction with positive quantity: Create batch for traceability
-        if (adjustmentType === 'stock_count_correction' && quantity > 0) {
-          await tx.inventoryBatch.create({
-            data: {
-              productId,
-              quantityRemaining: quantity,
-              initialQuantity: quantity,
-              costPerUnit: costPerUnit ?? 0,
-              receivedAt: new Date(),
-              expiryDate: null,
-              receiveTransactionId: transaction.id,
-              notes: `Stock count correction: +${quantity}. ${notes}`,
             },
           });
         }

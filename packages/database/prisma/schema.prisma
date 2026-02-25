@@ -107,7 +107,7 @@ enum InventoryTransactionType {
 
 enum AdjustmentType {
   stock_received          // Adding stock from supplier delivery
-  stock_count_correction  // Fixing discrepancy from stocktake
+  stock_count_correction  // DEPRECATED: No longer used in UI. Kept for historical data. TODO: Remove after historical data cleanup.
   stock_write_off         // Writing off damaged or expired inventory
   packing_adjustment      // Quantity adjusted during packing
   packing_reset           // Stock restored from packing reset

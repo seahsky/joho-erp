@@ -1208,8 +1208,6 @@
       "adjustmentType": "调整类型",
       "quantity": "数量",
       "quantityHint": "输入正数增加库存，负数减少库存",
-      "targetStockLevel": "实际库存数量",
-      "targetStockLevelHint": "输入盘点的实际库存数量",
       "notes": "备注",
       "notesPlaceholder": "请输入调整原因（必填）",
       "currentStock": "当前库存",
@@ -1251,7 +1249,6 @@
     },
     "typeDescriptions": {
       "stock_received": "从供应商交货或调拨添加库存",
-      "stock_count_correction": "修正盘点发现的差异 - 输入实际库存数量",
       "stock_write_off": "核销损坏或过期的库存"
     },
     "buttons": {
@@ -1263,7 +1260,6 @@
     "validation": {
       "notesRequired": "库存调整需要填写备注",
       "quantityRequired": "数量为必填项",
-      "targetStockLevelRequired": "库存盘点修正需要输入实际库存数量",
       "cannotGoNegative": "库存不能低于零",
       "costRequired": "收货时需要单位成本",
       "stockInDateRequired": "收货时需要入库日期",

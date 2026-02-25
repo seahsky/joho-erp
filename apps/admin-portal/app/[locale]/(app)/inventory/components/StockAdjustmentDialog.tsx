@@ -37,7 +37,6 @@ const ACTIVE_STATUS = 'active' as const;
 
 type AdjustmentType =
   | 'stock_received'
-  | 'stock_count_correction'
   | 'stock_write_off';
 
 interface Product {
@@ -98,7 +97,6 @@ export function StockAdjustmentDialog({
   // Form state
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('stock_received');
   const [quantity, setQuantity] = useState('');
-  const [targetStockLevel, setTargetStockLevel] = useState(''); // For stock_count_correction: direct stock amount input
   const [notes, setNotes] = useState('');
 
   // NEW: Stock received specific fields
@@ -175,17 +173,9 @@ export function StockAdjustmentDialog({
   const { newStock, effectiveQuantity } = useMemo(() => {
     if (!selectedProduct) return { newStock: 0, effectiveQuantity: 0 };
 
-    // For stock_count_correction with targetStockLevel, calculate quantity from target
-    if (adjustmentType === 'stock_count_correction' && targetStockLevel !== '') {
-      const target = parseInt(targetStockLevel) || 0;
-      const qty = target - selectedProduct.currentStock;
-      return { newStock: target, effectiveQuantity: qty };
-    }
-
-    // For other types, use the quantity directly
     const qty = parseFloat(quantity) || 0;
     return { newStock: selectedProduct.currentStock + qty, effectiveQuantity: qty };
-  }, [selectedProduct, quantity, targetStockLevel, adjustmentType]);
+  }, [selectedProduct, quantity]);
 
   const isNegativeResult = newStock < 0;
   const quantityNum = effectiveQuantity;
@@ -195,25 +185,13 @@ export function StockAdjustmentDialog({
 
     if (!selectedProduct) return;
 
-    // Validation - different based on adjustment type
-    if (adjustmentType === 'stock_count_correction') {
-      // For stock count correction, need targetStockLevel
-      if (targetStockLevel === '') {
-        toast({
-          title: t('validation.targetStockLevelRequired'),
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else {
-      // For other types, need quantity
-      if (!quantity || quantityNum === 0) {
-        toast({
-          title: t('validation.quantityRequired'),
-          variant: 'destructive',
-        });
-        return;
-      }
+    // Validation - quantity is required
+    if (!quantity || quantityNum === 0) {
+      toast({
+        title: t('validation.quantityRequired'),
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (!notes.trim()) {
@@ -290,14 +268,6 @@ export function StockAdjustmentDialog({
         ...(expiryDate && { expiryDate }),
         ...(supplierId && { supplierId }),
       });
-    } else if (adjustmentType === 'stock_count_correction') {
-      // Use targetStockLevel for stock count correction
-      await adjustStockMutation.mutateAsync({
-        productId: selectedProduct.id,
-        adjustmentType,
-        targetStockLevel: parseInt(targetStockLevel),
-        notes: notes.trim(),
-      });
     } else {
       // stock_write_off uses quantity
       await adjustStockMutation.mutateAsync(baseInput);
@@ -307,7 +277,6 @@ export function StockAdjustmentDialog({
   const handleReset = () => {
     setAdjustmentType('stock_received');
     setQuantity('');
-    setTargetStockLevel('');
     setNotes('');
     setProductSearch('');
 
@@ -332,6 +301,7 @@ export function StockAdjustmentDialog({
     if (type === 'sale') return 'Sale';
     if (type === 'return') return 'Return';
     if (type === 'adjustment' && adjType) {
+      // TODO: Remove stock_count_correction after historical transaction data has been cleaned up
       const typeLabels: Record<string, string> = {
         stock_received: t('types.stock_received'),
         stock_count_correction: t('types.stock_count_correction'),
@@ -472,12 +442,10 @@ export function StockAdjustmentDialog({
               className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="stock_received">{t('types.stock_received')}</option>
-              <option value="stock_count_correction">{t('types.stock_count_correction')}</option>
               <option value="stock_write_off">{t('types.stock_write_off')}</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {adjustmentType === 'stock_received' && t('typeDescriptions.stock_received')}
-              {adjustmentType === 'stock_count_correction' && t('typeDescriptions.stock_count_correction')}
               {adjustmentType === 'stock_write_off' && t('typeDescriptions.stock_write_off')}
             </p>
           </div>
@@ -673,48 +641,26 @@ export function StockAdjustmentDialog({
             </div>
           )}
 
-          {/* Quantity or Target Stock Level - conditional based on type */}
-          {adjustmentType === 'stock_count_correction' ? (
-            /* Stock Count Correction: Target Stock Level input */
-            <div>
-              <Label htmlFor="targetStockLevel">{t('fields.targetStockLevel')}</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="targetStockLevel"
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={targetStockLevel}
-                  onChange={(e) => setTargetStockLevel(e.target.value)}
-                  placeholder={String(selectedProduct.currentStock)}
-                  className="flex-1"
-                />
-                <span className="text-muted-foreground">{selectedProduct.unit}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{t('fields.targetStockLevelHint')}</p>
+          {/* Quantity */}
+          <div>
+            <Label htmlFor="quantity">{t('fields.quantity')}</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input
+                id="quantity"
+                type="number"
+                step="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="0"
+                className="flex-1"
+              />
+              <span className="text-muted-foreground">{selectedProduct.unit}</span>
             </div>
-          ) : (
-            /* Other types: Quantity input */
-            <div>
-              <Label htmlFor="quantity">{t('fields.quantity')}</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="quantity"
-                  type="number"
-                  step="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="0"
-                  className="flex-1"
-                />
-                <span className="text-muted-foreground">{selectedProduct.unit}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{t('fields.quantityHint')}</p>
-            </div>
-          )}
+            <p className="text-xs text-muted-foreground mt-1">{t('fields.quantityHint')}</p>
+          </div>
 
           {/* New Stock Preview */}
-          {(quantity || targetStockLevel) && (
+          {quantity && (
             <div
               className={`p-3 rounded-lg border ${
                 isNegativeResult
@@ -787,7 +733,7 @@ export function StockAdjustmentDialog({
                 adjustStockMutation.isPending ||
                 isNegativeResult ||
                 !notes.trim() ||
-                (adjustmentType === 'stock_count_correction' ? targetStockLevel === '' : !quantity)
+                !quantity
               }
             >
               {adjustStockMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
