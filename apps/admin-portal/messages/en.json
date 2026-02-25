@@ -1208,8 +1208,6 @@
       "adjustmentType": "Adjustment Type",
       "quantity": "Quantity",
       "quantityHint": "Enter positive to add stock, negative to reduce",
-      "targetStockLevel": "Actual Stock Level",
-      "targetStockLevelHint": "Enter the actual stock count from your stocktake",
       "notes": "Notes",
       "notesPlaceholder": "Enter reason for adjustment (required)",
       "currentStock": "Current Stock",
@@ -1251,7 +1249,6 @@
     },
     "typeDescriptions": {
       "stock_received": "Adding stock from supplier delivery or transfer",
-      "stock_count_correction": "Correcting discrepancy from stocktake - enter actual stock count",
       "stock_write_off": "Writing off damaged or expired inventory"
     },
     "buttons": {
@@ -1263,7 +1260,6 @@
     "validation": {
       "notesRequired": "Notes are required for stock adjustments",
       "quantityRequired": "Quantity is required",
-      "targetStockLevelRequired": "Actual stock level is required for stock count correction",
       "cannotGoNegative": "Stock cannot go below zero",
       "costRequired": "Cost per unit is required when receiving stock",
       "stockInDateRequired": "Stock in date is required when receiving stock",

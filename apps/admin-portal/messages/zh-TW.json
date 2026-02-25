@@ -1208,8 +1208,6 @@
       "adjustmentType": "調整類型",
       "quantity": "數量",
       "quantityHint": "輸入正數增加庫存，負數減少庫存",
-      "targetStockLevel": "實際庫存數量",
-      "targetStockLevelHint": "輸入盤點的實際庫存數量",
       "notes": "備註",
       "notesPlaceholder": "請輸入調整原因（必填）",
       "currentStock": "目前庫存",
@@ -1251,7 +1249,6 @@
     },
     "typeDescriptions": {
       "stock_received": "從供應商交貨或調撥添加庫存",
-      "stock_count_correction": "修正盤點發現的差異 - 輸入實際庫存數量",
       "stock_write_off": "核銷損壞或過期的庫存"
     },
     "buttons": {
@@ -1263,7 +1260,6 @@
     "validation": {
       "notesRequired": "庫存調整需要填寫備註",
       "quantityRequired": "數量為必填項",
-      "targetStockLevelRequired": "庫存盤點修正需要輸入實際庫存數量",
       "cannotGoNegative": "庫存不能低於零",
       "costRequired": "收貨時需要單位成本",
       "stockInDateRequired": "收貨時需要入庫日期",
