@@ -82,6 +82,7 @@ export type ProductUnit = 'kg' | 'piece' | 'box' | 'carton';
 export type InventoryTransactionType = 'sale' | 'adjustment' | 'return';
 
 // Adjustment Type (for manual stock changes)
+// TODO: Remove 'stock_count_correction' after historical data cleanup — it is deprecated and no longer used in the UI
 export type AdjustmentType = 'stock_received' | 'stock_count_correction' | 'stock_write_off' | 'packing_adjustment';
 
 // Proof of Delivery Type

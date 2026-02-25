@@ -382,6 +382,7 @@ export const dashboardRouter = router({
         dateFrom: z.date().optional(),
         dateTo: z.date().optional(),
         type: z.enum(['sale', 'adjustment', 'return']).optional(),
+        // TODO: Remove 'stock_count_correction' after historical data cleanup — deprecated, no longer used in UI
         adjustmentType: z
           .enum(['stock_received', 'stock_count_correction', 'stock_write_off', 'packing_adjustment'])
           .optional(),

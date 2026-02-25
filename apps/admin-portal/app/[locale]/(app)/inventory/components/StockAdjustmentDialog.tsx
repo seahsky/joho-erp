@@ -301,6 +301,7 @@ export function StockAdjustmentDialog({
     if (type === 'sale') return 'Sale';
     if (type === 'return') return 'Return';
     if (type === 'adjustment' && adjType) {
+      // TODO: Remove stock_count_correction after historical transaction data has been cleaned up
       const typeLabels: Record<string, string> = {
         stock_received: t('types.stock_received'),
         stock_count_correction: t('types.stock_count_correction'),
