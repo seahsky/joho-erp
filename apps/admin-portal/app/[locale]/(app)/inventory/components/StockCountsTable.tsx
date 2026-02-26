@@ -94,6 +94,7 @@ function ProductBatchRows({
 }) {
   const { data: batches, isLoading } = api.inventory.getProductBatches.useQuery({
     productId,
+    supplierOnly: true,
   });
 
   const formatDate = (date: string | Date) => {
