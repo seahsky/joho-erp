@@ -48,11 +48,11 @@ async function updateSubproductStocks(
     subproducts
   );
 
-  // Update each subproduct's stock
+  // Update each subproduct's stock (floor at 0 to prevent negative stock)
   for (const { id, newStock } of updatedStocks) {
     await db.product.update({
       where: { id },
-      data: { currentStock: newStock },
+      data: { currentStock: Math.max(0, newStock) },
     });
   }
 }

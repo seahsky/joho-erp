@@ -205,10 +205,10 @@ export async function restoreOrderStock(
       });
       result.inventoryBatchesCreated++;
 
-      // Update product stock
+      // Update product stock (floor at 0 as defensive guard)
       await client.product.update({
         where: { id: product.id },
-        data: { currentStock: newStock },
+        data: { currentStock: Math.max(0, newStock) },
       });
 
       result.restoredProducts.push({
@@ -286,10 +286,10 @@ export async function restoreOrderStock(
     });
     result.inventoryBatchesCreated++;
 
-    // Update parent stock
+    // Update parent stock (floor at 0 as defensive guard)
     await client.product.update({
       where: { id: parentId },
-      data: { currentStock: newParentStock },
+      data: { currentStock: Math.max(0, newParentStock) },
     });
 
     result.restoredProducts.push({
@@ -318,7 +318,7 @@ export async function restoreOrderStock(
       if (subproduct && subproduct.currentStock !== subStock.newStock) {
         await client.product.update({
           where: { id: subStock.id },
-          data: { currentStock: subStock.newStock },
+          data: { currentStock: Math.max(0, subStock.newStock) },
         });
       }
     }

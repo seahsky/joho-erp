@@ -1380,7 +1380,7 @@ export const orderRouter = router({
 
             await tx.product.update({
               where: { id: parentId },
-              data: { currentStock: newStock },
+              data: { currentStock: Math.max(0, newStock) },
             });
 
             const subproducts = await tx.product.findMany({
@@ -1393,7 +1393,7 @@ export const orderRouter = router({
               for (const { id, newStock: subStock } of updatedStocks) {
                 await tx.product.update({
                   where: { id },
-                  data: { currentStock: subStock },
+                  data: { currentStock: Math.max(0, subStock) },
                 });
               }
             }
@@ -1436,7 +1436,7 @@ export const orderRouter = router({
 
             await tx.product.update({
               where: { id: product.id },
-              data: { currentStock: newStock },
+              data: { currentStock: Math.max(0, newStock) },
             });
 
             const subproducts = await tx.product.findMany({
@@ -1449,7 +1449,7 @@ export const orderRouter = router({
               for (const { id, newStock: subStock } of updatedStocks) {
                 await tx.product.update({
                   where: { id },
-                  data: { currentStock: subStock },
+                  data: { currentStock: Math.max(0, subStock) },
                 });
               }
             }

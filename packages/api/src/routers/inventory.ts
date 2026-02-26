@@ -871,11 +871,11 @@ export const inventoryRouter = router({
             quantityRemaining: 0,
           },
         }),
-        // Update product stock
+        // Update product stock (floor at 0 to prevent negative stock)
         prisma.product.update({
           where: { id: batch.productId },
           data: {
-            currentStock: { decrement: quantityToDeduct },
+            currentStock: Math.max(0, batch.product.currentStock - quantityToDeduct),
           },
         }),
         // Create inventory transaction for traceability
@@ -928,7 +928,7 @@ export const inventoryRouter = router({
       }
 
       const quantityDiff = input.newQuantity - batch.quantityRemaining;
-      const newProductStock = batch.product.currentStock + quantityDiff;
+      const newProductStock = Math.max(0, batch.product.currentStock + quantityDiff);
       const isConsumed = input.newQuantity === 0;
 
       await prisma.$transaction([

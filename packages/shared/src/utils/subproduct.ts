@@ -33,7 +33,9 @@ export function calculateSubproductStock(
   }
   const yieldMultiplier = 1 - lossPercentage / 100;
   // Round to 2 decimal places to avoid floating point issues
-  return Math.round(parentStock * yieldMultiplier * 100) / 100;
+  const calculated = Math.round(parentStock * yieldMultiplier * 100) / 100;
+  // Never allow negative subproduct stock
+  return Math.max(0, calculated);
 }
 
 /**
@@ -225,4 +227,19 @@ export function calculateAllSubproductStocksWithInheritance(
       newStock: calculateSubproductStock(parentStock, effectiveLoss),
     };
   });
+}
+
+/**
+ * Ensures a stock value never goes below 0.
+ * Use this when writing calculated stock values to the database.
+ *
+ * @param newStock - The calculated stock value
+ * @returns The stock value, floored at 0
+ */
+export function safeStockValue(newStock: number): number {
+  if (newStock < 0) {
+    console.warn(`Stock would go negative: ${newStock}, clamping to 0`);
+    return 0;
+  }
+  return newStock;
 }

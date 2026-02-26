@@ -551,10 +551,10 @@ export const packingRouter = router({
           });
         }
 
-        // Update product stock with fresh calculated value
+        // Update product stock with fresh calculated value (floor at 0 as defensive guard)
         await tx.product.update({
           where: { id: productId },
-          data: { currentStock: freshNewStock },
+          data: { currentStock: Math.max(0, freshNewStock) },
         });
 
         // CRITICAL FIX: Store original items on FIRST quantity adjustment
@@ -1055,7 +1055,7 @@ export const packingRouter = router({
           // Update parent stock ONCE with total consumption using atomic condition check
           const parentUpdateResult = await tx.product.updateMany({
             where: { id: parentId, currentStock: previousStock },
-            data: { currentStock: newStock },
+            data: { currentStock: Math.max(0, newStock) },
           });
 
           if (parentUpdateResult.count === 0) {
@@ -1076,7 +1076,7 @@ export const packingRouter = router({
             for (const { id, newStock: subStock } of updatedStocks) {
               await tx.product.update({
                 where: { id },
-                data: { currentStock: subStock },
+                data: { currentStock: Math.max(0, subStock) },
               });
             }
           }
@@ -1149,10 +1149,10 @@ export const packingRouter = router({
             });
           }
 
-          // Update product stock
+          // Update product stock (floor at 0 as defensive guard)
           await tx.product.update({
             where: { id: product.id },
-            data: { currentStock: newStock },
+            data: { currentStock: Math.max(0, newStock) },
           });
 
           // If this regular product has subproducts, recalculate their stocks too
@@ -1166,7 +1166,7 @@ export const packingRouter = router({
             for (const { id, newStock: subStock } of updatedStocks) {
               await tx.product.update({
                 where: { id },
-                data: { currentStock: subStock },
+                data: { currentStock: Math.max(0, subStock) },
               });
             }
           }
@@ -1725,10 +1725,10 @@ export const packingRouter = router({
                 },
               });
 
-              // Update product stock
+              // Update product stock (floor at 0 as defensive guard)
               await tx.product.update({
                 where: { id: productId },
-                data: { currentStock: newStock },
+                data: { currentStock: Math.max(0, newStock) },
               });
 
               // Recalculate subproduct stocks if this is a parent product
@@ -1742,7 +1742,7 @@ export const packingRouter = router({
                 for (const { id, newStock: subStock } of updatedStocks) {
                   await tx.product.update({
                     where: { id },
-                    data: { currentStock: subStock },
+                    data: { currentStock: Math.max(0, subStock) },
                   });
                 }
               }
@@ -1831,10 +1831,10 @@ export const packingRouter = router({
                 },
               });
 
-              // Update product stock
+              // Update product stock (floor at 0 as defensive guard)
               await tx.product.update({
                 where: { id: productId },
-                data: { currentStock: newStock },
+                data: { currentStock: Math.max(0, newStock) },
               });
 
               // Recalculate subproduct stocks
@@ -1848,7 +1848,7 @@ export const packingRouter = router({
                 for (const { id, newStock: subStock } of updatedStocks) {
                   await tx.product.update({
                     where: { id },
-                    data: { currentStock: subStock },
+                    data: { currentStock: Math.max(0, subStock) },
                   });
                 }
               }
