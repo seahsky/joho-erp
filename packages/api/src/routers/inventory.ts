@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, requirePermission } from '../trpc';
 import { prisma } from '@joho-erp/database';
 import { createMoney, multiplyMoney, sumMoney, toCents, formatDateForMelbourne } from '@joho-erp/shared';
@@ -862,6 +863,13 @@ export const inventoryRouter = router({
       // Update the batch and reduce product stock
       const quantityToDeduct = batch.quantityRemaining;
 
+      if (batch.product.currentStock < quantityToDeduct) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Insufficient stock to write off this batch. Product stock: ${batch.product.currentStock}, batch remaining: ${quantityToDeduct}. Please adjust product stock first.`,
+        });
+      }
+
       await prisma.$transaction([
         // Mark batch as consumed
         prisma.inventoryBatch.update({
@@ -928,6 +936,15 @@ export const inventoryRouter = router({
       }
 
       const quantityDiff = input.newQuantity - batch.quantityRemaining;
+
+      const rawNewProductStock = batch.product.currentStock + quantityDiff;
+      if (rawNewProductStock < 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot adjust batch quantity — it would reduce product stock below zero. Current stock: ${batch.product.currentStock}, change: ${quantityDiff}. Please adjust product stock first.`,
+        });
+      }
+
       const newProductStock = Math.max(0, batch.product.currentStock + quantityDiff);
       const isConsumed = input.newQuantity === 0;
 
