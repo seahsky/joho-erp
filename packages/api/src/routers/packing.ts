@@ -475,10 +475,10 @@ export const packingRouter = router({
         }
 
         // Re-fetch product inside transaction for accurate stock check
+        const { isSubproduct: checkIsSubproduct, calculateParentConsumption: calcParentConsumption, calculateAllSubproductStocks: calcAllSubproductStocks } = await import('@joho-erp/shared');
         const freshProduct = await tx.product.findUnique({
           where: { id: productId },
-          select: { id: true, currentStock: true, name: true, parentProductId: true },
-          // Include parent product for subproduct handling if needed in the future
+          select: { id: true, currentStock: true, name: true, parentProductId: true, estimatedLossPercentage: true },
         });
 
         if (!freshProduct) {
@@ -488,40 +488,67 @@ export const packingRouter = router({
           });
         }
 
+        const productIsSubproduct = checkIsSubproduct(freshProduct);
+
+        // For subproducts, stock adjustments must route through the parent product
+        // to match how markOrderReady consumes stock from the parent
+        const stockTargetProductId = productIsSubproduct ? freshProduct.parentProductId! : productId;
+        let freshTargetProduct = productIsSubproduct
+          ? await tx.product.findUnique({
+              where: { id: stockTargetProductId },
+              select: { id: true, currentStock: true, name: true },
+            })
+          : { id: freshProduct.id, currentStock: freshProduct.currentStock, name: freshProduct.name };
+
+        if (!freshTargetProduct) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: `Parent product not found for subproduct ${freshProduct.name}`,
+          });
+        }
+
+        // Calculate the actual stock delta on the target product
+        // For subproducts, convert through loss percentage to get parent consumption
+        const stockDelta = productIsSubproduct
+          ? calcParentConsumption(Math.abs(quantityDiff), freshProduct.estimatedLossPercentage ?? 0) * Math.sign(quantityDiff)
+          : quantityDiff;
+
         // Validate stock availability with fresh data inside transaction
-        if (quantityDiff > 0 && freshProduct.currentStock < quantityDiff) {
+        if (stockDelta > 0 && freshTargetProduct.currentStock < stockDelta) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Insufficient stock for ${freshProduct.name} (${item.sku}). Available: ${freshProduct.currentStock}, Required increase: ${quantityDiff}. Please reduce the quantity or wait for stock replenishment.`,
+            message: `Insufficient stock for ${freshTargetProduct.name} (${item.sku}). Available: ${freshTargetProduct.currentStock}, Required increase: ${stockDelta}. Please reduce the quantity or wait for stock replenishment.`,
           });
         }
 
         // Calculate new stock level with fresh data
-        const freshNewStock = freshProduct.currentStock - quantityDiff;
+        const freshNewStock = freshTargetProduct.currentStock - stockDelta;
 
-        // Create inventory transaction for audit trail
+        // Create inventory transaction for audit trail (on the target product)
         const transaction = await tx.inventoryTransaction.create({
           data: {
-            productId,
+            productId: stockTargetProductId,
             type: 'adjustment',
             adjustmentType: 'packing_adjustment',
-            quantity: -quantityDiff, // Negative when reducing stock (increasing order qty)
-            previousStock: freshProduct.currentStock,
+            quantity: -stockDelta, // Negative when reducing stock (increasing order qty)
+            previousStock: freshTargetProduct.currentStock,
             newStock: freshNewStock,
             referenceType: 'order',
             referenceId: orderId,
-            notes: `Packing quantity adjustment for order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit}`,
+            notes: productIsSubproduct
+              ? `Packing quantity adjustment for subproduct ${freshProduct.name} in order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit} (parent stock adjusted)`
+              : `Packing quantity adjustment for order ${order.orderNumber}: ${oldQuantity} → ${newQuantity} ${item.unit}`,
             createdBy: ctx.userId || 'system',
           },
         });
 
-        // NEW: Handle batch consumption based on quantity change
-        if (quantityDiff > 0) {
+        // Handle batch consumption based on quantity change (on the target product)
+        if (stockDelta > 0) {
           // Increasing order qty (reducing stock) - consume from batches
           const { consumeStock } = await import('../services/inventory-batch');
           const result = await consumeStock(
-            productId,
-            quantityDiff,
+            stockTargetProductId,
+            stockDelta,
             transaction.id,
             orderId,
             order.orderNumber,
@@ -535,27 +562,47 @@ export const packingRouter = router({
               result.expiryWarnings
             );
           }
-        } else if (quantityDiff < 0) {
+        } else if (stockDelta < 0) {
           // Reducing order qty (returning stock) - create new batch for returned stock
           await tx.inventoryBatch.create({
             data: {
-              productId,
-              quantityRemaining: Math.abs(quantityDiff),
-              initialQuantity: Math.abs(quantityDiff),
+              productId: stockTargetProductId,
+              quantityRemaining: Math.abs(stockDelta),
+              initialQuantity: Math.abs(stockDelta),
               costPerUnit: 0, // Unknown cost - admin can adjust later
               receivedAt: new Date(),
               expiryDate: null,
               receiveTransactionId: transaction.id,
-              notes: `Stock returned from packing adjustment: Order ${order.orderNumber}`,
+              notes: productIsSubproduct
+                ? `Stock returned from packing adjustment (subproduct ${freshProduct.name}): Order ${order.orderNumber}`
+                : `Stock returned from packing adjustment: Order ${order.orderNumber}`,
             },
           });
         }
 
-        // Update product stock with fresh calculated value (floor at 0 as defensive guard)
+        // Update target product stock with fresh calculated value (floor at 0 as defensive guard)
         await tx.product.update({
-          where: { id: productId },
+          where: { id: stockTargetProductId },
           data: { currentStock: Math.max(0, freshNewStock) },
         });
+
+        // For subproducts, recalculate all sibling subproduct stocks from the updated parent
+        if (productIsSubproduct) {
+          const siblingSubproducts = await tx.product.findMany({
+            where: { parentProductId: stockTargetProductId, status: 'active' },
+            select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+          });
+
+          if (siblingSubproducts.length > 0) {
+            const updatedStocks = calcAllSubproductStocks(Math.max(0, freshNewStock), siblingSubproducts);
+            for (const { id, newStock: subStock } of updatedStocks) {
+              await tx.product.update({
+                where: { id },
+                data: { currentStock: Math.max(0, subStock) },
+              });
+            }
+          }
+        }
 
         // CRITICAL FIX: Store original items on FIRST quantity adjustment
         // This allows full restoration on reset
