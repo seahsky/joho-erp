@@ -1230,6 +1230,21 @@ export const orderRouter = router({
           });
         }
 
+        // Block backward transitions that have dedicated endpoints with stock/state cleanup
+        const TRANSITIONS_WITH_DEDICATED_HANDLERS: Record<string, { targetStatuses: string[]; endpoint: string }> = {
+          packing: { targetStatuses: ['confirmed'], endpoint: 'resetOrder' },
+          ready_for_delivery: { targetStatuses: ['packing'], endpoint: 'resetOrder' },
+          out_for_delivery: { targetStatuses: ['ready_for_delivery'], endpoint: 'returnToWarehouse' },
+        };
+
+        const dedicatedHandler = TRANSITIONS_WITH_DEDICATED_HANDLERS[currentOrder.status];
+        if (dedicatedHandler?.targetStatuses.includes(input.newStatus)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot transition from ${currentOrder.status} to ${input.newStatus} via status update. Use the ${dedicatedHandler.endpoint} endpoint instead.`,
+          });
+        }
+
         // STEP 3: Atomic guard - use updateMany with current status condition
         const updateResult = await tx.order.updateMany({
           where: {

@@ -109,13 +109,22 @@ export function OrderActions({ orderId, currentStatus, onStatusUpdated }: OrderA
   // Can only cancel if not already cancelled or delivered
   const canCancel = !['cancelled', 'delivered'].includes(currentStatus);
 
-  // Filter out current status and invalid transitions
+  // Backward transitions that must use dedicated endpoints (resetOrder, returnToWarehouse)
+  const BLOCKED_BACKWARD_TRANSITIONS: Record<string, string[]> = {
+    packing: ['confirmed', 'awaiting_approval'],
+    ready_for_delivery: ['packing', 'confirmed', 'awaiting_approval'],
+    out_for_delivery: ['ready_for_delivery', 'packing', 'confirmed', 'awaiting_approval'],
+  };
+
+  // Filter out current status, invalid transitions, and backward transitions
   const availableStatuses = STATUS_OPTIONS.filter((status) => {
     if (status === currentStatus) return false;
     // If cancelled, no status changes allowed
     if (currentStatus === 'cancelled') return false;
     // If delivered, only allow cancelled (for refunds)
     if (currentStatus === 'delivered') return status === 'cancelled';
+    // Block backward transitions that require dedicated endpoints
+    if (BLOCKED_BACKWARD_TRANSITIONS[currentStatus]?.includes(status)) return false;
     return true;
   });
 
