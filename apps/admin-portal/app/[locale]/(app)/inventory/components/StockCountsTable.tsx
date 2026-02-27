@@ -83,12 +83,14 @@ function getProductStockInfo(product: Record<string, unknown>): {
 
 function ProductBatchRows({
   productId,
+  parentCurrentStock,
   tBatches,
   tExpiry,
   onBatchClick,
 }: {
   productId: string;
-  tBatches: (key: string) => string;
+  parentCurrentStock: number;
+  tBatches: (key: string, values?: Record<string, string | number>) => string;
   tExpiry: (key: string, values?: Record<string, string | number | Date>) => string;
   onBatchClick: (batchId: string) => void;
 }) {
@@ -157,6 +159,9 @@ function ProductBatchRows({
     );
   }
 
+  const batchSum = batches.reduce((sum, b) => sum + b.quantityRemaining, 0);
+  const hasMismatch = Math.abs(batchSum - parentCurrentStock) > 0.01;
+
   return (
     <>
       {/* Batch sub-header */}
@@ -211,6 +216,23 @@ function ProductBatchRows({
           </TableCell>
         </TableRow>
       ))}
+      {/* Batch total summary row */}
+      <TableRow className="bg-muted/50 hover:bg-muted/50 border-t">
+        <TableCell />
+        <TableCell className="pl-8 text-sm font-semibold" colSpan={2}>
+          {tBatches('batchTotal')}
+        </TableCell>
+        <TableCell className="text-right text-sm font-semibold tabular-nums">
+          {batchSum.toFixed(1)}
+        </TableCell>
+        <TableCell colSpan={3}>
+          {hasMismatch && (
+            <Badge variant="warning" className="text-xs">
+              {tBatches('mismatchWarning', { currentStock: parentCurrentStock.toFixed(1) })}
+            </Badge>
+          )}
+        </TableCell>
+      </TableRow>
     </>
   );
 }
@@ -384,6 +406,7 @@ export function StockCountsTable() {
                     {isExpanded && (
                       <ProductBatchRows
                         productId={product.id}
+                        parentCurrentStock={stockInfo.currentStock}
                         tBatches={t}
                         tExpiry={tExpiry}
                         onBatchClick={(batchId) => {

@@ -760,14 +760,14 @@ export const productRouter = router({
           }
         }
 
-        // 4. Update product stock
-        const updatedProduct = await tx.product.update({
-          where: { id: productId },
-          data: { currentStock: newStock },
-        });
+        // 4. Sync product stock from batch sums (defensive — replaces manual arithmetic)
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+        const syncedStock = await syncProductCurrentStock(productId, tx);
+
+        const updatedProduct = await tx.product.findUnique({ where: { id: productId } });
 
         // 5. Recalculate all subproduct stocks after parent stock change
-        await updateSubproductStocks(productId, newStock, product.estimatedLossPercentage, tx);
+        await updateSubproductStocks(productId, syncedStock, product.estimatedLossPercentage, tx);
 
         return updatedProduct;
       });
@@ -926,21 +926,12 @@ export const productRouter = router({
           tx
         );
 
-        // STEP 5: Update source product stock with atomic guard
-        const sourceUpdateResult = await tx.product.updateMany({
-          where: {
-            id: sourceProductId,
-            currentStock: { gte: requiredRawMaterial }, // Atomic guard - ensure stock still available
-          },
-          data: { currentStock: { decrement: requiredRawMaterial } },
-        });
+        // STEP 5: Sync source product stock from batch sums (defensive)
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+        const syncedSourceStock = await syncProductCurrentStock(sourceProductId, tx);
 
-        if (sourceUpdateResult.count === 0) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'Stock was modified by another process. Please try again.',
-          });
-        }
+        // Cascade to source subproducts
+        await updateSubproductStocks(sourceProductId, syncedSourceStock, sourceProduct.estimatedLossPercentage, tx);
 
         // STEP 6: Create target InventoryTransaction (receipt)
         const targetTransaction = await tx.inventoryTransaction.create({
@@ -973,11 +964,11 @@ export const productRouter = router({
           },
         });
 
-        // STEP 8: Update target product stock
-        await tx.product.update({
-          where: { id: targetProductId },
-          data: { currentStock: { increment: outputQty } },
-        });
+        // STEP 8: Sync target product stock from batch sums (defensive)
+        const syncedTargetStock = await syncProductCurrentStock(targetProductId, tx);
+
+        // Cascade to target subproducts
+        await updateSubproductStocks(targetProductId, syncedTargetStock, targetProduct.estimatedLossPercentage, tx);
 
         return {
           sourceTransaction,
@@ -1275,6 +1266,77 @@ export const productRouter = router({
         success: true,
         deletedProductId: productId,
         deletedSubproductsCount: product.subProducts.length,
+      };
+    }),
+
+  // Audit stock: compare currentStock vs batch sums for all products
+  auditStock: requireAnyPermission(['inventory:adjust', 'products:adjust_stock'])
+    .query(async () => {
+      const { getAvailableStockQuantity } = await import('../services/inventory-batch');
+
+      // Get all parent products (non-subproducts)
+      const products = await prisma.product.findMany({
+        where: { parentProductId: null },
+        select: { id: true, name: true, sku: true, currentStock: true, unit: true },
+        orderBy: { name: 'asc' },
+      });
+
+      const results = await Promise.all(
+        products.map(async (product) => {
+          const batchSum = await getAvailableStockQuantity(product.id);
+          const diff = product.currentStock - batchSum;
+          return {
+            productId: product.id,
+            name: product.name,
+            sku: product.sku,
+            unit: product.unit,
+            currentStock: product.currentStock,
+            batchSum,
+            diff,
+            hasMismatch: Math.abs(diff) > 0.001,
+          };
+        })
+      );
+
+      const mismatchCount = results.filter((r) => r.hasMismatch).length;
+
+      return {
+        products: results,
+        totalProducts: results.length,
+        mismatchCount,
+      };
+    }),
+
+  // Reconcile stock: sync all product currentStock values to match batch sums
+  reconcileStock: requireAnyPermission(['inventory:adjust', 'products:adjust_stock'])
+    .mutation(async ({ ctx }) => {
+      const { syncCurrentStock } = await import('../services/inventory-batch');
+
+      const discrepancies = await prisma.$transaction(async (tx) => {
+        const found = await syncCurrentStock(tx);
+
+        // Create audit trail for each correction
+        for (const d of found) {
+          await tx.inventoryTransaction.create({
+            data: {
+              type: 'adjustment',
+              adjustmentType: 'stock_count_correction',
+              productId: d.productId,
+              quantity: d.batchSum - d.previousStock,
+              previousStock: d.previousStock,
+              newStock: d.batchSum,
+              notes: `Stock reconciliation: corrected from ${d.previousStock} to ${d.batchSum} (batch sum)`,
+              createdBy: ctx.userId || 'system',
+            },
+          });
+        }
+
+        return found;
+      });
+
+      return {
+        reconciledCount: discrepancies.length,
+        discrepancies,
       };
     }),
 });

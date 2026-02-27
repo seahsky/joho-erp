@@ -24,6 +24,7 @@ import {
   Input,
   TableSkeleton,
   StatusBadge,
+  useToast,
   type StatusType,
 } from '@joho-erp/ui';
 import {
@@ -39,6 +40,7 @@ import {
   Plus,
   PackagePlus,
   ArrowRightLeft,
+  CheckCheck,
 } from 'lucide-react';
 import {
   StockMovementChart,
@@ -64,8 +66,38 @@ type AdjustmentTypeFilter = 'stock_received' | undefined;
 
 export default function InventoryPage() {
   const t = useTranslations('inventory');
+  const tStockCounts = useTranslations('inventory.stockCounts');
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Reconcile stock mutation
+  const reconcileMutation = api.product.reconcileStock.useMutation({
+    onSuccess: (data) => {
+      if (data.reconciledCount > 0) {
+        toast({
+          title: tStockCounts('reconcileSuccess', { count: data.reconciledCount }),
+        });
+      } else {
+        toast({
+          title: tStockCounts('reconcileNone'),
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleReconcile = () => {
+    if (window.confirm(tStockCounts('reconcileConfirm'))) {
+      reconcileMutation.mutate();
+    }
+  };
 
   // Filters for transaction history
   const [transactionType, setTransactionType] = useState<TransactionType>(undefined);
@@ -201,6 +233,16 @@ export default function InventoryPage() {
             >
               <ArrowRightLeft className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">{t('processStock')}</span>
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="products:adjust_stock">
+            <Button
+              variant="outline"
+              onClick={handleReconcile}
+              disabled={reconcileMutation.isPending}
+            >
+              <CheckCheck className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{tStockCounts('reconcile')}</span>
             </Button>
           </PermissionGate>
           <Button onClick={() => setExportDialogOpen(true)}>

@@ -870,24 +870,18 @@ export const inventoryRouter = router({
         });
       }
 
-      await prisma.$transaction([
+      await prisma.$transaction(async (tx) => {
         // Mark batch as consumed
-        prisma.inventoryBatch.update({
+        await tx.inventoryBatch.update({
           where: { id: input.batchId },
           data: {
             isConsumed: true,
             quantityRemaining: 0,
           },
-        }),
-        // Update product stock (floor at 0 to prevent negative stock)
-        prisma.product.update({
-          where: { id: batch.productId },
-          data: {
-            currentStock: Math.max(0, batch.product.currentStock - quantityToDeduct),
-          },
-        }),
+        });
+
         // Create inventory transaction for traceability
-        prisma.inventoryTransaction.create({
+        await tx.inventoryTransaction.create({
           data: {
             type: 'adjustment',
             adjustmentType: 'stock_write_off',
@@ -901,8 +895,12 @@ export const inventoryRouter = router({
               : 'Stock writeoff (expiry management)',
             createdBy: ctx.userId || 'system',
           },
-        }),
-      ]);
+        });
+
+        // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+        await syncProductCurrentStock(batch.productId, tx);
+      });
 
       return { success: true };
     }),
@@ -945,40 +943,37 @@ export const inventoryRouter = router({
         });
       }
 
-      const newProductStock = Math.max(0, batch.product.currentStock + quantityDiff);
       const isConsumed = input.newQuantity === 0;
 
-      await prisma.$transaction([
+      await prisma.$transaction(async (tx) => {
         // Update batch quantity
-        prisma.inventoryBatch.update({
+        await tx.inventoryBatch.update({
           where: { id: input.batchId },
           data: {
             quantityRemaining: input.newQuantity,
             isConsumed,
           },
-        }),
-        // Update product stock
-        prisma.product.update({
-          where: { id: batch.productId },
-          data: {
-            currentStock: newProductStock,
-          },
-        }),
+        });
+
         // Create inventory transaction for traceability
-        prisma.inventoryTransaction.create({
+        await tx.inventoryTransaction.create({
           data: {
             type: 'adjustment',
             adjustmentType: 'stock_count_correction',
             productId: batch.productId,
             quantity: quantityDiff,
             previousStock: batch.product.currentStock,
-            newStock: newProductStock,
+            newStock: batch.product.currentStock + quantityDiff,
             costPerUnit: batch.costPerUnit,
             notes: `Batch quantity adjusted (expiry management)`,
             createdBy: ctx.userId || 'system',
           },
-        }),
-      ]);
+        });
+
+        // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+        await syncProductCurrentStock(batch.productId, tx);
+      });
 
       return { success: true, newQuantity: input.newQuantity };
     }),

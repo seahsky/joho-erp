@@ -255,16 +255,111 @@ export async function hasAvailableStock(
   }
 }
 
+export interface StockDiscrepancy {
+  productId: string;
+  productName: string;
+  sku: string;
+  previousStock: number;
+  batchSum: number;
+  diff: number;
+}
+
 /**
- * Sync currentStock with actual batch availability.
+ * Sync a single product's currentStock with actual batch quantities.
+ * Recalculates from SUM(batch.quantityRemaining) and updates the product.
+ *
+ * @param productId - The product to sync
+ * @param tx - Prisma transaction context (optional)
+ * @returns The new stock value
+ */
+export async function syncProductCurrentStock(
+  productId: string,
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+): Promise<number> {
+  const client = tx || prisma;
+  const batchSum = await getAvailableStockQuantity(productId, client);
+  await client.product.update({
+    where: { id: productId },
+    data: { currentStock: batchSum },
+  });
+  return batchSum;
+}
+
+/**
+ * Sync currentStock with actual batch availability for ALL products.
  * Products may show stale currentStock if their batches have expired since the last update.
- * This function recalculates currentStock based on non-expired, non-consumed batch quantities,
+ * This function recalculates currentStock based on non-consumed batch quantities,
  * and updates subproduct stocks for any affected parents.
  *
  * @param tx - Optional Prisma transaction context
- * @returns Number of products whose stock was synced
+ * @returns List of discrepancies found and corrected
  */
+export async function syncCurrentStock(
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+): Promise<StockDiscrepancy[]> {
+  const client = tx || prisma;
+  const TOLERANCE = 0.001;
 
+  // Get all parent products (non-subproducts) with their current stock
+  const products = await client.product.findMany({
+    where: { parentProductId: null },
+    select: { id: true, name: true, sku: true, currentStock: true, estimatedLossPercentage: true },
+  });
+
+  const discrepancies: StockDiscrepancy[] = [];
+
+  for (const product of products) {
+    const batchSum = await getAvailableStockQuantity(product.id, client);
+    const diff = product.currentStock - batchSum;
+
+    if (Math.abs(diff) > TOLERANCE) {
+      discrepancies.push({
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        previousStock: product.currentStock,
+        batchSum,
+        diff,
+      });
+
+      // Update the product's currentStock
+      await client.product.update({
+        where: { id: product.id },
+        data: { currentStock: batchSum },
+      });
+    }
+
+    // Always cascade to subproducts (even if parent didn't change,
+    // subproducts may be stale)
+    const subproducts = await client.product.findMany({
+      where: { parentProductId: product.id },
+      select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+    });
+
+    if (subproducts.length > 0) {
+      const { calculateAllSubproductStocksWithInheritance } = await import('@joho-erp/shared');
+      const updatedStocks = calculateAllSubproductStocksWithInheritance(
+        batchSum,
+        product.estimatedLossPercentage,
+        subproducts
+      );
+      for (const { id, newStock } of updatedStocks) {
+        await client.product.update({
+          where: { id },
+          data: { currentStock: Math.max(0, newStock) },
+        });
+      }
+    }
+  }
+
+  return discrepancies;
+}
 
 /**
  * Get the total available (non-expired) stock for a product

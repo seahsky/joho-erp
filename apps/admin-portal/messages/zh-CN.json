@@ -3070,7 +3070,13 @@
         "supplier": "供应商",
         "noBatches": "无活跃批次",
         "loading": "加载批次中..."
-      }
+      },
+      "batchTotal": "批次合计",
+      "mismatchWarning": "不匹配：产品显示 {currentStock}",
+      "reconcile": "库存对账",
+      "reconcileConfirm": "这将更新所有产品库存以匹配批次合计。是否继续？",
+      "reconcileSuccess": "已对账 {count} 个产品",
+      "reconcileNone": "所有产品库存已同步"
     },
     "export": {
       "export": "导出",

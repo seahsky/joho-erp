@@ -552,11 +552,9 @@ export const packingRouter = router({
           });
         }
 
-        // Update product stock with fresh calculated value (floor at 0 as defensive guard)
-        await tx.product.update({
-          where: { id: productId },
-          data: { currentStock: Math.max(0, freshNewStock) },
-        });
+        // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+        const { syncProductCurrentStock: syncAdjustStock } = await import('../services/inventory-batch');
+        await syncAdjustStock(productId, tx);
 
         // CRITICAL FIX: Store original items on FIRST quantity adjustment
         // This allows full restoration on reset
@@ -1053,27 +1051,18 @@ export const packingRouter = router({
             }
           }
 
-          // Update parent stock ONCE with total consumption using atomic condition check
-          const parentUpdateResult = await tx.product.updateMany({
-            where: { id: parentId, currentStock: previousStock },
-            data: { currentStock: Math.max(0, newStock) },
-          });
+          // Sync parent stock from batch sums (defensive — replaces manual arithmetic)
+          const { syncProductCurrentStock } = await import('../services/inventory-batch');
+          const syncedParentStock = await syncProductCurrentStock(parentId, tx);
 
-          if (parentUpdateResult.count === 0) {
-            throw new TRPCError({
-              code: 'CONFLICT',
-              message: `Stock for ${parentProduct.name} modified concurrently. Please retry.`,
-            });
-          }
-
-          // Find all subproducts of this parent and recalculate their stocks ONCE
+          // Recalculate subproduct stocks from synced parent
           const subproducts = await tx.product.findMany({
             where: { parentProductId: parentId },
             select: { id: true, parentProductId: true, estimatedLossPercentage: true },
           });
 
           if (subproducts.length > 0) {
-            const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+            const updatedStocks = calculateAllSubproductStocks(syncedParentStock, subproducts);
             for (const { id, newStock: subStock } of updatedStocks) {
               await tx.product.update({
                 where: { id },
@@ -1150,11 +1139,9 @@ export const packingRouter = router({
             });
           }
 
-          // Update product stock (floor at 0 as defensive guard)
-          await tx.product.update({
-            where: { id: product.id },
-            data: { currentStock: Math.max(0, newStock) },
-          });
+          // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+          const { syncProductCurrentStock: syncRegularStock } = await import('../services/inventory-batch');
+          const syncedRegularStock = await syncRegularStock(product.id, tx);
 
           // If this regular product has subproducts, recalculate their stocks too
           const subproducts = await tx.product.findMany({
@@ -1163,7 +1150,7 @@ export const packingRouter = router({
           });
 
           if (subproducts.length > 0) {
-            const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+            const updatedStocks = calculateAllSubproductStocks(syncedRegularStock, subproducts);
             for (const { id, newStock: subStock } of updatedStocks) {
               await tx.product.update({
                 where: { id },
@@ -1726,11 +1713,9 @@ export const packingRouter = router({
                 },
               });
 
-              // Update product stock (floor at 0 as defensive guard)
-              await tx.product.update({
-                where: { id: productId },
-                data: { currentStock: Math.max(0, newStock) },
-              });
+              // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+              const { syncProductCurrentStock: syncResetStock } = await import('../services/inventory-batch');
+              const syncedResetStock = await syncResetStock(productId, tx);
 
               // Recalculate subproduct stocks if this is a parent product
               const subproducts = await tx.product.findMany({
@@ -1739,7 +1724,7 @@ export const packingRouter = router({
               });
 
               if (subproducts.length > 0) {
-                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+                const updatedStocks = calculateAllSubproductStocks(syncedResetStock, subproducts);
                 for (const { id, newStock: subStock } of updatedStocks) {
                   await tx.product.update({
                     where: { id },

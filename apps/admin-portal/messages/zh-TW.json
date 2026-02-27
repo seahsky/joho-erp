@@ -3076,7 +3076,13 @@
         "supplier": "供應商",
         "noBatches": "無活躍批次",
         "loading": "載入批次中..."
-      }
+      },
+      "batchTotal": "批次合計",
+      "mismatchWarning": "不匹配：產品顯示 {currentStock}",
+      "reconcile": "庫存對帳",
+      "reconcileConfirm": "這將更新所有產品庫存以匹配批次合計。是否繼續？",
+      "reconcileSuccess": "已對帳 {count} 個產品",
+      "reconcileNone": "所有產品庫存已同步"
     },
     "export": {
       "export": "匯出",

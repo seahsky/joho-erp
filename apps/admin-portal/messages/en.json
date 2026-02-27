@@ -3070,7 +3070,13 @@
         "supplier": "Supplier",
         "noBatches": "No active batches",
         "loading": "Loading batches..."
-      }
+      },
+      "batchTotal": "Batch Total",
+      "mismatchWarning": "Mismatch: product shows {currentStock}",
+      "reconcile": "Reconcile Stock",
+      "reconcileConfirm": "This will update all product stock levels to match batch totals. Continue?",
+      "reconcileSuccess": "Reconciled {count} products",
+      "reconcileNone": "All products are already in sync"
     },
     "export": {
       "export": "Export",
