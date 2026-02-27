@@ -238,11 +238,17 @@ function ProductBatchRows({
   );
 }
 
-export function StockCountsTable() {
+export function StockCountsTable({
+  initialStatusFilter,
+  initialSearch,
+}: {
+  initialStatusFilter?: StockStatus;
+  initialSearch?: string;
+} = {}) {
   const t = useTranslations('inventory.stockCounts');
   const tExpiry = useTranslations('dashboard.expiringInventory');
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StockStatus>('all');
+  const [search, setSearch] = useState(initialSearch ?? '');
+  const [statusFilter, setStatusFilter] = useState<StockStatus>(initialStatusFilter ?? 'all');
   const [debouncedSearch] = useDebounce(search, 300);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);

@@ -108,6 +108,10 @@ export default function InventoryPage() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry'>('overview');
 
+  // Stock counts initial filter state (from URL params)
+  const [stockCountsInitialFilter, setStockCountsInitialFilter] = useState<'all' | 'healthy' | 'low_stock' | 'out_of_stock' | undefined>(undefined);
+  const [stockCountsInitialSearch, setStockCountsInitialSearch] = useState<string | undefined>(undefined);
+
   // Stock adjustment state
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<{
@@ -133,15 +137,31 @@ export default function InventoryPage() {
   useEffect(() => {
     const batchId = searchParams.get('batchId');
     const expiryFilter = searchParams.get('expiryFilter');
+    const stockFilter = searchParams.get('stockFilter');
+    const productSearchParam = searchParams.get('productSearch');
+    const tab = searchParams.get('tab');
 
     if (batchId) {
       setSelectedBatchId(batchId);
       setShowBatchInfoDialog(true);
-      // Clear the URL parameter after opening the dialog
       router.replace('/inventory', { scroll: false });
     } else if (expiryFilter === 'alert') {
       setCurrentTab('stockExpiry');
-      // Clear the URL parameter after setting state
+      router.replace('/inventory', { scroll: false });
+    } else if (stockFilter === 'low') {
+      setCurrentTab('stockCounts');
+      setStockCountsInitialFilter('low_stock');
+      router.replace('/inventory', { scroll: false });
+    } else if (stockFilter === 'out') {
+      setCurrentTab('stockCounts');
+      setStockCountsInitialFilter('out_of_stock');
+      router.replace('/inventory', { scroll: false });
+    } else if (productSearchParam) {
+      setCurrentTab('stockCounts');
+      setStockCountsInitialSearch(productSearchParam);
+      router.replace('/inventory', { scroll: false });
+    } else if (tab === 'stockCounts') {
+      setCurrentTab('stockCounts');
       router.replace('/inventory', { scroll: false });
     }
   }, [searchParams, router]);
@@ -555,7 +575,10 @@ export default function InventoryPage() {
 
         {/* Stock Counts Tab - Product stock levels */}
         <TabsContent value="stockCounts">
-          <StockCountsTable />
+          <StockCountsTable
+            initialStatusFilter={stockCountsInitialFilter}
+            initialSearch={stockCountsInitialSearch}
+          />
         </TabsContent>
 
         {/* Stock Expiry Tab - Expiring batches list */}

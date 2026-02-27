@@ -85,6 +85,7 @@ export default function DashboardPage() {
           onPeriodChange={setPeriod}
           trendData={trendData}
           onTrendClick={() => setIsChartModalOpen(true)}
+          onRevenueClick={() => setIsChartModalOpen(true)}
           isLoading={financialLoading || trendLoading}
         />
       </section>

@@ -145,7 +145,7 @@ export function InventoryHealthCard({
                         <button
                           key={item.id}
                           className="inventory-detail-item"
-                          onClick={() => router.push(`/products/${item.id}`)}
+                          onClick={() => router.push(`/inventory?tab=stockCounts&productSearch=${item.sku}`)}
                         >
                           <span className="font-medium truncate">{item.name}</span>
                           <span className="text-muted-foreground text-xs">{item.sku}</span>

@@ -19,6 +19,7 @@ interface FinancialOverviewBarProps {
   onPeriodChange: (period: Period) => void;
   trendData?: Array<{ date: string; revenue: number }>;
   onTrendClick?: () => void;
+  onRevenueClick?: () => void;
   isLoading?: boolean;
 }
 
@@ -31,6 +32,7 @@ export function FinancialOverviewBar({
   onPeriodChange,
   trendData,
   onTrendClick,
+  onRevenueClick,
   isLoading,
 }: FinancialOverviewBarProps) {
   const router = useRouter();
@@ -84,13 +86,13 @@ export function FinancialOverviewBar({
       {/* Revenue Metric */}
       <div
         className="financial-metric-card financial-metric-primary"
-        onClick={() => router.push('/reports/revenue')}
+        onClick={() => onRevenueClick?.()}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            router.push('/reports/revenue');
+            onRevenueClick?.();
           }
         }}
       >
@@ -113,13 +115,13 @@ export function FinancialOverviewBar({
       {/* Pending Payments */}
       <div
         className="financial-metric-card"
-        onClick={() => router.push('/invoices?status=pending')}
+        onClick={() => router.push('/orders?status=delivered')}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            router.push('/invoices?status=pending');
+            router.push('/orders?status=delivered');
           }
         }}
       >
