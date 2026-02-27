@@ -1996,6 +1996,8 @@
     "quantityUpdatedDescription": "Item quantity and order total have been updated",
     "itemQuantityZeroed": "Item quantity set to 0",
     "itemQuantityZeroedDescription": "The item quantity has been set to 0. Stock has been returned to inventory.",
+    "quantityZeroedWithReturn": "Item quantity has been set to 0. Stock has been returned to inventory.",
+    "quantityNoChange": "No stock was changed.",
     "errorUpdatingQuantity": "Error Updating Quantity",
     "insufficientStock": "Insufficient stock available",
     "quantityMustBePositive": "Quantity must be greater than zero",

@@ -333,10 +333,17 @@ export function PackingOrderCard({ order, onOrderUpdated }: PackingOrderCardProp
     onSuccess: (data) => {
       setEditingItemId(null);
       setEditQuantity('');
-      if (data.newQuantity === 0) {
+      if (data.newQuantity === 0 && data.oldQuantity > 0) {
+        // Stock was actually returned to inventory
         toast({
-          title: t('itemQuantityZeroed'),
-          description: t('itemQuantityZeroedDescription'),
+          title: t('quantityUpdated'),
+          description: t('quantityZeroedWithReturn'),
+        });
+      } else if (data.newQuantity === 0) {
+        // Quantity was already 0 — no stock change
+        toast({
+          title: t('quantityUpdated'),
+          description: t('quantityNoChange'),
         });
       } else {
         toast({
