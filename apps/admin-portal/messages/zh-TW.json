@@ -3074,7 +3074,7 @@
         "costPerUnit": "單價",
         "received": "入庫日期",
         "supplier": "供應商",
-        "noBatches": "無活躍批次",
+        "noBatches": "無供應商採購批次",
         "loading": "載入批次中..."
       },
       "batchTotal": "批次合計",

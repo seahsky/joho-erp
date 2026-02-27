@@ -793,6 +793,7 @@ export const inventoryRouter = router({
       z.object({
         productId: z.string(),
         includeConsumed: z.boolean().default(false),
+        supplierOnly: z.boolean().default(false),
       })
     )
     .query(async ({ input }) => {
@@ -800,6 +801,7 @@ export const inventoryRouter = router({
         where: {
           productId: input.productId,
           isConsumed: input.includeConsumed ? undefined : false,
+          ...(input.supplierOnly && { supplierId: { not: null } }),
         },
         include: {
           supplier: { select: { id: true, businessName: true } },

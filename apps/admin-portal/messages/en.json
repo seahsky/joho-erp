@@ -3068,7 +3068,7 @@
         "costPerUnit": "Cost/Unit",
         "received": "Received",
         "supplier": "Supplier",
-        "noBatches": "No active batches",
+        "noBatches": "No purchase batches from suppliers",
         "loading": "Loading batches..."
       },
       "batchTotal": "Batch Total",

@@ -3068,7 +3068,7 @@
         "costPerUnit": "单价",
         "received": "入库日期",
         "supplier": "供应商",
-        "noBatches": "无活跃批次",
+        "noBatches": "无供应商采购批次",
         "loading": "加载批次中..."
       },
       "batchTotal": "批次合计",
