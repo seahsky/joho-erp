@@ -19,7 +19,8 @@
     "docker:logs": "docker compose logs -f",
     "docker:customer": "docker compose up customer-portal",
     "docker:admin": "docker compose up admin-portal",
-    "docker:clean": "docker compose down -v --rmi all"
+    "docker:clean": "docker compose down -v --rmi all",
+    "test:integration": "turbo run test:integration"
   },
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {
