@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@joho-erp/ui';
-import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, IdCard, FileText, Download, CheckCircle, PenLine, RefreshCw, ImageOff } from 'lucide-react';
 import { XeroCustomerSyncBadge } from '@/components/xero-sync-badge';
 import { formatAUD, formatDate, parseToCents, formatCentsForWholeInput } from '@joho-erp/shared';
 
@@ -474,7 +474,7 @@ export default function CreditReviewPage({ params }: PageProps) {
           )}
 
           {/* Identity Documents - Important for verification */}
-          {customer.directors && customer.directors.length > 0 && customer.directors.some((d: { idDocumentFrontUrl: string | null }) => d.idDocumentFrontUrl) && (
+          {customer.directors && customer.directors.length > 0 && (
             <Card className="p-6 border-primary/50">
               <h2 className="mb-4 text-xl font-semibold flex items-center gap-2">
                 <IdCard className="h-5 w-5" />
@@ -482,96 +482,118 @@ export default function CreditReviewPage({ params }: PageProps) {
               </h2>
               <p className="text-sm text-muted-foreground mb-4">{t('identityDocuments.verifyHint')}</p>
               <div className="space-y-4">
-                {customer.directors.map((director: {
-                  givenNames: string;
-                  familyName: string;
-                  idDocumentFrontUrl: string | null;
-                  idDocumentBackUrl: string | null;
-                  idDocumentType: string | null;
-                  idDocumentUploadedAt: Date | null;
-                }, index: number) => {
-                  if (!director.idDocumentFrontUrl) return null;
+                {customer.directors.some((d: { idDocumentFrontUrl: string | null }) => d.idDocumentFrontUrl) ? (
+                  customer.directors.map((director: {
+                    givenNames: string;
+                    familyName: string;
+                    idDocumentFrontUrl: string | null;
+                    idDocumentBackUrl: string | null;
+                    idDocumentType: string | null;
+                    idDocumentUploadedAt: Date | null;
+                  }, index: number) => {
+                    if (!director.idDocumentFrontUrl) return null;
 
-                  return (
-                    <div key={index} className="rounded-lg border p-4">
-                      <div className="mb-3">
-                        <p className="font-medium">{director.givenNames} {director.familyName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {director.idDocumentType === 'DRIVER_LICENSE'
-                            ? t('identityDocuments.driverLicense')
-                            : t('identityDocuments.passport')}
-                        </p>
-                        {director.idDocumentUploadedAt && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {t('identityDocuments.uploadedAt')}: {formatDate(director.idDocumentUploadedAt)}
+                    return (
+                      <div key={index} className="rounded-lg border p-4">
+                        <div className="mb-3">
+                          <p className="font-medium">{director.givenNames} {director.familyName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {director.idDocumentType === 'DRIVER_LICENSE'
+                              ? t('identityDocuments.driverLicense')
+                              : t('identityDocuments.passport')}
                           </p>
-                        )}
-                      </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {director.idDocumentFrontUrl && (
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {director.idDocumentType === 'DRIVER_LICENSE'
-                                ? t('identityDocuments.front')
-                                : t('identityDocuments.photoPage')}
+                          {director.idDocumentUploadedAt && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {t('identityDocuments.uploadedAt', { date: formatDate(director.idDocumentUploadedAt) })}
                             </p>
-                            {director.idDocumentFrontUrl.toLowerCase().endsWith('.pdf') ? (
-                              <a
-                                href={director.idDocumentFrontUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-primary hover:underline"
-                              >
-                                <FileText className="h-4 w-4" />
-                                {t('identityDocuments.viewPdf')}
-                              </a>
-                            ) : (
-                              <a
-                                href={director.idDocumentFrontUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <img
-                                  src={director.idDocumentFrontUrl}
-                                  alt={t('identityDocuments.front')}
-                                  className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
-                                />
-                              </a>
-                            )}
-                          </div>
-                        )}
-                        {director.idDocumentType === 'DRIVER_LICENSE' && director.idDocumentBackUrl && (
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-2">{t('identityDocuments.back')}</p>
-                            {director.idDocumentBackUrl.toLowerCase().endsWith('.pdf') ? (
-                              <a
-                                href={director.idDocumentBackUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-primary hover:underline"
-                              >
-                                <FileText className="h-4 w-4" />
-                                {t('identityDocuments.viewPdf')}
-                              </a>
-                            ) : (
-                              <a
-                                href={director.idDocumentBackUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <img
-                                  src={director.idDocumentBackUrl}
-                                  alt={t('identityDocuments.back')}
-                                  className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
-                                />
-                              </a>
-                            )}
-                          </div>
-                        )}
+                          )}
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {director.idDocumentFrontUrl && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {director.idDocumentType === 'DRIVER_LICENSE'
+                                  ? t('identityDocuments.front')
+                                  : t('identityDocuments.photoPage')}
+                              </p>
+                              {director.idDocumentFrontUrl.toLowerCase().endsWith('.pdf') ? (
+                                <a
+                                  href={director.idDocumentFrontUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-primary hover:underline"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  {t('identityDocuments.viewPdf')}
+                                </a>
+                              ) : (
+                                <a
+                                  href={director.idDocumentFrontUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img
+                                    src={director.idDocumentFrontUrl}
+                                    alt={t('identityDocuments.front')}
+                                    className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
+                                    onError={(e) => {
+                                      const target = e.currentTarget;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded bg-muted/50">
+                                    <ImageOff className="h-4 w-4" />
+                                    {t('identityDocuments.imageUnavailable')}
+                                  </div>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          {director.idDocumentType === 'DRIVER_LICENSE' && director.idDocumentBackUrl && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">{t('identityDocuments.back')}</p>
+                              {director.idDocumentBackUrl.toLowerCase().endsWith('.pdf') ? (
+                                <a
+                                  href={director.idDocumentBackUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-primary hover:underline"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  {t('identityDocuments.viewPdf')}
+                                </a>
+                              ) : (
+                                <a
+                                  href={director.idDocumentBackUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img
+                                    src={director.idDocumentBackUrl}
+                                    alt={t('identityDocuments.back')}
+                                    className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
+                                    onError={(e) => {
+                                      const target = e.currentTarget;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded bg-muted/50">
+                                    <ImageOff className="h-4 w-4" />
+                                    {t('identityDocuments.imageUnavailable')}
+                                  </div>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t('identityDocuments.noDocumentsUploaded')}</p>
+                )}
               </div>
             </Card>
           )}

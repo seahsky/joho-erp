@@ -1643,7 +1643,16 @@
       "uploadedAt": "Uploaded {date}",
       "viewPdf": "View PDF",
       "noDocuments": "No identity documents uploaded",
-      "verifyHint": "Verify that the document matches the details entered above"
+      "verifyHint": "Verify that the document matches the details entered above",
+      "uploadDocument": "Upload Document",
+      "replaceDocument": "Replace Document",
+      "uploadFront": "Upload Front",
+      "uploadBack": "Upload Back",
+      "uploading": "Uploading...",
+      "uploadSuccess": "Document uploaded successfully",
+      "uploadError": "Failed to upload document",
+      "imageUnavailable": "Image unavailable",
+      "noDocumentsUploaded": "No identity documents have been uploaded for this customer"
     },
     "creditApplicationPdf": {
       "title": "Credit Application PDF",
@@ -3331,7 +3340,9 @@
       "photoPage": "Photo Page",
       "uploadedAt": "Uploaded {date}",
       "viewPdf": "View PDF",
-      "noDocuments": "No identity documents uploaded"
+      "noDocuments": "No identity documents uploaded",
+      "imageUnavailable": "Image unavailable",
+      "noDocumentsUploaded": "No identity documents have been uploaded for this customer"
     },
     "financialDetails": {
       "title": "Financial Details",

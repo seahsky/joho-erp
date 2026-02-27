@@ -1643,7 +1643,16 @@
       "uploadedAt": "上傳於 {date}",
       "viewPdf": "檢視PDF",
       "noDocuments": "未上傳身分證件",
-      "verifyHint": "請核實證件與上述填寫的資訊是否一致"
+      "verifyHint": "請核實證件與上述填寫的資訊是否一致",
+      "uploadDocument": "上傳證件",
+      "replaceDocument": "替換證件",
+      "uploadFront": "上傳正面",
+      "uploadBack": "上傳背面",
+      "uploading": "上傳中...",
+      "uploadSuccess": "證件上傳成功",
+      "uploadError": "證件上傳失敗",
+      "imageUnavailable": "圖片不可用",
+      "noDocumentsUploaded": "該客戶尚未上傳身分證件"
     },
     "creditApplicationPdf": {
       "title": "信用申請PDF",
@@ -3337,7 +3346,9 @@
       "photoPage": "照片頁",
       "uploadedAt": "上傳於 {date}",
       "viewPdf": "檢視PDF",
-      "noDocuments": "未上傳身分證件"
+      "noDocuments": "未上傳身分證件",
+      "imageUnavailable": "圖片不可用",
+      "noDocumentsUploaded": "該客戶尚未上傳身分證件"
     },
     "financialDetails": {
       "title": "財務資訊",

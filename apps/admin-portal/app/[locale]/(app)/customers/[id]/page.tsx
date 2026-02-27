@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -61,6 +61,8 @@ import {
   IdCard,
   Download,
   RefreshCw,
+  Upload,
+  ImageOff,
 } from 'lucide-react';
 import { formatAUD, formatDate, DAYS_OF_WEEK, type DayOfWeek, validateABN } from '@joho-erp/shared';
 import { AuditLogSection } from '@/components/audit-log-section';
@@ -286,6 +288,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
     },
   });
 
+  // Identity document upload state
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null); // e.g. "0-front", "0-back"
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadRef = useRef<{ directorIndex: number; side: 'front' | 'back' } | null>(null);
+
   // Update mutation
   const updateMutation = api.customer.update.useMutation({
     onSuccess: () => {
@@ -305,6 +312,96 @@ export default function CustomerDetailPage({ params }: PageProps) {
       });
     },
   });
+
+  const handleIdDocUpload = useCallback(async (
+    file: File,
+    directorIndex: number,
+    side: 'front' | 'back',
+    director: { idDocumentType?: string | null }
+  ) => {
+    const uploadKey = `${directorIndex}-${side}`;
+    setUploadingDoc(uploadKey);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('customerId', resolvedParams.id);
+      formData.append('directorIndex', String(directorIndex));
+      formData.append('documentType', director.idDocumentType || 'DRIVER_LICENSE');
+      formData.append('side', side);
+
+      const response = await fetch('/api/upload/identity-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json() as { success: boolean; publicUrl?: string; error?: string };
+
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      // Update the customer record with the new document URL
+      const directors = customer?.directors || [];
+      const updatedDirectors = directors.map((d, i) => ({
+        familyName: d.familyName,
+        givenNames: d.givenNames,
+        residentialAddress: {
+          street: d.residentialAddress?.street || '',
+          suburb: d.residentialAddress?.suburb || '',
+          state: d.residentialAddress?.state || '',
+          postcode: d.residentialAddress?.postcode || '',
+        },
+        dateOfBirth: new Date(d.dateOfBirth),
+        driverLicenseNumber: d.driverLicenseNumber || '',
+        licenseState: (d.licenseState || 'NSW') as 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'NT' | 'ACT',
+        licenseExpiry: new Date(d.licenseExpiry),
+        position: d.position || undefined,
+        idDocumentType: (d.idDocumentType || 'DRIVER_LICENSE') as 'DRIVER_LICENSE' | 'PASSPORT',
+        idDocumentFrontUrl: i === directorIndex && side === 'front' ? result.publicUrl : (d.idDocumentFrontUrl || undefined),
+        idDocumentBackUrl: i === directorIndex && side === 'back' ? result.publicUrl : (d.idDocumentBackUrl || undefined),
+        idDocumentUploadedAt: i === directorIndex ? new Date() : (d.idDocumentUploadedAt ? new Date(d.idDocumentUploadedAt) : undefined),
+      }));
+
+      updateMutation.mutate({
+        customerId: resolvedParams.id,
+        directors: updatedDirectors,
+      });
+
+      toast({
+        title: t('identityDocuments.uploadSuccess'),
+      });
+    } catch (error) {
+      console.error('Identity document upload error:', error);
+      toast({
+        title: t('identityDocuments.uploadError'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingDoc(null);
+    }
+  }, [resolvedParams.id, customer, updateMutation, toast, t]);
+
+  const triggerIdDocUpload = useCallback((directorIndex: number, side: 'front' | 'back') => {
+    pendingUploadRef.current = { directorIndex, side };
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const pending = pendingUploadRef.current;
+    if (!file || !pending || !customer?.directors) return;
+
+    const director = customer.directors[pending.directorIndex];
+    if (director) {
+      void handleIdDocUpload(file, pending.directorIndex, pending.side, director);
+    }
+
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+    pendingUploadRef.current = null;
+  }, [customer, handleIdDocUpload]);
 
   // Regenerate PDF mutation
   const regeneratePdfMutation = api.customer.regenerateCreditApplicationPdf.useMutation({
@@ -1410,63 +1507,127 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 <CardDescription>{t('identityDocuments.description')}</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Hidden file input for uploads */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg,application/pdf"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
                 <div className="space-y-4">
-                  {customer.directors.map((director, index) => {
-                    const hasIdDoc = director.idDocumentFrontUrl;
-                    if (!hasIdDoc) return null;
-
-                    return (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="mb-3">
-                          <p className="font-medium">{director.givenNames} {director.familyName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {director.idDocumentType === 'DRIVER_LICENSE'
-                              ? t('identityDocuments.driverLicense')
-                              : t('identityDocuments.passport')}
+                  {customer.directors.map((director, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="mb-3">
+                        <p className="font-medium">{director.givenNames} {director.familyName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {director.idDocumentType === 'DRIVER_LICENSE'
+                            ? t('identityDocuments.driverLicense')
+                            : t('identityDocuments.passport')}
+                        </p>
+                        {director.idDocumentUploadedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('identityDocuments.uploadedAt', { date: formatDate(director.idDocumentUploadedAt) })}
                           </p>
-                          {director.idDocumentUploadedAt && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {t('identityDocuments.uploadedAt')}: {formatDate(director.idDocumentUploadedAt)}
+                        )}
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {/* Front / Photo Page */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm text-muted-foreground">
+                              {director.idDocumentType === 'DRIVER_LICENSE'
+                                ? t('identityDocuments.front')
+                                : t('identityDocuments.photoPage')}
                             </p>
-                          )}
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {director.idDocumentFrontUrl && (
-                            <div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {director.idDocumentType === 'DRIVER_LICENSE'
-                                  ? t('identityDocuments.front')
-                                  : t('identityDocuments.photoPage')}
-                              </p>
-                              {director.idDocumentFrontUrl.toLowerCase().endsWith('.pdf') ? (
-                                <a
-                                  href={director.idDocumentFrontUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 text-primary hover:underline"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  {t('identityDocuments.viewPdf')}
-                                </a>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={uploadingDoc === `${index}-front`}
+                              onClick={() => triggerIdDocUpload(index, 'front')}
+                            >
+                              {uploadingDoc === `${index}-front` ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <a
-                                  href={director.idDocumentFrontUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <img
-                                    src={director.idDocumentFrontUrl}
-                                    alt={t('identityDocuments.front')}
-                                    className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
-                                  />
-                                </a>
+                                <Upload className="h-4 w-4" />
                               )}
+                              <span className="ml-1 text-xs">
+                                {uploadingDoc === `${index}-front`
+                                  ? t('identityDocuments.uploading')
+                                  : director.idDocumentFrontUrl
+                                    ? t('identityDocuments.replaceDocument')
+                                    : t('identityDocuments.uploadFront')}
+                              </span>
+                            </Button>
+                          </div>
+                          {director.idDocumentFrontUrl ? (
+                            director.idDocumentFrontUrl.toLowerCase().endsWith('.pdf') ? (
+                              <a
+                                href={director.idDocumentFrontUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-primary hover:underline"
+                              >
+                                <FileText className="h-4 w-4" />
+                                {t('identityDocuments.viewPdf')}
+                              </a>
+                            ) : (
+                              <a
+                                href={director.idDocumentFrontUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={director.idDocumentFrontUrl}
+                                  alt={t('identityDocuments.front')}
+                                  className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
+                                  onError={(e) => {
+                                    const target = e.currentTarget;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="hidden flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded bg-muted/50">
+                                  <ImageOff className="h-4 w-4" />
+                                  {t('identityDocuments.imageUnavailable')}
+                                </div>
+                              </a>
+                            )
+                          ) : (
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded border-dashed">
+                              <ImageOff className="h-4 w-4" />
+                              {t('identityDocuments.noDocuments')}
                             </div>
                           )}
-                          {director.idDocumentType === 'DRIVER_LICENSE' && director.idDocumentBackUrl && (
-                            <div>
-                              <p className="text-sm text-muted-foreground mb-2">{t('identityDocuments.back')}</p>
-                              {director.idDocumentBackUrl.toLowerCase().endsWith('.pdf') ? (
+                        </div>
+
+                        {/* Back (driver license only) */}
+                        {(director.idDocumentType === 'DRIVER_LICENSE' || !director.idDocumentType) && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm text-muted-foreground">{t('identityDocuments.back')}</p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={uploadingDoc === `${index}-back`}
+                                onClick={() => triggerIdDocUpload(index, 'back')}
+                              >
+                                {uploadingDoc === `${index}-back` ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Upload className="h-4 w-4" />
+                                )}
+                                <span className="ml-1 text-xs">
+                                  {uploadingDoc === `${index}-back`
+                                    ? t('identityDocuments.uploading')
+                                    : director.idDocumentBackUrl
+                                      ? t('identityDocuments.replaceDocument')
+                                      : t('identityDocuments.uploadBack')}
+                                </span>
+                              </Button>
+                            </div>
+                            {director.idDocumentBackUrl ? (
+                              director.idDocumentBackUrl.toLowerCase().endsWith('.pdf') ? (
                                 <a
                                   href={director.idDocumentBackUrl}
                                   target="_blank"
@@ -1486,17 +1647,31 @@ export default function CustomerDetailPage({ params }: PageProps) {
                                     src={director.idDocumentBackUrl}
                                     alt={t('identityDocuments.back')}
                                     className="w-full max-w-[200px] rounded border hover:opacity-80 transition-opacity"
+                                    onError={(e) => {
+                                      const target = e.currentTarget;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
                                   />
+                                  <div className="hidden flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded bg-muted/50">
+                                    <ImageOff className="h-4 w-4" />
+                                    {t('identityDocuments.imageUnavailable')}
+                                  </div>
                                 </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                              )
+                            ) : (
+                              <div className="flex items-center gap-2 text-muted-foreground text-sm p-4 border rounded border-dashed">
+                                <ImageOff className="h-4 w-4" />
+                                {t('identityDocuments.noDocuments')}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
-                  {!customer.directors.some(d => d.idDocumentFrontUrl) && (
-                    <p className="text-sm text-muted-foreground">{t('identityDocuments.noDocuments')}</p>
+                    </div>
+                  ))}
+                  {!customer.directors.some(d => d.idDocumentFrontUrl || d.idDocumentBackUrl) && (
+                    <p className="text-sm text-muted-foreground">{t('identityDocuments.noDocumentsUploaded')}</p>
                   )}
                 </div>
               </CardContent>

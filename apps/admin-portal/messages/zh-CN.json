@@ -1643,7 +1643,16 @@
       "uploadedAt": "上传于 {date}",
       "viewPdf": "查看PDF",
       "noDocuments": "未上传身份证件",
-      "verifyHint": "请核实证件与上述填写的信息是否一致"
+      "verifyHint": "请核实证件与上述填写的信息是否一致",
+      "uploadDocument": "上传证件",
+      "replaceDocument": "替换证件",
+      "uploadFront": "上传正面",
+      "uploadBack": "上传背面",
+      "uploading": "上传中...",
+      "uploadSuccess": "证件上传成功",
+      "uploadError": "证件上传失败",
+      "imageUnavailable": "图片不可用",
+      "noDocumentsUploaded": "该客户尚未上传身份证件"
     },
     "creditApplicationPdf": {
       "title": "信用申请PDF",
@@ -3331,7 +3340,9 @@
       "photoPage": "照片页",
       "uploadedAt": "上传于 {date}",
       "viewPdf": "查看PDF",
-      "noDocuments": "未上传身份证件"
+      "noDocuments": "未上传身份证件",
+      "imageUnavailable": "图片不可用",
+      "noDocumentsUploaded": "该客户尚未上传身份证件"
     },
     "financialDetails": {
       "title": "财务信息",
