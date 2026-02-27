@@ -50,6 +50,7 @@ import {
   logPackingItemQuantityUpdate,
   logPackingTotalChange,
 } from "../services/audit";
+import { reversePackingAdjustments } from "../services/stock-restoration";
 
 export const packingRouter = router({
   /**
@@ -1772,99 +1773,16 @@ export const packingRouter = router({
           // Note: If stockConsumed was true, the adjustments were already included above
           // But if stockConsumed was false, we need to handle them here
           if (!order.stockConsumed) {
-            // Find packing_adjustment transactions that haven't been reversed yet
-            const adjustmentTransactions = await tx.inventoryTransaction.findMany({
-              where: {
-                referenceType: 'order',
-                referenceId: input.orderId,
-                type: 'adjustment',
-                adjustmentType: 'packing_adjustment',
+            // Use shared service to reverse packing adjustments
+            await reversePackingAdjustments(
+              {
+                orderId: input.orderId,
+                orderNumber: order.orderNumber,
+                userId: ctx.userId || 'system',
+                reason: input.reason || 'Packing reset',
               },
-            });
-
-            // Filter out already-reversed transactions in code (MongoDB doesn't match missing fields with null)
-            const unreversedAdjustments = adjustmentTransactions.filter(txn => !txn.reversedAt);
-
-            // Group by productId to aggregate quantities
-            const adjustmentQuantities = new Map<string, number>();
-            for (const txn of unreversedAdjustments) {
-              const current = adjustmentQuantities.get(txn.productId) || 0;
-              // Negate to restore what was taken
-              adjustmentQuantities.set(txn.productId, current + (-txn.quantity));
-            }
-
-            // Restore stock for each adjusted product
-            for (const [productId, quantity] of adjustmentQuantities) {
-              if (quantity <= 0) continue; // Skip if net effect is 0 or negative
-
-              const product = await tx.product.findUnique({ where: { id: productId } });
-              if (!product) continue;
-
-              const previousStock = product.currentStock;
-              const newStock = previousStock + quantity;
-
-              // Create reversal transaction
-              await tx.inventoryTransaction.create({
-                data: {
-                  productId,
-                  type: 'adjustment',
-                  adjustmentType: 'packing_reset',
-                  quantity: quantity,
-                  previousStock,
-                  newStock,
-                  referenceType: 'order',
-                  referenceId: input.orderId,
-                  notes: `Stock restored from packing adjustment reset: Order ${order.orderNumber}`,
-                  createdBy: ctx.userId || 'system',
-                },
-              });
-
-              // Create new batch for returned stock
-              await tx.inventoryBatch.create({
-                data: {
-                  productId,
-                  quantityRemaining: quantity,
-                  initialQuantity: quantity,
-                  costPerUnit: 0,
-                  receivedAt: new Date(),
-                  notes: `Stock returned from packing adjustment reset: Order ${order.orderNumber}`,
-                },
-              });
-
-              // Update product stock (floor at 0 as defensive guard)
-              await tx.product.update({
-                where: { id: productId },
-                data: { currentStock: Math.max(0, newStock) },
-              });
-
-              // Recalculate subproduct stocks
-              const subproducts = await tx.product.findMany({
-                where: { parentProductId: productId },
-                select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-              });
-
-              if (subproducts.length > 0) {
-                const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-                for (const { id, newStock: subStock } of updatedStocks) {
-                  await tx.product.update({
-                    where: { id },
-                    data: { currentStock: Math.max(0, subStock) },
-                  });
-                }
-              }
-            }
-
-            // Mark adjustment transactions as reversed to prevent double-counting
-            if (unreversedAdjustments.length > 0) {
-              await tx.inventoryTransaction.updateMany({
-                where: {
-                  id: { in: unreversedAdjustments.map((t) => t.id) },
-                },
-                data: {
-                  reversedAt: new Date(),
-                },
-              });
-            }
+              tx
+            );
           }
 
           // Recalculate order totals from original items

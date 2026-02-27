@@ -324,6 +324,30 @@ export async function restoreOrderStock(
     }
   }
 
+  // Mark all unreversed sale and packing_adjustment transactions as reversed
+  // This ensures a clean audit trail when stock is restored
+  const transactionsToReverse = await client.inventoryTransaction.findMany({
+    where: {
+      referenceType: 'order',
+      referenceId: orderId,
+      OR: [
+        { type: 'sale' },
+        { type: 'adjustment', adjustmentType: 'packing_adjustment' },
+      ],
+    },
+  });
+
+  const unreversedIds = transactionsToReverse
+    .filter(txn => !txn.reversedAt)
+    .map(txn => txn.id);
+
+  if (unreversedIds.length > 0) {
+    await client.inventoryTransaction.updateMany({
+      where: { id: { in: unreversedIds } },
+      data: { reversedAt: new Date() },
+    });
+  }
+
   return result;
 }
 
@@ -345,6 +369,135 @@ export async function markStockNotConsumed(
     data: {
       stockConsumed: false,
       stockConsumedAt: null,
+    },
+  });
+}
+
+// Input for reversePackingAdjustments
+export interface ReversePackingAdjustmentsInput {
+  orderId: string;
+  orderNumber: string;
+  userId: string;
+  reason: string;
+}
+
+/**
+ * Reverses unreversed packing_adjustment transactions for an order.
+ *
+ * This handles stock restoration for packing adjustments that occurred BEFORE
+ * markOrderReady (i.e., when stockConsumed is still false).
+ *
+ * Idempotent: if no unreversed packing_adjustment transactions exist, this is a no-op.
+ *
+ * For each product with a net positive restoration:
+ * - Creates a packing_reset reversal transaction
+ * - Creates an inventoryBatch for the returned stock
+ * - Updates product.currentStock
+ * - If product is a parent, recalculates subproduct stocks
+ *
+ * @param input - The order details for the reversal
+ * @param tx - Optional transaction client for atomic operations
+ */
+export async function reversePackingAdjustments(
+  input: ReversePackingAdjustmentsInput,
+  tx?: TransactionClient
+): Promise<void> {
+  const client = tx || prisma;
+  const { orderId, orderNumber, userId, reason } = input;
+
+  // Find all packing_adjustment transactions for this order
+  const adjustmentTransactions = await client.inventoryTransaction.findMany({
+    where: {
+      referenceType: 'order',
+      referenceId: orderId,
+      type: 'adjustment',
+      adjustmentType: 'packing_adjustment',
+    },
+  });
+
+  // Filter out already-reversed transactions in code (MongoDB doesn't match missing fields with null)
+  const unreversedAdjustments = adjustmentTransactions.filter(txn => !txn.reversedAt);
+
+  if (unreversedAdjustments.length === 0) {
+    return; // No-op: nothing to reverse
+  }
+
+  // Group by productId and aggregate quantities (negate to get restoration amount)
+  const adjustmentQuantities = new Map<string, number>();
+  for (const txn of unreversedAdjustments) {
+    const current = adjustmentQuantities.get(txn.productId) || 0;
+    // Negate: packing_adjustments store negative qty when stock is consumed
+    adjustmentQuantities.set(txn.productId, current + (-txn.quantity));
+  }
+
+  // Restore stock for each product with net positive restoration
+  for (const [productId, quantity] of adjustmentQuantities) {
+    if (quantity <= 0) continue; // Skip if net effect is 0 or negative
+
+    const product = await client.product.findUnique({ where: { id: productId } });
+    if (!product) continue;
+
+    const previousStock = product.currentStock;
+    const newStock = previousStock + quantity;
+
+    // Create reversal transaction
+    await client.inventoryTransaction.create({
+      data: {
+        productId,
+        type: 'adjustment',
+        adjustmentType: 'packing_reset',
+        quantity: quantity, // Positive to add back
+        previousStock,
+        newStock,
+        referenceType: 'order',
+        referenceId: orderId,
+        notes: `Stock restored from packing adjustments on cancelled order ${orderNumber}: ${reason}`,
+        createdBy: userId,
+      },
+    });
+
+    // Create new batch for returned stock
+    await client.inventoryBatch.create({
+      data: {
+        productId,
+        quantityRemaining: quantity,
+        initialQuantity: quantity,
+        costPerUnit: 0, // Unknown cost for returned stock
+        receivedAt: new Date(),
+        notes: `Stock returned from packing adjustments on cancelled order ${orderNumber}`,
+      },
+    });
+
+    // Update product stock (floor at 0 as defensive guard)
+    await client.product.update({
+      where: { id: productId },
+      data: { currentStock: Math.max(0, newStock) },
+    });
+
+    // Recalculate subproduct stocks if this product is a parent
+    const subproducts = await client.product.findMany({
+      where: { parentProductId: productId },
+      select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+    });
+
+    if (subproducts.length > 0) {
+      const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
+      for (const { id, newStock: subStock } of updatedStocks) {
+        await client.product.update({
+          where: { id },
+          data: { currentStock: Math.max(0, subStock) },
+        });
+      }
+    }
+  }
+
+  // Mark all original unreversed packing_adjustment transactions as reversed
+  await client.inventoryTransaction.updateMany({
+    where: {
+      id: { in: unreversedAdjustments.map((t) => t.id) },
+    },
+    data: {
+      reversedAt: new Date(),
     },
   });
 }

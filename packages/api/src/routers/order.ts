@@ -36,7 +36,7 @@ import {
   logResendConfirmation,
 } from '../services/audit';
 import { assignPreliminaryPackingSequence } from '../services/route-optimizer';
-import { restoreOrderStock } from '../services/stock-restoration';
+import { restoreOrderStock, reversePackingAdjustments } from '../services/stock-restoration';
 
 // Helper: Validate stock and calculate shortfall for backorder support
 interface StockValidationResult {
@@ -1254,205 +1254,76 @@ export const orderRouter = router({
         }
 
         // Handle stock restoration when cancelling
-        const shouldRestoreStock =
-          input.newStatus === 'cancelled' &&
-          currentOrder.stockConsumed === true;
-
-        if (shouldRestoreStock) {
-          // STEP 4: Atomic guard for stock restoration - prevent double restoration
-          const stockGuardResult = await tx.order.updateMany({
-            where: {
-              id: input.orderId,
-              stockConsumed: true, // Only if stock is actually consumed
-            },
-            data: {
-              stockConsumed: false, // Mark as not consumed atomically
-            },
-          });
-
-          if (stockGuardResult.count === 0) {
-            // Stock already restored by another process - skip restoration
-            // Update status history and return
-            const order = await tx.order.update({
-              where: { id: input.orderId },
+        let shouldRestoreStock = false;
+        if (input.newStatus === 'cancelled') {
+          if (currentOrder.stockConsumed === true) {
+            shouldRestoreStock = true;
+            // STEP 4: Atomic guard for stock restoration - prevent double restoration
+            const stockGuardResult = await tx.order.updateMany({
+              where: {
+                id: input.orderId,
+                stockConsumed: true, // Only if stock is actually consumed
+              },
               data: {
-                statusHistory: [
-                  ...currentOrder.statusHistory,
-                  {
-                    status: input.newStatus,
-                    changedAt: new Date(),
-                    changedBy: ctx.userId,
-                    changedByName: userDetails.changedByName,
-                    changedByEmail: userDetails.changedByEmail,
-                    notes: input.notes,
-                  },
-                ],
+                stockConsumed: false, // Mark as not consumed atomically
+                stockConsumedAt: null,
               },
             });
-            return { order, alreadyCompleted: false, originalStatus: currentOrder.status, stockAlreadyRestored: true };
-          }
 
-          // Proceed with stock restoration
-          const { isSubproduct, calculateParentConsumption, calculateAllSubproductStocks } = await import('@joho-erp/shared');
-
-          // Get products with parent product info for subproduct handling
-          const productIds = (currentOrder.items as any[]).map((item: any) => item.productId);
-          const products = await tx.product.findMany({
-            where: { id: { in: productIds } },
-            include: { parentProduct: true },
-          });
-
-          const productMap = new Map(products.map((p) => [p.id, p]));
-
-          // PHASE 1: Aggregate restoration per parent product
-          const parentRestorations = new Map<string, {
-            totalRestoration: number;
-            items: Array<{ product: any; item: any; restoreQuantity: number }>;
-          }>();
-
-          const regularProductItems: Array<{
-            product: any;
-            item: any;
-            restoreQuantity: number;
-          }> = [];
-
-          for (const item of currentOrder.items as any[]) {
-            const product = productMap.get(item.productId);
-            if (!product) continue;
-
-            const productIsSubproduct = isSubproduct(product);
-            const parentProduct = productIsSubproduct ? product.parentProduct : null;
-
-            const lossPercentage = item.estimatedLossPercentage ?? product.estimatedLossPercentage ?? 0;
-            const restoreQuantity = productIsSubproduct
-              ? calculateParentConsumption(item.quantity, lossPercentage)
-              : item.quantity;
-
-            if (productIsSubproduct && parentProduct) {
-              const existing = parentRestorations.get(parentProduct.id) || {
-                totalRestoration: 0,
-                items: [],
-              };
-              existing.totalRestoration += restoreQuantity;
-              existing.items.push({ product, item, restoreQuantity });
-              parentRestorations.set(parentProduct.id, existing);
-            } else {
-              regularProductItems.push({ product, item, restoreQuantity });
-            }
-          }
-
-          // PHASE 2: Process parent products with aggregated restoration totals
-          for (const [parentId, { totalRestoration, items }] of parentRestorations) {
-            const parentProduct = await tx.product.findUnique({ where: { id: parentId } });
-            if (!parentProduct) continue;
-
-            const currentStock = parentProduct.currentStock;
-            const newStock = currentStock + totalRestoration;
-
-            for (const { product, item, restoreQuantity } of items) {
-              const transactionNotes = `Subproduct stock restored: ${product.name} (${item.quantity}${product.unit}) from cancelled order ${currentOrder.orderNumber}`;
-
-              await tx.inventoryTransaction.create({
+            if (stockGuardResult.count === 0) {
+              // Stock already restored by another process - skip restoration
+              // Update status history and return
+              const order = await tx.order.update({
+                where: { id: input.orderId },
                 data: {
-                  productId: parentId,
-                  type: 'return',
-                  quantity: restoreQuantity,
-                  previousStock: currentStock,
-                  newStock: currentStock + restoreQuantity,
-                  referenceType: 'order',
-                  referenceId: input.orderId,
-                  notes: transactionNotes,
-                  createdBy: ctx.userId,
+                  statusHistory: [
+                    ...currentOrder.statusHistory,
+                    {
+                      status: input.newStatus,
+                      changedAt: new Date(),
+                      changedBy: ctx.userId,
+                      changedByName: userDetails.changedByName,
+                      changedByEmail: userDetails.changedByEmail,
+                      notes: input.notes,
+                    },
+                  ],
                 },
               });
-
-              await tx.inventoryBatch.create({
-                data: {
-                  productId: parentId,
-                  quantityRemaining: restoreQuantity,
-                  initialQuantity: restoreQuantity,
-                  costPerUnit: 0,
-                  receivedAt: new Date(),
-                  notes: `Stock returned from cancelled order ${currentOrder.orderNumber} (${product.name})`,
-                },
-              });
+              return { order, alreadyCompleted: false, originalStatus: currentOrder.status, stockAlreadyRestored: true };
             }
 
-            await tx.product.update({
-              where: { id: parentId },
-              data: { currentStock: Math.max(0, newStock) },
-            });
+            // Use shared stock restoration service
+            const orderItems = (currentOrder.items as any[]).map((item: any) => ({
+              productId: item.productId,
+              productName: item.productName || item.name,
+              sku: item.sku,
+              quantity: item.quantity,
+            }));
 
-            const subproducts = await tx.product.findMany({
-              where: { parentProductId: parentId },
-              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-            });
-
-            if (subproducts.length > 0) {
-              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-              for (const { id, newStock: subStock } of updatedStocks) {
-                await tx.product.update({
-                  where: { id },
-                  data: { currentStock: Math.max(0, subStock) },
-                });
-              }
-            }
+            await restoreOrderStock(
+              {
+                orderId: input.orderId,
+                orderNumber: currentOrder.orderNumber,
+                items: orderItems,
+                userId: ctx.userId,
+                reason: input.notes || 'Admin cancellation',
+              },
+              tx
+            );
           }
 
-          // PHASE 3: Process regular (non-subproduct) products
-          for (const { product, restoreQuantity } of regularProductItems) {
-            const freshProduct = await tx.product.findUnique({ where: { id: product.id } });
-            if (!freshProduct) continue;
-
-            const currentStock = freshProduct.currentStock;
-            const newStock = currentStock + restoreQuantity;
-
-            const transactionNotes = `Stock restored from cancelled order ${currentOrder.orderNumber}`;
-
-            await tx.inventoryTransaction.create({
-              data: {
-                productId: product.id,
-                type: 'return',
-                quantity: restoreQuantity,
-                previousStock: currentStock,
-                newStock,
-                referenceType: 'order',
-                referenceId: input.orderId,
-                notes: transactionNotes,
-                createdBy: ctx.userId,
+          // Reverse packing adjustments when stockConsumed is false
+          // (e.g., cancelled from 'packing' status before markOrderReady)
+          if (!currentOrder.stockConsumed) {
+            await reversePackingAdjustments(
+              {
+                orderId: input.orderId,
+                orderNumber: currentOrder.orderNumber,
+                userId: ctx.userId,
+                reason: input.notes || 'Admin cancellation',
               },
-            });
-
-            await tx.inventoryBatch.create({
-              data: {
-                productId: product.id,
-                quantityRemaining: restoreQuantity,
-                initialQuantity: restoreQuantity,
-                costPerUnit: 0,
-                receivedAt: new Date(),
-                notes: `Stock returned from cancelled order ${currentOrder.orderNumber}`,
-              },
-            });
-
-            await tx.product.update({
-              where: { id: product.id },
-              data: { currentStock: Math.max(0, newStock) },
-            });
-
-            const subproducts = await tx.product.findMany({
-              where: { parentProductId: product.id },
-              select: { id: true, parentProductId: true, estimatedLossPercentage: true },
-            });
-
-            if (subproducts.length > 0) {
-              const updatedStocks = calculateAllSubproductStocks(newStock, subproducts);
-              for (const { id, newStock: subStock } of updatedStocks) {
-                await tx.product.update({
-                  where: { id },
-                  data: { currentStock: Math.max(0, subStock) },
-                });
-              }
-            }
+              tx
+            );
           }
         }
 
@@ -2720,6 +2591,21 @@ export const orderRouter = router({
               orderId: order.id,
               orderNumber: order.orderNumber,
               items: orderItems,
+              userId: ctx.userId,
+              reason: reason || 'Cancelled by customer',
+            },
+            tx
+          );
+        }
+
+        // Defensive: reverse any packing adjustments when stockConsumed is false
+        // Currently customer cancellation only allows confirmed/awaiting_approval statuses
+        // where packing adjustments shouldn't exist, but this guards against future changes
+        if (!order.stockConsumed) {
+          await reversePackingAdjustments(
+            {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
               userId: ctx.userId,
               reason: reason || 'Cancelled by customer',
             },
