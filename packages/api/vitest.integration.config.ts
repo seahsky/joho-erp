@@ -1,6 +1,12 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@joho-erp/database': path.resolve(__dirname, '../database/src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',

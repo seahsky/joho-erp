@@ -119,6 +119,11 @@ vi.mock('../services/r2', () => ({
   uploadIdentityDocument: vi.fn().mockResolvedValue({ publicUrl: 'https://mock-doc-url' }),
   isR2Configured: vi.fn().mockReturnValue(true),
   getR2Client: vi.fn(),
+  IMAGE_UPLOAD_CONFIG: {
+    maxSizeBytes: 2 * 1024 * 1024,
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],
+    presignedUrlExpiresIn: 300,
+  },
 }));
 
 // Mock SMS
