@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button, cn, useToast } from '@joho-erp/ui';
-import { ShoppingCart, ArrowRight, Package, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Package, Sparkles, Loader2, AlertCircle, Ban } from 'lucide-react';
 import { formatAUD, formatDateForMelbourne, getTomorrowInMelbourne } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { MiniCartItem } from './mini-cart-item';
@@ -77,11 +77,15 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
     },
     onError: (error) => {
       console.error('Quick checkout error:', error.message);
+      const isForbidden = error.data?.code === 'FORBIDDEN';
       toast({
-        title: tCheckout('error'),
-        description: tErrors('orderFailed'),
+        title: isForbidden ? tCheckout('blocking.suspendedTitle') : tCheckout('error'),
+        description: isForbidden ? tCheckout('blocking.suspendedMessage') : tErrors('orderFailed'),
         variant: 'destructive',
       });
+      if (isForbidden) {
+        void utils.customer.getOnboardingStatus.invalidate();
+      }
     },
   });
 
@@ -135,9 +139,10 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
   };
 
   // Check for blocking conditions
+  const isSuspended = onboardingStatus?.status === 'suspended';
   const isOnboardingIncomplete = !onboardingStatus?.onboardingComplete;
   const isCreditPending = onboardingStatus?.creditStatus !== 'approved';
-  const isOrderingBlocked = isOnboardingIncomplete || isCreditPending;
+  const isOrderingBlocked = isSuspended || isOnboardingIncomplete || isCreditPending;
 
   // Check if order exceeds credit or below minimum
   const exceedsCredit = cart?.exceedsCredit ?? false;
@@ -342,8 +347,22 @@ export function MiniCartContent({ locale, onClose }: MiniCartContentProps) {
           </div>
         )}
 
-        {/* Ordering blocked warning */}
-        {isOrderingBlocked && (
+        {/* Account suspended warning */}
+        {isSuspended && (
+          <div className={cn(
+            'mb-4 p-3 rounded-lg',
+            'bg-gradient-to-r from-destructive/10 to-destructive/5',
+            'border border-destructive/20'
+          )}>
+            <p className="text-xs text-destructive text-center font-medium flex items-center justify-center gap-1.5">
+              <Ban className="h-3.5 w-3.5" />
+              {t('accountSuspended')}
+            </p>
+          </div>
+        )}
+
+        {/* Ordering blocked warning (onboarding/credit) */}
+        {isOrderingBlocked && !isSuspended && (
           <div className={cn(
             'mb-4 p-3 rounded-lg',
             'bg-gradient-to-r from-amber-100/80 to-amber-50',

@@ -13,6 +13,7 @@ import {
   Loader2,
   AlertTriangle,
   ClipboardList,
+  Ban,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
@@ -105,6 +106,23 @@ export function DashboardContent({ user }: { user: UserDisplayData }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Account Suspended Warning */}
+      {status.status === 'suspended' && (
+        <Card className="border-destructive bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <Ban className="h-8 w-8 text-destructive flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-destructive mb-2">
+                  {t('suspension.title')}
+                </h3>
+                <p className="text-destructive/80">{t('suspension.message')}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 gap-4">

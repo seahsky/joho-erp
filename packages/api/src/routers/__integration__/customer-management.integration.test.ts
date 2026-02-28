@@ -223,6 +223,23 @@ describe('Customer Management Integration', () => {
       ).rejects.toThrow(/not suspended/i);
     });
 
+    it('should expose suspended status via getOnboardingStatus', async () => {
+      const admin = adminCaller();
+      const customer = await createTestCustomer({ status: 'active' });
+
+      // Suspend the customer
+      await admin.customer.suspend({
+        customerId: customer.id,
+        reason: 'Overdue payment for testing onboarding status',
+      });
+
+      // Query onboarding status as the customer
+      const caller = customerCaller(customer.clerkUserId);
+      const onboardingStatus = await caller.customer.getOnboardingStatus();
+
+      expect(onboardingStatus.status).toBe('suspended');
+    });
+
     it('should reject closing an already-closed customer', async () => {
       const admin = adminCaller();
       const customer = await createTestCustomer({ status: 'active' });

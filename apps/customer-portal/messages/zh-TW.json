@@ -491,7 +491,8 @@
     "belowMinimum": "訂單低於最低金額",
     "exceedsCredit": "訂單超出信用額度",
     "completeOnboarding": "請完成註冊後再下單",
-    "creditPending": "您的帳戶正在等待審批"
+    "creditPending": "您的帳戶正在等待審批",
+    "accountSuspended": "您的帳戶已被暫停。請聯繫客服。"
   },
   "dashboard": {
     "title": "儀表板",
@@ -521,6 +522,10 @@
       "browseProductsDesc": "查看我們的產品目錄",
       "viewOrders": "查看訂單",
       "viewOrdersDesc": "追蹤您的訂單歷史"
+    },
+    "suspension": {
+      "title": "帳戶已暫停",
+      "message": "您的帳戶已被暫停。您目前無法下單。請聯繫我們的客服團隊獲取協助。"
     },
     "restrictions": {
       "title": "結帳受限",
@@ -563,7 +568,9 @@
       "creditPendingMessage": "您的帳戶正在審核中。審核通過前無法下單。",
       "creditRejectedMessage": "您的帳戶需要審批。請聯繫銷售團隊。",
       "viewProfile": "查看個人資料",
-      "creditPendingButton": "帳戶審批中"
+      "creditPendingButton": "帳戶審批中",
+      "suspendedTitle": "帳戶已暫停",
+      "suspendedMessage": "您的帳戶已被暫停。您目前無法下單。請聯繫我們的客服團隊獲取協助。"
     },
     "backorderWarning": {
       "title": "需要缺貨訂單審批",
@@ -1315,6 +1322,9 @@
       "secondaryDescription": "請重試或聯繫客服",
       "primaryAction": "重試"
     }
+  },
+  "suspension": {
+    "banner": "您的帳戶已被暫停。下單功能已停用。請聯繫客服獲取協助。"
   },
   "orderErrors": {
     "invalidTransition": "無法將訂單狀態從 {from} 變更為 {to}",

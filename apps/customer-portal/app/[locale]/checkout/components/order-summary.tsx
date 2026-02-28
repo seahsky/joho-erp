@@ -15,7 +15,7 @@ import {
   Input,
   Label,
 } from '@joho-erp/ui';
-import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, ClipboardList, CreditCard } from 'lucide-react';
+import { ShoppingCart, MapPin, Loader2, AlertCircle, Info, Calendar, ClipboardList, CreditCard, Ban } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { formatAUD, formatDateForMelbourne } from '@joho-erp/shared';
 import { useToast } from '@joho-erp/ui';
@@ -100,11 +100,15 @@ export function OrderSummary() {
     },
     onError: (error) => {
       console.error('Place order error:', error.message);
+      const isForbidden = error.data?.code === 'FORBIDDEN';
       toast({
-        title: t('orderFailed'),
-        description: tErrors('orderFailed'),
+        title: isForbidden ? tBlocking('suspendedTitle') : t('orderFailed'),
+        description: isForbidden ? tBlocking('suspendedMessage') : tErrors('orderFailed'),
         variant: 'destructive',
       });
+      if (isForbidden) {
+        void utils.customer.getOnboardingStatus.invalidate();
+      }
     },
   });
 
@@ -165,6 +169,7 @@ export function OrderSummary() {
   }, [minimumOrderInfo, cart]);
 
   // Check for blocking conditions
+  const isSuspended = onboardingStatus?.status === 'suspended';
   const isOnboardingIncomplete = !onboardingStatus?.onboardingComplete;
   const isCreditPending = onboardingStatus?.creditStatus !== 'approved';
 
@@ -225,6 +230,48 @@ export function OrderSummary() {
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Blocking state - account suspended
+  if (isSuspended) {
+    return (
+      <div className="space-y-4">
+        <Card className="border-destructive bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <Ban className="h-8 w-8 text-destructive flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <H3 className="text-lg text-destructive mb-2">{tBlocking('suspendedTitle')}</H3>
+                <p className="text-destructive/80 mb-4">{tBlocking('suspendedMessage')}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Still show cart items as reference */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              {t('orderItems')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {cart.items.map((item) => (
+              <div key={item.productId} className="flex justify-between items-start pb-3 border-b last:border-0 last:pb-0 opacity-60">
+                <div className="flex-1">
+                  <p className="font-medium">{item.productName}</p>
+                  <Muted className="text-sm">
+                    {item.quantity} × {formatAUD(item.unitPrice)}
+                  </Muted>
+                </div>
+                <p className="font-semibold">{formatAUD(item.subtotal)}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
