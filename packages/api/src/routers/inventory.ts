@@ -873,6 +873,10 @@ export const inventoryRouter = router({
       }
 
       await prisma.$transaction(async (tx) => {
+        // Generate batch number for write-off
+        const { generateBatchNumber } = await import('../services/batch-number');
+        const batchNumber = await generateBatchNumber(tx, 'stock_write_off');
+
         // Mark batch as consumed
         await tx.inventoryBatch.update({
           where: { id: input.batchId },
@@ -896,6 +900,7 @@ export const inventoryRouter = router({
               ? `Stock writeoff: ${input.reason}`
               : 'Stock writeoff (expiry management)',
             createdBy: ctx.userId || 'system',
+            batchNumber,
           },
         });
 
@@ -948,6 +953,10 @@ export const inventoryRouter = router({
       const isConsumed = input.newQuantity === 0;
 
       await prisma.$transaction(async (tx) => {
+        // Generate batch number for stock count correction
+        const { generateBatchNumber } = await import('../services/batch-number');
+        const batchNumber = await generateBatchNumber(tx, 'stock_count_correction');
+
         // Update batch quantity
         await tx.inventoryBatch.update({
           where: { id: input.batchId },
@@ -969,6 +978,7 @@ export const inventoryRouter = router({
             costPerUnit: batch.costPerUnit,
             notes: `Batch quantity adjusted (expiry management)`,
             createdBy: ctx.userId || 'system',
+            batchNumber,
           },
         });
 

@@ -656,6 +656,19 @@ export const productRouter = router({
             path: ['vehicleTemperature'],
           }
         )
+        .refine(
+          (data) => {
+            // supplierInvoiceNumber is required for stock_received
+            if (data.adjustmentType === 'stock_received') {
+              return data.supplierInvoiceNumber !== undefined && data.supplierInvoiceNumber.trim() !== '';
+            }
+            return true;
+          },
+          {
+            message: 'Supplier invoice number is required for stock received',
+            path: ['supplierInvoiceNumber'],
+          }
+        )
     )
     .mutation(async ({ input, ctx }) => {
       const { productId, adjustmentType, quantity, notes, costPerUnit, expiryDate, supplierInvoiceNumber, stockInDate, mtvNumber, vehicleTemperature, supplierId } = input;
@@ -693,6 +706,10 @@ export const productRouter = router({
 
       // Use transaction to create inventory transaction, batch, and update product atomically
       const result = await prisma.$transaction(async (tx) => {
+        // 0. Generate batch number
+        const { generateBatchNumber } = await import('../services/batch-number');
+        const batchNumber = await generateBatchNumber(tx, adjustmentType, supplierInvoiceNumber);
+
         // 1. Create inventory transaction record
         const transaction = await tx.inventoryTransaction.create({
           data: {
@@ -705,9 +722,10 @@ export const productRouter = router({
             referenceType: 'manual',
             notes,
             createdBy: ctx.userId || 'system',
-            // NEW: Store cost and expiry for stock_received
+            // Store cost and expiry for stock_received
             costPerUnit: adjustmentType === 'stock_received' ? costPerUnit : null,
             expiryDate: adjustmentType === 'stock_received' ? expiryDate : null,
+            batchNumber,
           },
         });
 
@@ -729,7 +747,8 @@ export const productRouter = router({
               expiryDate: expiryDate || null,
               receiveTransactionId: transaction.id,
               notes,
-              // NEW: Traceability and compliance fields
+              batchNumber,
+              // Traceability and compliance fields
               supplierInvoiceNumber: supplierInvoiceNumber || null,
               stockInDate: stockInDate || null,
               mtvNumber: mtvNumber || null,
@@ -769,7 +788,7 @@ export const productRouter = router({
         // 5. Recalculate all subproduct stocks after parent stock change
         await updateSubproductStocks(productId, syncedStock, product.estimatedLossPercentage, tx);
 
-        return updatedProduct;
+        return { product: updatedProduct, batchNumber };
       });
 
       // Audit log - HIGH: Stock adjustments must be tracked
@@ -900,6 +919,10 @@ export const productRouter = router({
           });
         }
 
+        // STEP 2.5: Generate batch number for processing
+        const { generateBatchNumber } = await import('../services/batch-number');
+        const batchNumber = await generateBatchNumber(tx, 'processing');
+
         // STEP 3: Create source InventoryTransaction (consumption)
         const sourceTransaction = await tx.inventoryTransaction.create({
           data: {
@@ -912,6 +935,7 @@ export const productRouter = router({
             referenceType: 'manual',
             notes: `Processed to ${targetProduct.name} (${targetProduct.sku})${notes ? ' - ' + notes : ''}`,
             createdBy: ctx.userId || 'system',
+            batchNumber,
           },
         });
 
@@ -947,6 +971,7 @@ export const productRouter = router({
             expiryDate: expiryDate || null,
             notes: `Processed from ${sourceProduct.name} (${sourceProduct.sku})${notes ? ' - ' + notes : ''}`,
             createdBy: ctx.userId || 'system',
+            batchNumber,
           },
         });
 
@@ -961,6 +986,7 @@ export const productRouter = router({
             expiryDate: expiryDate || null,
             receiveTransactionId: targetTransaction.id,
             notes: `Processed from ${sourceProduct.name} - Source COGS: $${(consumptionResult.totalCost / 100).toFixed(2)}`,
+            batchNumber,
           },
         });
 
@@ -1315,20 +1341,27 @@ export const productRouter = router({
       const discrepancies = await prisma.$transaction(async (tx) => {
         const found = await syncCurrentStock(tx);
 
-        // Create audit trail for each correction
-        for (const d of found) {
-          await tx.inventoryTransaction.create({
-            data: {
-              type: 'adjustment',
-              adjustmentType: 'stock_count_correction',
-              productId: d.productId,
-              quantity: d.batchSum - d.previousStock,
-              previousStock: d.previousStock,
-              newStock: d.batchSum,
-              notes: `Stock reconciliation: corrected from ${d.previousStock} to ${d.batchSum} (batch sum)`,
-              createdBy: ctx.userId || 'system',
-            },
-          });
+        // Generate a single batch number for the entire reconciliation run
+        if (found.length > 0) {
+          const { generateBatchNumber } = await import('../services/batch-number');
+          const batchNumber = await generateBatchNumber(tx, 'stock_count_correction');
+
+          // Create audit trail for each correction
+          for (const d of found) {
+            await tx.inventoryTransaction.create({
+              data: {
+                type: 'adjustment',
+                adjustmentType: 'stock_count_correction',
+                productId: d.productId,
+                quantity: d.batchSum - d.previousStock,
+                previousStock: d.previousStock,
+                newStock: d.batchSum,
+                notes: `Stock reconciliation: corrected from ${d.previousStock} to ${d.batchSum} (batch sum)`,
+                createdBy: ctx.userId || 'system',
+                batchNumber,
+              },
+            });
+          }
         }
 
         return found;

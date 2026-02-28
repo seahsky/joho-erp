@@ -514,6 +514,9 @@ model InventoryTransaction {
   costPerUnit         Int?                        // In cents - cost when receiving stock
   expiryDate          DateTime?                   // Expiry date when receiving stock
 
+  // Batch number for grouping related transactions
+  batchNumber         String?                     // e.g. "SI-000001" — system-generated batch number
+
   // Relations
   product             Product                     @relation(fields: [productId], references: [id])
   batchConsumptions   BatchConsumption[]          // Track which batches were affected
@@ -525,6 +528,7 @@ model InventoryTransaction {
   @@index([adjustmentType])
   @@index([createdAt(sort: Desc), type])
   @@index([reversedAt])
+  @@index([batchNumber])
   @@map("inventorytransactions")
 }
 
@@ -544,6 +548,7 @@ model InventoryBatch {
   expiryDate          DateTime?           // Critical for food safety - nullable for non-perishables
 
   // Traceability
+  batchNumber           String?           // e.g. "SI-000001" — system-generated batch number
   receiveTransactionId String?            @db.ObjectId  // Link to InventoryTransaction that created this batch
   notes               String?             // Admin notes (e.g., "Supplier: ABC Meats, Invoice: #12345")
 
@@ -572,6 +577,7 @@ model InventoryBatch {
   @@index([productId, isConsumed])        // Active batches only
   @@index([expiryDate, isConsumed])       // Global expiry warnings
   @@index([supplierId])                   // Supplier lookup
+  @@index([batchNumber])                  // Batch number lookup
   @@map("inventorybatches")
 }
 
@@ -603,6 +609,14 @@ model BatchConsumption {
   @@index([orderId])
   @@index([consumedAt(sort: Desc)])
   @@map("batchconsumptions")
+}
+
+// Batch Counter Model - Atomic counters for batch number generation
+model BatchCounter {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  type    String @unique  // "SI", "WO", "CC", "PR", "PA"
+  counter Int    @default(0)
+  @@map("batchcounters")
 }
 
 // Audit Log Model

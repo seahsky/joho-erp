@@ -19,6 +19,7 @@ import {
   FileText,
   Layers,
   TrendingDown,
+  Hash,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatAUD } from '@joho-erp/shared';
@@ -113,6 +114,13 @@ export function BatchInfoDialog({
                   <Badge variant="outline">{batch.product.category}</Badge>
                 )}
               </div>
+              {batch.batchNumber && (
+                <div className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{t('batchNumber')}:</span>
+                  <Badge variant="secondary" className="font-mono">{batch.batchNumber}</Badge>
+                </div>
+              )}
             </div>
 
             {/* Stock Remaining - Prominent Display */}

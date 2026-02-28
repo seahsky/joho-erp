@@ -1219,7 +1219,7 @@
       "stockInDateHint": "When was this stock physically received?",
       "supplierInvoiceNumber": "Supplier Invoice Number",
       "supplierInvoiceNumberPlaceholder": "e.g., INV-2024-001",
-      "supplierInvoiceNumberHint": "Optional: Reference for supplier reconciliation",
+      "supplierInvoiceNumberHint": "Required: Reference for supplier reconciliation and batch grouping",
       "mtvNumber": "MTV Number (PrimeSafe)",
       "mtvNumberPlaceholder": "e.g., MTV-12345",
       "mtvNumberHint": "Optional: Meat Transfer Vehicle license number for compliance",
@@ -1265,11 +1265,13 @@
       "costRequired": "Cost per unit is required when receiving stock",
       "stockInDateRequired": "Stock in date is required when receiving stock",
       "stockInDateFuture": "Stock in date cannot be in the future",
-      "vehicleTemperatureRange": "Vehicle temperature must be between -30°C and 25°C"
+      "vehicleTemperatureRange": "Vehicle temperature must be between -30°C and 25°C",
+      "supplierInvoiceRequired": "Supplier invoice number is required when receiving stock"
     },
     "messages": {
       "success": "Stock adjusted successfully",
-      "error": "Failed to adjust stock"
+      "error": "Failed to adjust stock",
+      "batchNumberAssigned": "Batch number: {batchNumber}"
     },
     "history": {
       "title": "Stock History",
@@ -2993,7 +2995,8 @@
       "invoiceNumber": "Invoice Number",
       "mtvNumber": "MTV Number",
       "vehicleTemperature": "Vehicle Temperature",
-      "notes": "Notes"
+      "notes": "Notes",
+      "batchNumber": "Batch Number"
     },
     "productSelector": {
       "searchPlaceholder": "Search by product name or SKU...",

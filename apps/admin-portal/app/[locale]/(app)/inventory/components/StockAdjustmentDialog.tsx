@@ -151,9 +151,11 @@ export function StockAdjustmentDialog({
   );
 
   const adjustStockMutation = api.product.adjustStock.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const batchNum = data?.batchNumber;
       toast({
         title: t('messages.success'),
+        description: batchNum ? t('messages.batchNumberAssigned', { batchNumber: batchNum }) : undefined,
       });
       handleReset();
       onSuccess();
@@ -210,8 +212,16 @@ export function StockAdjustmentDialog({
       return;
     }
 
-    // NEW: Validate stock_received specific fields
+    // Validate stock_received specific fields
     if (adjustmentType === 'stock_received') {
+      if (!supplierInvoiceNumber.trim()) {
+        toast({
+          title: t('validation.supplierInvoiceRequired'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const costInCents = parseToCents(costPerUnit);
 
       if (!costInCents) {
@@ -542,10 +552,10 @@ export function StockAdjustmentDialog({
                 </p>
               </div>
 
-              {/* Supplier Invoice Number - OPTIONAL */}
+              {/* Supplier Invoice Number - REQUIRED */}
               <div>
                 <Label htmlFor="supplierInvoiceNumber">
-                  {t('fields.supplierInvoiceNumber')}
+                  {t('fields.supplierInvoiceNumber')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="supplierInvoiceNumber"
@@ -555,6 +565,7 @@ export function StockAdjustmentDialog({
                   onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
                   placeholder={t('fields.supplierInvoiceNumberPlaceholder')}
                   className="mt-1"
+                  required
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {t('fields.supplierInvoiceNumberHint')}

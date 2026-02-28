@@ -1219,7 +1219,7 @@
       "stockInDateHint": "該庫存何時實際收到？",
       "supplierInvoiceNumber": "供應商發票號",
       "supplierInvoiceNumberPlaceholder": "例如：INV-2024-001",
-      "supplierInvoiceNumberHint": "可選：用於供應商對賬",
+      "supplierInvoiceNumberHint": "必填：用於供應商對賬和批次分組",
       "mtvNumber": "MTV編號（PrimeSafe）",
       "mtvNumberPlaceholder": "例如：MTV-12345",
       "mtvNumberHint": "可選：肉類運輸車輛許可證號，用於合規",
@@ -1265,11 +1265,13 @@
       "costRequired": "收貨時需要單位成本",
       "stockInDateRequired": "收貨時需要入庫日期",
       "stockInDateFuture": "入庫日期不能是未來日期",
-      "vehicleTemperatureRange": "車輛溫度必須在-30°C到25°C之間"
+      "vehicleTemperatureRange": "車輛溫度必須在-30°C到25°C之間",
+      "supplierInvoiceRequired": "收貨時必須填寫供應商發票號"
     },
     "messages": {
       "success": "庫存調整成功",
-      "error": "庫存調整失敗"
+      "error": "庫存調整失敗",
+      "batchNumberAssigned": "批次號：{batchNumber}"
     },
     "history": {
       "title": "庫存歷史",
@@ -2975,7 +2977,8 @@
       "supplier": "供應商",
       "invoiceNumber": "發票號碼",
       "mtvNumber": "MTV編號",
-      "vehicleTemperature": "車輛溫度"
+      "vehicleTemperature": "車輛溫度",
+      "batchNumber": "批次號"
     },
     "batchDetail": {
       "title": "庫存批次詳情",
