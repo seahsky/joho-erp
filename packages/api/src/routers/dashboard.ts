@@ -384,7 +384,7 @@ export const dashboardRouter = router({
         type: z.enum(['sale', 'adjustment', 'return']).optional(),
         // TODO: Remove 'stock_count_correction' after historical data cleanup — deprecated, no longer used in UI
         adjustmentType: z
-          .enum(['stock_received', 'stock_count_correction', 'stock_write_off', 'packing_adjustment'])
+          .enum(['stock_received', 'stock_count_correction', 'stock_write_off', 'packing_adjustment', 'processing'])
           .optional(),
         productId: z.string().optional(),
         search: z.string().optional(),
@@ -448,9 +448,9 @@ export const dashboardRouter = router({
         prisma.inventoryTransaction.count({ where }),
       ]);
 
-      // Fetch related InventoryBatch records for stock_received transactions
+      // Fetch related InventoryBatch records for stock_received and processing transactions
       const stockReceivedTxIds = transactions
-        .filter((tx) => tx.adjustmentType === 'stock_received')
+        .filter((tx) => tx.adjustmentType === 'stock_received' || tx.adjustmentType === 'processing')
         .map((tx) => tx.id);
 
       const batches =

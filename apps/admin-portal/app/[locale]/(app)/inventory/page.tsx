@@ -200,6 +200,8 @@ export default function InventoryPage() {
         return t('adjustmentTypes.stock_write_off');
       case 'packing_adjustment':
         return t('adjustmentTypes.packing_adjustment');
+      case 'processing':
+        return t('adjustmentTypes.processing');
       default:
         return type;
     }
