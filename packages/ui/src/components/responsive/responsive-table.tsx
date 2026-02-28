@@ -130,7 +130,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
         </TableHeader>
         <TableBody>
           {data.map((row, rowIndex) => (
-            <TableRow key={rowIndex}>
+            <TableRow key={rowIndex} className="[content-visibility:auto] [contain-intrinsic-size:auto_48px]">
               {columns.map((column, colIndex) => {
                 const value = row[column.key as keyof T];
                 return (

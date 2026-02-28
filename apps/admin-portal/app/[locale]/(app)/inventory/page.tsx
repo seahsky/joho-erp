@@ -42,22 +42,25 @@ import {
   ArrowRightLeft,
   CheckCheck,
 } from 'lucide-react';
+import nextDynamic from 'next/dynamic';
 import {
   StockMovementChart,
   InventoryValueChart,
   ProductTurnoverTable,
   ComparisonAnalytics,
-  StockAdjustmentDialog,
-  ProcessStockDialog,
-  InventoryTransactionDetailDialog,
   StockCountsTable,
-  BatchInfoDialog,
   ExpiringBatchesList,
   StockWriteOffTable,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
-import { ExportDialog } from './components/ExportDialog';
+
+// Dynamically import heavy dialogs (they pull in xlsx, @react-pdf/renderer, etc.)
+const StockAdjustmentDialog = nextDynamic(() => import('./components/StockAdjustmentDialog').then(m => m.StockAdjustmentDialog));
+const ProcessStockDialog = nextDynamic(() => import('./components/ProcessStockDialog').then(m => m.ProcessStockDialog));
+const InventoryTransactionDetailDialog = nextDynamic(() => import('./components/InventoryTransactionDetailDialog').then(m => m.InventoryTransactionDetailDialog));
+const BatchInfoDialog = nextDynamic(() => import('./components/BatchInfoDialog').then(m => m.BatchInfoDialog));
+const ExportDialog = nextDynamic(() => import('./components/ExportDialog').then(m => m.ExportDialog));
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';

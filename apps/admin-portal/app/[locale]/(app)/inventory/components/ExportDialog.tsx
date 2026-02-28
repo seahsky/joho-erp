@@ -14,14 +14,9 @@ import {
 } from '@joho-erp/ui';
 import { useTranslations, useLocale } from 'next-intl';
 import { Loader2, Download, FileText, FileSpreadsheet, Printer } from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
-import { registerPdfFonts, getPdfFontFamily } from '@/lib/pdfFonts';
+import { getPdfFontFamily } from '@/lib/pdfFonts';
 import { api } from '@/trpc/client';
-import { generateExcel } from '../utils/exportUtils';
 import { printPdfBlob } from '@/lib/printPdf';
-import { InventoryReportDocument } from './exports/InventoryReportDocument';
-
-registerPdfFonts();
 
 type ExportFormat = 'pdf' | 'excel';
 type DataScope = 'current' | 'all';
@@ -163,6 +158,12 @@ export function ExportDialog({
       let filename: string;
 
       if (format === 'pdf') {
+        const [{ pdf }, { registerPdfFonts }, { InventoryReportDocument }] = await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/pdfFonts'),
+          import('./exports/InventoryReportDocument'),
+        ]);
+        registerPdfFonts();
         const doc = (
           <InventoryReportDocument
             fontFamily={getPdfFontFamily(locale)}
@@ -174,7 +175,8 @@ export function ExportDialog({
         blob = await pdf(doc).toBlob();
         filename = `inventory-${exportTab}-${dateStr}.pdf`;
       } else {
-        blob = generateExcel({ tab: exportTab, data: data as Parameters<typeof generateExcel>[0]['data'], translations });
+        const { generateExcel } = await import('../utils/exportUtils');
+        blob = await generateExcel({ tab: exportTab, data: data as Parameters<typeof generateExcel>[0]['data'], translations });
         filename = `inventory-${exportTab}-${dateStr}.xlsx`;
       }
 
@@ -206,7 +208,7 @@ export function ExportDialog({
     } finally {
       setIsGenerating(false);
     }
-  }, [data, format, exportTab, getTranslations, onOpenChange, t, toast]);
+  }, [data, format, exportTab, locale, getTranslations, onOpenChange, t, toast]);
 
   const handlePrint = useCallback(async () => {
     if (!data) return;
@@ -214,6 +216,12 @@ export function ExportDialog({
     setIsPrinting(true);
 
     try {
+      const [{ pdf }, { registerPdfFonts }, { InventoryReportDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdfFonts'),
+        import('./exports/InventoryReportDocument'),
+      ]);
+      registerPdfFonts();
       const translations = getTranslations();
       const doc = (
         <InventoryReportDocument

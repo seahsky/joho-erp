@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatCentsForInput, parseToCents } from '@joho-erp/shared';
-import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import {
   MapPin,
   Loader2,
@@ -14,6 +13,16 @@ import {
   Search,
   Navigation2,
 } from 'lucide-react';
+import type { DeliverySettingsMapHandle } from './delivery-settings-map';
+
+const DeliverySettingsMap = dynamic(() => import('./delivery-settings-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-muted/50">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  ),
+});
 import { SettingsPageHeader } from '@/components/settings/settings-page-header';
 import { FloatingSaveBar } from '@/components/settings/floating-save-bar';
 import {
@@ -59,7 +68,7 @@ export default function DeliverySettingsPage() {
   const [showResults, setShowResults] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const mapRef = useRef<MapRef>(null);
+  const mapRef = useRef<DeliverySettingsMapHandle>(null);
 
   // Load existing settings
   const { data: settings, isLoading: loadingSettings } = api.company.getSettings.useQuery();
@@ -294,30 +303,15 @@ export default function DeliverySettingsPage() {
             <CardContent className="p-0">
               {/* Map */}
               <div className="h-[500px] relative">
-                <Map
+                <DeliverySettingsMap
                   ref={mapRef}
-                  longitude={longitude}
                   latitude={latitude}
-                  zoom={13}
-                  mapStyle="mapbox://styles/mapbox/streets-v12"
-                  mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}
-                  style={{ width: '100%', height: '100%' }}
-                  onClick={(e) => {
-                    setLatitude(e.lngLat.lat);
-                    setLongitude(e.lngLat.lng);
+                  longitude={longitude}
+                  onLocationChange={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
                   }}
-                >
-                  <NavigationControl position="top-right" />
-
-                  {/* Warehouse Marker */}
-                  <Marker longitude={longitude} latitude={latitude} anchor="bottom">
-                    <div className="relative animate-bounce">
-                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg border-4 border-background">
-                        <Warehouse className="h-6 w-6 text-primary-foreground" />
-                      </div>
-                    </div>
-                  </Marker>
-                </Map>
+                />
               </div>
 
               <div className="p-4 bg-muted/50 border-t">

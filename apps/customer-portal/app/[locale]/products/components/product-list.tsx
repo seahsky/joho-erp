@@ -79,17 +79,9 @@ export function ProductList() {
     router.replace(`/${locale}/products${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
   }, [searchParams, router, locale]);
 
-  // Query for DISPLAY - filtered by selected category
-  const { data: products, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
+  // Single query for all products — category filtering done client-side to avoid duplicate API calls
+  const { data: allProductsData, isLoading, isFetching, error, refetch } = api.product.getAll.useQuery({
     search: searchQuery || undefined,
-    categoryId: selectedCategory,
-  });
-
-  // Query for COUNTS - no category filter, returns all products
-  // This ensures category counts remain accurate when a category is selected
-  const { data: allProductsData } = api.product.getAll.useQuery({
-    search: searchQuery || undefined,
-    // No categoryId - returns all categories for accurate counting
   });
 
   const { data: categoriesData } = api.category.getAll.useQuery();
@@ -136,18 +128,17 @@ export function ProductList() {
     });
   };
 
-  // Products for COUNTS - from unfiltered query (all categories)
-  // Used for category counts so they remain accurate when a category is selected
+  // All products flattened (for counts and as base for filtering)
   const allProductsForCounts = React.useMemo(() => {
     const items = (allProductsData?.items || []) as unknown as ProductWithSubProducts[];
     return flattenAllProducts(items);
   }, [allProductsData]);
 
-  // Products for DISPLAY - from filtered query (selected category)
+  // Products for DISPLAY — filtered client-side by selected category
   const allInStockProducts = React.useMemo(() => {
-    const items = (products?.items || []) as unknown as ProductWithSubProducts[];
-    return flattenAllProducts(items);
-  }, [products]);
+    if (!selectedCategory) return allProductsForCounts;
+    return allProductsForCounts.filter(p => p.categoryId === selectedCategory);
+  }, [allProductsForCounts, selectedCategory]);
 
   // Category counts use allProductsForCounts (unfiltered) so counts stay accurate
   // when a category is selected
@@ -173,9 +164,9 @@ export function ProductList() {
   // No additional filtering needed since the API query handles category filtering
   const inStockProducts = allInStockProducts;
 
-  const handleProductExpand = (productId: string) => {
+  const handleProductExpand = React.useCallback((productId: string) => {
     setExpandedProductId(prev => prev === productId ? null : productId);
-  };
+  }, []);
 
   // Skeleton component for product list
   const ProductListSkeleton = () => (

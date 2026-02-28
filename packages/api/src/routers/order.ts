@@ -408,9 +408,18 @@ export const orderRouter = router({
       // Calculate totals using per-product GST settings
       const totals = calculateOrderTotals(orderItems);
 
-      // Check credit limit (exclude pending backorders from calculation)
+      // Run independent checks in parallel: credit, company settings, and min delivery date
       const creditLimit = customer.creditApplication.creditLimit; // In cents
-      const availableCredit = await calculateAvailableCredit(customer.id, creditLimit);
+      const deliveryAddress = input.deliveryAddress || customer.deliveryAddress;
+      const areaName = 'areaName' in deliveryAddress
+        ? (deliveryAddress.areaName ?? undefined)
+        : (customer.deliveryAddress.areaName ?? undefined);
+
+      const [availableCredit, company, minDeliveryDate] = await Promise.all([
+        calculateAvailableCredit(customer.id, creditLimit),
+        prisma.company.findFirst({ select: { deliverySettings: true } }),
+        getMinDeliveryDate(areaName),
+      ]);
 
       if (totals.totalAmount > availableCredit) {
         throw new TRPCError({
@@ -419,10 +428,6 @@ export const orderRouter = router({
         });
       }
 
-      // Check minimum order amount (if configured)
-      const company = await prisma.company.findFirst({
-        select: { deliverySettings: true },
-      });
       const minimumOrderAmount = company?.deliverySettings?.minimumOrderAmount;
 
       if (minimumOrderAmount && totals.totalAmount < minimumOrderAmount) {
@@ -434,16 +439,6 @@ export const orderRouter = router({
 
       // Generate order number
       const orderNumber = generateOrderNumber();
-
-      // Get delivery address and area name for validation
-      const deliveryAddress = input.deliveryAddress || customer.deliveryAddress;
-      // areaName may not be in input.deliveryAddress, so use customer's if not provided
-      const areaName = 'areaName' in deliveryAddress
-        ? (deliveryAddress.areaName ?? undefined)
-        : (customer.deliveryAddress.areaName ?? undefined);
-
-      // Set delivery date (defaults to next available date)
-      const minDeliveryDate = await getMinDeliveryDate(areaName);
       const deliveryDate = input.requestedDeliveryDate || minDeliveryDate;
 
       // Check if delivery date is Sunday

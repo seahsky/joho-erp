@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import type * as XLSXTypes from 'xlsx';
 import { formatAUD } from '@joho-erp/shared';
 
 // Type definitions for export data
@@ -114,22 +114,23 @@ function formatNumber(value: number, decimals: number = 2): string {
   return value.toFixed(decimals);
 }
 
-// Main export function
-export function generateExcel(config: ExportConfig): Blob {
+// Main export function — dynamically imports xlsx to avoid bundling ~900KB on page load
+export async function generateExcel(config: ExportConfig): Promise<Blob> {
+  const XLSX = await import('xlsx');
   const workbook = XLSX.utils.book_new();
 
   switch (config.tab) {
     case 'overview':
-      addOverviewSheets(workbook, config.data as OverviewData, config.translations);
+      addOverviewSheets(XLSX, workbook, config.data as OverviewData, config.translations);
       break;
     case 'trends':
-      addTrendsSheets(workbook, config.data as TrendsData, config.translations);
+      addTrendsSheets(XLSX, workbook, config.data as TrendsData, config.translations);
       break;
     case 'turnover':
-      addTurnoverSheet(workbook, config.data as TurnoverData, config.translations);
+      addTurnoverSheet(XLSX, workbook, config.data as TurnoverData, config.translations);
       break;
     case 'comparison':
-      addComparisonSheet(workbook, config.data as ComparisonData, config.translations);
+      addComparisonSheet(XLSX, workbook, config.data as ComparisonData, config.translations);
       break;
   }
 
@@ -145,7 +146,8 @@ export function generateExcel(config: ExportConfig): Blob {
 
 // Overview tab export
 function addOverviewSheets(
-  workbook: XLSX.WorkBook,
+  XLSX: typeof XLSXTypes,
+  workbook: XLSXTypes.WorkBook,
   data: OverviewData,
   t: Record<string, string>
 ) {
@@ -220,7 +222,8 @@ function addOverviewSheets(
 
 // Trends tab export
 function addTrendsSheets(
-  workbook: XLSX.WorkBook,
+  XLSX: typeof XLSXTypes,
+  workbook: XLSXTypes.WorkBook,
   data: TrendsData,
   t: Record<string, string>
 ) {
@@ -255,7 +258,8 @@ function addTrendsSheets(
 
 // Turnover tab export
 function addTurnoverSheet(
-  workbook: XLSX.WorkBook,
+  XLSX: typeof XLSXTypes,
+  workbook: XLSXTypes.WorkBook,
   data: TurnoverData,
   t: Record<string, string>
 ) {
@@ -289,7 +293,8 @@ function addTurnoverSheet(
 
 // Comparison tab export
 function addComparisonSheet(
-  workbook: XLSX.WorkBook,
+  XLSX: typeof XLSXTypes,
+  workbook: XLSXTypes.WorkBook,
   data: ComparisonData,
   t: Record<string, string>
 ) {

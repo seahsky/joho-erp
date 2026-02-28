@@ -138,7 +138,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState(() => ({
     // Contact person
     firstName: '',
     lastName: '',
@@ -181,7 +181,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     // SMS reminder preferences
     smsReminderEnabled: false,
     smsReminderDays: [] as DayOfWeek[],
-  });
+  }));
 
   // Fetch customer data
   const {
@@ -190,10 +190,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
     error,
   } = api.customer.getById.useQuery({ customerId: resolvedParams.id });
 
-  // Fetch customer orders
+  // Fetch customer orders (customerId is from URL params, no need to wait for customer query)
   const { data: ordersData } = api.order.getAll.useQuery(
     { customerId: resolvedParams.id, limit: 10 },
-    { enabled: !!customer }
   );
 
   // Fetch areas for dropdown
@@ -216,14 +215,15 @@ export default function CustomerDetailPage({ params }: PageProps) {
   );
 
   // Auto-select area when lookup returns a result (during editing)
+  const autoAreaId = autoArea?.id;
   useEffect(() => {
-    if (isEditing && autoArea && !editForm.areaId) {
+    if (isEditing && autoAreaId && !editForm.areaId) {
       setEditForm((prev) => ({
         ...prev,
-        areaId: autoArea.id,
+        areaId: autoAreaId,
       }));
     }
-  }, [isEditing, autoArea, editForm.areaId]);
+  }, [isEditing, autoAreaId, editForm.areaId]);
 
   // Suspend mutation
   const suspendMutation = api.customer.suspend.useMutation({

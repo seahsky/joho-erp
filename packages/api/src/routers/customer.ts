@@ -225,10 +225,22 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx: _ctx }) => {
-      // Check if customer already exists
-      const existing = await prisma.customer.findUnique({
-        where: { clerkUserId: input.clerkUserId },
-      });
+      // Run all uniqueness checks in parallel
+      const [existing, existingByEmail, existingByABN] = await Promise.all([
+        prisma.customer.findUnique({
+          where: { clerkUserId: input.clerkUserId },
+        }),
+        prisma.customer.findFirst({
+          where: {
+            contactPerson: {
+              is: { email: input.contactPerson.email },
+            },
+          },
+        }),
+        prisma.customer.findFirst({
+          where: { abn: input.abn, status: 'active' },
+        }),
+      ]);
 
       if (existing) {
         throw new TRPCError({
@@ -237,26 +249,12 @@ export const customerRouter = router({
         });
       }
 
-      // Check email uniqueness (Issue #4 fix)
-      const existingByEmail = await prisma.customer.findFirst({
-        where: {
-          contactPerson: {
-            is: { email: input.contactPerson.email },
-          },
-        },
-      });
-
       if (existingByEmail) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'A customer with this email already exists',
         });
       }
-
-      // Check ABN uniqueness — only active customers block new sign-ups
-      const existingByABN = await prisma.customer.findFirst({
-        where: { abn: input.abn, status: 'active' },
-      });
 
       if (existingByABN) {
         throw new TRPCError({
@@ -851,14 +849,19 @@ export const customerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Check if customer with this email already exists
-      const existingByEmail = await prisma.customer.findFirst({
-        where: {
-          contactPerson: {
-            is: { email: input.contactPerson.email },
+      // Run uniqueness checks in parallel
+      const [existingByEmail, existingByABN] = await Promise.all([
+        prisma.customer.findFirst({
+          where: {
+            contactPerson: {
+              is: { email: input.contactPerson.email },
+            },
           },
-        },
-      });
+        }),
+        prisma.customer.findFirst({
+          where: { abn: input.abn, status: 'active' },
+        }),
+      ]);
 
       if (existingByEmail) {
         throw new TRPCError({
@@ -866,11 +869,6 @@ export const customerRouter = router({
           message: 'A customer with this email already exists',
         });
       }
-
-      // Check ABN uniqueness — only active customers block creation
-      const existingByABN = await prisma.customer.findFirst({
-        where: { abn: input.abn, status: 'active' },
-      });
 
       if (existingByABN) {
         throw new TRPCError({

@@ -231,29 +231,22 @@ export const packingRouter = router({
       // Get packed items from database
       const packedSkus = new Set(order.packing?.packedItems ?? []);
 
-      // Fetch current stock levels for all products in the order
+      // Fetch stock levels and area info in parallel (both only depend on the order)
       const productIds = order.items.map((item) => item.productId).filter(Boolean);
-      const products = await prisma.product.findMany({
-        where: {
-          id: { in: productIds },
-        },
-        select: {
-          id: true,
-          currentStock: true,
-          lowStockThreshold: true,
-        },
-      });
+      const areaId = order.deliveryAddress.areaId;
+
+      const [products, areaInfo] = await Promise.all([
+        prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, currentStock: true, lowStockThreshold: true },
+        }),
+        areaId ? prisma.area.findUnique({ where: { id: areaId } }) : null,
+      ]);
 
       // Create a map for quick lookup
       const productStockMap = new Map(
         products.map((p) => [p.id, { currentStock: p.currentStock, lowStockThreshold: p.lowStockThreshold }])
       );
-
-      // Get area info
-      const areaId = order.deliveryAddress.areaId;
-      const areaInfo = areaId
-        ? await prisma.area.findUnique({ where: { id: areaId } })
-        : null;
 
       const items = order.items.map((item) => {
         const stockInfo = productStockMap.get(item.productId) ?? { currentStock: 0, lowStockThreshold: undefined };

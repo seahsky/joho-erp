@@ -5,10 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useState, useMemo, useEffect } from 'react';
 import { Input, EmptyState, Card, CardHeader, CardDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Badge, useToast, TableSkeleton } from '@joho-erp/ui';
 import { Package, Calendar, PlayCircle, PauseCircle, Loader2, ClipboardList, Navigation, Printer } from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
 import { printPdfBlob } from '@/lib/printPdf';
-import { registerPdfFonts, getPdfFontFamily } from '@/lib/pdfFonts';
-import { PreparationSummaryDocument } from './components/exports/PreparationSummaryDocument';
+import { getPdfFontFamily } from '@/lib/pdfFonts';
 import { useTranslations, useLocale } from 'next-intl';
 import { api } from '@/trpc/client';
 import { ProductSummaryView } from './components/ProductSummaryView';
@@ -17,8 +15,6 @@ import { AreaLabelFilter } from './components/AreaLabelFilter';
 import { StatsBar, FilterBar, OperationsLayout, type StatItem } from '@/components/operations';
 import { PermissionGate } from '@/components/permission-gate';
 import type { ProductCategory } from '@joho-erp/shared';
-
-registerPdfFonts();
 
 export default function PackingPage() {
   const t = useTranslations('packing');
@@ -230,6 +226,12 @@ export default function PackingPage() {
   const handlePrintSummary = async () => {
     setIsPrinting(true);
     try {
+      const [{ pdf }, { registerPdfFonts }, { PreparationSummaryDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdfFonts'),
+        import('./components/exports/PreparationSummaryDocument'),
+      ]);
+      registerPdfFonts();
       const translations: Record<string, string> = {
         preparationSummary: t('preparationSummary'),
         deliveryDateLabel: t('deliveryDateLabel'),

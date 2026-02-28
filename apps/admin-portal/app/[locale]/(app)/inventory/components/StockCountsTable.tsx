@@ -377,7 +377,7 @@ export function StockCountsTable({
                 return (
                   <Fragment key={product.id}>
                     <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-muted/50 [content-visibility:auto] [contain-intrinsic-size:auto_48px]"
                       onClick={() => toggleExpanded(product.id)}
                     >
                       <TableCell className="w-8 pr-0">

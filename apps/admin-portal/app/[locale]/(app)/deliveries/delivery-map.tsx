@@ -83,8 +83,9 @@ export default function DeliveryMap({
   const hasDeliveries = deliveries.length > 0;
   const hasWarehouse = !!warehouseLocation;
 
-  // Animation state for route drawing
+  // Animation state for route drawing — progress tracked in ref to avoid 60fps re-renders
   const [animationProgress, setAnimationProgress] = useState<Record<string, number>>({});
+  const animationProgressRef = useRef<Record<string, number>>({});
   const [isAnimating, setIsAnimating] = useState(false);
 
   // Fullscreen state
@@ -112,17 +113,20 @@ export default function DeliveryMap({
   }, [selectedDelivery, isMapReady, hasDeliveries, deliveries]);
 
   // Center on warehouse when no deliveries but warehouse exists
+  const warehouseLat = warehouseLocation?.latitude;
+  const warehouseLng = warehouseLocation?.longitude;
   useEffect(() => {
-    if (!hasDeliveries && hasWarehouse && warehouseLocation && mapRef.current && isMapReady) {
+    if (!hasDeliveries && hasWarehouse && warehouseLat != null && warehouseLng != null && mapRef.current && isMapReady) {
       mapRef.current.flyTo({
-        center: [warehouseLocation.longitude, warehouseLocation.latitude],
+        center: [warehouseLng, warehouseLat],
         zoom: 12,
         duration: 1000,
       });
     }
-  }, [hasDeliveries, hasWarehouse, warehouseLocation, isMapReady]);
+  }, [hasDeliveries, hasWarehouse, warehouseLat, warehouseLng, isMapReady]);
 
   // Animate route drawing when routes change
+  // Uses ref for 60fps tracking, throttles React state updates to ~15fps
   useEffect(() => {
     if (!isMapReady || (!multiRouteData && !routeData)) return;
 
@@ -136,7 +140,11 @@ export default function DeliveryMap({
     routesToAnimate.forEach(routeKey => {
       initialProgress[routeKey] = 0;
     });
+    animationProgressRef.current = initialProgress;
     setAnimationProgress(initialProgress);
+
+    let lastStateUpdate = 0;
+    const STATE_UPDATE_INTERVAL = 67; // ~15fps for React state updates
 
     // Animate each route with staggered timing
     routesToAnimate.forEach((routeKey, index) => {
@@ -149,22 +157,29 @@ export default function DeliveryMap({
         const elapsed = now - startTime;
 
         if (elapsed < 0) {
-          // Still waiting for delay
           requestAnimationFrame(animate);
           return;
         }
 
         const progress = Math.min(elapsed / duration, 1);
 
-        setAnimationProgress(prev => ({
-          ...prev,
+        // Update ref immediately (no re-render)
+        animationProgressRef.current = {
+          ...animationProgressRef.current,
           [routeKey]: progress,
-        }));
+        };
+
+        // Throttle React state updates
+        if (now - lastStateUpdate >= STATE_UPDATE_INTERVAL || progress >= 1) {
+          lastStateUpdate = now;
+          setAnimationProgress({ ...animationProgressRef.current });
+        }
 
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else if (index === routesToAnimate.length - 1) {
-          // Last route finished animating
+          // Last route finished — final state sync
+          setAnimationProgress({ ...animationProgressRef.current });
           setIsAnimating(false);
         }
       };
