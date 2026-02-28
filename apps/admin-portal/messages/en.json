@@ -3005,7 +3005,8 @@
       "turnover": "Turnover",
       "comparison": "Comparison",
       "stockCounts": "Stock Counts",
-      "stockExpiry": "Stock Expiry"
+      "stockExpiry": "Stock Expiry",
+      "writeOffs": "Write-Offs"
     },
     "stats": {
       "periods": {
@@ -3257,6 +3258,40 @@
         "confirm": "Confirm",
         "save": "Save",
         "processing": "Processing..."
+      }
+    },
+    "writeOffHistory": {
+      "title": "Stock Write-Off History",
+      "description": "View all past stock write-off transactions",
+      "columns": {
+        "product": "Product",
+        "quantity": "Quantity",
+        "reason": "Reason",
+        "date": "Date",
+        "performedBy": "Performed By"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by product name or SKU...",
+        "dateFrom": "From",
+        "dateTo": "To"
+      },
+      "sort": {
+        "sortBy": "Sort by",
+        "dateDesc": "Date (Newest)",
+        "dateAsc": "Date (Oldest)",
+        "productNameAsc": "Product Name (A-Z)",
+        "productNameDesc": "Product Name (Z-A)",
+        "quantityDesc": "Quantity (Highest)",
+        "quantityAsc": "Quantity (Lowest)"
+      },
+      "emptyState": "No write-offs found",
+      "emptyStateDescription": "No stock write-off transactions match your filters",
+      "noReason": "No reason provided",
+      "pagination": {
+        "showing": "Showing {start}-{end} of {total} write-off records",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {total}"
       }
     }
   },

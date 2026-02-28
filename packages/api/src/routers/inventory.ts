@@ -979,4 +979,119 @@ export const inventoryRouter = router({
 
       return { success: true, newQuantity: input.newQuantity };
     }),
+
+  /**
+   * Get write-off history (paginated, searchable)
+   */
+  getWriteOffHistory: requirePermission('inventory:view')
+    .input(
+      z.object({
+        page: z.number().int().positive().default(1),
+        pageSize: z.number().int().positive().max(100).default(25),
+        sortBy: z.enum(['createdAt', 'productName', 'quantity']).default('createdAt'),
+        sortDirection: z.enum(['asc', 'desc']).default('desc'),
+        search: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo } = input;
+
+      // Build where clause for write-off transactions
+      const where: any = {
+        type: 'adjustment',
+        adjustmentType: 'stock_write_off',
+      };
+
+      // Apply search filter on product name/SKU
+      if (search) {
+        where.product = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      // Apply date range filter
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
+        if (dateFrom) {
+          where.createdAt.gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          // Include the entire "dateTo" day
+          const endDate = new Date(dateTo);
+          endDate.setDate(endDate.getDate() + 1);
+          where.createdAt.lte = endDate;
+        }
+      }
+
+      // Build orderBy
+      let orderBy: any;
+      switch (sortBy) {
+        case 'productName':
+          orderBy = { product: { name: sortDirection } };
+          break;
+        case 'quantity':
+          orderBy = { quantity: sortDirection };
+          break;
+        case 'createdAt':
+        default:
+          orderBy = { createdAt: sortDirection };
+          break;
+      }
+
+      // Get total count for pagination
+      const totalCount = await prisma.inventoryTransaction.count({ where });
+
+      // Get transactions with pagination
+      const transactions = await prisma.inventoryTransaction.findMany({
+        where,
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              unit: true,
+            },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+
+      // Parse reason from notes field
+      const items = transactions.map((tx) => {
+        let reason = tx.notes || '';
+        // Notes format: "Stock writeoff: <reason>" or "Stock writeoff (expiry management)"
+        const colonIndex = reason.indexOf(':');
+        if (colonIndex !== -1) {
+          reason = reason.substring(colonIndex + 1).trim();
+        }
+
+        return {
+          id: tx.id,
+          productId: tx.product.id,
+          productName: tx.product.name,
+          productSku: tx.product.sku,
+          productUnit: tx.product.unit,
+          quantity: Math.abs(tx.quantity), // stored as negative, display as positive
+          reason,
+          createdAt: tx.createdAt,
+          createdBy: tx.createdBy || 'system',
+        };
+      });
+
+      return {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      };
+    }),
 });

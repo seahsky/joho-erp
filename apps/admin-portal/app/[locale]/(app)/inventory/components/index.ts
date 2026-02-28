@@ -11,3 +11,4 @@ export { StockCountsTable } from './StockCountsTable';
 export { BatchInfoDialog } from './BatchInfoDialog';
 export { ExpiringBatchesList } from './ExpiringBatchesList';
 export { ExpiringBatchActions } from './ExpiringBatchActions';
+export { StockWriteOffTable } from './StockWriteOffTable';

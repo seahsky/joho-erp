@@ -3011,7 +3011,8 @@
       "turnover": "週轉率",
       "comparison": "對比分析",
       "stockCounts": "庫存盤點",
-      "stockExpiry": "庫存保質期"
+      "stockExpiry": "庫存保質期",
+      "writeOffs": "報廢記錄"
     },
     "stats": {
       "periods": {
@@ -3263,6 +3264,40 @@
         "confirm": "確認",
         "save": "儲存",
         "processing": "處理中..."
+      }
+    },
+    "writeOffHistory": {
+      "title": "庫存報廢記錄",
+      "description": "查看所有歷史庫存報廢交易",
+      "columns": {
+        "product": "產品",
+        "quantity": "數量",
+        "reason": "原因",
+        "date": "日期",
+        "performedBy": "操作人"
+      },
+      "filters": {
+        "searchPlaceholder": "按產品名稱或SKU搜尋...",
+        "dateFrom": "從",
+        "dateTo": "至"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "dateDesc": "日期（最新）",
+        "dateAsc": "日期（最早）",
+        "productNameAsc": "產品名稱（A-Z）",
+        "productNameDesc": "產品名稱（Z-A）",
+        "quantityDesc": "數量（最多）",
+        "quantityAsc": "數量（最少）"
+      },
+      "emptyState": "未找到報廢記錄",
+      "emptyStateDescription": "沒有符合篩選條件的庫存報廢交易",
+      "noReason": "未提供原因",
+      "pagination": {
+        "showing": "顯示 {start}-{end}，共 {total} 條報廢記錄",
+        "previous": "上一頁",
+        "next": "下一頁",
+        "pageOf": "第 {page} 頁，共 {total} 頁"
       }
     }
   },

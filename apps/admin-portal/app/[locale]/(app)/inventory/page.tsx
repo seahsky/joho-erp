@@ -53,6 +53,7 @@ import {
   StockCountsTable,
   BatchInfoDialog,
   ExpiringBatchesList,
+  StockWriteOffTable,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
@@ -110,7 +111,7 @@ export default function InventoryPage() {
 
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry'>('overview');
+  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry' | 'writeOffs'>('overview');
 
   // Stock counts initial filter state (from URL params)
   const [stockCountsInitialFilter, setStockCountsInitialFilter] = useState<'all' | 'healthy' | 'low_stock' | 'out_of_stock' | undefined>(undefined);
@@ -350,7 +351,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabbed Content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry')} className="space-y-4">
+      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as typeof currentTab)} className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="trends">{t('tabs.trends')}</TabsTrigger>
@@ -358,6 +359,7 @@ export default function InventoryPage() {
           <TabsTrigger value="comparison">{t('tabs.comparison')}</TabsTrigger>
           <TabsTrigger value="stockCounts">{t('tabs.stockCounts')}</TabsTrigger>
           <TabsTrigger value="stockExpiry">{t('tabs.stockExpiry')}</TabsTrigger>
+          <TabsTrigger value="writeOffs">{t('tabs.writeOffs')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Existing content */}
@@ -594,6 +596,11 @@ export default function InventoryPage() {
         {/* Stock Expiry Tab - Expiring batches list */}
         <TabsContent value="stockExpiry">
           <ExpiringBatchesList />
+        </TabsContent>
+
+        {/* Write-Offs Tab - Write-off history */}
+        <TabsContent value="writeOffs">
+          <StockWriteOffTable />
         </TabsContent>
       </Tabs>
 
