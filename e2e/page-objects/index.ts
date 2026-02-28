@@ -11,3 +11,7 @@ export { DeliveriesListPage } from './deliveries-list.page';
 export { InventoryPage } from './inventory.page';
 export { PricingPage } from './pricing.page';
 export { OrderCreatePage } from './order-create.page';
+export { DriverDeliveriesPage } from './driver-deliveries.page';
+export { SettingsDriversPage } from './settings-drivers.page';
+export { SettingsUsersPage } from './settings-users.page';
+export { SettingsPermissionsPage } from './settings-permissions.page';
