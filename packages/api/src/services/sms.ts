@@ -29,9 +29,6 @@ function getTwilioClient(): twilio.Twilio | null {
   return twilioClient;
 }
 
-// Phone number from environment
-const FROM_PHONE = process.env.TWILIO_PHONE_NUMBER;
-
 /**
  * Check if SMS service is configured
  */
@@ -52,8 +49,9 @@ export async function sendSms(params: {
 }): Promise<{ success: boolean; message: string; sid?: string }> {
   try {
     const client = getTwilioClient();
+    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
 
-    if (!client || !FROM_PHONE) {
+    if (!client || !fromPhone) {
       console.warn('Twilio not configured, skipping SMS send');
       return { success: false, message: 'SMS service not configured' };
     }
@@ -70,7 +68,7 @@ export async function sendSms(params: {
     }
 
     const result = await client.messages.create({
-      from: FROM_PHONE,
+      from: fromPhone,
       to: toNumber,
       body: params.message,
     });

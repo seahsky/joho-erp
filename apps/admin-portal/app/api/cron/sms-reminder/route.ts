@@ -49,15 +49,27 @@ function getCurrentHourMinute(timezone: string = "Australia/Sydney"): string {
 
 function getTodayStartAEST(): Date {
   const now = new Date();
-  // Get current date in AEST
+  // Get today's date string in AEST
   const aestDateStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Australia/Sydney",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(now);
-  // Create date at midnight AEST (parsed as UTC, then we use it for comparison)
-  return new Date(aestDateStr + "T00:00:00+11:00");
+
+  // Get the current UTC offset for Australia/Sydney dynamically
+  // This handles DST transitions correctly (+11 AEDT Oct-Apr, +10 AEST Apr-Oct)
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Australia/Sydney",
+    timeZoneName: "shortOffset",
+  });
+  const parts = formatter.formatToParts(now);
+  const offsetPart = parts.find((p) => p.type === "timeZoneName");
+  const offsetMatch = offsetPart?.value?.match(/GMT([+-]\d+)/);
+  const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : 11;
+  const offsetStr = `${offsetHours >= 0 ? "+" : ""}${String(Math.abs(offsetHours)).padStart(2, "0")}:00`;
+
+  return new Date(`${aestDateStr}T00:00:00${offsetStr}`);
 }
 
 export async function GET(request: Request) {
