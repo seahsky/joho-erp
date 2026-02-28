@@ -2,35 +2,52 @@
 
 import { useState, useMemo, Fragment } from 'react';
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  EmptyState,
   Input,
-  Badge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
   Skeleton,
-  EmptyState,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@joho-erp/ui';
 import { formatAUD } from '@joho-erp/shared';
-import { ChevronDown, ChevronRight, Package, Search } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  Package,
+  Search,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useDebounce } from 'use-debounce';
 import { BatchInfoDialog } from './BatchInfoDialog';
 
 type StockStatus = 'all' | 'healthy' | 'low_stock' | 'out_of_stock';
+type ExpiryFilter = 'all' | 'expired' | 'expiring_soon' | 'ok';
+type SortColumn = 'name' | 'sku' | 'currentStock' | 'nearestExpiry' | null;
+type SortDirection = 'asc' | 'desc';
 
 interface StockStatusBadgeProps {
   currentStock: number;
@@ -63,6 +80,55 @@ function StockStatusBadge({ currentStock, lowStockThreshold }: StockStatusBadgeP
   );
 }
 
+function ExpiryStatusBadge({ expiryStatus }: { expiryStatus: string | null | undefined }) {
+  const t = useTranslations('inventory.stockCounts.expiry');
+
+  if (expiryStatus === 'expired') {
+    return <Badge variant="destructive">{t('expired')}</Badge>;
+  }
+  if (expiryStatus === 'expiring_soon') {
+    return <Badge variant="warning">{t('expiringSoon')}</Badge>;
+  }
+  return null;
+}
+
+function SortableHeader({
+  label,
+  column,
+  currentColumn,
+  currentDirection,
+  onSort,
+  className,
+}: {
+  label: string;
+  column: SortColumn;
+  currentColumn: SortColumn;
+  currentDirection: SortDirection;
+  onSort: (column: SortColumn) => void;
+  className?: string;
+}) {
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        className="flex items-center gap-1 hover:text-primary transition-colors"
+        onClick={() => onSort(column)}
+      >
+        {label}
+        {currentColumn === column ? (
+          currentDirection === 'asc' ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-50" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
 function getStockStatus(currentStock: number, lowStockThreshold: number | null): StockStatus {
   if (currentStock === 0) return 'out_of_stock';
   if (lowStockThreshold !== null && currentStock <= lowStockThreshold) return 'low_stock';
@@ -79,6 +145,21 @@ function getProductStockInfo(product: Record<string, unknown>): {
     currentStock: (product.currentStock as number) ?? 0,
     lowStockThreshold: (product.lowStockThreshold as number | null) ?? null,
   };
+}
+
+function getBatchSummary(product: Record<string, unknown>): {
+  nearestExpiryDate: string | null;
+  expiryStatus: string | null;
+  supplierIds: string[];
+  activeBatchCount: number;
+} | null {
+  const summary = product.batchSummary as {
+    nearestExpiryDate: string | null;
+    expiryStatus: string | null;
+    supplierIds: string[];
+    activeBatchCount: number;
+  } | null | undefined;
+  return summary ?? null;
 }
 
 function ProductBatchRows({
@@ -139,7 +220,7 @@ function ProductBatchRows({
   if (isLoading) {
     return (
       <TableRow>
-        <TableCell colSpan={7} className="bg-muted/30 py-3 pl-12">
+        <TableCell colSpan={8} className="bg-muted/30 py-3 pl-12">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4" />
             <Skeleton className="h-4 w-48" />
@@ -152,7 +233,7 @@ function ProductBatchRows({
   if (!batches || batches.length === 0) {
     return (
       <TableRow>
-        <TableCell colSpan={7} className="bg-muted/30 py-3 pl-12 text-sm text-muted-foreground">
+        <TableCell colSpan={8} className="bg-muted/30 py-3 pl-12 text-sm text-muted-foreground">
           {tBatches('batches.noBatches')}
         </TableCell>
       </TableRow>
@@ -179,7 +260,7 @@ function ProductBatchRows({
         <TableCell className="text-xs font-medium text-muted-foreground">
           {tBatches('batches.costPerUnit')}
         </TableCell>
-        <TableCell className="text-xs font-medium text-muted-foreground" colSpan={2}>
+        <TableCell className="text-xs font-medium text-muted-foreground" colSpan={3}>
           {tBatches('batches.received')}
         </TableCell>
       </TableRow>
@@ -211,7 +292,7 @@ function ProductBatchRows({
           <TableCell className="text-sm">
             {formatAUD(batch.costPerUnit)}
           </TableCell>
-          <TableCell className="text-sm" colSpan={2}>
+          <TableCell className="text-sm" colSpan={3}>
             {formatDate(batch.receivedAt)}
           </TableCell>
         </TableRow>
@@ -225,7 +306,7 @@ function ProductBatchRows({
         <TableCell className="text-right text-sm font-semibold tabular-nums">
           {batchSum.toFixed(1)}
         </TableCell>
-        <TableCell colSpan={3}>
+        <TableCell colSpan={4}>
           {hasMismatch && (
             <Badge variant="warning" className="text-xs">
               {tBatches('mismatchWarning', { currentStock: parentCurrentStock.toFixed(1) })}
@@ -253,13 +334,43 @@ export function StockCountsTable({
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
 
+  // New filter/sort state
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set());
+  const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
+  const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
   const { data, isLoading } = api.product.getAll.useQuery({
     showAll: true,
     includeSubproducts: false,
     onlyParents: false,
+    includeBatchSummary: true,
     limit: 500,
     page: 1,
   });
+
+  const { data: suppliersData } = api.supplier.getAll.useQuery({});
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const toggleSupplier = (supplierId: string) => {
+    setSelectedSupplierIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(supplierId)) {
+        next.delete(supplierId);
+      } else {
+        next.add(supplierId);
+      }
+      return next;
+    });
+  };
 
   const toggleExpanded = (productId: string) => {
     setExpandedRows((prev) => {
@@ -273,12 +384,13 @@ export function StockCountsTable({
     });
   };
 
-  // Client-side filtering for search and status
+  // Client-side filtering for search, status, supplier, and expiry
   const filteredProducts = useMemo(() => {
     if (!data?.items) return [];
 
     return data.items.filter((product) => {
       const stockInfo = getProductStockInfo(product as unknown as Record<string, unknown>);
+      const batchSummary = getBatchSummary(product as unknown as Record<string, unknown>);
 
       // Search filter
       if (debouncedSearch) {
@@ -298,9 +410,68 @@ export function StockCountsTable({
         if (productStatus !== statusFilter) return false;
       }
 
+      // Supplier filter
+      if (selectedSupplierIds.size > 0 && batchSummary) {
+        const hasMatchingSupplier = batchSummary.supplierIds.some((id) =>
+          selectedSupplierIds.has(id)
+        );
+        if (!hasMatchingSupplier) return false;
+      } else if (selectedSupplierIds.size > 0 && !batchSummary) {
+        return false;
+      }
+
+      // Expiry filter
+      if (expiryFilter !== 'all') {
+        const status = batchSummary?.expiryStatus ?? null;
+        if (status !== expiryFilter) return false;
+      }
+
       return true;
     });
-  }, [data?.items, debouncedSearch, statusFilter]);
+  }, [data?.items, debouncedSearch, statusFilter, selectedSupplierIds, expiryFilter]);
+
+  // Sorted products
+  const sortedProducts = useMemo(() => {
+    if (!sortColumn) return filteredProducts;
+
+    return [...filteredProducts].sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+
+      switch (sortColumn) {
+        case 'name':
+          return dir * a.name.localeCompare(b.name);
+        case 'sku':
+          return dir * a.sku.localeCompare(b.sku);
+        case 'currentStock': {
+          const stockA = getProductStockInfo(a as unknown as Record<string, unknown>).currentStock;
+          const stockB = getProductStockInfo(b as unknown as Record<string, unknown>).currentStock;
+          return dir * (stockA - stockB);
+        }
+        case 'nearestExpiry': {
+          const summaryA = getBatchSummary(a as unknown as Record<string, unknown>);
+          const summaryB = getBatchSummary(b as unknown as Record<string, unknown>);
+          const dateA = summaryA?.nearestExpiryDate ? new Date(summaryA.nearestExpiryDate).getTime() : null;
+          const dateB = summaryB?.nearestExpiryDate ? new Date(summaryB.nearestExpiryDate).getTime() : null;
+          // Nulls sort last
+          if (dateA === null && dateB === null) return 0;
+          if (dateA === null) return 1;
+          if (dateB === null) return -1;
+          return dir * (dateA - dateB);
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [filteredProducts, sortColumn, sortDirection]);
+
+  const formatExpiryDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   if (isLoading) {
     return (
@@ -316,6 +487,8 @@ export function StockCountsTable({
     );
   }
 
+  const suppliers = suppliersData?.suppliers ?? [];
+
   return (
     <Card>
       <CardHeader>
@@ -330,8 +503,8 @@ export function StockCountsTable({
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-4 mt-4 sm:flex-row">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-4 mt-4 sm:flex-row sm:flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t('searchPlaceholder')}
@@ -354,6 +527,45 @@ export function StockCountsTable({
               <SelectItem value="out_of_stock">{t('filterOutOfStock')}</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Supplier filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-[180px] justify-start">
+                <Filter className="mr-2 h-4 w-4" />
+                {selectedSupplierIds.size > 0
+                  ? t('filters.suppliersSelected', { count: selectedSupplierIds.size })
+                  : t('filters.allSuppliers')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px] max-h-[300px] overflow-y-auto">
+              {suppliers.map((supplier) => (
+                <DropdownMenuCheckboxItem
+                  key={supplier.id}
+                  checked={selectedSupplierIds.has(supplier.id)}
+                  onCheckedChange={() => toggleSupplier(supplier.id)}
+                >
+                  {supplier.businessName}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Expiry filter */}
+          <Select
+            value={expiryFilter}
+            onValueChange={(value) => setExpiryFilter(value as ExpiryFilter)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('filters.allExpiry')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.allExpiry')}</SelectItem>
+              <SelectItem value="expired">{t('filters.expired')}</SelectItem>
+              <SelectItem value="expiring_soon">{t('filters.expiringSoon')}</SelectItem>
+              <SelectItem value="ok">{t('filters.expiryOk')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
@@ -362,17 +574,44 @@ export function StockCountsTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
-                <TableHead>{t('columns.productName')}</TableHead>
-                <TableHead>{t('columns.sku')}</TableHead>
-                <TableHead className="text-right">{t('columns.currentStock')}</TableHead>
+                <SortableHeader
+                  label={t('columns.productName')}
+                  column="name"
+                  currentColumn={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('columns.sku')}
+                  column="sku"
+                  currentColumn={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  label={t('columns.currentStock')}
+                  column="currentStock"
+                  currentColumn={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="text-right"
+                />
                 <TableHead>{t('columns.unit')}</TableHead>
                 <TableHead className="text-right">{t('columns.lowStockThreshold')}</TableHead>
                 <TableHead>{t('columns.status')}</TableHead>
+                <SortableHeader
+                  label={t('columns.nearestExpiry')}
+                  column="nearestExpiry"
+                  currentColumn={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {sortedProducts.map((product) => {
                 const stockInfo = getProductStockInfo(product as unknown as Record<string, unknown>);
+                const batchSummary = getBatchSummary(product as unknown as Record<string, unknown>);
                 const isExpanded = expandedRows.has(product.id);
                 return (
                   <Fragment key={product.id}>
@@ -408,6 +647,14 @@ export function StockCountsTable({
                           lowStockThreshold={stockInfo.lowStockThreshold}
                         />
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {formatExpiryDate(batchSummary?.nearestExpiryDate ?? null)}
+                          </span>
+                          <ExpiryStatusBadge expiryStatus={batchSummary?.expiryStatus} />
+                        </div>
+                      </TableCell>
                     </TableRow>
                     {isExpanded && (
                       <ProductBatchRows
@@ -424,9 +671,9 @@ export function StockCountsTable({
                   </Fragment>
                 );
               })}
-              {filteredProducts.length === 0 && (
+              {sortedProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center">
+                  <TableCell colSpan={8} className="py-8 text-center">
                     <EmptyState icon={Package} title={t('emptyState')} />
                   </TableCell>
                 </TableRow>

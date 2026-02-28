@@ -3071,7 +3071,21 @@
         "currentStock": "Current Stock",
         "unit": "Unit",
         "lowStockThreshold": "Low Stock Threshold",
-        "status": "Status"
+        "status": "Status",
+        "nearestExpiry": "Nearest Expiry"
+      },
+      "filters": {
+        "allSuppliers": "All Suppliers",
+        "supplierLabel": "Supplier",
+        "suppliersSelected": "{count} selected",
+        "allExpiry": "All Expiry",
+        "expired": "Expired",
+        "expiringSoon": "Expiring Soon",
+        "expiryOk": "OK"
+      },
+      "expiry": {
+        "expired": "Expired",
+        "expiringSoon": "Expiring Soon"
       },
       "status": {
         "healthy": "Healthy",

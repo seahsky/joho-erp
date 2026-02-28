@@ -3071,7 +3071,21 @@
         "currentStock": "当前库存",
         "unit": "单位",
         "lowStockThreshold": "低库存阈值",
-        "status": "状态"
+        "status": "状态",
+        "nearestExpiry": "最近到期"
+      },
+      "filters": {
+        "allSuppliers": "全部供应商",
+        "supplierLabel": "供应商",
+        "suppliersSelected": "已选 {count} 个",
+        "allExpiry": "全部保质期",
+        "expired": "已过期",
+        "expiringSoon": "即将过期",
+        "expiryOk": "正常"
+      },
+      "expiry": {
+        "expired": "已过期",
+        "expiringSoon": "即将过期"
       },
       "status": {
         "healthy": "正常",

@@ -3071,7 +3071,21 @@
         "currentStock": "當前庫存",
         "unit": "單位",
         "lowStockThreshold": "低庫存閾值",
-        "status": "狀態"
+        "status": "狀態",
+        "nearestExpiry": "最近到期"
+      },
+      "filters": {
+        "allSuppliers": "全部供應商",
+        "supplierLabel": "供應商",
+        "suppliersSelected": "已選 {count} 個",
+        "allExpiry": "全部保質期",
+        "expired": "已過期",
+        "expiringSoon": "即將過期",
+        "expiryOk": "正常"
+      },
+      "expiry": {
+        "expired": "已過期",
+        "expiringSoon": "即將過期"
       },
       "status": {
         "healthy": "正常",

@@ -69,6 +69,7 @@ export const productRouter = router({
           showAll: z.boolean().optional(), // If true, show all statuses (for admin)
           includeSubproducts: z.boolean().optional().default(true), // Include nested subproducts (default true)
           onlyParents: z.boolean().optional().default(true), // Only fetch parent products at top level (default true)
+          includeBatchSummary: z.boolean().optional().default(false), // Include batch expiry/supplier summary per product
         })
         .merge(sortInputSchema)
         .merge(paginationInputSchema)
@@ -77,7 +78,7 @@ export const productRouter = router({
       // Sync currentStock with batch availability (handles expired batches)
 
 
-      const { page, limit, sortBy, sortOrder, showAll, includeSubproducts, onlyParents, ...filters } = input;
+      const { page, limit, sortBy, sortOrder, showAll, includeSubproducts, onlyParents, includeBatchSummary, ...filters } = input;
       const where: any = {};
 
       if (filters.categoryId) {
@@ -135,6 +136,92 @@ export const productRouter = router({
           }),
         },
       });
+
+      // Compute batch summary (nearest expiry, supplier IDs) per product if requested
+      let batchSummaryMap: Map<string, {
+        nearestExpiryDate: Date | null;
+        expiryStatus: 'expired' | 'expiring_soon' | 'ok' | null;
+        supplierIds: string[];
+        activeBatchCount: number;
+      }> | null = null;
+
+      if (includeBatchSummary) {
+        const productIds = products.map((p) => p.id);
+        const activeBatches = await prisma.inventoryBatch.findMany({
+          where: {
+            productId: { in: productIds },
+            isConsumed: false,
+          },
+          select: {
+            productId: true,
+            expiryDate: true,
+            supplierId: true,
+          },
+        });
+
+        const now = new Date();
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        batchSummaryMap = new Map();
+
+        // Group batches by productId
+        const grouped = new Map<string, typeof activeBatches>();
+        for (const batch of activeBatches) {
+          const existing = grouped.get(batch.productId) || [];
+          existing.push(batch);
+          grouped.set(batch.productId, existing);
+        }
+
+        for (const productId of productIds) {
+          const batches = grouped.get(productId);
+          if (!batches || batches.length === 0) {
+            batchSummaryMap.set(productId, {
+              nearestExpiryDate: null,
+              expiryStatus: null,
+              supplierIds: [],
+              activeBatchCount: 0,
+            });
+            continue;
+          }
+
+          const expiryDates = batches
+            .map((b) => b.expiryDate)
+            .filter((d): d is Date => d !== null);
+          const nearestExpiryDate = expiryDates.length > 0
+            ? expiryDates.reduce((min, d) => (d < min ? d : min))
+            : null;
+
+          let expiryStatus: 'expired' | 'expiring_soon' | 'ok' | null = null;
+          if (nearestExpiryDate) {
+            if (nearestExpiryDate < now) {
+              expiryStatus = 'expired';
+            } else if (nearestExpiryDate <= sevenDaysFromNow) {
+              expiryStatus = 'expiring_soon';
+            } else {
+              expiryStatus = 'ok';
+            }
+          }
+
+          const supplierIds = [...new Set(
+            batches.map((b) => b.supplierId).filter((id): id is string => id !== null)
+          )];
+
+          batchSummaryMap.set(productId, {
+            nearestExpiryDate,
+            expiryStatus,
+            supplierIds,
+            activeBatchCount: batches.length,
+          });
+        }
+      }
+
+      // Helper to attach batch summary to a product
+      const attachBatchSummary = <T extends { id: string }>(product: T) => {
+        if (!batchSummaryMap) return product;
+        return {
+          ...product,
+          batchSummary: batchSummaryMap.get(product.id) ?? null,
+        };
+      };
 
       // Fetch customer-specific pricing if user is authenticated
       let customerId: string | null = null;
@@ -210,7 +297,8 @@ export const productRouter = router({
             ...priceInfo,
             ...(transformedSubProducts && { subProducts: transformedSubProducts })
           };
-          return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+          const transformed = isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+          return attachBatchSummary(transformed);
         });
 
         return { items, ...paginationMeta };
@@ -233,7 +321,8 @@ export const productRouter = router({
           ...getEffectivePrice(product.basePrice, undefined, gstOptions),
           ...(transformedSubProducts && { subProducts: transformedSubProducts })
         };
-        return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+        const transformed = isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+        return attachBatchSummary(transformed);
       });
 
       return { items, ...paginationMeta };
