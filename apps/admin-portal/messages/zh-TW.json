@@ -1753,13 +1753,7 @@
       "deliveryInstructions": "配送說明（可選）",
       "deliveryInstructionsPlaceholder": "輸入任何特殊配送說明",
       "sameAsDelivery": "與送貨地址相同",
-      "sameAsBilling": "與帳單地址相同",
-      "areaTags": {
-        "north": "北部",
-        "south": "南部",
-        "east": "東部",
-        "west": "西部"
-      }
+      "sameAsBilling": "與帳單地址相同"
     },
     "addressSearch": {
       "searchPlaceholder": "輸入地址搜尋...",
