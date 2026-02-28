@@ -127,7 +127,11 @@ export function ExpiringBatchActions({
           if (!open) setWriteOffReason('');
         }}
       >
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent
+          className="sm:max-w-[400px]"
+          onPointerDownOutside={(e) => e.stopPropagation()}
+          onInteractOutside={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle>{t('writeOffTitle')}</DialogTitle>
             <DialogDescription>
@@ -173,7 +177,11 @@ export function ExpiringBatchActions({
 
       {/* Adjust Quantity Dialog */}
       <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent
+          className="sm:max-w-[400px]"
+          onPointerDownOutside={(e) => e.stopPropagation()}
+          onInteractOutside={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle>{t('adjustTitle')}</DialogTitle>
             <DialogDescription>
