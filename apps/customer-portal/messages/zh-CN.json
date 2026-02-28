@@ -491,7 +491,8 @@
     "belowMinimum": "订单低于最低金额",
     "exceedsCredit": "订单超出信用额度",
     "completeOnboarding": "请完成注册后再下单",
-    "creditPending": "您的账户正在等待审批"
+    "creditPending": "您的账户正在等待审批",
+    "accountSuspended": "您的账户已被暂停。请联系客服。"
   },
   "dashboard": {
     "title": "仪表板",
@@ -521,6 +522,10 @@
       "browseProductsDesc": "查看我们的产品目录",
       "viewOrders": "查看订单",
       "viewOrdersDesc": "跟踪您的订单历史"
+    },
+    "suspension": {
+      "title": "账户已暂停",
+      "message": "您的账户已被暂停。您目前无法下单。请联系我们的客服团队获取帮助。"
     },
     "restrictions": {
       "title": "结账受限",
@@ -563,7 +568,9 @@
       "creditPendingMessage": "您的账户正在审核中。审核通过前无法下单。",
       "creditRejectedMessage": "您的账户需要审批。请联系销售团队。",
       "viewProfile": "查看个人资料",
-      "creditPendingButton": "账户审批中"
+      "creditPendingButton": "账户审批中",
+      "suspendedTitle": "账户已暂停",
+      "suspendedMessage": "您的账户已被暂停。您目前无法下单。请联系我们的客服团队获取帮助。"
     },
     "backorderWarning": {
       "title": "需要缺货订单审批",
@@ -1315,6 +1322,9 @@
       "secondaryDescription": "请重试或联系客服",
       "primaryAction": "重试"
     }
+  },
+  "suspension": {
+    "banner": "您的账户已被暂停。下单功能已禁用。请联系客服获取帮助。"
   },
   "orderErrors": {
     "invalidTransition": "无法将订单状态从 {from} 更改为 {to}",

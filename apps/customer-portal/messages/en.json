@@ -491,7 +491,8 @@
     "belowMinimum": "Order below minimum amount",
     "exceedsCredit": "Order exceeds credit limit",
     "completeOnboarding": "Complete your registration to place orders",
-    "creditPending": "Your account is pending approval"
+    "creditPending": "Your account is pending approval",
+    "accountSuspended": "Your account is suspended. Please contact support."
   },
   "onboarding": {
     "progress": {
@@ -1101,6 +1102,10 @@
       "viewOrders": "View Orders",
       "viewOrdersDesc": "Track your order history"
     },
+    "suspension": {
+      "title": "Account Suspended",
+      "message": "Your account has been suspended. You cannot place orders at this time. Please contact our support team for assistance."
+    },
     "restrictions": {
       "title": "Checkout Restricted",
       "onboardingRequired": "Complete your registration to place orders.",
@@ -1142,7 +1147,9 @@
       "creditPendingMessage": "Your account is pending approval. Orders cannot be placed until approved.",
       "creditRejectedMessage": "Your account requires approval. Please contact sales.",
       "viewProfile": "View Profile",
-      "creditPendingButton": "Account Approval Pending"
+      "creditPendingButton": "Account Approval Pending",
+      "suspendedTitle": "Account Suspended",
+      "suspendedMessage": "Your account has been suspended. You cannot place orders at this time. Please contact our support team for assistance."
     },
     "backorderWarning": {
       "title": "Backorder Approval Required",
@@ -1315,6 +1322,9 @@
       "secondaryDescription": "Please try again or contact support",
       "primaryAction": "Try Again"
     }
+  },
+  "suspension": {
+    "banner": "Your account is suspended. Ordering is disabled. Please contact support for assistance."
   },
   "orderErrors": {
     "invalidTransition": "Cannot change order status from {from} to {to}",

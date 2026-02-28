@@ -540,6 +540,7 @@ export const customerRouter = router({
       where: { clerkUserId: ctx.userId },
       select: {
         id: true,
+        status: true,
         onboardingComplete: true,
         businessName: true,
         creditApplication: true,
@@ -548,6 +549,7 @@ export const customerRouter = router({
 
     return {
       hasCustomerRecord: !!customer,
+      status: customer?.status ?? null,
       onboardingComplete: customer?.onboardingComplete ?? false,
       businessName: customer?.businessName ?? null,
       creditStatus: customer?.creditApplication?.status ?? null,
