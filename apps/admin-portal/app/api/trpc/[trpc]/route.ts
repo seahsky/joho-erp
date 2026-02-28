@@ -2,12 +2,33 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter, createContext, type UserRole } from '@joho-erp/api';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
+// E2E testing bypass: requires both flags to prevent accidental use in production
+const isE2ETesting = process.env.E2E_TESTING === 'true' && process.env.NODE_ENV !== 'production';
+
 const handler = async (req: Request) => {
   return fetchRequestHandler({
     endpoint: '/api/trpc',
     req,
     router: appRouter,
     createContext: async (opts) => {
+      // In E2E testing mode, read auth from custom headers instead of Clerk
+      if (isE2ETesting) {
+        const userId = req.headers.get('x-e2e-user-id') || 'e2e-admin-user';
+        const userRole = (req.headers.get('x-e2e-user-role') || 'admin') as UserRole;
+        const userName = req.headers.get('x-e2e-user-name') || 'E2E Admin';
+        const sessionId = req.headers.get('x-e2e-session-id') || 'e2e-session';
+
+        return createContext({
+          ...opts,
+          auth: {
+            userId,
+            sessionId,
+            userRole,
+            userName,
+          },
+        });
+      }
+
       // Call auth() inside createContext to ensure proper Clerk middleware context
       const authData = await auth();
 

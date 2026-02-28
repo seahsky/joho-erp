@@ -1,0 +1,12 @@
+export { BasePage } from './base.page';
+export { DashboardPage } from './dashboard.page';
+export { OrdersListPage } from './orders-list.page';
+export { OrderDetailPage } from './order-detail.page';
+export { CustomersListPage } from './customers-list.page';
+export { CustomerDetailPage } from './customer-detail.page';
+export { ProductsPage } from './products.page';
+export { SuppliersListPage } from './suppliers-list.page';
+export { PackingPage } from './packing.page';
+export { DeliveriesListPage } from './deliveries-list.page';
+export { InventoryPage } from './inventory.page';
+export { PricingPage } from './pricing.page';

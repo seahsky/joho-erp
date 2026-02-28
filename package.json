@@ -20,7 +20,11 @@
     "docker:customer": "docker compose up customer-portal",
     "docker:admin": "docker compose up admin-portal",
     "docker:clean": "docker compose down -v --rmi all",
-    "test:integration": "turbo run test:integration"
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "pnpm --filter @joho-erp/e2e test",
+    "test:e2e:headed": "pnpm --filter @joho-erp/e2e test:headed",
+    "test:e2e:ui": "pnpm --filter @joho-erp/e2e test:ui",
+    "test:e2e:debug": "pnpm --filter @joho-erp/e2e test:debug"
   },
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {

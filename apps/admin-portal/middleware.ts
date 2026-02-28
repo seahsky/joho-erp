@@ -1,7 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import createMiddleware from 'next-intl/middleware';
 import { locales } from './i18n/request';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+
+// E2E testing bypass: requires both flags to prevent accidental use in production
+const isE2ETesting = process.env.E2E_TESTING === 'true' && process.env.NODE_ENV !== 'production';
 
 const intlMiddleware = createMiddleware({
   locales,
@@ -35,7 +38,18 @@ const isBypassRoute = (pathname: string) => {
   );
 };
 
-export default clerkMiddleware(async (auth, req) => {
+// E2E middleware: applies i18n routing but skips Clerk auth entirely
+function e2eMiddleware(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+
+  if (isBypassRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  return intlMiddleware(req);
+}
+
+const defaultMiddleware = clerkMiddleware(async (auth, req) => {
   const pathname = req.nextUrl.pathname;
 
   // Handle routes that should bypass i18n middleware
@@ -59,6 +73,8 @@ export default clerkMiddleware(async (auth, req) => {
 
   return intlResponse;
 });
+
+export default isE2ETesting ? e2eMiddleware : defaultMiddleware;
 
 export const config = {
   // Match all pathnames except for

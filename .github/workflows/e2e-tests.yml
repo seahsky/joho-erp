@@ -1,0 +1,94 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MONGODB_URI: mongodb://localhost:27017/joho-erp-e2e
+      E2E_TESTING: 'true'
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_e2e_dummy_key
+      CLERK_SECRET_KEY: sk_test_e2e_dummy_key
+      RESEND_API_KEY: test_resend_key
+      XERO_CLIENT_ID: test_xero_client_id
+      XERO_CLIENT_SECRET: test_xero_client_secret
+      TWILIO_ACCOUNT_SID: test_twilio_sid
+      TWILIO_AUTH_TOKEN: test_twilio_token
+      TWILIO_PHONE_NUMBER: '+10000000000'
+      R2_ACCOUNT_ID: test_r2_account
+      R2_ACCESS_KEY_ID: test_r2_key
+      R2_SECRET_ACCESS_KEY: test_r2_secret
+      R2_BUCKET_NAME: test-bucket
+      R2_PUBLIC_URL: https://test-r2.example.com
+      MAPBOX_ACCESS_TOKEN: test_mapbox_token
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @joho-erp/database exec prisma generate
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Build admin portal
+        run: pnpm --filter admin-portal build
+        env:
+          E2E_TESTING: 'true'
+
+      - name: Run E2E tests
+        run: npx playwright test --project=chromium
+        working-directory: e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: e2e/test-results/
+          retention-days: 14

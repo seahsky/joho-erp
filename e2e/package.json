@@ -1,0 +1,24 @@
+{
+  "name": "@joho-erp/e2e",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:headed": "playwright test --headed --project=chromium",
+    "test:debug": "PWDEBUG=1 playwright test --project=chromium",
+    "test:ui": "playwright test --ui",
+    "test:codegen": "playwright codegen http://localhost:3000/en/dashboard",
+    "seed:db": "tsx setup/seed-database.ts",
+    "clean:db": "tsx setup/clean-database.ts"
+  },
+  "dependencies": {
+    "@joho-erp/database": "workspace:*",
+    "@joho-erp/shared": "workspace:*",
+    "@playwright/test": "^1.49.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.3"
+  }
+}
