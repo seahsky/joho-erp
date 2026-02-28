@@ -70,10 +70,14 @@ export default function InventoryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+  const utils = api.useUtils();
 
   // Reconcile stock mutation
   const reconcileMutation = api.product.reconcileStock.useMutation({
     onSuccess: (data) => {
+      void utils.product.getAll.invalidate();
+      void utils.dashboard.getInventorySummary.invalidate();
+      void utils.inventory.getProductBatches.invalidate();
       if (data.reconciledCount > 0) {
         toast({
           title: tStockCounts('reconcileSuccess', { count: data.reconciledCount }),
@@ -200,12 +204,18 @@ export default function InventoryPage() {
   // Stock adjustment event handlers
   const handleStockAdjustSuccess = () => {
     refetchTransactions();
+    void utils.product.getAll.invalidate();
+    void utils.dashboard.getInventorySummary.invalidate();
+    void utils.inventory.getProductBatches.invalidate();
     setSelectedProduct(null);
     setShowStockDialog(false);
   };
 
   const handleProcessStockSuccess = () => {
     refetchTransactions();
+    void utils.product.getAll.invalidate();
+    void utils.dashboard.getInventorySummary.invalidate();
+    void utils.inventory.getProductBatches.invalidate();
     setShowProcessStockDialog(false);
   };
 
