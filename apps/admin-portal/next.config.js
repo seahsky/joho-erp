@@ -11,6 +11,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '3mb',
     },
+    optimizePackageImports: ['@joho-erp/ui', '@joho-erp/shared', 'lucide-react', 'recharts'],
   },
   // Externalize optional MongoDB dependencies used by Agenda
   webpack: (config, { isServer }) => {

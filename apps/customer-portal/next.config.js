@@ -44,6 +44,9 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    optimizePackageImports: ['@joho-erp/ui', '@joho-erp/shared', 'lucide-react'],
+  },
   // Webpack configuration for react-pdf compatibility
   webpack: (config) => {
     config.resolve.alias.canvas = false;

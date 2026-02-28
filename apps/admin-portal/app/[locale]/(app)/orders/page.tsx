@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -207,30 +207,169 @@ export default function OrdersPage() {
   })) as Order[];
 
   // Apply client-side filters
-  const filteredOrders = orders.filter((order) => {
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        order.orderNumber.toLowerCase().includes(query) ||
-        order.customerName.toLowerCase().includes(query);
-      if (!matchesSearch) return false;
-    }
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter((order) => {
+        // Search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const matchesSearch =
+            order.orderNumber.toLowerCase().includes(query) ||
+            order.customerName.toLowerCase().includes(query);
+          if (!matchesSearch) return false;
+        }
 
-    // Backorder status filter (pending backorders are awaiting_approval with stockShortfall)
-    if (backorderFilter === 'pending') {
-      if (!(order.status === 'awaiting_approval' && order.stockShortfall)) return false;
-    }
+        // Backorder status filter (pending backorders are awaiting_approval with stockShortfall)
+        if (backorderFilter === 'pending') {
+          if (!(order.status === 'awaiting_approval' && order.stockShortfall)) return false;
+        }
 
-    return true;
-  });
+        return true;
+      }),
+    [orders, searchQuery, backorderFilter]
+  );
 
   const totalOrders = filteredOrders.length;
-  const awaitingApprovalOrders = filteredOrders.filter((o) => o.status === 'awaiting_approval').length;
-  const confirmedOrders = filteredOrders.filter((o) => o.status === 'confirmed').length;
-  const deliveredOrders = filteredOrders.filter((o) => o.status === 'delivered').length;
-  const pendingBackorders = orders.filter((o) => o.status === 'awaiting_approval' && o.stockShortfall).length;
-  const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const awaitingApprovalOrders = useMemo(
+    () => filteredOrders.filter((o) => o.status === 'awaiting_approval').length,
+    [filteredOrders]
+  );
+  const confirmedOrders = useMemo(
+    () => filteredOrders.filter((o) => o.status === 'confirmed').length,
+    [filteredOrders]
+  );
+  const deliveredOrders = useMemo(
+    () => filteredOrders.filter((o) => o.status === 'delivered').length,
+    [filteredOrders]
+  );
+  const pendingBackorders = useMemo(
+    () => orders.filter((o) => o.status === 'awaiting_approval' && o.stockShortfall).length,
+    [orders]
+  );
+  const totalRevenue = useMemo(
+    () => filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0),
+    [filteredOrders]
+  );
+
+  // Handler functions — must be before early returns to satisfy rules of hooks
+  const handleReviewBackorder = useCallback((order: Order) => {
+    setSelectedOrder({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      requestedDeliveryDate: order.requestedDeliveryDate,
+      items: order.items,
+      stockShortfall: order.stockShortfall || {},
+    });
+    setIsApprovalDialogOpen(true);
+  }, []);
+
+  // Handler for confirming an order
+  const handleConfirmOrder = useCallback((order: Order) => {
+    setSelectedConfirmOrder({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      requestedDeliveryDate: order.requestedDeliveryDate,
+      items: order.items,
+    });
+    setIsConfirmDialogOpen(true);
+  }, []);
+
+  const columns: TableColumn<Order>[] = useMemo(
+    () => [
+      {
+        key: 'orderNumber',
+        label: t('orderNumber'),
+        className: 'font-medium',
+        sortable: true,
+      },
+      {
+        key: 'customer',
+        label: t('customer'),
+        render: (order) => order.customerName,
+        sortable: true,
+      },
+      {
+        key: 'orderedAt',
+        label: t('date'),
+        render: (order) => new Date(order.orderedAt).toLocaleDateString(),
+        sortable: true,
+      },
+      {
+        key: 'items',
+        label: t('items'),
+        render: (order) => order.items.length,
+      },
+      {
+        key: 'area',
+        label: t('area'),
+        render: (order) => order.deliveryAddress.areaName?.toUpperCase() || '-',
+      },
+      {
+        key: 'totalAmount',
+        label: t('total'),
+        render: (order) => formatAUD(order.totalAmount), // value is in cents
+        sortable: true,
+      },
+      {
+        key: 'status',
+        label: t('status'),
+        render: (order) => (
+          <div className="flex items-center gap-2">
+            <StatusBadge status={order.status} />
+            <BackorderStatusBadge order={order} compact />
+            <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} compact />
+          </div>
+        ),
+        sortable: true,
+      },
+      {
+        key: 'actions',
+        label: tCommon('actions'),
+        className: 'text-right',
+        render: (order) => (
+          <div className="flex justify-end gap-2">
+            {order.status === 'awaiting_approval' && order.stockShortfall && (
+              <PermissionGate permission="orders:approve_backorder">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleReviewBackorder(order)}
+                >
+                  {t('backorder.reviewBackorder')}
+                </Button>
+              </PermissionGate>
+            )}
+            {/* Confirm button only for awaiting_approval orders (non-backorders) */}
+            {order.status === 'awaiting_approval' && !order.stockShortfall && (
+              <PermissionGate permission="orders:confirm">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleConfirmOrder(order)}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  {t('confirmOrder')}
+                </Button>
+              </PermissionGate>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={tCommon('view')}
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [t, tCommon, router, handleReviewBackorder, handleConfirmOrder]
+  );
 
   if (error) {
     return (
@@ -242,20 +381,6 @@ export default function OrdersPage() {
       </div>
     );
   }
-
-  // Handler functions
-  const handleReviewBackorder = (order: Order) => {
-    setSelectedOrder({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      customerName: order.customerName,
-      totalAmount: order.totalAmount,
-      requestedDeliveryDate: order.requestedDeliveryDate,
-      items: order.items,
-      stockShortfall: order.stockShortfall || {},
-    });
-    setIsApprovalDialogOpen(true);
-  };
 
   const handleApprove = async (data: {
     orderId: string;
@@ -275,112 +400,9 @@ export default function OrdersPage() {
     setBackorderFilter('pending');
   };
 
-  // Handler for confirming an order
-  const handleConfirmOrder = (order: Order) => {
-    setSelectedConfirmOrder({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      customerName: order.customerName,
-      totalAmount: order.totalAmount,
-      requestedDeliveryDate: order.requestedDeliveryDate,
-      items: order.items,
-    });
-    setIsConfirmDialogOpen(true);
-  };
-
   const handleConfirm = async (data: { orderId: string; notes?: string }) => {
     await confirmMutation.mutateAsync(data);
   };
-
-  const columns: TableColumn<Order>[] = [
-    {
-      key: 'orderNumber',
-      label: t('orderNumber'),
-      className: 'font-medium',
-      sortable: true,
-    },
-    {
-      key: 'customer',
-      label: t('customer'),
-      render: (order) => order.customerName,
-      sortable: true,
-    },
-    {
-      key: 'orderedAt',
-      label: t('date'),
-      render: (order) => new Date(order.orderedAt).toLocaleDateString(),
-      sortable: true,
-    },
-    {
-      key: 'items',
-      label: t('items'),
-      render: (order) => order.items.length,
-    },
-    {
-      key: 'area',
-      label: t('area'),
-      render: (order) => order.deliveryAddress.areaName?.toUpperCase() || '-',
-    },
-    {
-      key: 'totalAmount',
-      label: t('total'),
-      render: (order) => formatAUD(order.totalAmount), // value is in cents
-      sortable: true,
-    },
-    {
-      key: 'status',
-      label: t('status'),
-      render: (order) => (
-        <div className="flex items-center gap-2">
-          <StatusBadge status={order.status} />
-          <BackorderStatusBadge order={order} compact />
-          <XeroOrderSyncBadge orderId={order.id} orderStatus={order.status} compact />
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      key: 'actions',
-      label: tCommon('actions'),
-      className: 'text-right',
-      render: (order) => (
-        <div className="flex justify-end gap-2">
-          {order.status === 'awaiting_approval' && order.stockShortfall && (
-            <PermissionGate permission="orders:approve_backorder">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleReviewBackorder(order)}
-              >
-                {t('backorder.reviewBackorder')}
-              </Button>
-            </PermissionGate>
-          )}
-          {/* Confirm button only for awaiting_approval orders (non-backorders) */}
-          {order.status === 'awaiting_approval' && !order.stockShortfall && (
-            <PermissionGate permission="orders:confirm">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleConfirmOrder(order)}
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                {t('confirmOrder')}
-              </Button>
-            </PermissionGate>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={tCommon('view')}
-            onClick={() => router.push(`/orders/${order.id}`)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
 
   const mobileCard = (order: Order) => (
     <div className="space-y-3">

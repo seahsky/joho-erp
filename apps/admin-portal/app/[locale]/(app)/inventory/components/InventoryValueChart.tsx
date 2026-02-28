@@ -4,12 +4,19 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Skeleton } from '@joho-erp/ui';
 import { DollarSign } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
 import { api } from '@/trpc/client';
-import { formatAUD } from '@joho-erp/shared';
 import { TimePeriodSelector } from './TimePeriodSelector';
 
 type Granularity = 'daily' | 'weekly' | 'monthly';
+
+const InventoryValueChartInner = dynamic(
+  () => import('./InventoryValueChartInner').then((mod) => mod.InventoryValueChartInner),
+  {
+    ssr: false,
+    loading: () => <div className="h-[300px] w-full animate-pulse rounded bg-muted" />,
+  }
+);
 
 export function InventoryValueChart() {
   const t = useTranslations('inventory.stats');
@@ -18,12 +25,6 @@ export function InventoryValueChart() {
   const { data, isLoading } = api.inventoryStats.getInventoryValueHistory.useQuery({
     granularity,
   });
-
-  // Custom tooltip formatter for currency
-  const formatTooltipValue = (value: number | undefined) => {
-    if (value === undefined) return '';
-    return formatAUD(value);
-  };
 
   if (isLoading) {
     return (
@@ -56,39 +57,7 @@ export function InventoryValueChart() {
       <CardContent>
         <div className="h-[300px]">
           {data && data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="period"
-                  className="text-xs"
-                  tick={{ fontSize: 11 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(value) => formatAUD(value)}
-                  width={80}
-                />
-                <Tooltip
-                  formatter={formatTooltipValue}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#3b82f6"
-                  fill="rgba(59, 130, 246, 0.2)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <InventoryValueChartInner data={data} />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               {t('inventoryValue.noData')}

@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -85,6 +85,7 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [activeTab, setActiveTab] = useState('products');
   const tSubproduct = useTranslations('subproduct');
   const tErrors = useTranslations('errors');
   const { toast } = useToast();
@@ -111,7 +112,7 @@ export default function ProductsPage() {
   });
 
   // Toggle expand/collapse for parent products with subproducts
-  const toggleExpanded = (productId: string) => {
+  const toggleExpanded = useCallback((productId: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
       if (next.has(productId)) {
@@ -121,11 +122,11 @@ export default function ProductsPage() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleDelete = (product: Product) => {
+  const handleDelete = useCallback((product: Product) => {
     setProductToDelete(product);
-  };
+  }, []);
 
   const confirmDelete = () => {
     if (productToDelete) {
@@ -155,32 +156,234 @@ export default function ProductsPage() {
 
   // Flatten product list to include subproducts after their parents when expanded
   // Products without parentProductId are parent products; subproducts are nested
-  const flattenedProductList = productList.reduce<(Product & { isSubproduct?: boolean; parentName?: string })[]>(
-    (acc, product) => {
-      // Skip subproducts in the main list (they'll be added under their parent)
-      if (product.parentProductId) return acc;
+  const flattenedProductList = useMemo(
+    () =>
+      productList.reduce<(Product & { isSubproduct?: boolean; parentName?: string })[]>(
+        (acc, product) => {
+          // Skip subproducts in the main list (they'll be added under their parent)
+          if (product.parentProductId) return acc;
 
-      acc.push(product);
+          acc.push(product);
 
-      // Add subproducts if parent is expanded
-      if (product.subProducts && product.subProducts.length > 0 && expandedRows.has(product.id)) {
-        product.subProducts.forEach((subProduct) => {
-          acc.push({
-            ...subProduct,
-            isSubproduct: true,
-            parentName: product.name,
-          });
-        });
-      }
+          // Add subproducts if parent is expanded
+          if (product.subProducts && product.subProducts.length > 0 && expandedRows.has(product.id)) {
+            product.subProducts.forEach((subProduct) => {
+              acc.push({
+                ...subProduct,
+                isSubproduct: true,
+                parentName: product.name,
+              });
+            });
+          }
 
-      return acc;
-    },
-    []
+          return acc;
+        },
+        []
+      ),
+    [productList, expandedRows]
   );
-  const activeProducts = productList.filter((p) => p.status === 'active').length;
-  const lowStockProducts = productList.filter(
-    (p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold
-  ).length;
+  const activeProducts = useMemo(
+    () => productList.filter((p) => p.status === 'active').length,
+    [productList]
+  );
+  const lowStockProducts = useMemo(
+    () => productList.filter((p) => p.lowStockThreshold && p.currentStock <= p.lowStockThreshold).length,
+    [productList]
+  );
+
+  // Extended product type for flattened list
+  type FlatProduct = Product & { isSubproduct?: boolean; parentName?: string };
+
+  const columns: TableColumn<FlatProduct>[] = useMemo(
+    () => [
+      {
+        key: 'sku',
+        label: t('sku'),
+        className: 'font-medium',
+        sortable: true,
+        render: (product: FlatProduct) => {
+          const hasSubproducts = product.subProducts && product.subProducts.length > 0;
+          const isExpanded = expandedRows.has(product.id);
+          const isSubproduct = product.isSubproduct;
+
+          return (
+            <div className="flex items-center gap-2">
+              {/* Expand/collapse button for parents with subproducts */}
+              {hasSubproducts && !isSubproduct && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExpanded(product.id);
+                  }}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              {/* Indentation for subproducts */}
+              {isSubproduct && (
+                <span className="ml-6 flex items-center gap-1 text-muted-foreground">
+                  <GitBranch className="h-3 w-3" />
+                </span>
+              )}
+              {/* Spacer for products without subproducts */}
+              {!hasSubproducts && !isSubproduct && <span className="w-6" />}
+              <span className={isSubproduct ? 'text-muted-foreground' : ''}>{product.sku}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'name',
+        label: t('name'),
+        className: 'font-medium',
+        sortable: true,
+        render: (product: FlatProduct) => (
+          <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+            {product.name}
+          </span>
+        ),
+      },
+      {
+        key: 'category',
+        label: t('category'),
+        render: (product: FlatProduct) => (
+          <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+            {product.category || '-'}
+          </span>
+        ),
+        sortable: true,
+      },
+      {
+        key: 'basePrice',
+        label: t('price'),
+        render: (product: FlatProduct) => (
+          <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+            {formatAUD(product.basePrice)}
+          </span>
+        ),
+        sortable: true,
+      },
+      {
+        key: 'unit',
+        label: t('unit'),
+        render: (product: FlatProduct) => (
+          <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
+            {String(product.unit).toUpperCase()}
+          </span>
+        ),
+      },
+      {
+        key: 'currentStock',
+        label: t('stock'),
+        render: (product: FlatProduct) => (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <StockLevelBadge
+                    currentStock={product.currentStock}
+                    lowStockThreshold={product.lowStockThreshold ?? undefined}
+                  />
+                </span>
+              </TooltipTrigger>
+              {product.isSubproduct && (
+                <TooltipContent>
+                  <p>{tSubproduct('table.virtualStockTooltip')}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        ),
+        sortable: true,
+      },
+      {
+        key: 'status',
+        label: tCommon('status'),
+        render: (product: FlatProduct) => (
+          <StatusBadge status={product.status as StatusType} showIcon={false} />
+        ),
+        sortable: true,
+      },
+      {
+        key: 'actions',
+        label: tCommon('actions'),
+        className: 'text-right',
+        render: (product: FlatProduct) => {
+          const isSubproduct = product.isSubproduct || !!product.parentProductId;
+          const canHaveSubproducts = !isSubproduct;
+
+          return (
+            <div className="flex justify-end gap-2">
+              {/* Add Subproduct button - only for parent products */}
+              {canHaveSubproducts && (
+                <PermissionGate permission="products:create">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={tSubproduct('buttons.addSubproduct')}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowSubproductDialog(true);
+                    }}
+                  >
+                    <GitBranch className="h-4 w-4" />
+                  </Button>
+                </PermissionGate>
+              )}
+              {/* Adjust Stock button - only for parent products (not subproducts) */}
+              {!isSubproduct && (
+                <PermissionGate permission="products:adjust_stock">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={tStock('buttons.adjustStock')}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowStockDialog(true);
+                    }}
+                  >
+                    <PackagePlus className="h-4 w-4" />
+                  </Button>
+                </PermissionGate>
+              )}
+              <PermissionGate permission="products:edit">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('edit')}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowEditDialog(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="products:delete">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={tCommon('delete')}
+                  onClick={() => handleDelete(product)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </PermissionGate>
+            </div>
+          );
+        },
+      },
+    ],
+    [t, tCommon, tSubproduct, tStock, expandedRows, toggleExpanded, handleDelete]
+  );
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -191,198 +394,6 @@ export default function ProductsPage() {
       </div>
     );
   }
-
-  // Status and stock badges now use consolidated components
-
-  // Extended product type for flattened list
-  type FlatProduct = Product & { isSubproduct?: boolean; parentName?: string };
-
-  const columns: TableColumn<FlatProduct>[] = [
-    {
-      key: 'sku',
-      label: t('sku'),
-      className: 'font-medium',
-      sortable: true,
-      render: (product: FlatProduct) => {
-        const hasSubproducts = product.subProducts && product.subProducts.length > 0;
-        const isExpanded = expandedRows.has(product.id);
-        const isSubproduct = product.isSubproduct;
-
-        return (
-          <div className="flex items-center gap-2">
-            {/* Expand/collapse button for parents with subproducts */}
-            {hasSubproducts && !isSubproduct && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleExpanded(product.id);
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {/* Indentation for subproducts */}
-            {isSubproduct && (
-              <span className="ml-6 flex items-center gap-1 text-muted-foreground">
-                <GitBranch className="h-3 w-3" />
-              </span>
-            )}
-            {/* Spacer for products without subproducts */}
-            {!hasSubproducts && !isSubproduct && <span className="w-6" />}
-            <span className={isSubproduct ? 'text-muted-foreground' : ''}>{product.sku}</span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'name',
-      label: t('name'),
-      className: 'font-medium',
-      sortable: true,
-      render: (product: FlatProduct) => (
-        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
-          {product.name}
-        </span>
-      ),
-    },
-    {
-      key: 'category',
-      label: t('category'),
-      render: (product: FlatProduct) => (
-        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
-          {product.category || '-'}
-        </span>
-      ),
-      sortable: true,
-    },
-    {
-      key: 'basePrice',
-      label: t('price'),
-      render: (product: FlatProduct) => (
-        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
-          {formatAUD(product.basePrice)}
-        </span>
-      ),
-      sortable: true,
-    },
-    {
-      key: 'unit',
-      label: t('unit'),
-      render: (product: FlatProduct) => (
-        <span className={product.isSubproduct ? 'text-muted-foreground' : ''}>
-          {String(product.unit).toUpperCase()}
-        </span>
-      ),
-    },
-    {
-      key: 'currentStock',
-      label: t('stock'),
-      render: (product: FlatProduct) => (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <StockLevelBadge
-                  currentStock={product.currentStock}
-                  lowStockThreshold={product.lowStockThreshold ?? undefined}
-                />
-              </span>
-            </TooltipTrigger>
-            {product.isSubproduct && (
-              <TooltipContent>
-                <p>{tSubproduct('table.virtualStockTooltip')}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      ),
-      sortable: true,
-    },
-    {
-      key: 'status',
-      label: tCommon('status'),
-      render: (product: FlatProduct) => (
-        <StatusBadge status={product.status as StatusType} showIcon={false} />
-      ),
-      sortable: true,
-    },
-    {
-      key: 'actions',
-      label: tCommon('actions'),
-      className: 'text-right',
-      render: (product: FlatProduct) => {
-        const isSubproduct = product.isSubproduct || !!product.parentProductId;
-        const canHaveSubproducts = !isSubproduct;
-
-        return (
-          <div className="flex justify-end gap-2">
-            {/* Add Subproduct button - only for parent products */}
-            {canHaveSubproducts && (
-              <PermissionGate permission="products:create">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={tSubproduct('buttons.addSubproduct')}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setShowSubproductDialog(true);
-                  }}
-                >
-                  <GitBranch className="h-4 w-4" />
-                </Button>
-              </PermissionGate>
-            )}
-            {/* Adjust Stock button - only for parent products (not subproducts) */}
-            {!isSubproduct && (
-              <PermissionGate permission="products:adjust_stock">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={tStock('buttons.adjustStock')}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setShowStockDialog(true);
-                  }}
-                >
-                  <PackagePlus className="h-4 w-4" />
-                </Button>
-              </PermissionGate>
-            )}
-            <PermissionGate permission="products:edit">
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={t('edit')}
-                onClick={() => {
-                  setSelectedProduct(product);
-                  setShowEditDialog(true);
-                }}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </PermissionGate>
-            <PermissionGate permission="products:delete">
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={tCommon('delete')}
-                onClick={() => handleDelete(product)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </PermissionGate>
-          </div>
-        );
-      },
-    },
-  ];
 
   const mobileCard = (product: FlatProduct) => {
     const isSubproduct = product.isSubproduct || !!product.parentProductId;
@@ -518,7 +529,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="products" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -656,7 +667,7 @@ export default function ProductsPage() {
 
         {/* Categories Tab */}
         <TabsContent value="categories">
-          <CategoriesTab />
+          {activeTab === 'categories' && <CategoriesTab />}
         </TabsContent>
       </Tabs>
 

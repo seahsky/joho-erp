@@ -571,36 +571,42 @@ export default function InventoryPage() {
 
         {/* Trends Tab - New charts */}
         <TabsContent value="trends" className="space-y-4">
-          <StockMovementChart />
-          <InventoryValueChart />
+          {currentTab === 'trends' && (
+            <>
+              <StockMovementChart />
+              <InventoryValueChart />
+            </>
+          )}
         </TabsContent>
 
         {/* Turnover Tab - New table */}
         <TabsContent value="turnover">
-          <ProductTurnoverTable />
+          {currentTab === 'turnover' && <ProductTurnoverTable />}
         </TabsContent>
 
         {/* Comparison Tab - New analytics */}
         <TabsContent value="comparison">
-          <ComparisonAnalytics />
+          {currentTab === 'comparison' && <ComparisonAnalytics />}
         </TabsContent>
 
         {/* Stock Counts Tab - Product stock levels */}
         <TabsContent value="stockCounts">
-          <StockCountsTable
-            initialStatusFilter={stockCountsInitialFilter}
-            initialSearch={stockCountsInitialSearch}
-          />
+          {currentTab === 'stockCounts' && (
+            <StockCountsTable
+              initialStatusFilter={stockCountsInitialFilter}
+              initialSearch={stockCountsInitialSearch}
+            />
+          )}
         </TabsContent>
 
         {/* Stock Expiry Tab - Expiring batches list */}
         <TabsContent value="stockExpiry">
-          <ExpiringBatchesList />
+          {currentTab === 'stockExpiry' && <ExpiringBatchesList />}
         </TabsContent>
 
         {/* Write-Offs Tab - Write-off history */}
         <TabsContent value="writeOffs">
-          <StockWriteOffTable />
+          {currentTab === 'writeOffs' && <StockWriteOffTable />}
         </TabsContent>
       </Tabs>
 

@@ -4,20 +4,19 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Skeleton } from '@joho-erp/ui';
 import { TrendingUp } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import { api } from '@/trpc/client';
 import { TimePeriodSelector } from './TimePeriodSelector';
 
 type Granularity = 'daily' | 'weekly' | 'monthly';
+
+const StockMovementChartInner = dynamic(
+  () => import('./StockMovementChartInner').then((mod) => mod.StockMovementChartInner),
+  {
+    ssr: false,
+    loading: () => <div className="h-[300px] w-full animate-pulse rounded bg-muted" />,
+  }
+);
 
 export function StockMovementChart() {
   const t = useTranslations('inventory.stats');
@@ -58,40 +57,11 @@ export function StockMovementChart() {
       <CardContent>
         <div className="h-[300px]">
           {data && data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="period"
-                  className="text-xs"
-                  tick={{ fontSize: 11 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis className="text-xs" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="stockIn"
-                  name={t('stockMovement.stockIn')}
-                  fill="#22c55e"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  dataKey="stockOut"
-                  name={t('stockMovement.stockOut')}
-                  fill="#ef4444"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <StockMovementChartInner
+              data={data}
+              stockInLabel={t('stockMovement.stockIn')}
+              stockOutLabel={t('stockMovement.stockOut')}
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               {t('stockMovement.noData')}
