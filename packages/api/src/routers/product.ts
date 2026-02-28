@@ -905,7 +905,7 @@ export const productRouter = router({
           data: {
             productId: sourceProductId,
             type: 'adjustment',
-            adjustmentType: 'packing_adjustment', // Processing/transformation adjustment
+            adjustmentType: 'processing', // Processing/transformation adjustment
             quantity: -requiredRawMaterial,
             previousStock: sourceProduct.currentStock,
             newStock: sourceProduct.currentStock - requiredRawMaterial,
@@ -938,7 +938,7 @@ export const productRouter = router({
           data: {
             productId: targetProductId,
             type: 'adjustment',
-            adjustmentType: 'stock_received',
+            adjustmentType: 'processing',
             quantity: outputQty,
             previousStock: targetProduct.currentStock,
             newStock: targetProduct.currentStock + outputQty,
@@ -987,7 +987,7 @@ export const productRouter = router({
       await Promise.all([
         logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, sourceProductId, {
           sku: result.sourceProduct.sku,
-          adjustmentType: 'packing_adjustment',
+          adjustmentType: 'processing',
           previousStock: result.sourceProduct.currentStock,
           newStock: result.sourceProduct.currentStock - result.quantityProcessed,
           quantity: -result.quantityProcessed,
@@ -997,7 +997,7 @@ export const productRouter = router({
         }),
         logStockAdjustment(ctx.userId, undefined, ctx.userRole, ctx.userName, targetProductId, {
           sku: result.targetProduct.sku,
-          adjustmentType: 'stock_received',
+          adjustmentType: 'processing',
           previousStock: result.targetProduct.currentStock,
           newStock: result.targetProduct.currentStock + result.quantityProduced,
           quantity: result.quantityProduced,

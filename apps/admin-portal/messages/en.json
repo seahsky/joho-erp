@@ -1245,7 +1245,8 @@
       "stock_received": "Stock Received",
       "stock_count_correction": "Stock Count Correction",
       "stock_write_off": "Stock Write-off",
-      "packing_adjustment": "Packing Adjustment"
+      "packing_adjustment": "Packing Adjustment",
+      "processing": "Processing"
     },
     "typeDescriptions": {
       "stock_received": "Adding stock from supplier delivery or transfer",
@@ -2952,7 +2953,8 @@
       "stock_received": "Stock Received",
       "stock_count_correction": "Stock Count Correction",
       "stock_write_off": "Stock Write-off",
-      "packing_adjustment": "Packing Adjustment"
+      "packing_adjustment": "Packing Adjustment",
+      "processing": "Processing"
     },
     "adjustStock": "Adjust Stock",
     "processStock": "Process Stock",

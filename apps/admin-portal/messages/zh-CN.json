@@ -1245,7 +1245,8 @@
       "stock_received": "收到库存",
       "stock_count_correction": "库存盘点修正",
       "stock_write_off": "库存核销",
-      "packing_adjustment": "包装调整"
+      "packing_adjustment": "包装调整",
+      "processing": "加工"
     },
     "typeDescriptions": {
       "stock_received": "从供应商交货或调拨添加库存",
@@ -2952,7 +2953,8 @@
       "stock_received": "入库",
       "stock_count_correction": "盘点调整",
       "stock_write_off": "库存核销",
-      "packing_adjustment": "包装调整"
+      "packing_adjustment": "包装调整",
+      "processing": "加工"
     },
     "adjustStock": "调整库存",
     "processStock": "加工库存",

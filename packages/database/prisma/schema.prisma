@@ -111,6 +111,7 @@ enum AdjustmentType {
   stock_write_off         // Writing off damaged or expired inventory
   packing_adjustment      // Quantity adjusted during packing
   packing_reset           // Stock restored from packing reset
+  processing              // Stock consumed or produced via processing/transformation
 }
 
 enum AuditAction {
