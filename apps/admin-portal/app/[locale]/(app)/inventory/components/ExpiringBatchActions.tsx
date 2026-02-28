@@ -129,6 +129,7 @@ export function ExpiringBatchActions({
       >
         <DialogContent
           className="sm:max-w-[400px]"
+          onClick={(e) => e.stopPropagation()}
           onPointerDownOutside={(e) => e.stopPropagation()}
           onInteractOutside={(e) => e.stopPropagation()}
         >
@@ -179,6 +180,7 @@ export function ExpiringBatchActions({
       <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
         <DialogContent
           className="sm:max-w-[400px]"
+          onClick={(e) => e.stopPropagation()}
           onPointerDownOutside={(e) => e.stopPropagation()}
           onInteractOutside={(e) => e.stopPropagation()}
         >
