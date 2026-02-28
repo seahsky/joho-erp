@@ -10,3 +10,4 @@ export { PackingPage } from './packing.page';
 export { DeliveriesListPage } from './deliveries-list.page';
 export { InventoryPage } from './inventory.page';
 export { PricingPage } from './pricing.page';
+export { OrderCreatePage } from './order-create.page';
