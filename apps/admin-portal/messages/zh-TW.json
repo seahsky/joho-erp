@@ -3411,6 +3411,7 @@
       "title": "加工記錄",
       "description": "查看所有庫存加工交易",
       "columns": {
+        "batchNumber": "批次號",
         "sourceProduct": "原料產品",
         "targetProduct": "成品",
         "inputQty": "投入數量",

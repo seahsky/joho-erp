@@ -213,6 +213,7 @@ export function ProcessingHistoryTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8" />
+                  <TableHead>{t('columns.batchNumber')}</TableHead>
                   <TableHead>{t('columns.sourceProduct')}</TableHead>
                   <TableHead>{t('columns.targetProduct')}</TableHead>
                   <TableHead className="text-right">{t('columns.inputQty')}</TableHead>
@@ -237,6 +238,9 @@ export function ProcessingHistoryTable() {
                           ) : (
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {item.batchNumber ?? '-'}
                         </TableCell>
                         <TableCell>
                           {item.source ? (
@@ -286,7 +290,7 @@ export function ProcessingHistoryTable() {
                       {/* Expandable detail row */}
                       {isExpanded && (
                         <TableRow className="hover:bg-muted/30">
-                          <TableCell colSpan={8} className="bg-muted/30 p-4">
+                          <TableCell colSpan={9} className="bg-muted/30 p-4">
                             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                               {/* Left: Source Batches Consumed */}
                               <div>
@@ -429,7 +433,7 @@ export function ProcessingHistoryTable() {
                 })}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center">
+                    <TableCell colSpan={9} className="py-8 text-center">
                       <EmptyState
                         icon={ArrowRightLeft}
                         title={t('emptyState')}

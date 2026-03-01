@@ -3411,6 +3411,7 @@
       "title": "Processing History",
       "description": "View all stock processing transactions",
       "columns": {
+        "batchNumber": "Batch #",
         "sourceProduct": "Source Product",
         "targetProduct": "Target Product",
         "inputQty": "Input Qty",
