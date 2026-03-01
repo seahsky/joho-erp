@@ -49,7 +49,8 @@
     "close": "關閉",
     "signUp": "註冊",
     "retry": "重試",
-    "errorOccurred": "出了點問題"
+    "errorOccurred": "出了點問題",
+    "unavailable": "不可用"
   },
   "errors": {
     "operationFailed": "操作失敗，請重試。",
@@ -181,7 +182,25 @@
     "quickAdd": "快速添加",
     "productDetails": "產品詳情",
     "description": "描述",
-    "quantity": "數量",
+    "quantity": {
+      "add": "加入購物車",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "當前數量：{count}",
+      "edit": "點擊輸入確切數量",
+      "save": "儲存",
+      "cancel": "取消",
+      "confirm": "確認",
+      "precision": "輸入確切數量 (1-999)",
+      "max": "最多 {max} 可用",
+      "min": "最少 1 件",
+      "invalid": "無效數量",
+      "placeholder": "數量",
+      "enterCustom": "輸入自訂數量",
+      "quickAdd5": "快速加入5件",
+      "enterValidAmount": "請輸入1到999之間的有效數量",
+      "maxExceeded": "數量不能超過{max}"
+    },
     "selectQuantity": "選擇數量",
     "increaseQuantity": "增加數量",
     "decreaseQuantity": "減少數量",
@@ -215,25 +234,6 @@
       "checkout": "結帳",
       "empty": "購物車是空的",
       "orderBy": "在 {time} 前訂購以便 {date} 配送"
-    },
-    "quantity": {
-      "add": "加入購物車",
-      "add5": "+5",
-      "remove5": "-5",
-      "current": "當前數量：{count}",
-      "edit": "點擊輸入確切數量",
-      "save": "儲存",
-      "cancel": "取消",
-      "confirm": "確認",
-      "precision": "輸入確切數量 (1-999)",
-      "max": "最多 {max} 可用",
-      "min": "最少 1 件",
-      "invalid": "無效數量",
-      "placeholder": "數量",
-      "enterCustom": "輸入自訂數量",
-      "quickAdd5": "快速加入5件",
-      "enterValidAmount": "請輸入1到999之間的有效數量",
-      "maxExceeded": "數量不能超過{max}"
     },
     "specialPrice": "特價",
     "details": {
@@ -304,7 +304,8 @@
       "pending_approval": "等待審批",
       "approved": "已批准缺貨訂單",
       "rejected": "缺貨訂單已拒絕",
-      "partial_approved": "部分批准"
+      "partial_approved": "部分批准",
+      "label": "缺貨訂單"
     },
     "cancel": {
       "title": "取消訂單",
@@ -982,13 +983,13 @@
         }
       },
       "declaration": {
-        "title": "聲明",
-        "intro": "通過同意這些條款，本人/我們聲明並確認：",
         "1": "本人/我們已閱讀並理解本申請的條款，並確認該條款將適用於供應商向本人/我們提供的任何信貸額度。",
         "2": "申請人提供的所有資訊真實準確。",
         "3": "本人/我們確認供應商及相關方將使用此資訊評估本人/我們的商業信貸申請。",
         "4": "本人/我們同意供應商從信用報告機構獲取包含本人/我們個人信用資訊的信用報告，用於評估供應商提供的商業信貸。",
-        "5": "本人/我們同意供應商向信用報告機構和其他信貸提供者披露個人資訊，用於評估信用狀況和追債。"
+        "5": "本人/我們同意供應商向信用報告機構和其他信貸提供者披露個人資訊，用於評估信用狀況和追債。",
+        "title": "聲明",
+        "intro": "通過同意這些條款，本人/我們聲明並確認："
       },
       "agreement": {
         "label": "我已閱讀並同意上述條款和條件",
@@ -1204,19 +1205,6 @@
       }
     }
   },
-  "upload": {
-    "clickToUpload": "點擊上傳",
-    "uploadSubtitle": "PNG、JPG 最大2MB",
-    "fileTypes": "PNG、JPG、GIF 最大10MB",
-    "addImage": "新增圖片",
-    "change": "更換",
-    "remove": "移除",
-    "uploading": "上傳中...",
-    "errorInvalidType": "檔案類型無效。請上傳 JPG、PNG 或 WebP 圖片。",
-    "errorFileTooLarge": "檔案過大。最大允許 2MB。",
-    "errorUploadFailed": "上傳失敗，請重試。",
-    "errorRemoveFailed": "刪除圖片失敗，請重試。"
-  },
   "pricing": {
     "status": {
       "starts": "{date}開始生效",
@@ -1332,5 +1320,13 @@
     "sameStatus": "訂單已處於此狀態",
     "terminalStatus": "此訂單無法修改",
     "zeroPrice": "您的訂單包含未定價商品。請聯繫我們的業務團隊。"
+  },
+  "inventory": {
+    "stats": {
+      "turnover": {
+        "noSales": "無銷售",
+        "days": "天"
+      }
+    }
   }
 }

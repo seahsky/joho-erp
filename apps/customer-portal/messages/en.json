@@ -49,7 +49,8 @@
     "close": "Close",
     "signUp": "Sign Up",
     "retry": "Try Again",
-    "errorOccurred": "Something went wrong"
+    "errorOccurred": "Something went wrong",
+    "unavailable": "Unavailable"
   },
   "errors": {
     "operationFailed": "Something went wrong. Please try again.",
@@ -182,7 +183,25 @@
     "quickAdd": "Quick Add",
     "productDetails": "Product Details",
     "description": "Description",
-    "quantity": "Quantity",
+    "quantity": {
+      "add": "Add to cart",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "Current quantity: {count}",
+      "edit": "Click to edit exact quantity",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "precision": "Enter exact quantity (1-999)",
+      "max": "Maximum {max} available",
+      "min": "Minimum 1 unit",
+      "invalid": "Invalid quantity",
+      "placeholder": "Qty",
+      "enterCustom": "Enter custom quantity",
+      "quickAdd5": "Quick add 5 items",
+      "enterValidAmount": "Please enter a valid quantity between 1 and 999",
+      "maxExceeded": "Quantity cannot exceed {max}"
+    },
     "selectQuantity": "Select quantity",
     "increaseQuantity": "Increase quantity",
     "decreaseQuantity": "Decrease quantity",
@@ -215,25 +234,6 @@
       "checkout": "Checkout",
       "empty": "Cart is empty",
       "orderBy": "Order by {time} for {date} delivery"
-    },
-    "quantity": {
-      "add": "Add to cart",
-      "add5": "+5",
-      "remove5": "-5",
-      "current": "Current quantity: {count}",
-      "edit": "Click to edit exact quantity",
-      "save": "Save",
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "precision": "Enter exact quantity (1-999)",
-      "max": "Maximum {max} available",
-      "min": "Minimum 1 unit",
-      "invalid": "Invalid quantity",
-      "placeholder": "Qty",
-      "enterCustom": "Enter custom quantity",
-      "quickAdd5": "Quick add 5 items",
-      "enterValidAmount": "Please enter a valid quantity between 1 and 999",
-      "maxExceeded": "Quantity cannot exceed {max}"
     },
     "specialPrice": "Special Price",
     "details": {
@@ -304,7 +304,8 @@
       "pending_approval": "Awaiting Approval",
       "approved": "Approved Backorder",
       "rejected": "Backorder Rejected",
-      "partial_approved": "Partially Approved"
+      "partial_approved": "Partially Approved",
+      "label": "Backorder"
     },
     "cancel": {
       "title": "Cancel Order",
@@ -851,13 +852,13 @@
         }
       },
       "declaration": {
-        "title": "Declaration",
-        "intro": "By agreeing to these terms, I/we declare and affirm that:",
         "1": "I/We have read and understood the terms of this application and confirm that the terms will apply to any credit facility provided by the Supplier to me/us.",
         "2": "The information supplied by me/us, the Applicant, in this application is true and correct.",
         "3": "I/We acknowledge the Supplier and related parties will use this information for the purpose of assessing my/our commercial credit application.",
         "4": "I/We consent to the Supplier obtaining from a credit reporting agency a credit report containing personal credit information about me/us in relation to commercial credit provided by the Supplier.",
-        "5": "I/We consent to the Supplier disclosing personal information to credit reporting agencies and other credit providers for the purposes of assessing creditworthiness and debt recovery."
+        "5": "I/We consent to the Supplier disclosing personal information to credit reporting agencies and other credit providers for the purposes of assessing creditworthiness and debt recovery.",
+        "title": "Declaration",
+        "intro": "By agreeing to these terms, I/we declare and affirm that:"
       },
       "agreement": {
         "label": "I have read and agree to the Terms & Conditions outlined above",
@@ -1204,19 +1205,6 @@
       "viewFull": "View Full Image"
     }
   },
-  "upload": {
-    "clickToUpload": "Click to upload",
-    "uploadSubtitle": "PNG, JPG up to 2MB",
-    "fileTypes": "PNG, JPG, GIF up to 10MB",
-    "addImage": "Add Image",
-    "change": "Change",
-    "remove": "Remove",
-    "uploading": "Uploading...",
-    "errorInvalidType": "Invalid file type. Please upload a JPG, PNG, or WebP image.",
-    "errorFileTooLarge": "File too large. Maximum size is 2MB.",
-    "errorUploadFailed": "Upload failed. Please try again.",
-    "errorRemoveFailed": "Failed to remove image. Please try again."
-  },
   "pricing": {
     "status": {
       "starts": "Starts {date}",
@@ -1332,5 +1320,13 @@
     "sameStatus": "Order is already in this status",
     "terminalStatus": "This order cannot be modified",
     "zeroPrice": "Your order contains items without pricing. Please contact our sales team."
+  },
+  "inventory": {
+    "stats": {
+      "turnover": {
+        "noSales": "No sales",
+        "days": "days"
+      }
+    }
   }
 }

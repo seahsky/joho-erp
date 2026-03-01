@@ -79,7 +79,10 @@
     },
     "selectArea": "選擇區域",
     "unassigned": "未分配",
-    "back": "返回"
+    "back": "返回",
+    "previous": "上一頁",
+    "next": "下一頁",
+    "editing": "編輯中"
   },
   "statusBadges": {
     "awaiting_approval": "待審批",
@@ -391,12 +394,15 @@
       "stateRequired": "州是必填項",
       "postcodeRequired": "郵遞區號是必填項",
       "postcodeInvalid": "郵遞區號必須是4位數字",
-      "creditLimitInvalid": "請輸入有效的金額"
+      "creditLimitInvalid": "請輸入有效的金額",
+      "abnInvalid": "ABN 必須為11位數字",
+      "acnInvalid": "ACN 必須為9位數字"
     },
     "messages": {
       "createSuccess": "供應商建立成功",
       "updateSuccess": "供應商更新成功",
-      "fixValidationErrors": "請修復驗證錯誤"
+      "fixValidationErrors": "請修復驗證錯誤",
+      "createError": "建立供應商失敗，請重試。"
     }
   },
   "supplierDetail": {
@@ -475,38 +481,41 @@
     "activateSuccess": "供應商已啟用",
     "activateError": "啟用失敗",
     "validation": {
-      "abnInvalid": "無效的 ABN - 校驗和驗證失敗"
-    }
-  },
-  "linkProductDialog": {
-    "title": "關聯產品到供應商",
-    "description": "將產品與此供應商關聯並設定定價詳情",
-    "selectProduct": "選擇產品",
-    "selectProductPlaceholder": "搜尋產品...",
-    "costPrice": "成本價（$）",
-    "costPricePlaceholder": "輸入成本價",
-    "supplierSku": "供應商SKU（可選）",
-    "supplierSkuPlaceholder": "供應商的產品編碼",
-    "packSize": "包裝規格（可選）",
-    "packSizePlaceholder": "例如：10",
-    "moq": "最小訂購量（可選）",
-    "moqPlaceholder": "例如：5",
-    "leadTimeDays": "交貨天數（可選）",
-    "leadTimeDaysPlaceholder": "例如：3",
-    "isPreferredSupplier": "首選供應商",
-    "isPreferredSupplierDescription": "將此標記為該產品的首選供應商",
-    "cancel": "取消",
-    "linkProduct": "關聯產品",
-    "linking": "關聯中...",
-    "validation": {
+      "abnInvalid": "無效的 ABN - 校驗和驗證失敗",
       "productRequired": "請選擇產品",
-      "costPriceRequired": "成本價是必填項",
-      "costPriceInvalid": "請輸入有效的成本價"
+      "costPriceRequired": "請輸入成本價格",
+      "costPriceInvalid": "請輸入大於零的有效成本價格"
     },
-    "messages": {
-      "success": "產品關聯成功",
-      "error": "產品關聯失敗"
-    }
+    "errorLoading": "載入供應商詳情失敗",
+    "suspend": "暫停",
+    "activate": "啟用",
+    "suspended": "已暫停",
+    "reason": "原因",
+    "date": "日期",
+    "days": "天",
+    "noCategories": "未分配類別",
+    "product": "產品",
+    "noLinkedProductsDescription": "關聯產品以追蹤成本和訂購",
+    "suspendTitle": "暫停供應商",
+    "suspendDescription": "確定要暫停此供應商嗎？他們將不會出現在活躍供應商列表中。",
+    "suspensionReason": "暫停原因",
+    "suspensionReasonPlaceholder": "請輸入暫停此供應商的原因...",
+    "suspensionReasonMinLength": "原因至少需要10個字符",
+    "activateTitle": "啟用供應商",
+    "activateDescription": "確定要啟用此供應商嗎？",
+    "productLinked": "產品已關聯",
+    "productAlreadyLinked": "該產品已關聯到此供應商",
+    "linkProductDescription": "將產品與此供應商關聯並設置價格詳情。",
+    "searchProducts": "搜尋產品...",
+    "selectProduct": "選擇產品",
+    "noProductsFound": "未找到產品",
+    "enterDollars": "輸入金額（澳元，例如 10.50）",
+    "supplierSkuPlaceholder": "例如 SUP-001",
+    "supplierProductName": "供應商產品名稱",
+    "supplierProductNamePlaceholder": "供應商對該產品的名稱",
+    "leadTimeDays": "交貨週期（天）",
+    "preferredSupplier": "標記為該產品的首選供應商",
+    "preferredSupplierDescription": "首選供應商在訂購時優先顯示"
   },
   "customers": {
     "title": "客戶管理",
@@ -812,7 +821,10 @@
       "success": "訂單已確認",
       "successMessage": "訂單已確認並移至處理隊列。",
       "error": "確認失敗"
-    }
+    },
+    "recentOrders": "該客戶的近期訂單",
+    "noOrders": "未找到訂單",
+    "allOrders": "所有訂單"
   },
   "orderOnBehalf": {
     "title": "代客戶建立訂單",
@@ -1004,7 +1016,9 @@
     "validation": {
       "nameRequired": "分類名稱為必填項",
       "nameTooLong": "分類名稱不得超過50個字符",
-      "lossPercentageRange": "加工損耗必須在0到100之間"
+      "lossPercentageRange": "加工損耗必須在0到100之間",
+      "invalidInput": "輸入無效",
+      "fixErrors": "請修正錯誤後再提交。"
     },
     "info": {
       "hasProducts": "此分類已分配 {count} 個產品"
@@ -1146,6 +1160,12 @@
       "pricingClearedDescription": "所有客戶特定價格已被清除",
       "categoryCreated": "分類建立成功",
       "categoryCreateError": "建立分類失敗"
+    },
+    "upload": {
+      "errorInvalidType": "文件類型無效，請上傳圖片。",
+      "errorFileTooLarge": "文件過大，最大限制為 5MB。",
+      "errorUploadFailed": "上傳失敗，請重試。",
+      "errorRemoveFailed": "刪除圖片失敗，請重試。"
     }
   },
   "subproduct": {
@@ -1422,6 +1442,16 @@
     "validation": {
       "requiredFields": "請填寫所有必填欄位",
       "positivePrice": "價格必須為正數"
+    },
+    "pricing": {
+      "validation": {
+        "customerRequired": "請選擇客戶",
+        "productRequired": "請選擇產品",
+        "priceRequired": "請輸入價格",
+        "pricePositive": "價格必須大於零",
+        "effectiveFromRequired": "請選擇生效日期",
+        "effectiveToInvalid": "結束日期必須晚於開始日期"
+      }
     }
   },
   "pricing": {
@@ -1788,7 +1818,8 @@
       "paymentTermsPlaceholder": "例如，Net 30",
       "notes": "內部備註",
       "notesPlaceholder": "添加關於此客戶的任何內部備註",
-      "noCredit": "設置為0表示不批准信用"
+      "noCredit": "設置為0表示不批准信用",
+      "enterDollars": "輸入金額（澳元，例如 5000）"
     },
     "directors": {
       "title": "董事與所有者",
@@ -2770,7 +2801,8 @@
     "resyncPreview": {
       "title": "重新同步客戶到 Xero",
       "description": "在重新同步到 Xero 之前查看更新的客戶資料。"
-    }
+    },
+    "cancel": "取消"
   },
   "xeroStatus": {
     "title": "Xero 狀態",
@@ -2987,8 +3019,7 @@
       "supplier": "供應商",
       "invoiceNumber": "發票號碼",
       "mtvNumber": "MTV編號",
-      "vehicleTemperature": "車輛溫度",
-      "batchNumber": "批次號"
+      "vehicleTemperature": "車輛溫度"
     },
     "batchDetail": {
       "title": "庫存批次詳情",
@@ -3006,7 +3037,8 @@
       "invoiceNumber": "發票號碼",
       "mtvNumber": "MTV編號",
       "vehicleTemperature": "車輛溫度",
-      "notes": "備註"
+      "notes": "備註",
+      "batchNumber": "批次號"
     },
     "productSelector": {
       "searchPlaceholder": "按產品名稱或SKU搜尋...",
@@ -3584,7 +3616,13 @@
       "viewPdf": "檢視PDF",
       "noDocuments": "未上傳身分證件",
       "imageUnavailable": "圖片不可用",
-      "noDocumentsUploaded": "該客戶尚未上傳身分證件"
+      "noDocumentsUploaded": "該客戶尚未上傳身分證件",
+      "uploadSuccess": "文件已上傳",
+      "uploadError": "上傳失敗",
+      "uploading": "上傳中...",
+      "replaceDocument": "替換",
+      "uploadFront": "上傳正面",
+      "uploadBack": "上傳背面"
     },
     "financialDetails": {
       "title": "財務資訊",
@@ -3871,19 +3909,6 @@
       "close": "關閉"
     }
   },
-  "upload": {
-    "clickToUpload": "點擊上傳",
-    "uploadSubtitle": "PNG、JPG 最大2MB",
-    "fileTypes": "PNG、JPG、GIF 最大10MB",
-    "addImage": "新增圖片",
-    "change": "更換",
-    "remove": "移除",
-    "uploading": "上傳中...",
-    "errorInvalidType": "檔案類型無效。請上傳 JPG、PNG 或 WebP 圖片。",
-    "errorFileTooLarge": "檔案過大。最大允許 2MB。",
-    "errorUploadFailed": "上傳失敗，請重試。",
-    "errorRemoveFailed": "刪除圖片失敗，請重試。"
-  },
   "mobileDrawer": {
     "title": "選單",
     "closeAriaLabel": "關閉選單"
@@ -3996,7 +4021,8 @@
       "hasDependencies": "無法刪除有活躍區域映射或司機分配的區域",
       "createFailed": "建立區域失敗",
       "updateFailed": "更新區域失敗",
-      "deleteFailed": "刪除區域失敗"
+      "deleteFailed": "刪除區域失敗",
+      "reorderFailed": "保存新排序失敗"
     },
     "success": {
       "created": "區域建立成功",

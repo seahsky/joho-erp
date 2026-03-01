@@ -79,7 +79,10 @@
     },
     "selectArea": "Select area",
     "unassigned": "Unassigned",
-    "back": "Back"
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "editing": "Editing"
   },
   "statusBadges": {
     "awaiting_approval": "Awaiting Approval",
@@ -391,12 +394,15 @@
       "stateRequired": "State is required",
       "postcodeRequired": "Postcode is required",
       "postcodeInvalid": "Postcode must be 4 digits",
-      "creditLimitInvalid": "Please enter a valid amount"
+      "creditLimitInvalid": "Please enter a valid amount",
+      "abnInvalid": "ABN must be 11 digits",
+      "acnInvalid": "ACN must be 9 digits"
     },
     "messages": {
       "createSuccess": "Supplier created successfully",
       "updateSuccess": "Supplier updated successfully",
-      "fixValidationErrors": "Please fix validation errors"
+      "fixValidationErrors": "Please fix validation errors",
+      "createError": "Failed to create supplier. Please try again."
     }
   },
   "supplierDetail": {
@@ -475,38 +481,41 @@
     "activateSuccess": "Supplier Activated",
     "activateError": "Activation Failed",
     "validation": {
-      "abnInvalid": "Invalid ABN - checksum validation failed"
-    }
-  },
-  "linkProductDialog": {
-    "title": "Link Product to Supplier",
-    "description": "Associate a product with this supplier and set pricing details",
-    "selectProduct": "Select Product",
-    "selectProductPlaceholder": "Search products...",
-    "costPrice": "Cost Price ($)",
-    "costPricePlaceholder": "Enter cost price",
-    "supplierSku": "Supplier SKU (Optional)",
-    "supplierSkuPlaceholder": "Supplier's product code",
-    "packSize": "Pack Size (Optional)",
-    "packSizePlaceholder": "e.g., 10",
-    "moq": "Minimum Order Qty (Optional)",
-    "moqPlaceholder": "e.g., 5",
-    "leadTimeDays": "Lead Time Days (Optional)",
-    "leadTimeDaysPlaceholder": "e.g., 3",
-    "isPreferredSupplier": "Preferred Supplier",
-    "isPreferredSupplierDescription": "Mark this as the preferred supplier for this product",
-    "cancel": "Cancel",
-    "linkProduct": "Link Product",
-    "linking": "Linking...",
-    "validation": {
+      "abnInvalid": "Invalid ABN - checksum validation failed",
       "productRequired": "Please select a product",
       "costPriceRequired": "Cost price is required",
-      "costPriceInvalid": "Please enter a valid cost price"
+      "costPriceInvalid": "Please enter a valid cost price greater than zero"
     },
-    "messages": {
-      "success": "Product linked successfully",
-      "error": "Failed to link product"
-    }
+    "errorLoading": "Failed to load supplier details",
+    "suspend": "Suspend",
+    "activate": "Activate",
+    "suspended": "Suspended",
+    "reason": "Reason",
+    "date": "Date",
+    "days": "days",
+    "noCategories": "No categories assigned",
+    "product": "Product",
+    "noLinkedProductsDescription": "Link products to track cost and ordering",
+    "suspendTitle": "Suspend Supplier",
+    "suspendDescription": "Are you sure you want to suspend this supplier? They will not appear in active supplier lists.",
+    "suspensionReason": "Suspension Reason",
+    "suspensionReasonPlaceholder": "Enter the reason for suspending this supplier...",
+    "suspensionReasonMinLength": "Reason must be at least 10 characters",
+    "activateTitle": "Activate Supplier",
+    "activateDescription": "Are you sure you want to activate this supplier?",
+    "productLinked": "Product linked",
+    "productAlreadyLinked": "This product is already linked to this supplier",
+    "linkProductDescription": "Associate a product with this supplier and set pricing details.",
+    "searchProducts": "Search products...",
+    "selectProduct": "Select a product",
+    "noProductsFound": "No products found",
+    "enterDollars": "Enter amount in dollars (e.g. 10.50)",
+    "supplierSkuPlaceholder": "e.g. SUP-001",
+    "supplierProductName": "Supplier Product Name",
+    "supplierProductNamePlaceholder": "Supplier's name for this product",
+    "leadTimeDays": "Lead Time (Days)",
+    "preferredSupplier": "Mark as preferred supplier for this product",
+    "preferredSupplierDescription": "Preferred suppliers are shown first when ordering"
   },
   "customers": {
     "title": "Customer Management",
@@ -812,7 +821,10 @@
       "success": "Order Confirmed",
       "successMessage": "Order has been confirmed and moved to processing.",
       "error": "Confirmation Failed"
-    }
+    },
+    "recentOrders": "Recent orders for this customer",
+    "noOrders": "No orders found",
+    "allOrders": "All Orders"
   },
   "orderOnBehalf": {
     "title": "Create Order on Behalf of Customer",
@@ -1004,7 +1016,9 @@
     "validation": {
       "nameRequired": "Category name is required",
       "nameTooLong": "Category name must be 50 characters or less",
-      "lossPercentageRange": "Processing loss must be between 0 and 100"
+      "lossPercentageRange": "Processing loss must be between 0 and 100",
+      "invalidInput": "Invalid Input",
+      "fixErrors": "Please fix the errors before submitting."
     },
     "info": {
       "hasProducts": "This category has {count} product(s) assigned"
@@ -1146,6 +1160,12 @@
       "pricingClearedDescription": "All customer-specific pricing has been cleared",
       "categoryCreated": "Category created successfully",
       "categoryCreateError": "Failed to create category"
+    },
+    "upload": {
+      "errorInvalidType": "Invalid file type. Please upload an image.",
+      "errorFileTooLarge": "File is too large. Maximum size is 5MB.",
+      "errorUploadFailed": "Upload failed. Please try again.",
+      "errorRemoveFailed": "Failed to remove image. Please try again."
     }
   },
   "subproduct": {
@@ -1422,6 +1442,16 @@
     "validation": {
       "requiredFields": "Please fill in all required fields",
       "positivePrice": "Price must be a positive number"
+    },
+    "pricing": {
+      "validation": {
+        "customerRequired": "Please select a customer",
+        "productRequired": "Please select a product",
+        "priceRequired": "Price is required",
+        "pricePositive": "Price must be greater than zero",
+        "effectiveFromRequired": "Effective from date is required",
+        "effectiveToInvalid": "End date must be after start date"
+      }
     }
   },
   "pricing": {
@@ -1788,7 +1818,8 @@
       "paymentTermsPlaceholder": "e.g., Net 30",
       "notes": "Internal Notes",
       "notesPlaceholder": "Add any internal notes about this customer",
-      "noCredit": "Set to 0 for no credit approval"
+      "noCredit": "Set to 0 for no credit approval",
+      "enterDollars": "Enter amount in dollars (e.g. 5000)"
     },
     "directors": {
       "title": "Directors & Proprietors",
@@ -2770,7 +2801,8 @@
     "resyncPreview": {
       "title": "Resync Customer to Xero",
       "description": "Review the updated customer data before resyncing to Xero."
-    }
+    },
+    "cancel": "Cancel"
   },
   "xeroStatus": {
     "title": "Xero Status",
@@ -3584,7 +3616,13 @@
       "viewPdf": "View PDF",
       "noDocuments": "No identity documents uploaded",
       "imageUnavailable": "Image unavailable",
-      "noDocumentsUploaded": "No identity documents have been uploaded for this customer"
+      "noDocumentsUploaded": "No identity documents have been uploaded for this customer",
+      "uploadSuccess": "Document uploaded",
+      "uploadError": "Upload failed",
+      "uploading": "Uploading...",
+      "replaceDocument": "Replace",
+      "uploadFront": "Upload Front",
+      "uploadBack": "Upload Back"
     },
     "financialDetails": {
       "title": "Financial Details",
@@ -3871,19 +3909,6 @@
       "close": "to close"
     }
   },
-  "upload": {
-    "clickToUpload": "Click to upload",
-    "uploadSubtitle": "PNG, JPG up to 2MB",
-    "fileTypes": "PNG, JPG, GIF up to 10MB",
-    "addImage": "Add Image",
-    "change": "Change",
-    "remove": "Remove",
-    "uploading": "Uploading...",
-    "errorInvalidType": "Invalid file type. Please upload a JPG, PNG, or WebP image.",
-    "errorFileTooLarge": "File too large. Maximum size is 2MB.",
-    "errorUploadFailed": "Upload failed. Please try again.",
-    "errorRemoveFailed": "Failed to remove image. Please try again."
-  },
   "mobileDrawer": {
     "title": "Menu",
     "closeAriaLabel": "Close menu"
@@ -3996,7 +4021,8 @@
       "hasDependencies": "Cannot delete area with active suburb mappings or driver assignments",
       "createFailed": "Failed to create area",
       "updateFailed": "Failed to update area",
-      "deleteFailed": "Failed to delete area"
+      "deleteFailed": "Failed to delete area",
+      "reorderFailed": "Failed to save new order"
     },
     "success": {
       "created": "Area created successfully",

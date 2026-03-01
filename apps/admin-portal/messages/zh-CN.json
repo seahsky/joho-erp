@@ -79,7 +79,10 @@
     },
     "selectArea": "选择区域",
     "unassigned": "未分配",
-    "back": "返回"
+    "back": "返回",
+    "previous": "上一页",
+    "next": "下一页",
+    "editing": "编辑中"
   },
   "statusBadges": {
     "awaiting_approval": "待审批",
@@ -391,12 +394,15 @@
       "stateRequired": "州是必填项",
       "postcodeRequired": "邮编是必填项",
       "postcodeInvalid": "邮编必须是4位数字",
-      "creditLimitInvalid": "请输入有效的金额"
+      "creditLimitInvalid": "请输入有效的金额",
+      "abnInvalid": "ABN 必须为11位数字",
+      "acnInvalid": "ACN 必须为9位数字"
     },
     "messages": {
       "createSuccess": "供应商创建成功",
       "updateSuccess": "供应商更新成功",
-      "fixValidationErrors": "请修复验证错误"
+      "fixValidationErrors": "请修复验证错误",
+      "createError": "创建供应商失败，请重试。"
     }
   },
   "supplierDetail": {
@@ -475,38 +481,41 @@
     "activateSuccess": "供应商已激活",
     "activateError": "激活失败",
     "validation": {
-      "abnInvalid": "无效的 ABN - 校验和验证失败"
-    }
-  },
-  "linkProductDialog": {
-    "title": "关联产品到供应商",
-    "description": "将产品与此供应商关联并设置定价详情",
-    "selectProduct": "选择产品",
-    "selectProductPlaceholder": "搜索产品...",
-    "costPrice": "成本价（$）",
-    "costPricePlaceholder": "输入成本价",
-    "supplierSku": "供应商SKU（可选）",
-    "supplierSkuPlaceholder": "供应商的产品编码",
-    "packSize": "包装规格（可选）",
-    "packSizePlaceholder": "例如：10",
-    "moq": "最小订购量（可选）",
-    "moqPlaceholder": "例如：5",
-    "leadTimeDays": "交货天数（可选）",
-    "leadTimeDaysPlaceholder": "例如：3",
-    "isPreferredSupplier": "首选供应商",
-    "isPreferredSupplierDescription": "将此标记为该产品的首选供应商",
-    "cancel": "取消",
-    "linkProduct": "关联产品",
-    "linking": "关联中...",
-    "validation": {
+      "abnInvalid": "无效的 ABN - 校验和验证失败",
       "productRequired": "请选择产品",
-      "costPriceRequired": "成本价是必填项",
-      "costPriceInvalid": "请输入有效的成本价"
+      "costPriceRequired": "请输入成本价格",
+      "costPriceInvalid": "请输入大于零的有效成本价格"
     },
-    "messages": {
-      "success": "产品关联成功",
-      "error": "产品关联失败"
-    }
+    "errorLoading": "加载供应商详情失败",
+    "suspend": "暂停",
+    "activate": "激活",
+    "suspended": "已暂停",
+    "reason": "原因",
+    "date": "日期",
+    "days": "天",
+    "noCategories": "未分配类别",
+    "product": "产品",
+    "noLinkedProductsDescription": "关联产品以跟踪成本和订购",
+    "suspendTitle": "暂停供应商",
+    "suspendDescription": "确定要暂停此供应商吗？他们将不会出现在活跃供应商列表中。",
+    "suspensionReason": "暂停原因",
+    "suspensionReasonPlaceholder": "请输入暂停此供应商的原因...",
+    "suspensionReasonMinLength": "原因至少需要10个字符",
+    "activateTitle": "激活供应商",
+    "activateDescription": "确定要激活此供应商吗？",
+    "productLinked": "产品已关联",
+    "productAlreadyLinked": "该产品已关联到此供应商",
+    "linkProductDescription": "将产品与此供应商关联并设置价格详情。",
+    "searchProducts": "搜索产品...",
+    "selectProduct": "选择产品",
+    "noProductsFound": "未找到产品",
+    "enterDollars": "输入金额（澳元，例如 10.50）",
+    "supplierSkuPlaceholder": "例如 SUP-001",
+    "supplierProductName": "供应商产品名称",
+    "supplierProductNamePlaceholder": "供应商对该产品的名称",
+    "leadTimeDays": "交货周期（天）",
+    "preferredSupplier": "标记为该产品的首选供应商",
+    "preferredSupplierDescription": "首选供应商在订购时优先显示"
   },
   "customers": {
     "title": "客户管理",
@@ -812,7 +821,10 @@
       "success": "订单已确认",
       "successMessage": "订单已确认并移至处理队列。",
       "error": "确认失败"
-    }
+    },
+    "recentOrders": "该客户的近期订单",
+    "noOrders": "未找到订单",
+    "allOrders": "所有订单"
   },
   "orderOnBehalf": {
     "title": "代客户创建订单",
@@ -1004,7 +1016,9 @@
     "validation": {
       "nameRequired": "分类名称为必填项",
       "nameTooLong": "分类名称不得超过50个字符",
-      "lossPercentageRange": "加工损耗必须在0到100之间"
+      "lossPercentageRange": "加工损耗必须在0到100之间",
+      "invalidInput": "输入无效",
+      "fixErrors": "请修正错误后再提交。"
     },
     "info": {
       "hasProducts": "此分类已分配 {count} 个产品"
@@ -1146,6 +1160,12 @@
       "pricingClearedDescription": "所有客户特定价格已被清除",
       "categoryCreated": "分类创建成功",
       "categoryCreateError": "创建分类失败"
+    },
+    "upload": {
+      "errorInvalidType": "文件类型无效，请上传图片。",
+      "errorFileTooLarge": "文件过大，最大限制为 5MB。",
+      "errorUploadFailed": "上传失败，请重试。",
+      "errorRemoveFailed": "删除图片失败，请重试。"
     }
   },
   "subproduct": {
@@ -1422,6 +1442,16 @@
     "validation": {
       "requiredFields": "请填写所有必填字段",
       "positivePrice": "价格必须为正数"
+    },
+    "pricing": {
+      "validation": {
+        "customerRequired": "请选择客户",
+        "productRequired": "请选择产品",
+        "priceRequired": "请输入价格",
+        "pricePositive": "价格必须大于零",
+        "effectiveFromRequired": "请选择生效日期",
+        "effectiveToInvalid": "结束日期必须晚于开始日期"
+      }
     }
   },
   "pricing": {
@@ -1788,7 +1818,8 @@
       "paymentTermsPlaceholder": "例如，Net 30",
       "notes": "内部备注",
       "notesPlaceholder": "添加关于此客户的任何内部备注",
-      "noCredit": "设置为0表示不批准信用"
+      "noCredit": "设置为0表示不批准信用",
+      "enterDollars": "输入金额（澳元，例如 5000）"
     },
     "directors": {
       "title": "董事与所有者",
@@ -2770,7 +2801,8 @@
     "resyncPreview": {
       "title": "重新同步客户到 Xero",
       "description": "在重新同步到 Xero 之前查看更新的客户数据。"
-    }
+    },
+    "cancel": "取消"
   },
   "xeroStatus": {
     "title": "Xero 状态",
@@ -2987,8 +3019,7 @@
       "supplier": "供应商",
       "invoiceNumber": "发票号码",
       "mtvNumber": "MTV编号",
-      "vehicleTemperature": "车辆温度",
-      "batchNumber": "批次号"
+      "vehicleTemperature": "车辆温度"
     },
     "batchDetail": {
       "title": "库存批次详情",
@@ -3006,7 +3037,8 @@
       "invoiceNumber": "发票号码",
       "mtvNumber": "MTV编号",
       "vehicleTemperature": "车辆温度",
-      "notes": "备注"
+      "notes": "备注",
+      "batchNumber": "批次号"
     },
     "productSelector": {
       "searchPlaceholder": "按产品名称或SKU搜索...",
@@ -3584,7 +3616,13 @@
       "viewPdf": "查看PDF",
       "noDocuments": "未上传身份证件",
       "imageUnavailable": "图片不可用",
-      "noDocumentsUploaded": "该客户尚未上传身份证件"
+      "noDocumentsUploaded": "该客户尚未上传身份证件",
+      "uploadSuccess": "文件已上传",
+      "uploadError": "上传失败",
+      "uploading": "上传中...",
+      "replaceDocument": "替换",
+      "uploadFront": "上传正面",
+      "uploadBack": "上传背面"
     },
     "financialDetails": {
       "title": "财务信息",
@@ -3871,19 +3909,6 @@
       "close": "关闭"
     }
   },
-  "upload": {
-    "clickToUpload": "点击上传",
-    "uploadSubtitle": "PNG、JPG 最大2MB",
-    "fileTypes": "PNG、JPG、GIF 最大10MB",
-    "addImage": "添加图片",
-    "change": "更换",
-    "remove": "移除",
-    "uploading": "上传中...",
-    "errorInvalidType": "文件类型无效。请上传 JPG、PNG 或 WebP 图片。",
-    "errorFileTooLarge": "文件过大。最大允许 2MB。",
-    "errorUploadFailed": "上传失败，请重试。",
-    "errorRemoveFailed": "删除图片失败，请重试。"
-  },
   "mobileDrawer": {
     "title": "菜单",
     "closeAriaLabel": "关闭菜单"
@@ -3996,7 +4021,8 @@
       "hasDependencies": "无法删除有活跃区域映射或司机分配的区域",
       "createFailed": "创建区域失败",
       "updateFailed": "更新区域失败",
-      "deleteFailed": "删除区域失败"
+      "deleteFailed": "删除区域失败",
+      "reorderFailed": "保存新排序失败"
     },
     "success": {
       "created": "区域创建成功",

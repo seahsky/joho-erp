@@ -49,7 +49,8 @@
     "close": "关闭",
     "signUp": "注册",
     "retry": "重试",
-    "errorOccurred": "出了点问题"
+    "errorOccurred": "出了点问题",
+    "unavailable": "不可用"
   },
   "errors": {
     "operationFailed": "操作失败，请重试。",
@@ -181,7 +182,25 @@
     "quickAdd": "快速添加",
     "productDetails": "产品详情",
     "description": "描述",
-    "quantity": "数量",
+    "quantity": {
+      "add": "加入购物车",
+      "add5": "+5",
+      "remove5": "-5",
+      "current": "当前数量：{count}",
+      "edit": "点击输入确切数量",
+      "save": "保存",
+      "cancel": "取消",
+      "confirm": "确认",
+      "precision": "输入确切数量 (1-999)",
+      "max": "最多 {max} 可用",
+      "min": "最少 1 件",
+      "invalid": "无效数量",
+      "placeholder": "数量",
+      "enterCustom": "输入自定义数量",
+      "quickAdd5": "快速添加5件",
+      "enterValidAmount": "请输入1到999之间的有效数量",
+      "maxExceeded": "数量不能超过{max}"
+    },
     "selectQuantity": "选择数量",
     "increaseQuantity": "增加数量",
     "decreaseQuantity": "减少数量",
@@ -215,25 +234,6 @@
       "checkout": "结账",
       "empty": "购物车是空的",
       "orderBy": "在 {time} 前订购以便 {date} 配送"
-    },
-    "quantity": {
-      "add": "加入购物车",
-      "add5": "+5",
-      "remove5": "-5",
-      "current": "当前数量：{count}",
-      "edit": "点击输入确切数量",
-      "save": "保存",
-      "cancel": "取消",
-      "confirm": "确认",
-      "precision": "输入确切数量 (1-999)",
-      "max": "最多 {max} 可用",
-      "min": "最少 1 件",
-      "invalid": "无效数量",
-      "placeholder": "数量",
-      "enterCustom": "输入自定义数量",
-      "quickAdd5": "快速添加5件",
-      "enterValidAmount": "请输入1到999之间的有效数量",
-      "maxExceeded": "数量不能超过{max}"
     },
     "specialPrice": "特价",
     "details": {
@@ -304,7 +304,8 @@
       "pending_approval": "等待审批",
       "approved": "已批准缺货订单",
       "rejected": "缺货订单已拒绝",
-      "partial_approved": "部分批准"
+      "partial_approved": "部分批准",
+      "label": "缺货订单"
     },
     "cancel": {
       "title": "取消订单",
@@ -982,13 +983,13 @@
         }
       },
       "declaration": {
-        "title": "声明",
-        "intro": "通过同意这些条款，本人/我们声明并确认：",
         "1": "本人/我们已阅读并理解本申请的条款，并确认该条款将适用于供应商向本人/我们提供的任何信贷额度。",
         "2": "申请人提供的所有信息真实准确。",
         "3": "本人/我们确认供应商及相关方将使用此信息评估本人/我们的商业信贷申请。",
         "4": "本人/我们同意供应商从信用报告机构获取包含本人/我们个人信用信息的信用报告，用于评估供应商提供的商业信贷。",
-        "5": "本人/我们同意供应商向信用报告机构和其他信贷提供者披露个人信息，用于评估信用状况和追债。"
+        "5": "本人/我们同意供应商向信用报告机构和其他信贷提供者披露个人信息，用于评估信用状况和追债。",
+        "title": "声明",
+        "intro": "通过同意这些条款，本人/我们声明并确认："
       },
       "agreement": {
         "label": "我已阅读并同意上述条款和条件",
@@ -1204,19 +1205,6 @@
       }
     }
   },
-  "upload": {
-    "clickToUpload": "点击上传",
-    "uploadSubtitle": "PNG、JPG 最大2MB",
-    "fileTypes": "PNG、JPG、GIF 最大10MB",
-    "addImage": "添加图片",
-    "change": "更换",
-    "remove": "移除",
-    "uploading": "上传中...",
-    "errorInvalidType": "文件类型无效。请上传 JPG、PNG 或 WebP 图片。",
-    "errorFileTooLarge": "文件过大。最大允许 2MB。",
-    "errorUploadFailed": "上传失败，请重试。",
-    "errorRemoveFailed": "删除图片失败，请重试。"
-  },
   "pricing": {
     "status": {
       "starts": "{date}开始生效",
@@ -1332,5 +1320,13 @@
     "sameStatus": "订单已处于此状态",
     "terminalStatus": "此订单无法修改",
     "zeroPrice": "您的订单包含未定价商品。请联系我们的销售团队。"
+  },
+  "inventory": {
+    "stats": {
+      "turnover": {
+        "noSales": "无销售",
+        "days": "天"
+      }
+    }
   }
 }
