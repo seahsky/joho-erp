@@ -797,7 +797,7 @@ export const productRouter = router({
       const result = await prisma.$transaction(async (tx) => {
         // 0. Generate batch number
         const { generateBatchNumber } = await import('../services/batch-number');
-        const batchNumber = await generateBatchNumber(tx, adjustmentType, supplierInvoiceNumber);
+        const batchNumber = await generateBatchNumber(tx, adjustmentType, supplierInvoiceNumber, supplierId);
 
         // 1. Create inventory transaction record
         const transaction = await tx.inventoryTransaction.create({

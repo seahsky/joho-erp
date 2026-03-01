@@ -46,12 +46,14 @@ const ADJUSTMENT_TYPE_TO_PREFIX: Record<AdjustmentType, string> = {
  * @param tx - Prisma transaction client (must be used within a $transaction)
  * @param adjustmentType - The type of stock adjustment
  * @param supplierInvoiceNumber - Required for stock_received; triggers grouping
+ * @param supplierId - Scopes invoice number matching to a specific supplier
  * @returns The generated batch number string (e.g., "SI-000001")
  */
 export async function generateBatchNumber(
   tx: TransactionClient,
   adjustmentType: AdjustmentType,
   supplierInvoiceNumber?: string,
+  supplierId?: string,
 ): Promise<string> {
   const prefix = ADJUSTMENT_TYPE_TO_PREFIX[adjustmentType];
 
@@ -64,6 +66,7 @@ export async function generateBatchNumber(
     const existingBatch = await tx.inventoryBatch.findFirst({
       where: {
         supplierInvoiceNumber,
+        supplierId,
         batchNumber: { not: null },
       },
       select: { batchNumber: true },
