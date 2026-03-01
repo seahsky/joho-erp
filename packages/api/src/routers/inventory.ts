@@ -1121,14 +1121,16 @@ export const inventoryRouter = router({
     }),
 
   /**
-   * Get processing history (paginated, searchable) — InventoryTransactions with adjustmentType='processing'
+   * Get processing history (paginated, searchable) — paired processing events
+   * Target transactions (qty > 0) are the pagination anchor; source transactions
+   * (qty < 0) are fetched by matching batchNumber.
    */
   getProcessingHistory: requirePermission('inventory:view')
     .input(
       z.object({
         page: z.number().int().positive().default(1),
         pageSize: z.number().int().positive().max(100).default(25),
-        sortBy: z.enum(['createdAt', 'productName', 'quantity']).default('createdAt'),
+        sortBy: z.enum(['createdAt', 'productName']).default('createdAt'),
         sortDirection: z.enum(['asc', 'desc']).default('desc'),
         search: z.string().optional(),
         dateFrom: z.string().optional(),
@@ -1138,9 +1140,11 @@ export const inventoryRouter = router({
     .query(async ({ input }) => {
       const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo } = input;
 
+      // Build where clause for target transactions (qty > 0)
       const where: any = {
         type: 'adjustment',
         adjustmentType: 'processing',
+        quantity: { gt: 0 },
       };
 
       if (search) {
@@ -1169,18 +1173,17 @@ export const inventoryRouter = router({
         case 'productName':
           orderBy = { product: { name: sortDirection } };
           break;
-        case 'quantity':
-          orderBy = { quantity: sortDirection };
-          break;
         case 'createdAt':
         default:
           orderBy = { createdAt: sortDirection };
           break;
       }
 
+      // 1. Count target transactions for pagination
       const totalCount = await prisma.inventoryTransaction.count({ where });
 
-      const transactions = await prisma.inventoryTransaction.findMany({
+      // 2. Fetch target transactions (paginated)
+      const targetTransactions = await prisma.inventoryTransaction.findMany({
         where,
         include: {
           product: {
@@ -1192,20 +1195,105 @@ export const inventoryRouter = router({
         take: pageSize,
       });
 
-      const items = transactions.map((tx) => ({
-        id: tx.id,
-        productId: tx.product.id,
-        productName: tx.product.name,
-        productSku: tx.product.sku,
-        productUnit: tx.product.unit,
-        batchNumber: tx.batchNumber,
-        quantity: tx.quantity,
-        previousStock: tx.previousStock,
-        newStock: tx.newStock,
-        notes: tx.notes,
-        createdAt: tx.createdAt,
-        createdBy: tx.createdBy || 'system',
-      }));
+      // 3. Fetch source transactions by matching batchNumber
+      const batchNumbers = targetTransactions
+        .map((tx) => tx.batchNumber)
+        .filter((bn): bn is string => bn !== null);
+
+      const sourceTransactions = batchNumbers.length > 0
+        ? await prisma.inventoryTransaction.findMany({
+            where: {
+              type: 'adjustment',
+              adjustmentType: 'processing',
+              quantity: { lt: 0 },
+              batchNumber: { in: batchNumbers },
+            },
+            include: {
+              product: {
+                select: { id: true, name: true, sku: true, unit: true },
+              },
+              batchConsumptions: {
+                include: {
+                  batch: {
+                    select: {
+                      id: true,
+                      batchNumber: true,
+                      expiryDate: true,
+                      costPerUnit: true,
+                      supplier: {
+                        select: { businessName: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : [];
+
+      // Build a map of batchNumber -> source transaction
+      const sourceMap = new Map<string, (typeof sourceTransactions)[number]>();
+      for (const src of sourceTransactions) {
+        if (src.batchNumber) {
+          sourceMap.set(src.batchNumber, src);
+        }
+      }
+
+      // Assemble paired events
+      const items = targetTransactions.map((target) => {
+        const source = target.batchNumber ? sourceMap.get(target.batchNumber) ?? null : null;
+
+        const batchConsumptions = (source?.batchConsumptions ?? []).map((bc) => ({
+          quantityConsumed: bc.quantityConsumed,
+          costPerUnit: bc.costPerUnit, // cents
+          totalCost: bc.totalCost, // cents
+          batch: bc.batch
+            ? {
+                id: bc.batch.id,
+                batchNumber: bc.batch.batchNumber,
+                expiryDate: bc.batch.expiryDate,
+              }
+            : null,
+          supplierName: bc.batch?.supplier?.businessName ?? null,
+        }));
+
+        const totalMaterialCost = batchConsumptions.reduce((sum, bc) => sum + bc.totalCost, 0);
+        const inputQty = source ? Math.abs(source.quantity) : null;
+        const outputQty = target.quantity;
+        const lossPercentage =
+          inputQty !== null && inputQty > 0
+            ? Math.round(((inputQty - outputQty) / inputQty) * 1000) / 10
+            : null;
+
+        return {
+          id: target.id,
+          batchNumber: target.batchNumber,
+          source: source
+            ? {
+                productId: source.product.id,
+                productName: source.product.name,
+                productSku: source.product.sku,
+                productUnit: source.product.unit,
+                quantity: Math.abs(source.quantity),
+              }
+            : null,
+          target: {
+            productId: target.product.id,
+            productName: target.product.name,
+            productSku: target.product.sku,
+            productUnit: target.product.unit,
+            quantity: target.quantity,
+            costPerUnit: target.costPerUnit, // cents or null
+            expiryDate: target.expiryDate,
+          },
+          lossPercentage,
+          batchConsumptions,
+          totalMaterialCost, // cents
+          notes: target.notes ?? source?.notes ?? null,
+          createdAt: target.createdAt,
+          createdBy: target.createdBy || 'system',
+        };
+      });
 
       return {
         items,

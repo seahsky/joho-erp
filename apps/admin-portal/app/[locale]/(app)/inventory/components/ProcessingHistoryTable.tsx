@@ -1,54 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  EmptyState,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
   Skeleton,
-  EmptyState,
-  Button,
-  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@joho-erp/ui';
+import { formatAUD } from '@joho-erp/shared';
 import {
   ArrowRightLeft,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pencil,
   Search,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 
-type SortBy = 'createdAt' | 'productName' | 'quantity';
+type SortBy = 'createdAt' | 'productName';
 type SortDirection = 'asc' | 'desc';
-
-interface TransactionItem {
-  id: string;
-  productId: string;
-  productName: string;
-  productSku: string;
-  productUnit: string;
-  batchNumber: string | null;
-  quantity: number;
-  previousStock: number;
-  newStock: number;
-  notes: string | null;
-  createdAt: Date;
-  createdBy: string;
-}
 
 export function ProcessingHistoryTable() {
   const t = useTranslations('inventory.processingHistory');
@@ -61,7 +49,18 @@ export function ProcessingHistoryTable() {
   const [page, setPage] = useState(1);
   const pageSize = 25;
 
-  const [selectedTransaction, setSelectedTransaction] = useState<TransactionItem | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedTransaction, setSelectedTransaction] = useState<{
+    id: string;
+    productId: string;
+    productName: string;
+    productSku: string;
+    productUnit: string;
+    quantity: number;
+    previousStock: number;
+    newStock: number;
+    notes: string | null;
+  } | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const { data, isLoading, refetch } = api.inventory.getProcessingHistory.useQuery({
@@ -84,6 +83,33 @@ export function ProcessingHistoryTable() {
     });
   };
 
+  const formatShortDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const toggleExpanded = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const getLossColor = (loss: number | null) => {
+    if (loss === null) return 'text-muted-foreground';
+    if (loss <= 5) return 'text-success';
+    if (loss <= 15) return 'text-warning';
+    return 'text-destructive';
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -98,7 +124,7 @@ export function ProcessingHistoryTable() {
     );
   }
 
-  const items = (data?.items ?? []) as TransactionItem[];
+  const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
@@ -175,10 +201,8 @@ export function ProcessingHistoryTable() {
               <SelectContent>
                 <SelectItem value="createdAt-desc">{t('sort.dateDesc')}</SelectItem>
                 <SelectItem value="createdAt-asc">{t('sort.dateAsc')}</SelectItem>
-                <SelectItem value="productName-asc">{t('sort.productNameAsc')}</SelectItem>
-                <SelectItem value="productName-desc">{t('sort.productNameDesc')}</SelectItem>
-                <SelectItem value="quantity-desc">{t('sort.quantityDesc')}</SelectItem>
-                <SelectItem value="quantity-asc">{t('sort.quantityAsc')}</SelectItem>
+                <SelectItem value="productName-asc">{t('sort.targetProductAsc')}</SelectItem>
+                <SelectItem value="productName-desc">{t('sort.targetProductDesc')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -188,58 +212,224 @@ export function ProcessingHistoryTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('columns.batchNumber')}</TableHead>
-                  <TableHead>{t('columns.product')}</TableHead>
-                  <TableHead className="text-right">{t('columns.quantity')}</TableHead>
-                  <TableHead>{t('columns.stockChange')}</TableHead>
-                  <TableHead>{t('columns.notes')}</TableHead>
+                  <TableHead className="w-8" />
+                  <TableHead>{t('columns.sourceProduct')}</TableHead>
+                  <TableHead>{t('columns.targetProduct')}</TableHead>
+                  <TableHead className="text-right">{t('columns.inputQty')}</TableHead>
+                  <TableHead className="text-right">{t('columns.outputQty')}</TableHead>
+                  <TableHead className="text-right">{t('columns.lossPercentage')}</TableHead>
                   <TableHead>{t('columns.date')}</TableHead>
                   <TableHead>{t('columns.performedBy')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow
-                    key={item.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => {
-                      setSelectedTransaction(item);
-                      setShowEditDialog(true);
-                    }}
-                  >
-                    <TableCell>
-                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">{item.productSku}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <span className={item.quantity > 0 ? 'text-success' : 'text-destructive'}>
-                        {item.quantity > 0 ? '+' : ''}{item.quantity.toFixed(1)} {item.productUnit}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {item.previousStock} → {item.newStock}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm line-clamp-2">{item.notes || '-'}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{formatDate(item.createdAt)}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">{item.createdBy}</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {items.map((item) => {
+                  const isExpanded = expandedRows.has(item.id);
+                  return (
+                    <Fragment key={item.id}>
+                      <TableRow
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleExpanded(item.id)}
+                      >
+                        <TableCell className="w-8 pr-0">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.source ? (
+                            <div>
+                              <p className="font-medium">{item.source.productName}</p>
+                              <p className="text-sm text-muted-foreground">{item.source.productSku}</p>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">
+                              {t('detail.unknownSource')}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{item.target.productName}</p>
+                            <p className="text-sm text-muted-foreground">{item.target.productSku}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {item.source ? (
+                            <span className="text-destructive">
+                              -{item.source.quantity.toFixed(1)} {item.source.productUnit}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          <span className="text-success">
+                            +{item.target.quantity.toFixed(1)} {item.target.productUnit}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          <span className={getLossColor(item.lossPercentage)}>
+                            {item.lossPercentage !== null ? `${item.lossPercentage}%` : '-'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{formatDate(item.createdAt)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{item.createdBy}</span>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Expandable detail row */}
+                      {isExpanded && (
+                        <TableRow className="hover:bg-muted/30">
+                          <TableCell colSpan={8} className="bg-muted/30 p-4">
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                              {/* Left: Source Batches Consumed */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-3">
+                                  {t('detail.sourceBatches')}
+                                </h4>
+                                {item.batchConsumptions.length > 0 ? (
+                                  <div className="overflow-x-auto">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="text-xs">{t('detail.batchNumber')}</TableHead>
+                                          <TableHead className="text-xs">{t('detail.expiry')}</TableHead>
+                                          <TableHead className="text-xs text-right">{t('detail.qtyConsumed')}</TableHead>
+                                          <TableHead className="text-xs text-right">{t('detail.costPerUnit')}</TableHead>
+                                          <TableHead className="text-xs text-right">{t('detail.subtotal')}</TableHead>
+                                          <TableHead className="text-xs">{t('detail.supplier')}</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {item.batchConsumptions.map((bc, idx) => (
+                                          <TableRow key={idx}>
+                                            <TableCell className="text-sm font-mono">
+                                              {bc.batch?.batchNumber ?? '-'}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {bc.batch?.expiryDate
+                                                ? formatShortDate(bc.batch.expiryDate)
+                                                : '-'}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-right tabular-nums">
+                                              {bc.quantityConsumed.toFixed(1)}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-right tabular-nums">
+                                              {formatAUD(bc.costPerUnit)}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-right tabular-nums">
+                                              {formatAUD(bc.totalCost)}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {bc.supplierName ?? '-'}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                        {/* Total row */}
+                                        <TableRow className="border-t font-semibold">
+                                          <TableCell colSpan={4} className="text-sm text-right">
+                                            {t('detail.totalMaterialCost')}
+                                          </TableCell>
+                                          <TableCell className="text-sm text-right tabular-nums">
+                                            {formatAUD(item.totalMaterialCost)}
+                                          </TableCell>
+                                          <TableCell />
+                                        </TableRow>
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground italic">
+                                    {t('detail.noBatchData')}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Right: Output Summary */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-3">
+                                  {t('detail.outputSummary')}
+                                </h4>
+                                <dl className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">{t('detail.outputCostPerUnit')}</dt>
+                                    <dd className="font-medium tabular-nums">
+                                      {item.target.costPerUnit !== null
+                                        ? formatAUD(item.target.costPerUnit)
+                                        : '-'}
+                                    </dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">{t('detail.outputExpiry')}</dt>
+                                    <dd className="font-medium">
+                                      {item.target.expiryDate
+                                        ? formatShortDate(item.target.expiryDate)
+                                        : '-'}
+                                    </dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">{t('columns.lossPercentage')}</dt>
+                                    <dd className={`font-medium ${getLossColor(item.lossPercentage)}`}>
+                                      {item.lossPercentage !== null ? `${item.lossPercentage}%` : '-'}
+                                    </dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">{t('detail.totalMaterialCost')}</dt>
+                                    <dd className="font-medium tabular-nums">
+                                      {formatAUD(item.totalMaterialCost)}
+                                    </dd>
+                                  </div>
+                                  {item.notes && (
+                                    <div className="flex justify-between">
+                                      <dt className="text-muted-foreground">{t('detail.notes')}</dt>
+                                      <dd className="font-medium text-right max-w-[200px]">
+                                        {item.notes}
+                                      </dd>
+                                    </div>
+                                  )}
+                                </dl>
+
+                                <div className="mt-4">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedTransaction({
+                                        id: item.id,
+                                        productId: item.target.productId,
+                                        productName: item.target.productName,
+                                        productSku: item.target.productSku,
+                                        productUnit: item.target.productUnit,
+                                        quantity: item.target.quantity,
+                                        previousStock: 0,
+                                        newStock: 0,
+                                        notes: item.notes,
+                                      });
+                                      setShowEditDialog(true);
+                                    }}
+                                  >
+                                    <Pencil className="mr-2 h-3 w-3" />
+                                    {t('detail.edit')}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center">
+                    <TableCell colSpan={8} className="py-8 text-center">
                       <EmptyState
                         icon={ArrowRightLeft}
                         title={t('emptyState')}

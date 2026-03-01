@@ -3411,13 +3411,30 @@
       "title": "加工記錄",
       "description": "查看所有庫存加工交易",
       "columns": {
-        "product": "產品",
-        "batchNumber": "批次號",
-        "quantity": "數量",
-        "stockChange": "庫存變動",
-        "notes": "備註",
+        "sourceProduct": "原料產品",
+        "targetProduct": "成品",
+        "inputQty": "投入數量",
+        "outputQty": "產出數量",
+        "lossPercentage": "損耗 %",
         "date": "日期",
         "performedBy": "操作人"
+      },
+      "detail": {
+        "sourceBatches": "消耗的原料批次",
+        "batchNumber": "批次號",
+        "expiry": "有效期",
+        "qtyConsumed": "消耗數量",
+        "costPerUnit": "單位成本",
+        "subtotal": "小計",
+        "supplier": "供應商",
+        "totalMaterialCost": "原料總成本",
+        "outputSummary": "產出摘要",
+        "outputCostPerUnit": "產出單位成本",
+        "outputExpiry": "產出有效期",
+        "notes": "備註",
+        "noBatchData": "無批次消耗數據",
+        "unknownSource": "未知原料",
+        "edit": "編輯交易"
       },
       "filters": {
         "searchPlaceholder": "按產品名稱或SKU搜尋...",
@@ -3428,10 +3445,8 @@
         "sortBy": "排序方式",
         "dateDesc": "日期（最新）",
         "dateAsc": "日期（最早）",
-        "productNameAsc": "產品名稱（A-Z）",
-        "productNameDesc": "產品名稱（Z-A）",
-        "quantityDesc": "數量（最多）",
-        "quantityAsc": "數量（最少）"
+        "targetProductAsc": "成品名稱（A-Z）",
+        "targetProductDesc": "成品名稱（Z-A）"
       },
       "emptyState": "未找到加工記錄",
       "emptyStateDescription": "沒有符合篩選條件的加工交易",

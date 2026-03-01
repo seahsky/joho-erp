@@ -3411,13 +3411,30 @@
       "title": "Processing History",
       "description": "View all stock processing transactions",
       "columns": {
-        "product": "Product",
-        "batchNumber": "Batch #",
-        "quantity": "Quantity",
-        "stockChange": "Stock Change",
-        "notes": "Notes",
+        "sourceProduct": "Source Product",
+        "targetProduct": "Target Product",
+        "inputQty": "Input Qty",
+        "outputQty": "Output Qty",
+        "lossPercentage": "Loss %",
         "date": "Date",
         "performedBy": "Performed By"
+      },
+      "detail": {
+        "sourceBatches": "Source Batches Consumed",
+        "batchNumber": "Batch #",
+        "expiry": "Expiry",
+        "qtyConsumed": "Qty Consumed",
+        "costPerUnit": "Cost/Unit",
+        "subtotal": "Subtotal",
+        "supplier": "Supplier",
+        "totalMaterialCost": "Total Material Cost",
+        "outputSummary": "Output Summary",
+        "outputCostPerUnit": "Output Cost/Unit",
+        "outputExpiry": "Output Expiry",
+        "notes": "Notes",
+        "noBatchData": "No batch consumption data available",
+        "unknownSource": "Unknown Source",
+        "edit": "Edit Transaction"
       },
       "filters": {
         "searchPlaceholder": "Search by product name or SKU...",
@@ -3428,10 +3445,8 @@
         "sortBy": "Sort by",
         "dateDesc": "Date (Newest)",
         "dateAsc": "Date (Oldest)",
-        "productNameAsc": "Product Name (A-Z)",
-        "productNameDesc": "Product Name (Z-A)",
-        "quantityDesc": "Quantity (Highest)",
-        "quantityAsc": "Quantity (Lowest)"
+        "targetProductAsc": "Target Product (A-Z)",
+        "targetProductDesc": "Target Product (Z-A)"
       },
       "emptyState": "No processing records found",
       "emptyStateDescription": "No processing transactions match your filters",
