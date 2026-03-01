@@ -869,6 +869,9 @@
       "adminNotes": "Notes visible only to admin users",
       "internalNotes": "Notes visible to warehouse staff"
     },
+    "labels": {
+      "customPrice": "Custom"
+    },
     "buttons": {
       "addItem": "Add to Order",
       "createOrder": "Create Order"

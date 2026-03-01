@@ -869,6 +869,9 @@
       "adminNotes": "僅管理員可見的備註",
       "internalNotes": "倉庫工作人員可見的備註"
     },
+    "labels": {
+      "customPrice": "自訂"
+    },
     "buttons": {
       "addItem": "新增至訂單",
       "createOrder": "建立訂單"

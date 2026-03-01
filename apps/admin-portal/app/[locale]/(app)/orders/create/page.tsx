@@ -49,6 +49,7 @@ type Product = {
   gstRate: number | null;
   unit: string;
   currentStock: number;
+  subProducts?: Product[];
 };
 
 export default function CreateOrderOnBehalfPage() {
@@ -61,7 +62,7 @@ export default function CreateOrderOnBehalfPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantityInput, setQuantityInput] = useState('1');
 
   // Address
   const [useCustomAddress, setUseCustomAddress] = useState(false);
@@ -102,8 +103,53 @@ export default function CreateOrderOnBehalfPage() {
     { enabled: !!selectedCustomerId }
   );
 
+  // Fetch customer-specific pricing
+  const { data: customerPricesData } = api.pricing.getCustomerPrices.useQuery(
+    { customerId: selectedCustomerId },
+    { enabled: !!selectedCustomerId }
+  );
+
   const customers = customersData?.customers || [];
   const products = (productsData?.items || []) as unknown as Product[];
+
+  // Build pricing map: productId -> effective price in cents
+  const pricingMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!customerPricesData) return map;
+    for (const pricing of customerPricesData) {
+      if (pricing.isValid && pricing.effectivePriceInfo) {
+        map.set(pricing.productId, pricing.effectivePriceInfo.effectivePrice);
+      }
+    }
+    return map;
+  }, [customerPricesData]);
+
+  // Helper to get effective price for a product
+  const getEffectiveProductPrice = (productId: string, basePrice: number): number => {
+    return pricingMap.get(productId) ?? basePrice;
+  };
+
+  // Flatten products: parents without subs stay as-is, parents with subs become groups
+  const { groupedProducts, allProducts } = useMemo(() => {
+    const grouped: { parent: Product; children: Product[] }[] = [];
+    const all: Product[] = [];
+
+    for (const product of products) {
+      if (product.subProducts && product.subProducts.length > 0) {
+        // Parent with subproducts: group header + children
+        grouped.push({ parent: product, children: product.subProducts });
+        for (const sub of product.subProducts) {
+          all.push(sub);
+        }
+      } else {
+        // Standalone product (no subproducts)
+        grouped.push({ parent: product, children: [] });
+        all.push(product);
+      }
+    }
+
+    return { groupedProducts: grouped, allProducts: all };
+  }, [products]);
 
   // Create order mutation
   const createOrderMutation = api.order.createOnBehalf.useMutation({
@@ -236,7 +282,8 @@ export default function CreateOrderOnBehalfPage() {
 
   // Add item to order
   const handleAddItem = () => {
-    if (!selectedProductId || quantity <= 0) {
+    const qty = parseInt(quantityInput) || 0;
+    if (!selectedProductId || qty <= 0) {
       toast({
         title: t('validation.invalidItem'),
         description: t('validation.selectProductAndQuantity'),
@@ -245,8 +292,11 @@ export default function CreateOrderOnBehalfPage() {
       return;
     }
 
-    const product = products.find((p) => p.id === selectedProductId);
+    // Search all selectable products (flattened list)
+    const product = allProducts.find((p) => p.id === selectedProductId);
     if (!product) return;
+
+    const effectivePrice = getEffectiveProductPrice(product.id, product.basePrice);
 
     // Check if product already in order
     const existingIndex = orderItems.findIndex((item) => item.productId === selectedProductId);
@@ -254,22 +304,23 @@ export default function CreateOrderOnBehalfPage() {
     if (existingIndex >= 0) {
       // Update quantity
       const updatedItems = [...orderItems];
-      const newQuantity = updatedItems[existingIndex].quantity + quantity;
+      const newQuantity = updatedItems[existingIndex].quantity + qty;
       updatedItems[existingIndex] = {
         ...updatedItems[existingIndex],
         quantity: newQuantity,
-        subtotal: toCents(multiplyMoney(createMoney(product.basePrice), newQuantity)),
+        unitPrice: effectivePrice,
+        subtotal: toCents(multiplyMoney(createMoney(effectivePrice), newQuantity)),
       };
       setOrderItems(updatedItems);
     } else {
       // Add new item
       const newItem: OrderItem = {
         productId: product.id,
-        quantity,
+        quantity: qty,
         sku: product.sku,
         name: product.name,
-        unitPrice: product.basePrice, // In cents
-        subtotal: toCents(multiplyMoney(createMoney(product.basePrice), quantity)),
+        unitPrice: effectivePrice, // In cents
+        subtotal: toCents(multiplyMoney(createMoney(effectivePrice), qty)),
         applyGst: product.applyGst,
         gstRate: product.gstRate,
       };
@@ -278,7 +329,7 @@ export default function CreateOrderOnBehalfPage() {
 
     // Reset
     setSelectedProductId('');
-    setQuantity(1);
+    setQuantityInput('1');
   };
 
   // Remove item
@@ -494,11 +545,32 @@ export default function CreateOrderOnBehalfPage() {
                     onChange={(e) => setSelectedProductId(e.target.value)}
                   >
                     <option value="">{t('placeholders.selectProduct')}</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.sku} - {product.name} ({formatAUD(product.basePrice)})
-                      </option>
-                    ))}
+                    {groupedProducts.map((group) => {
+                      if (group.children.length > 0) {
+                        // Parent with subproducts: render as optgroup
+                        return (
+                          <optgroup key={group.parent.id} label={`${group.parent.sku} - ${group.parent.name}`}>
+                            {group.children.map((sub) => {
+                              const price = getEffectiveProductPrice(sub.id, sub.basePrice);
+                              const isCustom = pricingMap.has(sub.id);
+                              return (
+                                <option key={sub.id} value={sub.id}>
+                                  {sub.sku} - {sub.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        );
+                      }
+                      // Standalone product
+                      const price = getEffectiveProductPrice(group.parent.id, group.parent.basePrice);
+                      const isCustom = pricingMap.has(group.parent.id);
+                      return (
+                        <option key={group.parent.id} value={group.parent.id}>
+                          {group.parent.sku} - {group.parent.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
@@ -506,8 +578,9 @@ export default function CreateOrderOnBehalfPage() {
                   <Input
                     id="quantity"
                     type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    min="0"
+                    value={quantityInput}
+                    onChange={(e) => setQuantityInput(e.target.value)}
                     className="mt-1"
                   />
                 </div>
