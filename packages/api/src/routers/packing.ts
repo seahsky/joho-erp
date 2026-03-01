@@ -579,9 +579,9 @@ export const packingRouter = router({
           });
         }
 
-        // Sync product stock from batch sums (defensive — replaces manual arithmetic)
+        // Sync TARGET product stock from batch sums (parent for subproducts, self for regular)
         const { syncProductCurrentStock: syncAdjustStock } = await import('../services/inventory-batch');
-        await syncAdjustStock(productId, tx);
+        const syncedStock = await syncAdjustStock(stockTargetProductId, tx);
 
         // For subproducts, recalculate all sibling subproduct stocks from the updated parent
         if (productIsSubproduct) {
@@ -591,7 +591,7 @@ export const packingRouter = router({
           });
 
           if (siblingSubproducts.length > 0) {
-            const updatedStocks = calcAllSubproductStocks(Math.max(0, freshNewStock), siblingSubproducts);
+            const updatedStocks = calcAllSubproductStocks(Math.max(0, syncedStock), siblingSubproducts);
             for (const { id, newStock: subStock } of updatedStocks) {
               await tx.product.update({
                 where: { id },
@@ -1051,6 +1051,7 @@ export const packingRouter = router({
 
 
           // Create individual inventory transactions for each subproduct (detailed audit trail)
+          let runningStock = previousStock;
           for (const { product, item, consumeQuantity } of items) {
             const transactionNotes = `Subproduct packed: ${product.name} (${item.quantity}${product.unit}) for order ${freshOrder.orderNumber}`;
 
@@ -1059,14 +1060,15 @@ export const packingRouter = router({
                 productId: parentId,
                 type: 'sale',
                 quantity: -consumeQuantity,
-                previousStock,
-                newStock: previousStock - consumeQuantity, // Individual item's view
+                previousStock: runningStock,
+                newStock: runningStock - consumeQuantity,
                 referenceType: 'order',
                 referenceId: freshOrder.id,
                 notes: transactionNotes,
                 createdBy: ctx.userId || 'system',
               },
             });
+            runningStock -= consumeQuantity;
 
             // Consume from batches via FIFO (from parent for subproducts)
             try {

@@ -422,6 +422,22 @@ export async function reversePackingAdjustments(
     return; // No-op: nothing to reverse
   }
 
+  // Idempotency guard: atomically claim unreversed transactions FIRST.
+  // If a concurrent call already claimed them, claimResult.count will be 0.
+  const claimResult = await client.inventoryTransaction.updateMany({
+    where: {
+      id: { in: unreversedAdjustments.map((t) => t.id) },
+      reversedAt: null,
+    },
+    data: {
+      reversedAt: new Date(),
+    },
+  });
+
+  if (claimResult.count === 0) {
+    return; // Another call already claimed and reversed these transactions
+  }
+
   // Group by productId and aggregate quantities (negate to get restoration amount)
   const adjustmentQuantities = new Map<string, number>();
   for (const txn of unreversedAdjustments) {
@@ -495,14 +511,4 @@ export async function reversePackingAdjustments(
       }
     }
   }
-
-  // Mark all original unreversed packing_adjustment transactions as reversed
-  await client.inventoryTransaction.updateMany({
-    where: {
-      id: { in: unreversedAdjustments.map((t) => t.id) },
-    },
-    data: {
-      reversedAt: new Date(),
-    },
-  });
 }
