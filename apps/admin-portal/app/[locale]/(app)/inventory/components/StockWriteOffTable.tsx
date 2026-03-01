@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
-import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { BatchLink } from './BatchLink';
 import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type SortBy = 'createdAt' | 'productName' | 'quantity';
@@ -235,11 +235,16 @@ export function StockWriteOffTable() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <ProcessingBatchLink
+                      <BatchLink
                         batchNumber={item.batchNumber}
-                        onProcessingClick={(batchNumber) => {
-                          setSelectedProcessingBatchNumber(batchNumber);
-                          setShowProcessingDialog(true);
+                        onClick={(bn) => {
+                          if (bn.startsWith('PR-')) {
+                            setSelectedProcessingBatchNumber(bn);
+                            setShowProcessingDialog(true);
+                          } else {
+                            setSelectedItem(item);
+                            setShowEditDialog(true);
+                          }
                         }}
                       />
                     </TableCell>

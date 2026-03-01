@@ -43,7 +43,7 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useDebounce } from 'use-debounce';
 import { BatchInfoDialog } from './BatchInfoDialog';
-import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { BatchLink } from './BatchLink';
 import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type StockStatus = 'all' | 'healthy' | 'low_stock' | 'out_of_stock';
@@ -283,9 +283,15 @@ function ProductBatchRows({
         >
           <TableCell />
           <TableCell className="pl-8">
-            <ProcessingBatchLink
+            <BatchLink
               batchNumber={batch.batchNumber}
-              onProcessingClick={onProcessingBatchClick}
+              onClick={(bn) => {
+                if (bn.startsWith('PR-')) {
+                  onProcessingBatchClick(bn);
+                } else {
+                  onBatchClick(batch.id);
+                }
+              }}
             />
           </TableCell>
           <TableCell>

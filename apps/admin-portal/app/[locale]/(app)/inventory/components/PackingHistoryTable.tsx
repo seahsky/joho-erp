@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { BatchLink } from './BatchLink';
 
 type SortBy = 'createdAt' | 'productName' | 'quantity';
 type SortDirection = 'asc' | 'desc';
@@ -211,7 +212,13 @@ export function PackingHistoryTable() {
                     }}
                   >
                     <TableCell>
-                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                      <BatchLink
+                        batchNumber={item.batchNumber}
+                        onClick={() => {
+                          setSelectedTransaction(item);
+                          setShowEditDialog(true);
+                        }}
+                      />
                     </TableCell>
                     <TableCell>
                       <div>

@@ -56,6 +56,7 @@ import {
   PackingHistoryTable,
   type InventoryTransaction,
 } from './components';
+import { BatchLink } from './components/BatchLink';
 import { PermissionGate } from '@/components/permission-gate';
 
 // Dynamically import heavy dialogs (they pull in xlsx, @react-pdf/renderer, etc.)
@@ -148,6 +149,22 @@ export default function InventoryPage() {
   // Processing record dialog state
   const [selectedProcessingBatchNumber, setSelectedProcessingBatchNumber] = useState<string | null>(null);
   const [showProcessingRecordDialog, setShowProcessingRecordDialog] = useState(false);
+
+  // SI- batch number resolution for overview tab
+  const [pendingSiBatchNumber, setPendingSiBatchNumber] = useState<string | null>(null);
+  const { data: resolvedSiBatch } = api.inventory.getBatchIdByBatchNumber.useQuery(
+    { batchNumber: pendingSiBatchNumber! },
+    { enabled: !!pendingSiBatchNumber }
+  );
+
+  // Open BatchInfoDialog once SI- batchId resolves
+  useEffect(() => {
+    if (resolvedSiBatch?.batchId && pendingSiBatchNumber) {
+      setSelectedBatchId(resolvedSiBatch.batchId);
+      setShowBatchInfoDialog(true);
+      setPendingSiBatchNumber(null);
+    }
+  }, [resolvedSiBatch, pendingSiBatchNumber]);
 
   // Handle query parameters from URL (e.g., from dashboard alerts)
   useEffect(() => {
@@ -523,19 +540,21 @@ export default function InventoryPage() {
                                 ({getAdjustmentTypeLabel(tx.adjustmentType)})
                               </span>
                             )}
-                            {tx.adjustmentType === 'processing' && tx.batchNumber && (
-                              <Badge
-                                variant="secondary"
-                                className="font-mono text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedProcessingBatchNumber(tx.batchNumber!);
-                                  setShowProcessingRecordDialog(true);
+                            {tx.batchNumber && (
+                              <BatchLink
+                                batchNumber={tx.batchNumber}
+                                onClick={(bn) => {
+                                  if (bn.startsWith('PR-')) {
+                                    setSelectedProcessingBatchNumber(bn);
+                                    setShowProcessingRecordDialog(true);
+                                  } else if (bn.startsWith('SI-')) {
+                                    setPendingSiBatchNumber(bn);
+                                  } else {
+                                    setSelectedTransaction(tx as InventoryTransaction);
+                                    setShowTransactionDetail(true);
+                                  }
                                 }}
-                              >
-                                <ArrowRightLeft className="mr-1 h-3 w-3" />
-                                {tx.batchNumber}
-                              </Badge>
+                              />
                             )}
                           </div>
                         </div>

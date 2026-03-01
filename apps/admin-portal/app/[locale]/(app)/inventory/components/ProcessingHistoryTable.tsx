@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { BatchLink } from './BatchLink';
 
 type SortBy = 'createdAt' | 'productName';
 type SortDirection = 'asc' | 'desc';
@@ -239,8 +240,11 @@ export function ProcessingHistoryTable() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.batchNumber ?? '-'}
+                        <TableCell>
+                          <BatchLink
+                            batchNumber={item.batchNumber}
+                            onClick={() => toggleExpanded(item.id)}
+                          />
                         </TableCell>
                         <TableCell>
                           {item.source ? (

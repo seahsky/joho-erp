@@ -39,7 +39,7 @@ import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { ExpiringBatchActions } from './ExpiringBatchActions';
 import { BatchInfoDialog } from './BatchInfoDialog';
-import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { BatchLink } from './BatchLink';
 import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type StatusFilter = 'all' | 'expired' | 'expiringSoon';
@@ -316,11 +316,15 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                     onClick={() => handleRowClick(batch.id)}
                   >
                     <TableCell>
-                      <ProcessingBatchLink
+                      <BatchLink
                         batchNumber={batch.batchNumber}
-                        onProcessingClick={(batchNumber) => {
-                          setSelectedProcessingBatchNumber(batchNumber);
-                          setShowProcessingDialog(true);
+                        onClick={(bn) => {
+                          if (bn.startsWith('PR-')) {
+                            setSelectedProcessingBatchNumber(bn);
+                            setShowProcessingDialog(true);
+                          } else {
+                            handleRowClick(batch.id);
+                          }
                         }}
                       />
                     </TableCell>

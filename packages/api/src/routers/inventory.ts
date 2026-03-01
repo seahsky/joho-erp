@@ -850,6 +850,16 @@ export const inventoryRouter = router({
       });
     }),
 
+  getBatchIdByBatchNumber: requirePermission('inventory:view')
+    .input(z.object({ batchNumber: z.string() }))
+    .query(async ({ input }) => {
+      const batch = await prisma.inventoryBatch.findFirst({
+        where: { batchNumber: input.batchNumber },
+        select: { id: true },
+      });
+      return batch ? { batchId: batch.id } : null;
+    }),
+
   /**
    * Mark a batch as fully consumed (stock write-off)
    */

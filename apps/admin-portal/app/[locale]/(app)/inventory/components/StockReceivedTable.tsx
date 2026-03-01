@@ -32,6 +32,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
+import { BatchLink } from './BatchLink';
 
 type SortBy = 'receivedAt' | 'productName' | 'quantity' | 'costPerUnit' | 'expiryDate';
 type SortDirection = 'asc' | 'desc';
@@ -223,7 +224,13 @@ export function StockReceivedTable() {
                     }}
                   >
                     <TableCell>
-                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                      <BatchLink
+                        batchNumber={item.batchNumber}
+                        onClick={() => {
+                          setSelectedBatchId(item.id);
+                          setShowEditDialog(true);
+                        }}
+                      />
                     </TableCell>
                     <TableCell>
                       <div>
