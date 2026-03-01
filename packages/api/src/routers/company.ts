@@ -34,14 +34,7 @@ export const companyRouter = router({
       },
     });
 
-    if (!company) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Company settings not found. Please create company profile first.',
-      });
-    }
-
-    return company;
+    return company ?? null;
   }),
 
   /**
@@ -77,45 +70,58 @@ export const companyRouter = router({
     .mutation(async ({ input, ctx }) => {
       const company = await prisma.company.findFirst();
 
-      if (!company) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Company not found',
-        });
-      }
-
-      // Track changes for audit
-      const changes: AuditChange[] = [];
-      if (company.businessName !== input.businessName) {
-        changes.push({ field: 'businessName', oldValue: company.businessName, newValue: input.businessName });
-      }
-      if (company.abn !== input.abn) {
-        changes.push({ field: 'abn', oldValue: company.abn, newValue: input.abn });
-      }
-
-      const updated = await prisma.company.update({
-        where: { id: company.id },
-        data: {
-          businessName: input.businessName,
-          abn: input.abn,
-          address: input.address,
-          contactPerson: input.contactPerson,
-          bankDetails: input.bankDetails || null,
-        },
-      });
-
-      // Audit log - CRITICAL: Company profile changes must be tracked
-      await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, changes, {
+      const data = {
         businessName: input.businessName,
-        changeType: 'profile',
+        abn: input.abn,
+        address: input.address,
+        contactPerson: input.contactPerson,
+        bankDetails: input.bankDetails || null,
+      };
+
+      if (company) {
+        // Track changes for audit
+        const changes: AuditChange[] = [];
+        if (company.businessName !== input.businessName) {
+          changes.push({ field: 'businessName', oldValue: company.businessName, newValue: input.businessName });
+        }
+        if (company.abn !== input.abn) {
+          changes.push({ field: 'abn', oldValue: company.abn, newValue: input.abn });
+        }
+
+        const updated = await prisma.company.update({
+          where: { id: company.id },
+          data,
+        });
+
+        // Audit log - CRITICAL: Company profile changes must be tracked
+        await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, company.id, changes, {
+          businessName: input.businessName,
+          changeType: 'profile',
+        }).catch((error) => {
+          console.error('Audit log failed for company profile update:', error);
+        });
+
+        return {
+          success: true,
+          message: 'Company profile updated successfully',
+          company: updated,
+        };
+      }
+
+      // No company exists — create one
+      const created = await prisma.company.create({ data });
+
+      await logCompanyProfileUpdate(ctx.userId, undefined, ctx.userRole, ctx.userName, created.id, [], {
+        businessName: input.businessName,
+        changeType: 'profile_created',
       }).catch((error) => {
-        console.error('Audit log failed for company profile update:', error);
+        console.error('Audit log failed for company profile creation:', error);
       });
 
       return {
         success: true,
-        message: 'Company profile updated successfully',
-        company: updated,
+        message: 'Company profile created successfully',
+        company: created,
       };
     }),
 

@@ -51,10 +51,10 @@ export default function CompanySettingsPage() {
 
   // Save mutation
   const saveMutation = api.company.updateProfile.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: t('settingsSaved'),
-        description: t('settingsSavedDescription'),
+        description: data.message,
       });
       setHasChanges(false);
       void utils.company.getSettings.invalidate();
@@ -101,7 +101,10 @@ export default function CompanySettingsPage() {
 
   // Track changes
   useEffect(() => {
-    if (settings) {
+    if (settings === null) {
+      // No company exists yet — enable save once user fills required fields
+      setHasChanges(businessName.trim() !== '' || abn.trim() !== '');
+    } else if (settings) {
       const modified =
         businessName !== (settings.businessName || '') ||
         abn !== (settings.abn || '') ||
@@ -186,6 +189,22 @@ export default function CompanySettingsPage() {
       setAccountName(settings.bankDetails?.accountName || '');
       setBsb(settings.bankDetails?.bsb || '');
       setAccountNumber(settings.bankDetails?.accountNumber || '');
+    } else {
+      setBusinessName('');
+      setAbn('');
+      setStreet('');
+      setSuburb('');
+      setState('');
+      setPostcode('');
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPhone('');
+      setMobile('');
+      setBankName('');
+      setAccountName('');
+      setBsb('');
+      setAccountNumber('');
     }
   };
 
