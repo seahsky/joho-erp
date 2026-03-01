@@ -440,12 +440,17 @@ export async function reversePackingAdjustments(
     const previousStock = product.currentStock;
     const newStock = previousStock + quantity;
 
+    // Generate batch number for reversal transaction
+    const { generateBatchNumber } = await import('./batch-number');
+    const batchNumber = await generateBatchNumber(client, 'packing_reset');
+
     // Create reversal transaction
     await client.inventoryTransaction.create({
       data: {
         productId,
         type: 'adjustment',
         adjustmentType: 'packing_reset',
+        batchNumber,
         quantity: quantity, // Positive to add back
         previousStock,
         newStock,

@@ -26,7 +26,8 @@ type AdjustmentType =
   | 'stock_write_off'
   | 'stock_count_correction'
   | 'processing'
-  | 'packing_adjustment';
+  | 'packing_adjustment'
+  | 'packing_reset';
 
 const ADJUSTMENT_TYPE_TO_PREFIX: Record<AdjustmentType, string> = {
   stock_received: 'SI',
@@ -34,6 +35,7 @@ const ADJUSTMENT_TYPE_TO_PREFIX: Record<AdjustmentType, string> = {
   stock_count_correction: 'CC',
   processing: 'PR',
   packing_adjustment: 'PA',
+  packing_reset: 'PA',
 };
 
 /**

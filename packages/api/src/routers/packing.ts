@@ -518,12 +518,17 @@ export const packingRouter = router({
         // Calculate new stock level with fresh data
         const freshNewStock = freshTargetProduct.currentStock - stockDelta;
 
+        // Generate batch number for audit trail
+        const { generateBatchNumber } = await import('../services/batch-number');
+        const batchNumber = await generateBatchNumber(tx, 'packing_adjustment');
+
         // Create inventory transaction for audit trail (on the target product)
         const transaction = await tx.inventoryTransaction.create({
           data: {
             productId: stockTargetProductId,
             type: 'adjustment',
             adjustmentType: 'packing_adjustment',
+            batchNumber,
             quantity: -stockDelta, // Negative when reducing stock (increasing order qty)
             previousStock: freshTargetProduct.currentStock,
             newStock: freshNewStock,
@@ -1725,12 +1730,17 @@ export const packingRouter = router({
               const previousStock = product.currentStock;
               const newStock = previousStock + quantity;
 
+              // Generate batch number for reversal transaction
+              const { generateBatchNumber: genResetBatchNum } = await import('../services/batch-number');
+              const resetBatchNumber = await genResetBatchNum(tx, 'packing_reset');
+
               // Create reversal transaction with dedicated type for clarity
               await tx.inventoryTransaction.create({
                 data: {
                   productId,
                   type: 'adjustment',
-                  adjustmentType: 'packing_reset', // New type for clarity in audit trail
+                  adjustmentType: 'packing_reset',
+                  batchNumber: resetBatchNumber, // New type for clarity in audit trail
                   quantity: quantity, // Positive to add back
                   previousStock,
                   newStock,
