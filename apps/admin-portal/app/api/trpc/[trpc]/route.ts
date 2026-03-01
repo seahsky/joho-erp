@@ -1,6 +1,7 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter, createContext, type UserRole } from '@joho-erp/api';
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { TRPCError } from '@trpc/server';
 
 // E2E testing bypass: requires both flags to prevent accidental use in production
 const isE2ETesting = process.env.E2E_TESTING === 'true' && process.env.NODE_ENV !== 'production';
@@ -44,8 +45,13 @@ const handler = async (req: Request) => {
           // Extract role from publicMetadata
           // Role should be set in Clerk dashboard or via API
           // Example: user.publicMetadata = { role: 'admin' }
-          const metadata = user.publicMetadata as { role?: UserRole };
+          const metadata = user.publicMetadata as { role?: UserRole; deactivated?: boolean };
           userRole = metadata.role || 'customer'; // Default to customer if not set
+
+          // Block deactivated users from making any API calls
+          if (metadata.deactivated) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Account deactivated' });
+          }
 
           // Extract user display name from Clerk user
           // Prefer fullName, fallback to firstName + lastName, then email

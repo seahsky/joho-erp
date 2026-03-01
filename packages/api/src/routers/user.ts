@@ -35,12 +35,11 @@ function mapClerkUserToResponse(user: {
   firstName: string | null;
   lastName: string | null;
   publicMetadata: Record<string, unknown>;
-  banned: boolean;
   lastSignInAt: number | null;
   createdAt: number;
   imageUrl: string;
 }): UserResponse {
-  const metadata = user.publicMetadata as { role?: UserRole };
+  const metadata = user.publicMetadata as { role?: UserRole; deactivated?: boolean };
   const role = metadata.role || 'customer';
 
   return {
@@ -49,7 +48,7 @@ function mapClerkUserToResponse(user: {
     firstName: user.firstName,
     lastName: user.lastName,
     role,
-    status: user.banned ? 'banned' : 'active',
+    status: metadata.deactivated ? 'banned' : 'active',
     lastSignInAt: user.lastSignInAt ? new Date(user.lastSignInAt) : null,
     createdAt: new Date(user.createdAt),
     imageUrl: user.imageUrl || null,
@@ -210,13 +209,23 @@ export const userRouter = router({
         const targetUser = await client.users.getUser(input.userId);
         const targetEmail = targetUser.emailAddresses[0]?.emailAddress || '';
 
-        let updatedUser;
+        // Update deactivation flag in publicMetadata (works on all Clerk plans)
+        const existingMetadata = targetUser.publicMetadata || {};
+        const updatedUser = await client.users.updateUser(input.userId, {
+          publicMetadata: {
+            ...existingMetadata,
+            deactivated: input.deactivate,
+          },
+        });
+
+        // Revoke all active sessions when deactivating
         if (input.deactivate) {
-          // Ban the user
-          updatedUser = await client.users.banUser(input.userId);
-        } else {
-          // Unban the user
-          updatedUser = await client.users.unbanUser(input.userId);
+          const sessions = await client.sessions.getSessionList({ userId: input.userId });
+          await Promise.all(
+            sessions.data
+              .filter((s) => s.status === 'active')
+              .map((s) => client.sessions.revokeSession(s.id))
+          );
         }
 
         // Audit log - CRITICAL: User status changes must be tracked
