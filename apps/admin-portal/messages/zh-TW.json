@@ -596,7 +596,10 @@
     "selectDate": "選擇配送日期",
     "packedOn": "打包於 {date}",
     "showingOrdersPackedOn": "顯示在 {date} 打包的訂單",
+    "showingDeliveriesFor": "顯示 {date} 的配送",
     "noOrdersPackedOnDate": "此日期沒有打包的訂單",
+    "order": "訂單",
+    "orders": "訂單",
     "searchPlaceholder": "按訂單或客戶搜尋...",
     "filters": {
       "allStatuses": "所有狀態",

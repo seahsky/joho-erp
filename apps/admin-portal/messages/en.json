@@ -596,7 +596,10 @@
     "selectDate": "Select Delivery Date",
     "packedOn": "Packed on {date}",
     "showingOrdersPackedOn": "Showing orders packed on {date}",
+    "showingDeliveriesFor": "Showing deliveries for {date}",
     "noOrdersPackedOnDate": "No orders were packed on this date",
+    "order": "order",
+    "orders": "orders",
     "searchPlaceholder": "Search by order or customer...",
     "filters": {
       "allStatuses": "All Statuses",

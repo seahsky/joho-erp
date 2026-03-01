@@ -16,6 +16,7 @@ interface OrderListViewProps {
     areaPackingSequence: number | null;
     areaColorVariant?: string;
     areaDisplayName?: string;
+    areaSortOrder?: number;
     deliverySequence: number | null;
     status: string;
     // Partial progress fields
@@ -38,6 +39,7 @@ interface AreaGroup {
   areaName: string | null;
   areaDisplayName: string;
   areaColorVariant: string;
+  areaSortOrder: number;
   orders: OrderListViewProps['orders'];
 }
 
@@ -120,26 +122,28 @@ export function OrderListView({
       const areaName = order.areaName ?? null;
       const areaDisplayName = order.areaDisplayName ?? 'Unassigned';
       const areaColorVariant = order.areaColorVariant ?? 'secondary';
+      const areaSortOrder = order.areaSortOrder ?? 999;
 
       if (!groupMap.has(areaName)) {
         groupMap.set(areaName, {
           areaName,
           areaDisplayName,
           areaColorVariant,
+          areaSortOrder,
           orders: [],
         });
       }
       groupMap.get(areaName)!.orders.push(order);
     }
 
-    // Convert to array and sort: named areas first (alphabetically), then unassigned
+    // Convert to array and sort by areaSortOrder, unassigned last
     const groups = Array.from(groupMap.values());
     return groups.sort((a, b) => {
       // Unassigned (null) goes last
       if (a.areaName === null && b.areaName !== null) return 1;
       if (a.areaName !== null && b.areaName === null) return -1;
-      // Sort by area name if both assigned
-      return (a.areaName || '').localeCompare(b.areaName || '');
+      // Sort by configured sortOrder
+      return a.areaSortOrder - b.areaSortOrder;
     });
   }, [sortedOrders]);
 

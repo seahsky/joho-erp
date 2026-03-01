@@ -2136,7 +2136,7 @@ export const packingRouter = router({
           // Fetch area colors for mapping
           const areas = await prisma.area.findMany({
             where: { isActive: true },
-            select: { name: true, displayName: true, colorVariant: true },
+            select: { name: true, displayName: true, colorVariant: true, sortOrder: true },
           });
           const areaMap = new Map(areas.map(a => [a.name, a]));
 
@@ -2154,6 +2154,7 @@ export const packingRouter = router({
                 areaPackingSequence: order.packing?.areaPackingSequence ?? (order.packing as any)?.packingSequence ?? null,
                 areaColorVariant: area?.colorVariant ?? 'secondary',
                 areaDisplayName: area?.displayName ?? 'Unassigned',
+                areaSortOrder: area?.sortOrder ?? 999,
                 deliverySequence: order.delivery?.deliverySequence ?? null,
                 status: order.status,
                 packedItemsCount: order.packing?.packedItems?.length ?? 0,
@@ -2185,16 +2186,19 @@ export const packingRouter = router({
       // Fetch area colors for mapping
       const areas = await prisma.area.findMany({
         where: { isActive: true },
-        select: { name: true, displayName: true, colorVariant: true },
+        select: { name: true, displayName: true, colorVariant: true, sortOrder: true },
       });
       const areaMap = new Map(areas.map(a => [a.name, a]));
 
-      // Sort orders by area name, then by per-area packing sequence
+      // Sort orders by area sort order, then by per-area packing sequence
+      const areaOrderMap = new Map(areas.map(a => [a.name, a.sortOrder]));
       const sortedOrders = [...orders].sort((a, b) => {
-        // First sort by area name (nulls/unassigned last)
-        const areaA = a.deliveryAddress.areaName ?? 'zzz';
-        const areaB = b.deliveryAddress.areaName ?? 'zzz';
-        if (areaA !== areaB) return areaA.localeCompare(areaB);
+        // First sort by area sortOrder (nulls/unassigned last)
+        const areaA = a.deliveryAddress.areaName;
+        const areaB = b.deliveryAddress.areaName;
+        const sortA = areaA ? (areaOrderMap.get(areaA) ?? 999) : 9999;
+        const sortB = areaB ? (areaOrderMap.get(areaB) ?? 999) : 9999;
+        if (sortA !== sortB) return sortA - sortB;
 
         // Then by per-area packing sequence
         const seqA = a.packing?.areaPackingSequence ?? 999;

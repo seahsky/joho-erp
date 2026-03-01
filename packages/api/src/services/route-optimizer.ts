@@ -21,6 +21,7 @@ interface RouteOptimizationResult {
     orderId: string;
     orderNumber: string;
     areaPackingSequence: number;
+    areaDeliverySequence: number;
     deliverySequence: number;
     estimatedArrival: Date;
     areaName: string;
@@ -199,14 +200,16 @@ export async function optimizeDeliveryRoute(
       const order = areaOrders.find((o) => o.id === orderId)!;
       const deliverySequence = globalDeliverySequence++;
 
+      // Per-area forward: delivery order within area (1, 2, 3...)
+      const areaDeliverySequence = index + 1;
       // Per-area LIFO: pack last delivery first within this area
-      // Each area has independent sequences (#1, #2, #3...)
       const areaPackingSequence = areaOrderCount - index;
 
       orderUpdates.push({
         orderId: order.id,
         orderNumber: order.orderNumber,
         deliverySequence,
+        areaDeliverySequence,
         areaPackingSequence,
         estimatedArrival: arrivalTimes[index],
         areaName,
@@ -270,11 +273,21 @@ export async function optimizeDeliveryRoute(
   // Sort waypoints by delivery sequence
   allWaypoints.sort((a, b) => a.sequence - b.sequence);
 
-  // 10. Create combined route geometry (for display purposes)
-  // In reality, we'd stitch together the area routes, but for simplicity
-  // we'll store the first area's geometry (or could store all separately)
-  const firstRoute = Array.from(areaRoutes.values())[0];
-  const routeGeometry = firstRoute?.routeGeometry || "{}";
+  // 10. Combine all area route geometries into a GeoJSON FeatureCollection
+  const areaGeometries: Array<{ type: string; properties: Record<string, unknown>; geometry: unknown }> = [];
+  for (const [areaName, areaRoute] of areaRoutes.entries()) {
+    if (areaRoute.routeGeometry && areaRoute.routeGeometry !== "{}") {
+      try {
+        const parsed = JSON.parse(areaRoute.routeGeometry);
+        if (parsed.type === "LineString" && parsed.coordinates?.length > 0) {
+          areaGeometries.push({ type: "Feature", properties: { area: areaName }, geometry: parsed });
+        }
+      } catch { /* skip invalid geometry */ }
+    }
+  }
+  const routeGeometry = areaGeometries.length > 0
+    ? JSON.stringify({ type: "FeatureCollection", features: areaGeometries })
+    : "{}";
 
   // 11. Store route optimization in database
   const routeOptimization = await prisma.routeOptimization.create({
@@ -321,6 +334,7 @@ export async function optimizeDeliveryRoute(
           },
           delivery: {
             deliverySequence: update.deliverySequence,
+            areaDeliverySequence: update.areaDeliverySequence,
             routeId: routeOptimization.id,
             estimatedArrival: update.estimatedArrival,
           },
@@ -482,6 +496,7 @@ interface DeliveryRouteResult {
     orderId: string;
     orderNumber: string;
     deliverySequence: number;
+    areaDeliverySequence: number;
     estimatedArrival: Date;
     areaName: string;
   }>;
@@ -632,7 +647,14 @@ export async function optimizeDeliveryOnlyRoute(
   const orderUpdates: DeliveryRouteResult["orderUpdates"] = [];
   let globalDeliverySequence = 1;
   const areaBreakdown: DeliveryRouteResult["routeSummary"]["areaBreakdown"] = [];
-  const areaOrder: string[] = ["north", "east", "south", "west"];
+
+  // Dynamic area discovery: preferred order first, then any additional areas
+  const preferredAreaOrder = ["north", "east", "south", "west"];
+  const allAreas = Array.from(areaRoutes.keys());
+  const areaOrder = [
+    ...preferredAreaOrder.filter((a) => allAreas.includes(a)),
+    ...allAreas.filter((a) => !preferredAreaOrder.includes(a)),
+  ];
 
   for (const areaName of areaOrder) {
     const areaRoute = areaRoutes.get(areaName);
@@ -648,11 +670,13 @@ export async function optimizeDeliveryOnlyRoute(
     coordinateIds.forEach((orderId, index) => {
       const order = areaOrders.find((o) => o.id === orderId)!;
       const deliverySequence = globalDeliverySequence++;
+      const areaDeliverySequence = index + 1; // Forward within area (1, 2, 3...)
 
       orderUpdates.push({
         orderId: order.id,
         orderNumber: order.orderNumber,
         deliverySequence,
+        areaDeliverySequence,
         estimatedArrival: arrivalTimes[index],
         areaName,
       });
@@ -714,9 +738,21 @@ export async function optimizeDeliveryOnlyRoute(
 
   allWaypoints.sort((a, b) => a.sequence - b.sequence);
 
-  // 9. Get route geometry
-  const firstRoute = Array.from(areaRoutes.values())[0];
-  const routeGeometry = firstRoute?.routeGeometry || "{}";
+  // 9. Combine all area route geometries into a GeoJSON FeatureCollection
+  const areaGeometries: Array<{ type: string; properties: Record<string, unknown>; geometry: unknown }> = [];
+  for (const [areaName, areaRoute] of areaRoutes.entries()) {
+    if (areaRoute.routeGeometry && areaRoute.routeGeometry !== "{}") {
+      try {
+        const parsed = JSON.parse(areaRoute.routeGeometry);
+        if (parsed.type === "LineString" && parsed.coordinates?.length > 0) {
+          areaGeometries.push({ type: "Feature", properties: { area: areaName }, geometry: parsed });
+        }
+      } catch { /* skip invalid geometry */ }
+    }
+  }
+  const routeGeometry = areaGeometries.length > 0
+    ? JSON.stringify({ type: "FeatureCollection", features: areaGeometries })
+    : "{}";
 
   // 10. Store as delivery-type route
   const routeOptimization = await prisma.routeOptimization.create({
@@ -765,6 +801,7 @@ export async function optimizeDeliveryOnlyRoute(
           delivery: {
             ...existingDelivery, // Preserve driverId, driverName, etc.
             deliverySequence: update.deliverySequence,
+            areaDeliverySequence: update.areaDeliverySequence,
             routeId: routeOptimization.id,
             estimatedArrival: update.estimatedArrival,
           },

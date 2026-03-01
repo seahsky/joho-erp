@@ -1013,6 +1013,7 @@ type Delivery {
   proofOfDelivery     ProofOfDelivery?
   notes               String?
   deliverySequence    Int?                // Position in global delivery route (1 = first stop)
+  areaDeliverySequence Int?               // Position within area delivery route (1 = first stop in area)
   routeId             String?             // Reference to RouteOptimization
   estimatedArrival    DateTime?           // Estimated arrival time based on route
   actualArrival       DateTime?           // Actual arrival time (for analytics)

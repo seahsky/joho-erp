@@ -91,20 +91,15 @@ export const deliveryRouter = router({
         };
       }
 
-      // Filter by packing date (when the order was packed), not requested delivery date
-      // This ensures only orders packed on the selected date appear in the delivery list
+      // Filter by requested delivery date (the date the order should be delivered)
+      // Orders are packed the day before, so filtering by packedAt misses them
       if (filters.dateFrom || filters.dateTo) {
-        where.packing = {
-          is: {
-            packedAt: {},
-          },
-        };
-        if (filters.dateFrom) where.packing.is.packedAt.gte = filters.dateFrom;
+        where.requestedDeliveryDate = {};
+        if (filters.dateFrom) where.requestedDeliveryDate.gte = filters.dateFrom;
         if (filters.dateTo) {
-          // Add 1 day to dateTo to include all orders packed on that day
           const endOfDay = new Date(filters.dateTo);
           endOfDay.setHours(23, 59, 59, 999);
-          where.packing.is.packedAt.lte = endOfDay;
+          where.requestedDeliveryDate.lte = endOfDay;
         }
       }
 
@@ -155,50 +150,58 @@ export const deliveryRouter = router({
         ];
       }
 
-      const [orders, total] = await Promise.all([
+      const [orders, total, areas] = await Promise.all([
         prisma.order.findMany({
           where,
           skip,
           take: limit,
           orderBy,
-          include: {
-            customer: {
-              select: {
-                deliveryAddress: true,
-              },
-            },
-            // Note: packing is an embedded type, automatically included in the order document
-          },
+          // Note: packing and delivery are embedded types, automatically included in the order document
         }),
         prisma.order.count({ where }),
+        prisma.area.findMany({
+          where: { isActive: true },
+          select: { name: true, displayName: true, colorVariant: true, sortOrder: true },
+        }),
       ]);
 
+      // Build area lookup map
+      const areaMap = new Map(areas.map(a => [a.name, a]));
+
       // Transform orders into delivery format
-      const deliveries = orders.map((order) => ({
-        id: order.id,
-        orderId: order.orderNumber,
-        customer: order.customerName,
-        address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
-        latitude: (order.customer?.deliveryAddress as { latitude?: number | null } | undefined)?.latitude ?? null,
-        longitude: (order.customer?.deliveryAddress as { longitude?: number | null } | undefined)?.longitude ?? null,
-        areaName: order.deliveryAddress.areaName,
-        status: order.status,
-        estimatedTime:
-          order.status === 'delivered'
-            ? 'Completed'
-            : order.delivery?.estimatedArrival
-              ? new Date(order.delivery.estimatedArrival).toLocaleTimeString()
-              : 'Pending',
-        items: order.items.length,
-        totalAmount: order.totalAmount,
-        requestedDeliveryDate: order.requestedDeliveryDate,
-        deliveryInstructions: order.deliveryAddress.deliveryInstructions,
-        deliverySequence: order.delivery?.deliverySequence,
-        driverId: order.delivery?.driverId ?? null,
-        driverName: order.delivery?.driverName ?? null,
-        deliveredAt: order.delivery?.deliveredAt,
-        packedAt: order.packing?.packedAt ?? null, // Add packing date for same-day delivery validation
-      }));
+      const deliveries = orders.map((order) => {
+        const areaName = order.deliveryAddress.areaName;
+        const area = areaName ? areaMap.get(areaName) : undefined;
+        return {
+          id: order.id,
+          orderId: order.orderNumber,
+          customer: order.customerName,
+          address: `${order.deliveryAddress.street}, ${order.deliveryAddress.suburb} ${order.deliveryAddress.state} ${order.deliveryAddress.postcode}`,
+          latitude: order.deliveryAddress.latitude ?? null,
+          longitude: order.deliveryAddress.longitude ?? null,
+          areaName,
+          areaDisplayName: area?.displayName ?? null,
+          areaColorVariant: area?.colorVariant ?? null,
+          areaSortOrder: area?.sortOrder ?? 999,
+          status: order.status,
+          estimatedTime:
+            order.status === 'delivered'
+              ? 'Completed'
+              : order.delivery?.estimatedArrival
+                ? new Date(order.delivery.estimatedArrival).toLocaleTimeString()
+                : 'Pending',
+          items: order.items.length,
+          totalAmount: order.totalAmount,
+          requestedDeliveryDate: order.requestedDeliveryDate,
+          deliveryInstructions: order.deliveryAddress.deliveryInstructions,
+          deliverySequence: order.delivery?.deliverySequence,
+          areaDeliverySequence: order.delivery?.areaDeliverySequence ?? null,
+          driverId: order.delivery?.driverId ?? null,
+          driverName: order.delivery?.driverName ?? null,
+          deliveredAt: order.delivery?.deliveredAt,
+          packedAt: order.packing?.packedAt ?? null,
+        };
+      });
 
       return {
         deliveries,
@@ -322,17 +325,13 @@ export const deliveryRouter = router({
     const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
     const [readyForDelivery, deliveredToday] = await Promise.all([
-      // Only count orders that are ready for delivery AND were packed today
+      // Count orders that are ready for delivery with today as delivery date
       prisma.order.count({
         where: {
           status: 'ready_for_delivery',
-          packing: {
-            is: {
-              packedAt: {
-                gte: startOfDay,
-                lte: endOfDay,
-              },
-            },
+          requestedDeliveryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
           },
         },
       }),
@@ -426,14 +425,10 @@ export const deliveryRouter = router({
 
       const orders = await prisma.order.findMany({
         where: {
-          // Filter by packing date to match getAll endpoint behavior
-          packing: {
-            is: {
-              packedAt: {
-                gte: startOfDay,
-                lte: endOfDay,
-              },
-            },
+          // Filter by requested delivery date to match getAll endpoint behavior
+          requestedDeliveryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
           },
           status: {
             in: ['ready_for_delivery', 'delivered'],

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, TableSkeleton, StatusBadge, type StatusType, useToast, Badge, Input } from '@joho-erp/ui';
-import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock, Calendar, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, Package, FileText, Users, Clock, Calendar, Loader2, Truck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
@@ -37,7 +37,7 @@ export default function DeliveriesPage() {
   }>({ open: false, delivery: null });
   const { sortBy, sortOrder } = useTableSort('deliverySequence', 'asc');
 
-  // Date selector state for filtering by packing date (using local timezone)
+  // Date selector state for filtering by delivery date (using local timezone)
   const today = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -132,12 +132,12 @@ export default function DeliveriesPage() {
   // Get ISO date string for route optimization query
   const deliveryDateISO = useMemo(() => deliveryDate.toISOString(), [deliveryDate]);
 
-  // Fetch deliveries from database, filtered by packing date
+  // Fetch deliveries from database, filtered by delivery date
   const { data, isLoading } = api.delivery.getAll.useQuery({
     search: searchQuery || undefined,
     status: statusFilter || undefined,
     areaId: areaFilter || undefined,
-    dateFrom: deliveryDate, // Filter by packing date (local midnight)
+    dateFrom: deliveryDate, // Filter by delivery date (local midnight)
     dateTo: deliveryDateEnd, // End of day in local timezone
     sortBy,
     sortOrder,
@@ -183,6 +183,46 @@ export default function DeliveriesPage() {
     return deliveries.filter((d) => d.driverId === selectedDriverId);
   }, [deliveries, selectedDriverId]);
 
+  // Group deliveries by area for per-area display
+  const deliveryAreaGroups = useMemo(() => {
+    const groupMap = new Map<string | null, {
+      areaName: string | null;
+      areaDisplayName: string;
+      areaSortOrder: number;
+      deliveries: typeof filteredDeliveries;
+    }>();
+
+    for (const delivery of filteredDeliveries) {
+      const areaName = delivery.areaName ?? null;
+      if (!groupMap.has(areaName)) {
+        groupMap.set(areaName, {
+          areaName,
+          areaDisplayName: delivery.areaDisplayName ?? 'Unassigned',
+          areaSortOrder: delivery.areaSortOrder ?? 999,
+          deliveries: [],
+        });
+      }
+      groupMap.get(areaName)!.deliveries.push(delivery);
+    }
+
+    // Sort groups by areaSortOrder, unassigned last
+    const groups = Array.from(groupMap.values());
+    groups.sort((a, b) => {
+      if (a.areaName === null && b.areaName !== null) return 1;
+      if (a.areaName !== null && b.areaName === null) return -1;
+      return a.areaSortOrder - b.areaSortOrder;
+    });
+
+    // Sort deliveries within each group by areaDeliverySequence
+    for (const group of groups) {
+      group.deliveries.sort((a, b) => (a.areaDeliverySequence ?? 999) - (b.areaDeliverySequence ?? 999));
+    }
+
+    return groups;
+  }, [filteredDeliveries]);
+
+  const hasMultipleAreas = deliveryAreaGroups.length > 1 || (deliveryAreaGroups.length === 1 && deliveryAreaGroups[0].areaName !== null);
+
   // Calculate stats for StatsBar
   const stats = useMemo<StatItem[]>(() => {
     const total = filteredDeliveries.length;
@@ -197,6 +237,7 @@ export default function DeliveriesPage() {
   }, [filteredDeliveries, t]);
 
   // Transform route data for the map component with filter support
+  // Prefers stored Mapbox road-following geometry over straight lines from waypoints
   const mapRouteData = useMemo(() => {
     if (!routeData?.hasRoute || !routeData.route) return null;
 
@@ -211,12 +252,40 @@ export default function DeliveriesPage() {
     // If no waypoints match filters, return null (no route to display)
     if (filteredWaypoints.length === 0) return null;
 
-    // Sort filtered waypoints by sequence
+    // Try to use stored Mapbox road-following geometry
+    const storedGeometry = routeData.route.routeGeometry;
+    if (storedGeometry && typeof storedGeometry === 'object') {
+      // FeatureCollection: combine all LineStrings from area routes
+      if (storedGeometry.type === 'FeatureCollection' && Array.isArray(storedGeometry.features)) {
+        const allCoordinates: [number, number][] = [];
+        for (const feature of storedGeometry.features) {
+          if (feature.geometry?.type === 'LineString' && Array.isArray(feature.geometry.coordinates)) {
+            allCoordinates.push(...feature.geometry.coordinates);
+          }
+        }
+        if (allCoordinates.length > 0) {
+          return {
+            geometry: { type: 'LineString' as const, coordinates: allCoordinates },
+            totalDistance: routeData.route.totalDistance,
+            totalDuration: routeData.route.totalDuration,
+          };
+        }
+      }
+      // Single LineString geometry
+      if (storedGeometry.type === 'LineString' && Array.isArray(storedGeometry.coordinates) && storedGeometry.coordinates.length > 0) {
+        return {
+          geometry: storedGeometry as { type: 'LineString'; coordinates: [number, number][] },
+          totalDistance: routeData.route.totalDistance,
+          totalDuration: routeData.route.totalDuration,
+        };
+      }
+    }
+
+    // Fallback: Generate straight-line geometry from waypoint coordinates
     const sortedWaypoints = [...filteredWaypoints].sort(
       (a: { sequence: number }, b: { sequence: number }) => a.sequence - b.sequence
     );
 
-    // Generate LineString geometry from filtered waypoint coordinates
     const filteredGeometry = {
       type: 'LineString' as const,
       coordinates: sortedWaypoints.map(
@@ -288,7 +357,7 @@ export default function DeliveriesPage() {
         </div>
       </div>
 
-      {/* Date Selector - Filter by packing date */}
+      {/* Date Selector - Filter by delivery date */}
       <Card className="mb-4">
         <CardHeader className="p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -307,7 +376,7 @@ export default function DeliveriesPage() {
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              {t('showingOrdersPackedOn', { date: formatDate(deliveryDate) })}
+              {t('showingDeliveriesFor', { date: formatDate(deliveryDate) })}
             </div>
           </div>
         </CardHeader>
@@ -354,63 +423,30 @@ export default function DeliveriesPage() {
                 <TableSkeleton rows={4} columns={3} showMobileCards />
               ) : filteredDeliveries.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t('noDeliveriesFound')}</p>
-              ) : (
-                filteredDeliveries.map((delivery) => (
-                <div
-                  key={delivery.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedDelivery === delivery.id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                  }`}
-                  onClick={() => setSelectedDelivery(delivery.id)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-sm">{delivery.customer}</p>
-                      <p className="text-xs text-muted-foreground">{delivery.orderId}</p>
-                      {delivery.packedAt && (
-                        <Badge variant="outline" className="text-xs mt-1">
-                          <Package className="h-3 w-3 mr-1" />
-                          {t('packedOn', {
-                            date: new Date(delivery.packedAt).toLocaleDateString('en-AU', {
-                              month: 'short',
-                              day: 'numeric'
-                            })
-                          })}
+              ) : hasMultipleAreas ? (
+                /* Grouped by area */
+                <div className="space-y-6">
+                  {deliveryAreaGroups.map((group) => (
+                    <div key={group.areaName ?? 'unassigned'} className="space-y-3">
+                      {/* Area Header */}
+                      <div className="flex items-center gap-2 px-2 py-2 bg-muted/50 rounded-lg">
+                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold text-sm">
+                          {group.areaDisplayName}
+                        </span>
+                        <Badge variant="secondary" className="ml-auto">
+                          {group.deliveries.length} {group.deliveries.length === 1 ? t('order') : t('orders')}
                         </Badge>
-                      )}
-                    </div>
-                    <StatusBadge status={delivery.status as StatusType} />
-                  </div>
-
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
-                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs">{delivery.address}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      <span>{delivery.items} {t('items')}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Navigation className="h-3 w-3" />
-                      <span>{delivery.estimatedTime}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {delivery.areaName && `${t('area')}: ${delivery.areaName}`}
-                      {delivery.deliverySequence && ` • ${t('sequence')}: #${delivery.deliverySequence}`}
-                    </span>
-                    {delivery.status === 'ready_for_delivery' && (
-                      <PermissionGate permission="deliveries:manage">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent selecting the delivery card
+                      </div>
+                      {/* Deliveries in this area */}
+                      {group.deliveries.map((delivery) => (
+                        <DeliveryCard
+                          key={delivery.id}
+                          delivery={delivery}
+                          isSelected={selectedDelivery === delivery.id}
+                          onSelect={() => setSelectedDelivery(delivery.id)}
+                          onMarkDelivered={(e) => {
+                            e.stopPropagation();
                             setMarkDeliveredDialog({
                               open: true,
                               delivery: {
@@ -421,16 +457,39 @@ export default function DeliveriesPage() {
                               },
                             });
                           }}
-                          disabled={markDeliveredMutation.isPending}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {t('markAsDelivered')}
-                        </Button>
-                      </PermissionGate>
-                    )}
-                  </div>
+                          isMarkDeliveredPending={markDeliveredMutation.isPending}
+                          showAreaSequence
+                          t={t}
+                        />
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              ))
+              ) : (
+                /* Flat list when single/no area */
+                filteredDeliveries.map((delivery) => (
+                  <DeliveryCard
+                    key={delivery.id}
+                    delivery={delivery}
+                    isSelected={selectedDelivery === delivery.id}
+                    onSelect={() => setSelectedDelivery(delivery.id)}
+                    onMarkDelivered={(e) => {
+                      e.stopPropagation();
+                      setMarkDeliveredDialog({
+                        open: true,
+                        delivery: {
+                          id: delivery.id,
+                          orderId: delivery.orderId,
+                          customer: delivery.customer,
+                          packedAt: delivery.packedAt ? new Date(delivery.packedAt) : null,
+                        },
+                      });
+                    }}
+                    isMarkDeliveredPending={markDeliveredMutation.isPending}
+                    showAreaSequence={false}
+                    t={t}
+                  />
+                ))
               )}
             </CardContent>
           </Card>
@@ -493,6 +552,98 @@ export default function DeliveriesPage() {
         }}
         isSubmitting={markDeliveredMutation.isPending}
       />
+    </div>
+  );
+}
+
+/** Delivery card used in both flat list and area-grouped views */
+function DeliveryCard({
+  delivery,
+  isSelected,
+  onSelect,
+  onMarkDelivered,
+  isMarkDeliveredPending,
+  showAreaSequence,
+  t,
+}: {
+  delivery: {
+    id: string;
+    orderId: string;
+    customer: string;
+    address: string;
+    status: string;
+    areaName: string | null | undefined;
+    areaDisplayName?: string | null;
+    areaDeliverySequence?: number | null;
+    deliverySequence?: number | null;
+    estimatedTime: string;
+    items: number;
+    packedAt?: Date | string | null;
+  };
+  isSelected: boolean;
+  onSelect: () => void;
+  onMarkDelivered: (e: React.MouseEvent) => void;
+  isMarkDeliveredPending: boolean;
+  showAreaSequence: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any;
+}) {
+  const seq = showAreaSequence ? delivery.areaDeliverySequence : delivery.deliverySequence;
+
+  return (
+    <div
+      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+        isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+      }`}
+      onClick={onSelect}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {seq != null && (
+            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
+              {seq}
+            </span>
+          )}
+          <div>
+            <p className="font-semibold text-sm">{delivery.customer}</p>
+            <p className="text-xs text-muted-foreground">{delivery.orderId}</p>
+          </div>
+        </div>
+        <StatusBadge status={delivery.status as StatusType} />
+      </div>
+
+      <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
+        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <span className="text-xs">{delivery.address}</span>
+      </div>
+
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1">
+          <Package className="h-3 w-3" />
+          <span>{delivery.items} {t('items')}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Navigation className="h-3 w-3" />
+          <span>{delivery.estimatedTime}</span>
+        </div>
+      </div>
+
+      {delivery.status === 'ready_for_delivery' && (
+        <div className="mt-3 pt-3 border-t flex justify-end">
+          <PermissionGate permission="deliveries:manage">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={onMarkDelivered}
+              disabled={isMarkDeliveredPending}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              {t('markAsDelivered')}
+            </Button>
+          </PermissionGate>
+        </div>
+      )}
     </div>
   );
 }
