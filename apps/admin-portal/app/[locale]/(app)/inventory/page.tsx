@@ -64,6 +64,7 @@ const ProcessStockDialog = nextDynamic(() => import('./components/ProcessStockDi
 const InventoryTransactionDetailDialog = nextDynamic(() => import('./components/InventoryTransactionDetailDialog').then(m => m.InventoryTransactionDetailDialog));
 const BatchInfoDialog = nextDynamic(() => import('./components/BatchInfoDialog').then(m => m.BatchInfoDialog));
 const ExportDialog = nextDynamic(() => import('./components/ExportDialog').then(m => m.ExportDialog));
+const ProcessingRecordDialog = nextDynamic(() => import('./components/ProcessingRecordDialog').then(m => m.ProcessingRecordDialog));
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { formatAUD } from '@joho-erp/shared';
@@ -143,6 +144,10 @@ export default function InventoryPage() {
   // Batch info dialog state
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchInfoDialog, setShowBatchInfoDialog] = useState(false);
+
+  // Processing record dialog state
+  const [selectedProcessingBatchNumber, setSelectedProcessingBatchNumber] = useState<string | null>(null);
+  const [showProcessingRecordDialog, setShowProcessingRecordDialog] = useState(false);
 
   // Handle query parameters from URL (e.g., from dashboard alerts)
   useEffect(() => {
@@ -518,6 +523,20 @@ export default function InventoryPage() {
                                 ({getAdjustmentTypeLabel(tx.adjustmentType)})
                               </span>
                             )}
+                            {tx.adjustmentType === 'processing' && tx.batchNumber && (
+                              <Badge
+                                variant="secondary"
+                                className="font-mono text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProcessingBatchNumber(tx.batchNumber!);
+                                  setShowProcessingRecordDialog(true);
+                                }}
+                              >
+                                <ArrowRightLeft className="mr-1 h-3 w-3" />
+                                {tx.batchNumber}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
@@ -683,6 +702,16 @@ export default function InventoryPage() {
           if (!open) setSelectedBatchId(null);
         }}
         batchId={selectedBatchId}
+      />
+
+      {/* Processing Record Dialog */}
+      <ProcessingRecordDialog
+        open={showProcessingRecordDialog}
+        onOpenChange={(open) => {
+          setShowProcessingRecordDialog(open);
+          if (!open) setSelectedProcessingBatchNumber(null);
+        }}
+        batchNumber={selectedProcessingBatchNumber}
       />
     </div>
   );

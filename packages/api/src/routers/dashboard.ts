@@ -483,6 +483,8 @@ export const dashboardRouter = router({
           expiryDate: tx.expiryDate,
           referenceType: tx.referenceType,
           referenceId: tx.referenceId,
+          // Batch number from the transaction itself
+          batchNumber: tx.batchNumber,
           // Stock receipt fields from InventoryBatch
           stockInDate: batchByTxId.get(tx.id)?.stockInDate ?? null,
           supplierInvoiceNumber: batchByTxId.get(tx.id)?.supplierInvoiceNumber ?? null,

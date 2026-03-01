@@ -3332,11 +3332,35 @@
         "processing": "处理中..."
       }
     },
+    "processingRecord": {
+      "title": "加工记录",
+      "notFound": "未找到加工记录",
+      "processingFlow": "加工流程",
+      "inputQuantity": "投入",
+      "outputQuantity": "产出",
+      "lossPercentage": "损耗率",
+      "totalMaterialCost": "原材料总成本",
+      "outputCostPerUnit": "产出单位成本",
+      "outputExpiryDate": "产出保质期",
+      "sourceBatchesConsumed": "消耗的原料批次",
+      "batchNumber": "批次号",
+      "expiry": "保质期",
+      "qtyConsumed": "消耗数量",
+      "costPerUnit": "单位成本",
+      "subtotal": "小计",
+      "supplier": "供应商",
+      "noBatchData": "无原料批次消耗数据",
+      "notes": "备注",
+      "noNotes": "无备注",
+      "performedBy": "操作人",
+      "dateTime": "日期/时间"
+    },
     "writeOffHistory": {
       "title": "库存报废记录",
       "description": "查看所有历史库存报废交易",
       "columns": {
         "product": "产品",
+        "batchNumber": "批次号",
         "quantity": "数量",
         "reason": "原因",
         "date": "日期",

@@ -3332,11 +3332,35 @@
         "processing": "Processing..."
       }
     },
+    "processingRecord": {
+      "title": "Processing Record",
+      "notFound": "Processing record not found",
+      "processingFlow": "Processing Flow",
+      "inputQuantity": "Input",
+      "outputQuantity": "Output",
+      "lossPercentage": "Loss %",
+      "totalMaterialCost": "Total Material Cost",
+      "outputCostPerUnit": "Output Cost/Unit",
+      "outputExpiryDate": "Output Expiry Date",
+      "sourceBatchesConsumed": "Source Batches Consumed",
+      "batchNumber": "Batch #",
+      "expiry": "Expiry",
+      "qtyConsumed": "Qty Consumed",
+      "costPerUnit": "Cost/Unit",
+      "subtotal": "Subtotal",
+      "supplier": "Supplier",
+      "noBatchData": "No source batch consumption data available",
+      "notes": "Notes",
+      "noNotes": "No notes",
+      "performedBy": "Performed By",
+      "dateTime": "Date / Time"
+    },
     "writeOffHistory": {
       "title": "Stock Write-Off History",
       "description": "View all past stock write-off transactions",
       "columns": {
         "product": "Product",
+        "batchNumber": "Batch #",
         "quantity": "Quantity",
         "reason": "Reason",
         "date": "Date",

@@ -36,7 +36,6 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
-  Hash,
   Package,
   Search,
 } from 'lucide-react';
@@ -44,6 +43,8 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
 import { useDebounce } from 'use-debounce';
 import { BatchInfoDialog } from './BatchInfoDialog';
+import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type StockStatus = 'all' | 'healthy' | 'low_stock' | 'out_of_stock';
 type ExpiryFilter = 'all' | 'expired' | 'expiring_soon' | 'ok';
@@ -169,12 +170,14 @@ function ProductBatchRows({
   tBatches,
   tExpiry,
   onBatchClick,
+  onProcessingBatchClick,
 }: {
   productId: string;
   parentCurrentStock: number;
   tBatches: (key: string, values?: Record<string, string | number>) => string;
   tExpiry: (key: string, values?: Record<string, string | number | Date>) => string;
   onBatchClick: (batchId: string) => void;
+  onProcessingBatchClick: (batchNumber: string) => void;
 }) {
   const { data: batches, isLoading } = api.inventory.getProductBatches.useQuery({
     productId,
@@ -280,14 +283,10 @@ function ProductBatchRows({
         >
           <TableCell />
           <TableCell className="pl-8">
-            {batch.batchNumber ? (
-              <Badge variant="secondary" className="font-mono">
-                <Hash className="mr-1 h-3 w-3" />
-                {batch.batchNumber}
-              </Badge>
-            ) : (
-              <span className="text-muted-foreground">&mdash;</span>
-            )}
+            <ProcessingBatchLink
+              batchNumber={batch.batchNumber}
+              onProcessingClick={onProcessingBatchClick}
+            />
           </TableCell>
           <TableCell>
             <div className="flex items-center gap-2">
@@ -347,6 +346,8 @@ export function StockCountsTable({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [selectedProcessingBatchNumber, setSelectedProcessingBatchNumber] = useState<string | null>(null);
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
 
   // New filter/sort state
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set());
@@ -680,6 +681,10 @@ export function StockCountsTable({
                           setSelectedBatchId(batchId);
                           setShowBatchDialog(true);
                         }}
+                        onProcessingBatchClick={(batchNumber) => {
+                          setSelectedProcessingBatchNumber(batchNumber);
+                          setShowProcessingDialog(true);
+                        }}
                       />
                     )}
                   </Fragment>
@@ -701,6 +706,15 @@ export function StockCountsTable({
         open={showBatchDialog}
         onOpenChange={setShowBatchDialog}
         batchId={selectedBatchId}
+      />
+
+      <ProcessingRecordDialog
+        open={showProcessingDialog}
+        onOpenChange={(open) => {
+          setShowProcessingDialog(open);
+          if (!open) setSelectedProcessingBatchNumber(null);
+        }}
+        batchNumber={selectedProcessingBatchNumber}
       />
     </Card>
   );

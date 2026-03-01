@@ -3332,11 +3332,35 @@
         "processing": "處理中..."
       }
     },
+    "processingRecord": {
+      "title": "加工記錄",
+      "notFound": "未找到加工記錄",
+      "processingFlow": "加工流程",
+      "inputQuantity": "投入",
+      "outputQuantity": "產出",
+      "lossPercentage": "損耗率",
+      "totalMaterialCost": "原材料總成本",
+      "outputCostPerUnit": "產出單位成本",
+      "outputExpiryDate": "產出保質期",
+      "sourceBatchesConsumed": "消耗的原料批次",
+      "batchNumber": "批次號",
+      "expiry": "保質期",
+      "qtyConsumed": "消耗數量",
+      "costPerUnit": "單位成本",
+      "subtotal": "小計",
+      "supplier": "供應商",
+      "noBatchData": "無原料批次消耗數據",
+      "notes": "備註",
+      "noNotes": "無備註",
+      "performedBy": "操作人",
+      "dateTime": "日期/時間"
+    },
     "writeOffHistory": {
       "title": "庫存報廢記錄",
       "description": "查看所有歷史庫存報廢交易",
       "columns": {
         "product": "產品",
+        "batchNumber": "批次號",
         "quantity": "數量",
         "reason": "原因",
         "date": "日期",

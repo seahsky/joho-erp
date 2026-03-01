@@ -44,6 +44,8 @@ export interface InventoryTransaction {
   expiryDate?: string | Date | null;
   referenceType?: 'order' | 'manual' | null;
   referenceId?: string | null;
+  // Batch number from the transaction
+  batchNumber?: string | null;
   // Stock receipt fields from InventoryBatch
   stockInDate?: string | Date | null;
   supplierInvoiceNumber?: string | null;

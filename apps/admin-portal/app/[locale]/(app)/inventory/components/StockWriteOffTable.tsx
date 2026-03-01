@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type SortBy = 'createdAt' | 'productName' | 'quantity';
 type SortDirection = 'asc' | 'desc';
@@ -41,6 +43,7 @@ interface WriteOffItem {
   productName: string;
   productSku: string;
   productUnit: string;
+  batchNumber: string | null;
   quantity: number;
   rawQuantity: number;
   previousStock: number;
@@ -72,6 +75,10 @@ export function StockWriteOffTable() {
   // Edit dialog state
   const [selectedItem, setSelectedItem] = useState<WriteOffItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  // Processing record dialog state
+  const [selectedProcessingBatchNumber, setSelectedProcessingBatchNumber] = useState<string | null>(null);
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
 
   // Fetch write-off history
   const { data, isLoading, refetch } = api.inventory.getWriteOffHistory.useQuery({
@@ -204,6 +211,7 @@ export function StockWriteOffTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('columns.product')}</TableHead>
+                  <TableHead>{t('columns.batchNumber')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
                   <TableHead>{t('columns.reason')}</TableHead>
                   <TableHead>{t('columns.date')}</TableHead>
@@ -226,6 +234,15 @@ export function StockWriteOffTable() {
                         <p className="text-sm text-muted-foreground">{item.productSku}</p>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <ProcessingBatchLink
+                        batchNumber={item.batchNumber}
+                        onProcessingClick={(batchNumber) => {
+                          setSelectedProcessingBatchNumber(batchNumber);
+                          setShowProcessingDialog(true);
+                        }}
+                      />
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {item.quantity.toFixed(1)} {item.productUnit}
                     </TableCell>
@@ -244,7 +261,7 @@ export function StockWriteOffTable() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center">
+                    <TableCell colSpan={6} className="py-8 text-center">
                       <EmptyState
                         icon={Trash2}
                         title={t('emptyState')}
@@ -294,6 +311,16 @@ export function StockWriteOffTable() {
           )}
         </CardContent>
       </Card>
+
+      {/* Processing Record Dialog */}
+      <ProcessingRecordDialog
+        open={showProcessingDialog}
+        onOpenChange={(open) => {
+          setShowProcessingDialog(open);
+          if (!open) setSelectedProcessingBatchNumber(null);
+        }}
+        batchNumber={selectedProcessingBatchNumber}
+      />
 
       {/* Edit Transaction Dialog */}
       {showEditDialog && selectedItem && (

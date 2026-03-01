@@ -31,7 +31,6 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  Hash,
   Search,
 } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
@@ -40,6 +39,8 @@ import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
 import { ExpiringBatchActions } from './ExpiringBatchActions';
 import { BatchInfoDialog } from './BatchInfoDialog';
+import { ProcessingBatchLink } from './ProcessingBatchLink';
+import { ProcessingRecordDialog } from './ProcessingRecordDialog';
 
 type StatusFilter = 'all' | 'expired' | 'expiringSoon';
 type SortBy = 'expiryDate' | 'value' | 'productName' | 'quantity' | 'batchNumber';
@@ -73,6 +74,10 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
   // Batch dialog state
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
+
+  // Processing record dialog state
+  const [selectedProcessingBatchNumber, setSelectedProcessingBatchNumber] = useState<string | null>(null);
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
 
   // Fetch categories and suppliers for filter dropdowns
   const { data: categoriesData } = api.category.getAll.useQuery();
@@ -311,14 +316,13 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                     onClick={() => handleRowClick(batch.id)}
                   >
                     <TableCell>
-                      {batch.batchNumber ? (
-                        <Badge variant="secondary" className="font-mono">
-                          <Hash className="mr-1 h-3 w-3" />
-                          {batch.batchNumber}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">&mdash;</span>
-                      )}
+                      <ProcessingBatchLink
+                        batchNumber={batch.batchNumber}
+                        onProcessingClick={(batchNumber) => {
+                          setSelectedProcessingBatchNumber(batchNumber);
+                          setShowProcessingDialog(true);
+                        }}
+                      />
                     </TableCell>
                     <TableCell>
                       <div>
@@ -425,6 +429,16 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
           if (!open) setSelectedBatchId(null);
         }}
         batchId={selectedBatchId}
+      />
+
+      {/* Processing Record Dialog */}
+      <ProcessingRecordDialog
+        open={showProcessingDialog}
+        onOpenChange={(open) => {
+          setShowProcessingDialog(open);
+          if (!open) setSelectedProcessingBatchNumber(null);
+        }}
+        batchNumber={selectedProcessingBatchNumber}
       />
     </>
   );

@@ -1305,6 +1305,108 @@ export const inventoryRouter = router({
     }),
 
   /**
+   * Get a single processing record by its batchNumber (e.g. "PR-xxx").
+   * Returns the same shape as individual items in getProcessingHistory.
+   */
+  getProcessingRecordByBatchNumber: requirePermission('inventory:view')
+    .input(z.object({ batchNumber: z.string() }))
+    .query(async ({ input }) => {
+      const { batchNumber } = input;
+
+      // Find target transaction (qty > 0, processing, matching batchNumber)
+      const target = await prisma.inventoryTransaction.findFirst({
+        where: {
+          type: 'adjustment',
+          adjustmentType: 'processing',
+          quantity: { gt: 0 },
+          batchNumber,
+        },
+        include: {
+          product: { select: { id: true, name: true, sku: true, unit: true } },
+        },
+      });
+
+      if (!target) return null;
+
+      // Find paired source transaction (qty < 0)
+      const source = await prisma.inventoryTransaction.findFirst({
+        where: {
+          type: 'adjustment',
+          adjustmentType: 'processing',
+          quantity: { lt: 0 },
+          batchNumber,
+        },
+        include: {
+          product: { select: { id: true, name: true, sku: true, unit: true } },
+          batchConsumptions: {
+            include: {
+              batch: {
+                select: {
+                  id: true,
+                  batchNumber: true,
+                  expiryDate: true,
+                  costPerUnit: true,
+                  supplier: { select: { businessName: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const batchConsumptions = (source?.batchConsumptions ?? []).map((bc) => ({
+        quantityConsumed: bc.quantityConsumed,
+        costPerUnit: bc.costPerUnit,
+        totalCost: bc.totalCost,
+        batch: bc.batch
+          ? {
+              id: bc.batch.id,
+              batchNumber: bc.batch.batchNumber,
+              expiryDate: bc.batch.expiryDate,
+            }
+          : null,
+        supplierName: bc.batch?.supplier?.businessName ?? null,
+      }));
+
+      const totalMaterialCost = batchConsumptions.reduce((sum, bc) => sum + bc.totalCost, 0);
+      const inputQty = source ? Math.abs(source.quantity) : null;
+      const outputQty = target.quantity;
+      const lossPercentage =
+        inputQty !== null && inputQty > 0
+          ? Math.round(((inputQty - outputQty) / inputQty) * 1000) / 10
+          : null;
+
+      return {
+        id: target.id,
+        batchNumber: target.batchNumber,
+        source: source
+          ? {
+              productId: source.product.id,
+              productName: source.product.name,
+              productSku: source.product.sku,
+              productUnit: source.product.unit,
+              quantity: Math.abs(source.quantity),
+            }
+          : null,
+        target: {
+          productId: target.product.id,
+          productName: target.product.name,
+          productSku: target.product.sku,
+          productUnit: target.product.unit,
+          quantity: target.quantity,
+          costPerUnit: target.costPerUnit,
+          expiryDate: target.expiryDate,
+        },
+        lossPercentage,
+        batchConsumptions,
+        totalMaterialCost,
+        notes: target.notes ?? source?.notes ?? null,
+        createdAt: target.createdAt,
+        createdBy: target.createdBy || 'system',
+      };
+    }),
+
+  /**
    * Get packing history (paginated, searchable) — InventoryTransactions with adjustmentType IN ('packing_adjustment', 'packing_reset')
    */
   getPackingHistory: requirePermission('inventory:view')
@@ -1500,6 +1602,7 @@ export const inventoryRouter = router({
           productName: tx.product.name,
           productSku: tx.product.sku,
           productUnit: tx.product.unit,
+          batchNumber: tx.batchNumber,
           quantity: Math.abs(tx.quantity), // stored as negative, display as positive
           rawQuantity: tx.quantity, // original signed value for edit dialog
           previousStock: tx.previousStock,
