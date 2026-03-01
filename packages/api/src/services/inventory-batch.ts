@@ -216,6 +216,113 @@ export async function consumeStock(
 }
 
 /**
+ * Consume stock from a specific batch by ID (used when admin selects a batch explicitly)
+ *
+ * @param batchId - The specific batch to consume from
+ * @param quantityToConsume - How much stock to consume
+ * @param transactionId - The InventoryTransaction ID that triggered this consumption
+ * @param tx - Prisma transaction context (optional, uses global prisma if not provided)
+ * @returns Result with total cost, batch used, and expiry warnings
+ * @throws Error if batch not found, already consumed, or insufficient quantity
+ */
+export async function consumeFromBatch(
+  batchId: string,
+  quantityToConsume: number,
+  transactionId: string,
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+): Promise<ConsumeStockResult> {
+  const client = tx || prisma;
+  const now = new Date();
+
+  // Step 1: Fetch the batch
+  const batch = await client.inventoryBatch.findUnique({
+    where: { id: batchId },
+  });
+
+  if (!batch) {
+    throw new Error(`Batch not found: ${batchId}`);
+  }
+
+  if (batch.isConsumed) {
+    throw new Error(`Batch ${batchId} is already fully consumed`);
+  }
+
+  if (batch.quantityRemaining < quantityToConsume) {
+    throw new Error(
+      `Insufficient stock in batch. Need ${quantityToConsume}, have ${batch.quantityRemaining}`
+    );
+  }
+
+  // Step 2: Check expiry warnings
+  const expiryWarnings: ExpiryWarning[] = [];
+  if (batch.expiryDate) {
+    const daysUntilExpiry = Math.ceil(
+      (batch.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysUntilExpiry <= 7) {
+      expiryWarnings.push({
+        batchId: batch.id,
+        expiryDate: batch.expiryDate,
+        quantityRemaining: batch.quantityRemaining,
+        daysUntilExpiry,
+      });
+    }
+  }
+
+  // Step 3: Calculate values
+  const costFromBatch = Math.round(quantityToConsume * batch.costPerUnit);
+  const newQuantity = batch.quantityRemaining - quantityToConsume;
+  const isFullyConsumed = newQuantity === 0;
+
+  // Step 4: Optimistic lock update
+  const updateResult = await client.inventoryBatch.updateMany({
+    where: {
+      id: batch.id,
+      quantityRemaining: batch.quantityRemaining, // Optimistic lock
+      isConsumed: false,
+    },
+    data: {
+      quantityRemaining: newQuantity,
+      isConsumed: isFullyConsumed,
+      consumedAt: isFullyConsumed ? new Date() : null,
+    },
+  });
+
+  if (updateResult.count === 0) {
+    throw new Error(
+      'Concurrent batch consumption conflict. The batch was modified by another process. Please try again.'
+    );
+  }
+
+  // Step 5: Create BatchConsumption record
+  await client.batchConsumption.create({
+    data: {
+      batchId: batch.id,
+      transactionId,
+      quantityConsumed: quantityToConsume,
+      costPerUnit: batch.costPerUnit,
+      totalCost: costFromBatch,
+    },
+  });
+
+  return {
+    totalCost: costFromBatch,
+    batchesUsed: [
+      {
+        batchId: batch.id,
+        quantityConsumed: quantityToConsume,
+        costPerUnit: batch.costPerUnit,
+        totalCost: costFromBatch,
+      },
+    ],
+    expiryWarnings,
+  };
+}
+
+/**
  * Check if there is sufficient non-expired stock available
  *
  * @param productId - The product to check

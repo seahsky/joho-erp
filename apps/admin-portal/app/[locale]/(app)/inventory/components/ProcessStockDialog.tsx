@@ -24,13 +24,14 @@ import {
   ArrowRight,
   TrendingDown,
   AlertTriangle,
+  Info,
   Search,
   X,
 } from 'lucide-react';
 import { api } from '@/trpc/client';
 import { useToast } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
-import { parseToCents } from '@joho-erp/shared';
+import { parseToCents, formatAUD } from '@joho-erp/shared';
 
 interface Product {
   id: string;
@@ -107,6 +108,13 @@ export function ProcessStockDialog({
     { enabled: !!sourceProduct && open }
   );
 
+  // Batch selection state
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const selectedBatch = useMemo(
+    () => (sourceBatches ?? []).find((b) => b.id === selectedBatchId) ?? null,
+    [sourceBatches, selectedBatchId]
+  );
+
   // Form state
   const [sourceQuantity, setSourceQuantity] = useState<string>('');
   const [targetOutputQuantity, setTargetOutputQuantity] = useState('');
@@ -120,6 +128,9 @@ export function ProcessStockDialog({
   const getExpiryDate = (): Date | undefined => {
     if (!expirySelection || expirySelection === 'none') return undefined;
     if (expirySelection === 'custom') return customExpiryDate;
+    if (expirySelection === 'followParent') {
+      return selectedBatch?.expiryDate ? new Date(selectedBatch.expiryDate) : undefined;
+    }
 
     const today = new Date();
     switch (expirySelection) {
@@ -138,12 +149,12 @@ export function ProcessStockDialog({
 
   const expiryDate = getExpiryDate();
 
-  // Reset quantities when source product changes
+  // Reset batch selection and quantities when source product changes
   useEffect(() => {
-    if (sourceProduct) {
-      setSourceQuantity('');
-      setTargetOutputQuantity('');
-    }
+    setSelectedBatchId(null);
+    setSourceQuantity('');
+    setTargetOutputQuantity('');
+    setExpirySelection('');
   }, [sourceProduct]);
 
   // Auto-calculated loss percentage (read-only)
@@ -165,12 +176,21 @@ export function ProcessStockDialog({
     return output > 0 ? cost / output : 0;
   }, [laborCost, laborCostType, targetOutputQuantity]);
 
-  // Auto-calculated material cost per kg from FIFO batch consumption
+  // Auto-calculated material cost per kg from selected batch or FIFO fallback
   const materialCostPerKg = useMemo(() => {
-    const batches = sourceBatches ?? [];
     const inputQty = parseFloat(sourceQuantity) || 0;
     const outputQty = parseFloat(targetOutputQuantity) || 0;
-    if (inputQty <= 0 || outputQty <= 0 || batches.length === 0) return 0;
+    if (inputQty <= 0 || outputQty <= 0) return 0;
+
+    // When a specific batch is selected, use its cost directly
+    if (selectedBatch) {
+      const totalCostCents = Math.round(inputQty * selectedBatch.costPerUnit);
+      return totalCostCents / 100 / outputQty;
+    }
+
+    // FIFO fallback
+    const batches = sourceBatches ?? [];
+    if (batches.length === 0) return 0;
 
     let remaining = inputQty;
     let totalCostCents = 0;
@@ -182,9 +202,8 @@ export function ProcessStockDialog({
       remaining -= take;
     }
 
-    // Convert cents to dollars, divide by output qty (accounts for loss)
     return totalCostCents / 100 / outputQty;
-  }, [sourceBatches, sourceQuantity, targetOutputQuantity]);
+  }, [sourceBatches, selectedBatch, sourceQuantity, targetOutputQuantity]);
 
   // Computed total cost per kg (material + labor)
   const totalCostPerKg = materialCostPerKg + laborCostPerKg;
@@ -206,15 +225,20 @@ export function ProcessStockDialog({
       errors.push(t('validation.sameProduct'));
     }
 
+    // Batch selection is required when source product is set
+    if (sourceProduct && !selectedBatch) {
+      errors.push(t('validation.batchRequired'));
+    }
+
     const sourceQty = parseFloat(sourceQuantity) || 0;
     const targetQty = parseFloat(targetOutputQuantity) || 0;
-    
+
     if (sourceQty <= 0) errors.push(t('validation.sourceQuantityRequired'));
     if (targetQty <= 0) errors.push(t('validation.quantityPositive'));
 
-    // Check if source quantity exceeds available stock
-    if (sourceProduct && sourceQty > sourceProduct.currentStock) {
-      errors.push(t('validation.sourceQuantityExceedsStock', { available: sourceProduct.currentStock.toFixed(2) }));
+    // Check if source quantity exceeds selected batch stock
+    if (selectedBatch && sourceQty > selectedBatch.quantityRemaining) {
+      errors.push(t('validation.sourceQuantityExceedsBatch', { available: selectedBatch.quantityRemaining.toFixed(2) }));
     }
 
     // Check if output exceeds input (should not happen)
@@ -227,7 +251,7 @@ export function ProcessStockDialog({
     }
 
     return errors;
-  }, [sourceProduct, targetProduct, sourceQuantity, targetOutputQuantity, materialCostPerKg, t]);
+  }, [sourceProduct, targetProduct, selectedBatch, sourceQuantity, targetOutputQuantity, materialCostPerKg, t]);
 
   // Process stock mutation
   const processStockMutation = api.product.processStock.useMutation({
@@ -285,6 +309,7 @@ export function ProcessStockDialog({
     await processStockMutation.mutateAsync({
       sourceProductId: sourceProduct.id,
       targetProductId: targetProduct.id,
+      sourceBatchId: selectedBatch?.id,
       sourceQuantity: parseFloat(sourceQuantity),
       targetOutputQuantity: parseFloat(targetOutputQuantity),
       lossPercentage: lossPercentage,
@@ -297,6 +322,7 @@ export function ProcessStockDialog({
   const handleReset = () => {
     setSourceProduct(null);
     setTargetProduct(null);
+    setSelectedBatchId(null);
     setSourceQuantity('');
     setTargetOutputQuantity('');
     setLaborCost('');
@@ -482,8 +508,68 @@ export function ProcessStockDialog({
             )}
           </div>
 
+          {/* Batch Selection */}
+          {sourceProduct && sourceBatches && (
+            <div className="space-y-2">
+              <Label>{t('fields.sourceBatch')}</Label>
+              <p className="text-xs text-muted-foreground">{t('fields.sourceBatchHint')}</p>
+              {sourceBatches.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4 border rounded-md">
+                  {t('fields.noBatchesAvailable')}
+                </p>
+              ) : (
+                <div className="max-h-[200px] overflow-y-auto space-y-1">
+                  {sourceBatches.map((batch) => (
+                    <button
+                      key={batch.id}
+                      type="button"
+                      className={`w-full text-left p-3 border rounded-md transition-colors ${
+                        selectedBatchId === batch.id
+                          ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setSelectedBatchId(batch.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Badge variant="secondary" className="shrink-0">
+                            {batch.batchNumber || batch.id.slice(0, 8)}
+                          </Badge>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span>
+                              {t('fields.batchQtyRemaining')}: <span className="font-medium">{batch.quantityRemaining}</span>
+                            </span>
+                            <span>
+                              {t('fields.batchCost')}: <span className="font-medium">{formatAUD(batch.costPerUnit)}/unit</span>
+                            </span>
+                            {batch.expiryDate && (
+                              <span className="text-muted-foreground">
+                                {format(new Date(batch.expiryDate), 'dd MMM yyyy')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                          selectedBatchId === batch.id
+                            ? 'border-primary bg-primary'
+                            : 'border-muted-foreground/30'
+                        }`}>
+                          {selectedBatchId === batch.id && (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Conversion Preview */}
-          {sourceProduct && targetProduct && sourceQuantity && targetOutputQuantity && (
+          {sourceProduct && targetProduct && selectedBatch && sourceQuantity && targetOutputQuantity && (
             <div className="bg-primary/10 dark:bg-primary/20 border border-primary/30 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="text-center flex-1">
@@ -512,7 +598,7 @@ export function ProcessStockDialog({
           )}
 
           {/* Form Fields */}
-          {sourceProduct && targetProduct && (
+          {sourceProduct && targetProduct && selectedBatch && (
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">{t('dialog.processingDetails')}</h3>
 
@@ -525,6 +611,7 @@ export function ProcessStockDialog({
                     type="number"
                     step="0.01"
                     min="0"
+                    max={selectedBatch?.quantityRemaining}
                     value={sourceQuantity}
                     onChange={(e) => setSourceQuantity(e.target.value)}
                     placeholder="0"
@@ -532,8 +619,8 @@ export function ProcessStockDialog({
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('fields.sourceQuantityHint')}
-                    {sourceProduct && (
-                      <> • {t('preview.available')}: {sourceProduct.currentStock} {sourceProduct.unit}</>
+                    {selectedBatch && (
+                      <> • {t('preview.available')}: {selectedBatch.quantityRemaining} {sourceProduct.unit}</>
                     )}
                   </p>
                 </div>
@@ -644,6 +731,9 @@ export function ProcessStockDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t('fields.expiryOptions.none')}</SelectItem>
+                    {selectedBatch && (
+                      <SelectItem value="followParent">{t('fields.expiryOptions.followParent')}</SelectItem>
+                    )}
                     <SelectItem value="3d">{t('fields.expiryOptions.3d')}</SelectItem>
                     <SelectItem value="5d">{t('fields.expiryOptions.5d')}</SelectItem>
                     <SelectItem value="10d">{t('fields.expiryOptions.10d')}</SelectItem>
@@ -651,6 +741,18 @@ export function ProcessStockDialog({
                     <SelectItem value="custom">{t('fields.expiryOptions.custom')}</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Follow parent expiry info */}
+                {expirySelection === 'followParent' && selectedBatch && (
+                  <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-muted/50 text-sm">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    {selectedBatch.expiryDate ? (
+                      <span>{t('fields.expiryFollowParentDate', { date: format(new Date(selectedBatch.expiryDate), 'dd MMM yyyy') })}</span>
+                    ) : (
+                      <span className="text-orange-600 dark:text-orange-400">{t('fields.expiryFollowParentNoExpiry')}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Show date picker only for custom selection */}
                 {expirySelection === 'custom' && (

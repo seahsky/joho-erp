@@ -901,6 +901,7 @@ export const productRouter = router({
       z.object({
         sourceProductId: z.string(),
         targetProductId: z.string(),
+        sourceBatchId: z.string().optional(), // If provided, consume from this specific batch instead of FIFO
         sourceQuantity: z.number().positive(), // Raw material to consume (input quantity)
         targetOutputQuantity: z.number().positive(), // Desired output quantity (processed goods)
         lossPercentage: z.number().min(0).max(100).optional(), // Processing loss percentage (calculated if not provided)
@@ -930,7 +931,7 @@ export const productRouter = router({
         )
     )
     .mutation(async ({ input, ctx }) => {
-      const { sourceProductId, targetProductId, sourceQuantity, targetOutputQuantity, lossPercentage: inputLossPercentage, costPerUnit, expiryDate, notes } = input;
+      const { sourceProductId, targetProductId, sourceBatchId, sourceQuantity, targetOutputQuantity, lossPercentage: inputLossPercentage, costPerUnit, expiryDate, notes } = input;
 
       // Use transaction to process stock atomically - ALL validation inside transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -1028,16 +1029,41 @@ export const productRouter = router({
           },
         });
 
-        // STEP 4: Consume from source batches using FIFO
-        const { consumeStock } = await import('../services/inventory-batch');
-        const consumptionResult = await consumeStock(
-          sourceProductId,
-          requiredRawMaterial,
-          sourceTransaction.id,
-          undefined,
-          undefined,
-          tx
-        );
+        // STEP 4: Consume from source batches — specific batch or FIFO
+        let consumptionResult;
+        if (sourceBatchId) {
+          // Validate batch belongs to source product
+          const batch = await tx.inventoryBatch.findUnique({ where: { id: sourceBatchId } });
+          if (!batch || batch.productId !== sourceProductId) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Selected batch does not belong to the source product',
+            });
+          }
+          if (batch.isConsumed || batch.quantityRemaining < requiredRawMaterial) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Insufficient stock in selected batch. Available: ${batch.quantityRemaining}, required: ${requiredRawMaterial}.`,
+            });
+          }
+          const { consumeFromBatch } = await import('../services/inventory-batch');
+          consumptionResult = await consumeFromBatch(
+            sourceBatchId,
+            requiredRawMaterial,
+            sourceTransaction.id,
+            tx
+          );
+        } else {
+          const { consumeStock } = await import('../services/inventory-batch');
+          consumptionResult = await consumeStock(
+            sourceProductId,
+            requiredRawMaterial,
+            sourceTransaction.id,
+            undefined,
+            undefined,
+            tx
+          );
+        }
 
         // STEP 5: Sync source product stock from batch sums (defensive)
         const { syncProductCurrentStock } = await import('../services/inventory-batch');

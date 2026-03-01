@@ -1332,8 +1332,16 @@
         "5d": "5 days",
         "10d": "10 days",
         "1M": "1 month",
-        "custom": "Custom date"
+        "custom": "Custom date",
+        "followParent": "Follow source batch expiry"
       },
+      "sourceBatch": "Source Batch",
+      "sourceBatchHint": "Select the specific batch to consume from",
+      "noBatchesAvailable": "No available batches for this product",
+      "batchQtyRemaining": "Available",
+      "batchCost": "Cost",
+      "expiryFollowParentDate": "Will inherit expiry: {date}",
+      "expiryFollowParentNoExpiry": "Source batch has no expiry date — output will have no expiry",
       "notes": "Notes (Optional)",
       "notesPlaceholder": "Add processing notes..."
     },
@@ -1357,6 +1365,8 @@
       "costRequired": "Cost per unit is required",
       "lossPercentageRange": "Loss percentage must be between 0 and 100",
       "zeroOutput": "Output quantity cannot be zero",
+      "batchRequired": "Source batch selection is required",
+      "sourceQuantityExceedsBatch": "Exceeds batch available stock ({available})",
       "fixErrors": "Please fix the following errors:"
     },
     "messages": {

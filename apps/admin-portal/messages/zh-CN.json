@@ -1332,8 +1332,16 @@
         "5d": "5天",
         "10d": "10天",
         "1M": "1个月",
-        "custom": "自定义日期"
+        "custom": "自定义日期",
+        "followParent": "沿用原料批次有效期"
       },
+      "sourceBatch": "原料批次",
+      "sourceBatchHint": "选择要消耗的具体批次",
+      "noBatchesAvailable": "该产品无可用批次",
+      "batchQtyRemaining": "可用",
+      "batchCost": "成本",
+      "expiryFollowParentDate": "将继承有效期：{date}",
+      "expiryFollowParentNoExpiry": "原料批次无有效期——产出将无有效期",
       "notes": "备注（可选）",
       "notesPlaceholder": "添加加工备注..."
     },
@@ -1357,6 +1365,8 @@
       "costRequired": "单位成本为必填项",
       "lossPercentageRange": "损耗百分比必须在0到100之间",
       "zeroOutput": "输出数量不能为零",
+      "batchRequired": "请选择原料批次",
+      "sourceQuantityExceedsBatch": "超出批次可用库存 ({available})",
       "fixErrors": "请修正以下错误："
     },
     "messages": {
