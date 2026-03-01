@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -9,10 +10,21 @@ import {
   Button,
   useToast,
 } from '@joho-erp/ui';
-import { RefreshCw, CheckCircle, Clock, AlertTriangle, Loader2, Download } from 'lucide-react';
+import { RefreshCw, CheckCircle, Clock, AlertTriangle, Loader2, Download, CreditCard } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { formatDate } from '@joho-erp/shared';
+import { formatDate, formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
+import { IssueCreditNoteDialog } from './IssueCreditNoteDialog';
+
+interface CreditNoteEntry {
+  creditNoteId: string;
+  creditNoteNumber: string;
+  amount: number; // cents
+  reason: string;
+  items: Array<{ productId: string; quantity: number }>;
+  createdAt: Date | string;
+  createdBy: string;
+}
 
 interface XeroInfo {
   invoiceId?: string | null;
@@ -20,20 +32,34 @@ interface XeroInfo {
   invoiceStatus?: string | null;
   creditNoteId?: string | null;
   creditNoteNumber?: string | null;
+  creditNotes?: CreditNoteEntry[];
   syncedAt?: Date | string | null;
   syncError?: string | null;
   lastSyncJobId?: string | null;
 }
 
+interface OrderItem {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  applyGst?: boolean;
+}
+
 interface XeroSyncCardProps {
   xero?: XeroInfo | null;
   orderId: string;
+  orderItems?: OrderItem[];
+  totalAmount?: number; // cents
 }
 
-export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
+export function XeroSyncCard({ xero, orderId, orderItems, totalAmount }: XeroSyncCardProps) {
   const t = useTranslations('orderDetail');
   const { toast } = useToast();
   const utils = api.useUtils();
+  const [creditNoteDialogOpen, setCreditNoteDialogOpen] = useState(false);
 
   const retryMutation = api.xero.retryJob.useMutation({
     onSuccess: () => {
@@ -102,6 +128,16 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
   const config = statusConfig[status];
   const StatusIcon = config.icon;
 
+  const creditNotes = xero?.creditNotes || [];
+  const totalCredits = creditNotes.reduce((sum, cn) => sum + (cn.amount || 0), 0);
+  const invoiceStatus = xero?.invoiceStatus;
+  const canIssueCreditNote =
+    xero?.invoiceId &&
+    (invoiceStatus === 'PAID' || invoiceStatus === 'AUTHORISED') &&
+    orderItems &&
+    totalAmount &&
+    totalCredits < totalAmount;
+
   return (
     <Card>
       <CardHeader>
@@ -128,11 +164,36 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
           </div>
         )}
 
-        {/* Credit Note */}
+        {/* Legacy Credit Note (full refund) */}
         {xero?.creditNoteNumber && (
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('xero.creditNote')}</span>
             <span className="font-mono text-sm">{xero.creditNoteNumber}</span>
+          </div>
+        )}
+
+        {/* Partial Credit Notes */}
+        {creditNotes.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-sm font-medium">{t('xero.creditNotes')}</span>
+            <div className="space-y-1.5">
+              {creditNotes.map((cn) => (
+                <div
+                  key={cn.creditNoteId}
+                  className="flex items-center justify-between text-sm bg-muted/50 rounded-md px-3 py-2"
+                >
+                  <div>
+                    <span className="font-mono">{cn.creditNoteNumber}</span>
+                    <span className="text-muted-foreground ml-2">— {cn.reason}</span>
+                  </div>
+                  <span className="font-mono font-medium">{formatAUD(cn.amount)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-sm font-medium pt-1 border-t">
+              <span>{t('xero.totalCredits')}</span>
+              <span className="font-mono">{formatAUD(totalCredits)}</span>
+            </div>
           </div>
         )}
 
@@ -185,6 +246,31 @@ export function XeroSyncCard({ xero, orderId }: XeroSyncCardProps) {
             <Download className="h-4 w-4 mr-2" />
             {t('xero.downloadInvoice')}
           </Button>
+        )}
+
+        {/* Issue Credit Note Button */}
+        {canIssueCreditNote && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCreditNoteDialogOpen(true)}
+            className="w-full"
+          >
+            <CreditCard className="h-4 w-4 mr-2" />
+            {t('xero.issueCreditNote')}
+          </Button>
+        )}
+
+        {/* Issue Credit Note Dialog */}
+        {canIssueCreditNote && (
+          <IssueCreditNoteDialog
+            orderId={orderId}
+            orderItems={orderItems!}
+            totalAmount={totalAmount!}
+            existingCreditNotes={creditNotes}
+            open={creditNoteDialogOpen}
+            onOpenChange={setCreditNoteDialogOpen}
+          />
         )}
       </CardContent>
     </Card>

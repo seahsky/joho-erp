@@ -1030,12 +1030,33 @@ type ProofOfDelivery {
   uploadedAt          DateTime
 }
 
+type CreditNoteItem {
+  productId           String
+  sku                 String
+  productName         String
+  quantity            Float
+  unitPrice           Int       // cents
+  subtotal            Int       // cents
+  applyGst            Boolean   @default(false)
+}
+
+type CreditNoteEntry {
+  creditNoteId        String
+  creditNoteNumber    String
+  amount              Int       // total in cents (incl GST)
+  reason              String
+  items               CreditNoteItem[]
+  createdAt           DateTime
+  createdBy           String
+}
+
 type XeroInfo {
   invoiceId           String?
   invoiceNumber       String?
   invoiceStatus       String?
   creditNoteId        String?
   creditNoteNumber    String?
+  creditNotes         CreditNoteEntry[]
   syncedAt            DateTime?
   syncError           String?
   lastSyncJobId       String?

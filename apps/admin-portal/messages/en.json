@@ -3887,7 +3887,35 @@
       "retrySuccessMessage": "The sync job has been queued for retry",
       "retryError": "Retry Failed",
       "downloadInvoice": "Download Invoice",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "creditNotes": "Credit Notes",
+      "totalCredits": "Total Credits",
+      "issueCreditNote": "Issue Credit Note"
+    },
+    "creditNote": {
+      "issueButton": "Issue Credit Note",
+      "dialogTitle": "Issue Partial Credit Note",
+      "dialogDescription": "Select items and quantities to credit against this invoice.",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. Quality issue, pricing correction, short delivery...",
+      "product": "Product",
+      "originalQty": "Original Qty",
+      "alreadyCredited": "Already Credited",
+      "creditQty": "Credit Qty",
+      "amount": "Amount",
+      "subtotal": "Subtotal",
+      "gst": "GST (10%)",
+      "totalCredit": "Total Credit",
+      "nearLimitWarning": "This credit note will use most of the remaining creditable amount.",
+      "exceedsLimitError": "Total credits would exceed the invoice total.",
+      "noItemsSelected": "Please select at least one item to credit.",
+      "reasonRequired": "A reason is required.",
+      "cancel": "Cancel",
+      "submit": "Submit Credit Note",
+      "submitting": "Submitting...",
+      "success": "Credit Note Queued",
+      "successMessage": "The partial credit note has been queued for creation in Xero.",
+      "error": "Credit Note Failed"
     },
     "internalNotes": {
       "title": "Internal Notes"

@@ -1692,6 +1692,142 @@ export async function createCreditNoteInXero(
   }
 }
 
+export interface PartialCreditNotePayload {
+  type: 'partial';
+  reason: string;
+  createdBy: string;
+  items: Array<{
+    productId: string;
+    sku: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number; // cents
+    subtotal: number; // cents
+    applyGst: boolean;
+  }>;
+}
+
+export async function createPartialCreditNoteInXero(
+  order: OrderForXeroSync,
+  customer: CustomerForXeroSync,
+  payload: PartialCreditNotePayload,
+  sequenceNumber: number
+): Promise<{
+  success: boolean;
+  creditNoteId?: string;
+  creditNoteNumber?: string;
+  amount?: number; // total in cents (incl GST)
+  error?: string;
+}> {
+  try {
+    if (!customer.xeroContactId) {
+      return { success: false, error: 'Customer not synced to Xero' };
+    }
+
+    if (!order.xero?.invoiceId) {
+      return { success: false, error: 'Order has no invoice to credit' };
+    }
+
+    // Generate unique reference for this partial credit note
+    const creditNoteReference = `Partial Credit for Order ${order.orderNumber} #${sequenceNumber}`;
+
+    // Check Xero for existing credit note by reference (idempotency)
+    const existingCreditNote = await findExistingCreditNoteByReference(creditNoteReference);
+    if (existingCreditNote) {
+      return {
+        success: true,
+        creditNoteId: existingCreditNote.creditNoteId,
+        creditNoteNumber: existingCreditNote.creditNoteNumber,
+      };
+    }
+
+    // Map only selected items to Xero line items
+    const lineItems: XeroLineItem[] = payload.items.map((item) => ({
+      Description: `Credit: ${item.productName} (${item.sku})`,
+      Quantity: item.quantity,
+      UnitAmount: item.unitPrice / 100, // Convert cents to dollars
+      AccountCode: getXeroSalesAccountCode(),
+      TaxType: item.applyGst ? getXeroGstTaxType() : getXeroGstFreeTaxType(),
+    }));
+
+    const creditNote: XeroCreditNote = {
+      Type: 'ACCRECCREDIT',
+      Contact: { ContactID: customer.xeroContactId },
+      LineItems: lineItems,
+      Date: formatXeroDate(new Date()),
+      Status: 'AUTHORISED',
+      CurrencyCode: 'AUD',
+      Reference: creditNoteReference,
+      LineAmountTypes: 'Exclusive',
+    };
+
+    const response = await xeroApiRequest<XeroCreditNotesResponse>('/CreditNotes', {
+      method: 'POST',
+      body: { CreditNotes: [creditNote] },
+    });
+
+    const createdCreditNote = response.CreditNotes[0];
+    xeroLogger.sync.creditNoteCreated(
+      createdCreditNote.CreditNoteID!,
+      createdCreditNote.CreditNoteNumber!,
+      order.id,
+      order.orderNumber
+    );
+
+    // Calculate total amount in dollars for allocation
+    // Sum up item subtotals, then add GST for GST-applicable items
+    let subtotalCents = 0;
+    let gstCents = 0;
+    for (const item of payload.items) {
+      subtotalCents += item.subtotal;
+      if (item.applyGst) {
+        gstCents += Math.round(item.subtotal * 0.1);
+      }
+    }
+    const totalCents = subtotalCents + gstCents;
+    const totalDollars = totalCents / 100;
+
+    // Allocate credit note to original invoice
+    if (createdCreditNote.CreditNoteID && order.xero.invoiceId) {
+      try {
+        await allocateCreditNoteToInvoice(
+          createdCreditNote.CreditNoteID,
+          order.xero.invoiceId,
+          totalDollars
+        );
+        xeroLogger.sync.creditNoteAllocated(
+          createdCreditNote.CreditNoteNumber!,
+          order.xero.invoiceNumber || order.xero.invoiceId
+        );
+      } catch (allocError) {
+        xeroLogger.error('Partial credit note allocation failed', {
+          creditNoteId: createdCreditNote.CreditNoteID,
+          invoiceId: order.xero.invoiceId,
+          error: allocError instanceof Error ? allocError.message : 'Unknown error',
+        });
+        // Continue even if allocation fails - credit note is still created
+      }
+    }
+
+    return {
+      success: true,
+      creditNoteId: createdCreditNote.CreditNoteID,
+      creditNoteNumber: createdCreditNote.CreditNoteNumber,
+      amount: totalCents,
+    };
+  } catch (error) {
+    xeroLogger.error('Partial credit note creation failed', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create partial credit note',
+    };
+  }
+}
+
 
 // ============================================================================
 // Invoice Retrieval for Customers (with Caching)

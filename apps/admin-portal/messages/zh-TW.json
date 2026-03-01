@@ -3887,7 +3887,35 @@
       "retrySuccessMessage": "同步任務已加入重試佇列",
       "retryError": "重試失敗",
       "downloadInvoice": "下載發票",
-      "loading": "載入中..."
+      "loading": "載入中...",
+      "creditNotes": "貸項通知單",
+      "totalCredits": "總貸項",
+      "issueCreditNote": "開具貸項通知單"
+    },
+    "creditNote": {
+      "issueButton": "開具貸項通知單",
+      "dialogTitle": "開具部分貸項通知單",
+      "dialogDescription": "選擇要退款的項目和數量。",
+      "reason": "原因",
+      "reasonPlaceholder": "例如：品質問題、價格調整、短缺交付...",
+      "product": "產品",
+      "originalQty": "原始數量",
+      "alreadyCredited": "已退款",
+      "creditQty": "退款數量",
+      "amount": "金額",
+      "subtotal": "小計",
+      "gst": "GST (10%)",
+      "totalCredit": "退款總額",
+      "nearLimitWarning": "此貸項通知單將使用大部分剩餘可退款金額。",
+      "exceedsLimitError": "總貸項將超過發票總額。",
+      "noItemsSelected": "請至少選擇一個項目進行退款。",
+      "reasonRequired": "必須填寫原因。",
+      "cancel": "取消",
+      "submit": "提交貸項通知單",
+      "submitting": "提交中...",
+      "success": "貸項通知單已排隊",
+      "successMessage": "部分貸項通知單已排隊在Xero中建立。",
+      "error": "貸項通知單失敗"
     },
     "internalNotes": {
       "title": "內部備註"

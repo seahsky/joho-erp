@@ -3887,7 +3887,35 @@
       "retrySuccessMessage": "同步任务已加入重试队列",
       "retryError": "重试失败",
       "downloadInvoice": "下载发票",
-      "loading": "加载中..."
+      "loading": "加载中...",
+      "creditNotes": "贷项通知单",
+      "totalCredits": "总贷项",
+      "issueCreditNote": "开具贷项通知单"
+    },
+    "creditNote": {
+      "issueButton": "开具贷项通知单",
+      "dialogTitle": "开具部分贷项通知单",
+      "dialogDescription": "选择要退款的项目和数量。",
+      "reason": "原因",
+      "reasonPlaceholder": "例如：质量问题、价格调整、短缺交付...",
+      "product": "产品",
+      "originalQty": "原始数量",
+      "alreadyCredited": "已退款",
+      "creditQty": "退款数量",
+      "amount": "金额",
+      "subtotal": "小计",
+      "gst": "GST (10%)",
+      "totalCredit": "退款总额",
+      "nearLimitWarning": "此贷项通知单将使用大部分剩余可退款金额。",
+      "exceedsLimitError": "总贷项将超过发票总额。",
+      "noItemsSelected": "请至少选择一个项目进行退款。",
+      "reasonRequired": "必须填写原因。",
+      "cancel": "取消",
+      "submit": "提交贷项通知单",
+      "submitting": "提交中...",
+      "success": "贷项通知单已排队",
+      "successMessage": "部分贷项通知单已排队在Xero中创建。",
+      "error": "贷项通知单失败"
     },
     "internalNotes": {
       "title": "内部备注"

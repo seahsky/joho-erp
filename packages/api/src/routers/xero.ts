@@ -229,6 +229,176 @@ export const xeroRouter = router({
     }),
 
   /**
+   * Create a partial credit note for specific items on a paid invoice
+   */
+  createPartialCreditNote: requirePermission('settings.xero:sync')
+    .input(
+      z.object({
+        orderId: z.string(),
+        reason: z.string().min(1).max(500),
+        items: z
+          .array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number().positive(),
+            })
+          )
+          .min(1),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const order = await prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          items: true,
+          totalAmount: true,
+          xero: true,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      const xeroInfo = order.xero as {
+        invoiceId?: string | null;
+        invoiceStatus?: string | null;
+        creditNotes?: Array<{
+          amount: number;
+          items: Array<{ productId: string; quantity: number }>;
+        }>;
+      } | null;
+
+      if (!xeroInfo?.invoiceId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Order has no invoice to credit',
+        });
+      }
+
+      const invoiceStatus = xeroInfo.invoiceStatus;
+      if (invoiceStatus !== 'PAID' && invoiceStatus !== 'AUTHORISED') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invoice must be PAID or AUTHORISED to issue a partial credit note',
+        });
+      }
+
+      // Build a map of already credited quantities per product
+      const existingCreditNotes = xeroInfo.creditNotes || [];
+      const creditedQtyMap = new Map<string, number>();
+      let existingCreditsTotal = 0;
+      for (const cn of existingCreditNotes) {
+        existingCreditsTotal += cn.amount;
+        for (const item of cn.items) {
+          creditedQtyMap.set(
+            item.productId,
+            (creditedQtyMap.get(item.productId) || 0) + item.quantity
+          );
+        }
+      }
+
+      // Validate items and build payload
+      const orderItems = order.items as Array<{
+        productId: string;
+        sku: string;
+        productName: string;
+        unit: string;
+        quantity: number;
+        unitPrice: number;
+        subtotal: number;
+        applyGst: boolean;
+      }>;
+
+      const validatedItems: Array<{
+        productId: string;
+        sku: string;
+        productName: string;
+        quantity: number;
+        unitPrice: number;
+        subtotal: number;
+        applyGst: boolean;
+      }> = [];
+
+      for (const inputItem of input.items) {
+        const orderItem = orderItems.find(
+          (oi) => oi.productId === inputItem.productId
+        );
+        if (!orderItem) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Product ${inputItem.productId} not found in order`,
+          });
+        }
+
+        const alreadyCredited = creditedQtyMap.get(inputItem.productId) || 0;
+        const maxCreditableQty = orderItem.quantity - alreadyCredited;
+
+        if (inputItem.quantity > maxCreditableQty) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot credit ${inputItem.quantity} of ${orderItem.productName} — only ${maxCreditableQty} remaining (${alreadyCredited} already credited)`,
+          });
+        }
+
+        const itemSubtotal = Math.round(orderItem.unitPrice * inputItem.quantity);
+
+        validatedItems.push({
+          productId: orderItem.productId,
+          sku: orderItem.sku,
+          productName: orderItem.productName,
+          quantity: inputItem.quantity,
+          unitPrice: orderItem.unitPrice,
+          subtotal: itemSubtotal,
+          applyGst: orderItem.applyGst ?? false,
+        });
+      }
+
+      // Calculate new CN total (incl GST) and check against invoice total
+      let newCnSubtotal = 0;
+      let newCnGst = 0;
+      for (const item of validatedItems) {
+        newCnSubtotal += item.subtotal;
+        if (item.applyGst) {
+          newCnGst += Math.round(item.subtotal * 0.1);
+        }
+      }
+      const newCnTotal = newCnSubtotal + newCnGst;
+
+      if (existingCreditsTotal + newCnTotal > order.totalAmount) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Total credits would exceed the invoice total amount',
+        });
+      }
+
+      // Enqueue the job with partial payload
+      const jobId = await enqueueXeroJob('create_credit_note', 'order', input.orderId, {
+        type: 'partial' as const,
+        reason: input.reason,
+        createdBy: ctx.userName || ctx.userId,
+        items: validatedItems,
+      });
+
+      // Audit log
+      await logXeroSyncTrigger(ctx.userId, undefined, ctx.userRole, ctx.userName, {
+        jobType: 'create_credit_note',
+        entityType: 'order',
+        entityId: input.orderId,
+      }).catch((error) => {
+        console.error('Audit log failed for Xero partial credit note trigger:', error);
+      });
+
+      return { success: true, jobId };
+    }),
+
+  /**
    * Get invoice PDF URL for an order (admin use)
    * Returns the Xero online invoice URL that can be used to view/download the invoice
    */

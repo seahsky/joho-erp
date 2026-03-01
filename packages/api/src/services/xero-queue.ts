@@ -12,11 +12,13 @@ import {
   syncContactToXero,
   createInvoiceInXero,
   createCreditNoteInXero,
+  createPartialCreditNoteInXero,
   updateInvoiceInXero,
   isConnected,
   isXeroIntegrationEnabled,
   XeroApiError,
 } from './xero';
+import type { PartialCreditNotePayload } from './xero';
 import { sendCreditNoteIssuedEmail, sendXeroSyncErrorEmail } from './email';
 import { xeroLogger, startTimer } from '../utils/logger';
 
@@ -684,6 +686,11 @@ async function processCreateCreditNote(
   creditNoteNumber?: string;
   error?: string;
 }> {
+  // Fetch the job record to read payload
+  const job = await prisma.xeroSyncJob.findUnique({
+    where: { id: jobId },
+  });
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { customer: true },
@@ -758,6 +765,88 @@ async function processCreateCreditNote(
     },
   };
 
+  // Check if this is a partial credit note
+  const payload = job?.payload as Record<string, unknown> | null;
+  const isPartial = payload?.type === 'partial';
+
+  if (isPartial) {
+    // --- Partial credit note flow ---
+    const partialPayload = payload as unknown as PartialCreditNotePayload;
+
+    // Determine sequence number from existing credit notes
+    const currentXero = (order.xero as Record<string, unknown>) || {};
+    const existingCreditNotes = (currentXero.creditNotes as Array<Record<string, unknown>>) || [];
+    const sequenceNumber = existingCreditNotes.length + 1;
+
+    const result = await createPartialCreditNoteInXero(
+      orderForSync,
+      customerForSync,
+      partialPayload,
+      sequenceNumber
+    );
+
+    if (result.success) {
+      // Append to creditNotes array (don't overwrite legacy fields or invoice status)
+      const newCreditNoteEntry = {
+        creditNoteId: result.creditNoteId || '',
+        creditNoteNumber: result.creditNoteNumber || '',
+        amount: result.amount || 0, // total in cents (incl GST)
+        reason: partialPayload.reason,
+        items: partialPayload.items,
+        createdAt: new Date(),
+        createdBy: partialPayload.createdBy,
+      };
+
+      const updatedCreditNotes = [...existingCreditNotes, newCreditNoteEntry];
+
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          xero: {
+            ...currentXero,
+            creditNotes: updatedCreditNotes,
+            syncedAt: new Date(),
+            syncError: null,
+            lastSyncJobId: jobId,
+          } as typeof currentXero,
+        },
+      });
+
+      // Send itemized credit note email
+      await sendCreditNoteIssuedEmail({
+        customerEmail: customerForSync.contactPerson.email,
+        customerName: customerForSync.businessName,
+        orderNumber: order.orderNumber,
+        creditNoteNumber: result.creditNoteNumber || '',
+        refundAmount: result.amount || 0,
+        reason: partialPayload.reason,
+        items: partialPayload.items,
+      }).catch((error) => {
+        xeroLogger.error('Failed to send partial credit note email', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    } else {
+      // Record error in order
+      const currentXeroForError = (order.xero as Record<string, unknown>) || {};
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          xero: {
+            ...currentXeroForError,
+            syncError: result.error,
+            lastSyncJobId: jobId,
+          },
+        },
+      });
+    }
+
+    return result;
+  }
+
+  // --- Existing full-refund flow (unchanged) ---
   const result = await createCreditNoteInXero(orderForSync, customerForSync);
 
   if (result.success) {

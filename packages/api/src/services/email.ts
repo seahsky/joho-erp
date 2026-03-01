@@ -2363,6 +2363,14 @@ export async function sendCreditNoteIssuedEmail(params: {
   creditNoteNumber: string;
   refundAmount: number; // in cents
   reason: string;
+  items?: Array<{
+    productName: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number; // cents
+    subtotal: number; // cents
+    applyGst: boolean;
+  }>;
 }): Promise<{ success: boolean; message: string }> {
   try {
     if (!process.env.RESEND_API_KEY) {
@@ -2370,7 +2378,39 @@ export async function sendCreditNoteIssuedEmail(params: {
       return { success: false, message: 'Email service not configured' };
     }
 
-    const { customerEmail, customerName, orderNumber, creditNoteNumber, refundAmount, reason } = params;
+    const { customerEmail, customerName, orderNumber, creditNoteNumber, refundAmount, reason, items } = params;
+
+    // Build optional itemized table HTML
+    let itemsTableHtml = '';
+    if (items && items.length > 0) {
+      const itemRows = items.map((item) => {
+        const unitPriceDollars = (item.unitPrice / 100).toFixed(2);
+        const subtotalDollars = (item.subtotal / 100).toFixed(2);
+        return `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.productName} (${item.sku})</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${unitPriceDollars}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${subtotalDollars}</td>
+          </tr>`;
+      }).join('');
+
+      itemsTableHtml = `
+        <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Items Credited</h2>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f3f4f6;">
+              <th style="padding: 8px; text-align: left; font-size: 14px; color: #6b7280;">Product</th>
+              <th style="padding: 8px; text-align: center; font-size: 14px; color: #6b7280;">Qty</th>
+              <th style="padding: 8px; text-align: right; font-size: 14px; color: #6b7280;">Unit Price</th>
+              <th style="padding: 8px; text-align: right; font-size: 14px; color: #6b7280;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+        </table>`;
+    }
 
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
@@ -2404,6 +2444,8 @@ export async function sendCreditNoteIssuedEmail(params: {
                       <strong>Credit Amount:</strong> ${formatAUD(refundAmount)}
                     </p>
                   </div>
+
+                  ${itemsTableHtml}
 
                   <h2 style="margin: 30px 0 15px 0; font-size: 18px; color: #1f2937;">Credit Note Details</h2>
                   <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
@@ -2441,7 +2483,7 @@ export async function sendCreditNoteIssuedEmail(params: {
               </tr>
               <tr>
                 <td style="padding: 20px 30px; background-color: #f3f4f6; text-align: center; font-size: 14px; color: #6b7280;">
-                  <p style="margin: 0;">© ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
+                  <p style="margin: 0;">&copy; ${new Date().getFullYear()} Joho Foods. All rights reserved.</p>
                 </td>
               </tr>
             </table>

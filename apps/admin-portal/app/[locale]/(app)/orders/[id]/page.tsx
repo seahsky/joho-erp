@@ -92,6 +92,7 @@ export default function OrderDetailPage({ params }: PageProps) {
     quantity: number;
     unit: string;
     unitPrice: number;
+    applyGst?: boolean;
   }>;
 
   const statusHistory = (order.statusHistory || []) as Array<{
@@ -135,6 +136,15 @@ export default function OrderDetailPage({ params }: PageProps) {
     invoiceStatus?: string | null;
     creditNoteId?: string | null;
     creditNoteNumber?: string | null;
+    creditNotes?: Array<{
+      creditNoteId: string;
+      creditNoteNumber: string;
+      amount: number;
+      reason: string;
+      items: Array<{ productId: string; quantity: number }>;
+      createdAt: Date | string;
+      createdBy: string;
+    }>;
     syncedAt?: Date | string | null;
     syncError?: string | null;
     lastSyncJobId?: string | null;
@@ -219,7 +229,12 @@ export default function OrderDetailPage({ params }: PageProps) {
           />
 
           {/* Xero Sync Status */}
-          <XeroSyncCard xero={xero} orderId={order.id} />
+          <XeroSyncCard
+            xero={xero}
+            orderId={order.id}
+            orderItems={items}
+            totalAmount={order.totalAmount}
+          />
 
           {/* Activity History */}
           <AuditLogSection entity="order" entityId={order.id} />
