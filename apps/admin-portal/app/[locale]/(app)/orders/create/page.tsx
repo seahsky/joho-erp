@@ -11,6 +11,13 @@ import {
   Input,
   Label,
   AreaBadge,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
 } from '@joho-erp/ui';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -138,6 +145,7 @@ export default function CreateOrderOnBehalfPage() {
       if (product.subProducts && product.subProducts.length > 0) {
         // Parent with subproducts: group header + children
         grouped.push({ parent: product, children: product.subProducts });
+        all.push(product);
         for (const sub of product.subProducts) {
           all.push(sub);
         }
@@ -538,40 +546,43 @@ export default function CreateOrderOnBehalfPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
                   <Label htmlFor="product">{t('fields.product')}</Label>
-                  <select
-                    id="product"
-                    className="w-full px-3 py-2 border rounded-md mt-1"
-                    value={selectedProductId}
-                    onChange={(e) => setSelectedProductId(e.target.value)}
-                  >
-                    <option value="">{t('placeholders.selectProduct')}</option>
-                    {groupedProducts.map((group) => {
-                      if (group.children.length > 0) {
-                        // Parent with subproducts: render as optgroup
+                  <Select value={selectedProductId || undefined} onValueChange={setSelectedProductId}>
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder={t('placeholders.selectProduct')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupedProducts.map((group, index) => {
+                        if (group.children.length > 0) {
+                          const parentPrice = getEffectiveProductPrice(group.parent.id, group.parent.basePrice);
+                          const isParentCustom = pricingMap.has(group.parent.id);
+                          return (
+                            <SelectGroup key={group.parent.id}>
+                              {index > 0 && <SelectSeparator />}
+                              <SelectItem value={group.parent.id}>
+                                {group.parent.sku} - {group.parent.name} ({formatAUD(parentPrice)}{isParentCustom ? ` - ${t('labels.customPrice')}` : ''})
+                              </SelectItem>
+                              {group.children.map((sub) => {
+                                const price = getEffectiveProductPrice(sub.id, sub.basePrice);
+                                const isCustom = pricingMap.has(sub.id);
+                                return (
+                                  <SelectItem key={sub.id} value={sub.id} className="pl-12">
+                                    {sub.sku} - {sub.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectGroup>
+                          );
+                        }
+                        const price = getEffectiveProductPrice(group.parent.id, group.parent.basePrice);
+                        const isCustom = pricingMap.has(group.parent.id);
                         return (
-                          <optgroup key={group.parent.id} label={`${group.parent.sku} - ${group.parent.name}`}>
-                            {group.children.map((sub) => {
-                              const price = getEffectiveProductPrice(sub.id, sub.basePrice);
-                              const isCustom = pricingMap.has(sub.id);
-                              return (
-                                <option key={sub.id} value={sub.id}>
-                                  {sub.sku} - {sub.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
-                                </option>
-                              );
-                            })}
-                          </optgroup>
+                          <SelectItem key={group.parent.id} value={group.parent.id}>
+                            {group.parent.sku} - {group.parent.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
+                          </SelectItem>
                         );
-                      }
-                      // Standalone product
-                      const price = getEffectiveProductPrice(group.parent.id, group.parent.basePrice);
-                      const isCustom = pricingMap.has(group.parent.id);
-                      return (
-                        <option key={group.parent.id} value={group.parent.id}>
-                          {group.parent.sku} - {group.parent.name} ({formatAUD(price)}{isCustom ? ` - ${t('labels.customPrice')}` : ''})
-                        </option>
-                      );
-                    })}
-                  </select>
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="quantity">{t('fields.quantity')}</Label>
