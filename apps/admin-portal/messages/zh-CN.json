@@ -3011,7 +3011,10 @@
       "comparison": "对比分析",
       "stockCounts": "库存盘点",
       "stockExpiry": "库存保质期",
-      "writeOffs": "报废记录"
+      "writeOffs": "报废记录",
+      "stockReceived": "入库记录",
+      "processing": "加工记录",
+      "packing": "打包记录"
     },
     "stats": {
       "periods": {
@@ -3312,6 +3315,176 @@
         "next": "下一页",
         "pageOf": "第 {page} 页，共 {total} 页"
       }
+    },
+    "stockReceivedHistory": {
+      "title": "入库记录",
+      "description": "查看所有入库批次记录",
+      "columns": {
+        "product": "产品",
+        "batchNumber": "批次号",
+        "quantity": "剩余 / 初始数量",
+        "costPerUnit": "单位成本",
+        "supplier": "供应商",
+        "invoiceNumber": "发票号",
+        "receivedDate": "入库日期",
+        "expiryDate": "保质期"
+      },
+      "filters": {
+        "searchPlaceholder": "按产品名称或SKU搜索...",
+        "dateFrom": "从",
+        "dateTo": "至",
+        "allSuppliers": "全部供应商"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "dateDesc": "入库日期（最新）",
+        "dateAsc": "入库日期（最早）",
+        "productNameAsc": "产品名称（A-Z）",
+        "productNameDesc": "产品名称（Z-A）",
+        "quantityDesc": "数量（最多）",
+        "quantityAsc": "数量（最少）",
+        "costDesc": "成本（最高）",
+        "costAsc": "成本（最低）",
+        "expiryAsc": "保质期（最近）",
+        "expiryDesc": "保质期（最远）"
+      },
+      "emptyState": "未找到入库记录",
+      "emptyStateDescription": "没有符合筛选条件的入库批次",
+      "pagination": {
+        "showing": "显示 {start}-{end}，共 {total} 个批次",
+        "previous": "上一页",
+        "next": "下一页",
+        "pageOf": "第 {page} 页，共 {total} 页"
+      }
+    },
+    "processingHistory": {
+      "title": "加工记录",
+      "description": "查看所有库存加工交易",
+      "columns": {
+        "product": "产品",
+        "batchNumber": "批次号",
+        "quantity": "数量",
+        "stockChange": "库存变动",
+        "notes": "备注",
+        "date": "日期",
+        "performedBy": "操作人"
+      },
+      "filters": {
+        "searchPlaceholder": "按产品名称或SKU搜索...",
+        "dateFrom": "从",
+        "dateTo": "至"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "dateDesc": "日期（最新）",
+        "dateAsc": "日期（最早）",
+        "productNameAsc": "产品名称（A-Z）",
+        "productNameDesc": "产品名称（Z-A）",
+        "quantityDesc": "数量（最多）",
+        "quantityAsc": "数量（最少）"
+      },
+      "emptyState": "未找到加工记录",
+      "emptyStateDescription": "没有符合筛选条件的加工交易",
+      "pagination": {
+        "showing": "显示 {start}-{end}，共 {total} 条加工记录",
+        "previous": "上一页",
+        "next": "下一页",
+        "pageOf": "第 {page} 页，共 {total} 页"
+      }
+    },
+    "packingHistory": {
+      "title": "打包记录",
+      "description": "查看所有打包调整和重置交易",
+      "columns": {
+        "product": "产品",
+        "batchNumber": "批次号",
+        "type": "类型",
+        "quantity": "数量",
+        "stockChange": "库存变动",
+        "notes": "备注",
+        "date": "日期",
+        "performedBy": "操作人"
+      },
+      "packingAdjustment": "调整",
+      "packingReset": "重置",
+      "filters": {
+        "searchPlaceholder": "按产品名称或SKU搜索...",
+        "dateFrom": "从",
+        "dateTo": "至"
+      },
+      "sort": {
+        "sortBy": "排序方式",
+        "dateDesc": "日期（最新）",
+        "dateAsc": "日期（最早）",
+        "productNameAsc": "产品名称（A-Z）",
+        "productNameDesc": "产品名称（Z-A）",
+        "quantityDesc": "数量（最多）",
+        "quantityAsc": "数量（最少）"
+      },
+      "emptyState": "未找到打包记录",
+      "emptyStateDescription": "没有符合筛选条件的打包交易",
+      "pagination": {
+        "showing": "显示 {start}-{end}，共 {total} 条打包记录",
+        "previous": "上一页",
+        "next": "下一页",
+        "pageOf": "第 {page} 页，共 {total} 页"
+      }
+    },
+    "editBatch": {
+      "title": "编辑入库批次",
+      "description": "修改批次详情。数量变更将重新计算产品库存。",
+      "fields": {
+        "initialQuantity": "初始数量",
+        "quantityRemaining": "剩余数量",
+        "costPerUnit": "单位成本（$）",
+        "expiryDate": "保质期",
+        "supplier": "供应商",
+        "invoiceNumber": "供应商发票号",
+        "stockInDate": "入库日期",
+        "mtvNumber": "MTV编号",
+        "vehicleTemperature": "车辆温度（°C）",
+        "notes": "备注",
+        "editReason": "编辑原因"
+      },
+      "placeholders": {
+        "editReason": "为什么编辑此批次？"
+      },
+      "validation": {
+        "editReasonRequired": "请提供编辑原因",
+        "quantityNegative": "数量不能为负数"
+      },
+      "stockImpact": "库存影响",
+      "currentStock": "当前产品库存",
+      "afterEdit": "编辑后",
+      "save": "保存更改",
+      "cancel": "取消",
+      "saving": "保存中...",
+      "success": "批次更新成功",
+      "error": "批次更新失败"
+    },
+    "editTransaction": {
+      "title": "编辑交易",
+      "description": "修改交易数量。库存将使用先进先出法重新计算。",
+      "currentValues": "当前值",
+      "product": "产品",
+      "currentQuantity": "当前数量",
+      "fields": {
+        "newQuantity": "新数量",
+        "notes": "备注",
+        "editReason": "编辑原因"
+      },
+      "placeholders": {
+        "editReason": "为什么编辑此交易？"
+      },
+      "validation": {
+        "editReasonRequired": "请提供编辑原因"
+      },
+      "stockImpact": "库存影响",
+      "save": "保存更改",
+      "cancel": "取消",
+      "saving": "保存中...",
+      "success": "交易更新成功",
+      "error": "交易更新失败"
     }
   },
   "customerDetail": {

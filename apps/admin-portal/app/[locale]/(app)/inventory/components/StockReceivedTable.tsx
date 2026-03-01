@@ -24,57 +24,37 @@ import {
   Input,
 } from '@joho-erp/ui';
 import {
-  Trash2,
+  PackagePlus,
   ChevronLeft,
   ChevronRight,
   Search,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/trpc/client';
+import { formatAUD } from '@joho-erp/shared';
 
-type SortBy = 'createdAt' | 'productName' | 'quantity';
+type SortBy = 'receivedAt' | 'productName' | 'quantity' | 'costPerUnit' | 'expiryDate';
 type SortDirection = 'asc' | 'desc';
 
-interface WriteOffItem {
-  id: string;
-  productId: string;
-  productName: string;
-  productSku: string;
-  productUnit: string;
-  quantity: number;
-  rawQuantity: number;
-  previousStock: number;
-  newStock: number;
-  notes: string | null;
-  reason: string;
-  createdAt: Date;
-  createdBy: string;
-}
+export function StockReceivedTable() {
+  const t = useTranslations('inventory.stockReceivedHistory');
 
-export function StockWriteOffTable() {
-  const t = useTranslations('inventory.writeOffHistory');
-
-  // Search state
   const [search, setSearch] = useState('');
-
-  // Date range state
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-
-  // Sort state
-  const [sortBy, setSortBy] = useState<SortBy>('createdAt');
+  const [supplierId, setSupplierId] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('receivedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
-  // Pagination state
   const [page, setPage] = useState(1);
   const pageSize = 25;
 
-  // Edit dialog state
-  const [selectedItem, setSelectedItem] = useState<WriteOffItem | null>(null);
+  // Selected batch for edit dialog
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Fetch write-off history
-  const { data, isLoading, refetch } = api.inventory.getWriteOffHistory.useQuery({
+  const { data: suppliersData } = api.supplier.getAll.useQuery({});
+
+  const { data, isLoading, refetch } = api.inventory.getStockReceivedHistory.useQuery({
     page,
     pageSize,
     sortBy,
@@ -82,15 +62,15 @@ export function StockWriteOffTable() {
     search: search || undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    supplierId: supplierId || undefined,
   });
 
-  const formatDate = (date: string | Date) => {
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return '-';
     return new Date(date).toLocaleDateString('en-AU', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -108,7 +88,7 @@ export function StockWriteOffTable() {
     );
   }
 
-  const items = (data?.items ?? []) as WriteOffItem[];
+  const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
@@ -119,16 +99,14 @@ export function StockWriteOffTable() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Trash2 className="h-5 w-5 text-destructive" />
+                <PackagePlus className="h-5 w-5 text-success" />
                 {t('title')}
               </CardTitle>
               <CardDescription>{t('description')}</CardDescription>
             </div>
           </div>
 
-          {/* Filters */}
           <div className="flex flex-col gap-4 mt-4 sm:flex-row">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -142,7 +120,6 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Date From */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">
                 {t('filters.dateFrom')}
@@ -158,7 +135,6 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Date To */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">
                 {t('filters.dateTo')}
@@ -174,7 +150,26 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Sort */}
+            <Select
+              value={supplierId || 'all'}
+              onValueChange={(value) => {
+                setSupplierId(value === 'all' ? '' : value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder={t('filters.allSuppliers')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filters.allSuppliers')}</SelectItem>
+                {suppliersData?.suppliers?.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id}>
+                    {supplier.businessName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select
               value={`${sortBy}-${sortDirection}`}
               onValueChange={(value) => {
@@ -188,12 +183,16 @@ export function StockWriteOffTable() {
                 <SelectValue placeholder={t('sort.sortBy')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="createdAt-desc">{t('sort.dateDesc')}</SelectItem>
-                <SelectItem value="createdAt-asc">{t('sort.dateAsc')}</SelectItem>
+                <SelectItem value="receivedAt-desc">{t('sort.dateDesc')}</SelectItem>
+                <SelectItem value="receivedAt-asc">{t('sort.dateAsc')}</SelectItem>
                 <SelectItem value="productName-asc">{t('sort.productNameAsc')}</SelectItem>
                 <SelectItem value="productName-desc">{t('sort.productNameDesc')}</SelectItem>
                 <SelectItem value="quantity-desc">{t('sort.quantityDesc')}</SelectItem>
                 <SelectItem value="quantity-asc">{t('sort.quantityAsc')}</SelectItem>
+                <SelectItem value="costPerUnit-desc">{t('sort.costDesc')}</SelectItem>
+                <SelectItem value="costPerUnit-asc">{t('sort.costAsc')}</SelectItem>
+                <SelectItem value="expiryDate-asc">{t('sort.expiryAsc')}</SelectItem>
+                <SelectItem value="expiryDate-desc">{t('sort.expiryDesc')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -204,10 +203,13 @@ export function StockWriteOffTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('columns.product')}</TableHead>
+                  <TableHead>{t('columns.batchNumber')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
-                  <TableHead>{t('columns.reason')}</TableHead>
-                  <TableHead>{t('columns.date')}</TableHead>
-                  <TableHead>{t('columns.performedBy')}</TableHead>
+                  <TableHead className="text-right">{t('columns.costPerUnit')}</TableHead>
+                  <TableHead>{t('columns.supplier')}</TableHead>
+                  <TableHead>{t('columns.invoiceNumber')}</TableHead>
+                  <TableHead>{t('columns.receivedDate')}</TableHead>
+                  <TableHead>{t('columns.expiryDate')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,7 +218,7 @@ export function StockWriteOffTable() {
                     key={item.id}
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => {
-                      setSelectedItem(item);
+                      setSelectedBatchId(item.id);
                       setShowEditDialog(true);
                     }}
                   >
@@ -226,27 +228,34 @@ export function StockWriteOffTable() {
                         <p className="text-sm text-muted-foreground">{item.productSku}</p>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {item.quantity.toFixed(1)} {item.productUnit}
+                      {item.quantityRemaining.toFixed(1)} / {item.initialQuantity.toFixed(1)} {item.productUnit}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatAUD(item.costPerUnit)}
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">
-                        {item.reason || t('noReason')}
-                      </span>
+                      <span className="text-sm">{item.supplierName || '-'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">{formatDate(item.createdAt)}</span>
+                      <span className="text-sm">{item.supplierInvoiceNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">{item.createdBy}</span>
+                      <span className="text-sm">{formatDate(item.stockInDate || item.receivedAt)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{formatDate(item.expiryDate)}</span>
                     </TableCell>
                   </TableRow>
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center">
+                    <TableCell colSpan={8} className="py-8 text-center">
                       <EmptyState
-                        icon={Trash2}
+                        icon={PackagePlus}
                         title={t('emptyState')}
                         description={t('emptyStateDescription')}
                       />
@@ -257,7 +266,6 @@ export function StockWriteOffTable() {
             </Table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
@@ -295,28 +303,18 @@ export function StockWriteOffTable() {
         </CardContent>
       </Card>
 
-      {/* Edit Transaction Dialog */}
-      {showEditDialog && selectedItem && (
-        <EditTransactionDialogLazy
+      {/* Lazy-loaded edit dialog */}
+      {showEditDialog && selectedBatchId && (
+        <EditStockReceivedDialogLazy
           open={showEditDialog}
           onOpenChange={(open) => {
             setShowEditDialog(open);
-            if (!open) setSelectedItem(null);
+            if (!open) setSelectedBatchId(null);
           }}
-          transaction={{
-            id: selectedItem.id,
-            productId: selectedItem.productId,
-            productName: selectedItem.productName,
-            productSku: selectedItem.productSku,
-            productUnit: selectedItem.productUnit,
-            quantity: selectedItem.rawQuantity,
-            previousStock: selectedItem.previousStock,
-            newStock: selectedItem.newStock,
-            notes: selectedItem.notes,
-          }}
+          batchId={selectedBatchId}
           onSuccess={() => {
             setShowEditDialog(false);
-            setSelectedItem(null);
+            setSelectedBatchId(null);
             refetch();
           }}
         />
@@ -325,8 +323,9 @@ export function StockWriteOffTable() {
   );
 }
 
+// Lazy import for the edit dialog to avoid pulling it in upfront
 import dynamic from 'next/dynamic';
-const EditTransactionDialogLazy = dynamic(
-  () => import('./EditTransactionDialog').then((m) => m.EditTransactionDialog),
+const EditStockReceivedDialogLazy = dynamic(
+  () => import('./EditStockReceivedDialog').then((m) => m.EditStockReceivedDialog),
   { ssr: false }
 );

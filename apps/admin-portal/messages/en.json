@@ -3011,7 +3011,10 @@
       "comparison": "Comparison",
       "stockCounts": "Stock Counts",
       "stockExpiry": "Stock Expiry",
-      "writeOffs": "Write-Offs"
+      "writeOffs": "Write-Offs",
+      "stockReceived": "Stock Received",
+      "processing": "Processing",
+      "packing": "Packing"
     },
     "stats": {
       "periods": {
@@ -3312,6 +3315,176 @@
         "next": "Next",
         "pageOf": "Page {page} of {total}"
       }
+    },
+    "stockReceivedHistory": {
+      "title": "Stock Received History",
+      "description": "View all stock received batches",
+      "columns": {
+        "product": "Product",
+        "batchNumber": "Batch #",
+        "quantity": "Qty Remaining / Initial",
+        "costPerUnit": "Cost/Unit",
+        "supplier": "Supplier",
+        "invoiceNumber": "Invoice #",
+        "receivedDate": "Received Date",
+        "expiryDate": "Expiry Date"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by product name or SKU...",
+        "dateFrom": "From",
+        "dateTo": "To",
+        "allSuppliers": "All Suppliers"
+      },
+      "sort": {
+        "sortBy": "Sort by",
+        "dateDesc": "Received Date (Newest)",
+        "dateAsc": "Received Date (Oldest)",
+        "productNameAsc": "Product Name (A-Z)",
+        "productNameDesc": "Product Name (Z-A)",
+        "quantityDesc": "Quantity (Highest)",
+        "quantityAsc": "Quantity (Lowest)",
+        "costDesc": "Cost (Highest)",
+        "costAsc": "Cost (Lowest)",
+        "expiryAsc": "Expiry (Soonest)",
+        "expiryDesc": "Expiry (Latest)"
+      },
+      "emptyState": "No stock received records found",
+      "emptyStateDescription": "No stock received batches match your filters",
+      "pagination": {
+        "showing": "Showing {start}-{end} of {total} batches",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {total}"
+      }
+    },
+    "processingHistory": {
+      "title": "Processing History",
+      "description": "View all stock processing transactions",
+      "columns": {
+        "product": "Product",
+        "batchNumber": "Batch #",
+        "quantity": "Quantity",
+        "stockChange": "Stock Change",
+        "notes": "Notes",
+        "date": "Date",
+        "performedBy": "Performed By"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by product name or SKU...",
+        "dateFrom": "From",
+        "dateTo": "To"
+      },
+      "sort": {
+        "sortBy": "Sort by",
+        "dateDesc": "Date (Newest)",
+        "dateAsc": "Date (Oldest)",
+        "productNameAsc": "Product Name (A-Z)",
+        "productNameDesc": "Product Name (Z-A)",
+        "quantityDesc": "Quantity (Highest)",
+        "quantityAsc": "Quantity (Lowest)"
+      },
+      "emptyState": "No processing records found",
+      "emptyStateDescription": "No processing transactions match your filters",
+      "pagination": {
+        "showing": "Showing {start}-{end} of {total} processing records",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {total}"
+      }
+    },
+    "packingHistory": {
+      "title": "Packing History",
+      "description": "View all packing adjustment and reset transactions",
+      "columns": {
+        "product": "Product",
+        "batchNumber": "Batch #",
+        "type": "Type",
+        "quantity": "Quantity",
+        "stockChange": "Stock Change",
+        "notes": "Notes",
+        "date": "Date",
+        "performedBy": "Performed By"
+      },
+      "packingAdjustment": "Adjustment",
+      "packingReset": "Reset",
+      "filters": {
+        "searchPlaceholder": "Search by product name or SKU...",
+        "dateFrom": "From",
+        "dateTo": "To"
+      },
+      "sort": {
+        "sortBy": "Sort by",
+        "dateDesc": "Date (Newest)",
+        "dateAsc": "Date (Oldest)",
+        "productNameAsc": "Product Name (A-Z)",
+        "productNameDesc": "Product Name (Z-A)",
+        "quantityDesc": "Quantity (Highest)",
+        "quantityAsc": "Quantity (Lowest)"
+      },
+      "emptyState": "No packing records found",
+      "emptyStateDescription": "No packing transactions match your filters",
+      "pagination": {
+        "showing": "Showing {start}-{end} of {total} packing records",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {total}"
+      }
+    },
+    "editBatch": {
+      "title": "Edit Stock Received Batch",
+      "description": "Modify batch details. Quantity changes will recalculate product stock.",
+      "fields": {
+        "initialQuantity": "Initial Quantity",
+        "quantityRemaining": "Quantity Remaining",
+        "costPerUnit": "Cost per Unit ($)",
+        "expiryDate": "Expiry Date",
+        "supplier": "Supplier",
+        "invoiceNumber": "Supplier Invoice Number",
+        "stockInDate": "Stock In Date",
+        "mtvNumber": "MTV Number",
+        "vehicleTemperature": "Vehicle Temperature (°C)",
+        "notes": "Notes",
+        "editReason": "Reason for Edit"
+      },
+      "placeholders": {
+        "editReason": "Why is this batch being edited?"
+      },
+      "validation": {
+        "editReasonRequired": "Please provide a reason for this edit",
+        "quantityNegative": "Quantity cannot be negative"
+      },
+      "stockImpact": "Stock Impact",
+      "currentStock": "Current Product Stock",
+      "afterEdit": "After Edit",
+      "save": "Save Changes",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "success": "Batch updated successfully",
+      "error": "Failed to update batch"
+    },
+    "editTransaction": {
+      "title": "Edit Transaction",
+      "description": "Modify transaction quantity. Stock will be recalculated using FIFO.",
+      "currentValues": "Current Values",
+      "product": "Product",
+      "currentQuantity": "Current Quantity",
+      "fields": {
+        "newQuantity": "New Quantity",
+        "notes": "Notes",
+        "editReason": "Reason for Edit"
+      },
+      "placeholders": {
+        "editReason": "Why is this transaction being edited?"
+      },
+      "validation": {
+        "editReasonRequired": "Please provide a reason for this edit"
+      },
+      "stockImpact": "Stock Impact",
+      "save": "Save Changes",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "success": "Transaction updated successfully",
+      "error": "Failed to update transaction"
     }
   },
   "customerDetail": {

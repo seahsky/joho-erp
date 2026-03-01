@@ -736,6 +736,7 @@ export const inventoryRouter = router({
               sku: true,
               unit: true,
               category: true,
+              currentStock: true,
             },
           },
           supplier: {
@@ -991,6 +992,313 @@ export const inventoryRouter = router({
     }),
 
   /**
+   * Get stock received history (paginated, searchable) — lists InventoryBatch records
+   */
+  getStockReceivedHistory: requirePermission('inventory:view')
+    .input(
+      z.object({
+        page: z.number().int().positive().default(1),
+        pageSize: z.number().int().positive().max(100).default(25),
+        sortBy: z.enum(['receivedAt', 'productName', 'quantity', 'costPerUnit', 'expiryDate']).default('receivedAt'),
+        sortDirection: z.enum(['asc', 'desc']).default('desc'),
+        search: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+        supplierId: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo, supplierId } = input;
+
+      const where: any = {};
+
+      if (search) {
+        where.product = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      if (supplierId) {
+        where.supplierId = supplierId;
+      }
+
+      if (dateFrom || dateTo) {
+        where.receivedAt = {};
+        if (dateFrom) {
+          where.receivedAt.gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setDate(endDate.getDate() + 1);
+          where.receivedAt.lte = endDate;
+        }
+      }
+
+      let orderBy: any;
+      switch (sortBy) {
+        case 'productName':
+          orderBy = { product: { name: sortDirection } };
+          break;
+        case 'quantity':
+          orderBy = { quantityRemaining: sortDirection };
+          break;
+        case 'costPerUnit':
+          orderBy = { costPerUnit: sortDirection };
+          break;
+        case 'expiryDate':
+          orderBy = { expiryDate: sortDirection };
+          break;
+        case 'receivedAt':
+        default:
+          orderBy = { receivedAt: sortDirection };
+          break;
+      }
+
+      const totalCount = await prisma.inventoryBatch.count({ where });
+
+      const batches = await prisma.inventoryBatch.findMany({
+        where,
+        include: {
+          product: {
+            select: { id: true, name: true, sku: true, unit: true },
+          },
+          supplier: {
+            select: { id: true, businessName: true },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+
+      const items = batches.map((batch) => ({
+        id: batch.id,
+        productId: batch.product.id,
+        productName: batch.product.name,
+        productSku: batch.product.sku,
+        productUnit: batch.product.unit,
+        batchNumber: batch.batchNumber,
+        initialQuantity: batch.initialQuantity,
+        quantityRemaining: batch.quantityRemaining,
+        costPerUnit: batch.costPerUnit,
+        supplierId: batch.supplier?.id || null,
+        supplierName: batch.supplier?.businessName || null,
+        supplierInvoiceNumber: batch.supplierInvoiceNumber,
+        stockInDate: batch.stockInDate,
+        receivedAt: batch.receivedAt,
+        expiryDate: batch.expiryDate,
+        mtvNumber: batch.mtvNumber,
+        vehicleTemperature: batch.vehicleTemperature,
+        notes: batch.notes,
+        isConsumed: batch.isConsumed,
+      }));
+
+      return {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      };
+    }),
+
+  /**
+   * Get processing history (paginated, searchable) — InventoryTransactions with adjustmentType='processing'
+   */
+  getProcessingHistory: requirePermission('inventory:view')
+    .input(
+      z.object({
+        page: z.number().int().positive().default(1),
+        pageSize: z.number().int().positive().max(100).default(25),
+        sortBy: z.enum(['createdAt', 'productName', 'quantity']).default('createdAt'),
+        sortDirection: z.enum(['asc', 'desc']).default('desc'),
+        search: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo } = input;
+
+      const where: any = {
+        type: 'adjustment',
+        adjustmentType: 'processing',
+      };
+
+      if (search) {
+        where.product = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
+        if (dateFrom) {
+          where.createdAt.gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setDate(endDate.getDate() + 1);
+          where.createdAt.lte = endDate;
+        }
+      }
+
+      let orderBy: any;
+      switch (sortBy) {
+        case 'productName':
+          orderBy = { product: { name: sortDirection } };
+          break;
+        case 'quantity':
+          orderBy = { quantity: sortDirection };
+          break;
+        case 'createdAt':
+        default:
+          orderBy = { createdAt: sortDirection };
+          break;
+      }
+
+      const totalCount = await prisma.inventoryTransaction.count({ where });
+
+      const transactions = await prisma.inventoryTransaction.findMany({
+        where,
+        include: {
+          product: {
+            select: { id: true, name: true, sku: true, unit: true },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+
+      const items = transactions.map((tx) => ({
+        id: tx.id,
+        productId: tx.product.id,
+        productName: tx.product.name,
+        productSku: tx.product.sku,
+        productUnit: tx.product.unit,
+        batchNumber: tx.batchNumber,
+        quantity: tx.quantity,
+        previousStock: tx.previousStock,
+        newStock: tx.newStock,
+        notes: tx.notes,
+        createdAt: tx.createdAt,
+        createdBy: tx.createdBy || 'system',
+      }));
+
+      return {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      };
+    }),
+
+  /**
+   * Get packing history (paginated, searchable) — InventoryTransactions with adjustmentType IN ('packing_adjustment', 'packing_reset')
+   */
+  getPackingHistory: requirePermission('inventory:view')
+    .input(
+      z.object({
+        page: z.number().int().positive().default(1),
+        pageSize: z.number().int().positive().max(100).default(25),
+        sortBy: z.enum(['createdAt', 'productName', 'quantity']).default('createdAt'),
+        sortDirection: z.enum(['asc', 'desc']).default('desc'),
+        search: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo } = input;
+
+      const where: any = {
+        type: 'adjustment',
+        adjustmentType: { in: ['packing_adjustment', 'packing_reset'] },
+      };
+
+      if (search) {
+        where.product = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
+        if (dateFrom) {
+          where.createdAt.gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setDate(endDate.getDate() + 1);
+          where.createdAt.lte = endDate;
+        }
+      }
+
+      let orderBy: any;
+      switch (sortBy) {
+        case 'productName':
+          orderBy = { product: { name: sortDirection } };
+          break;
+        case 'quantity':
+          orderBy = { quantity: sortDirection };
+          break;
+        case 'createdAt':
+        default:
+          orderBy = { createdAt: sortDirection };
+          break;
+      }
+
+      const totalCount = await prisma.inventoryTransaction.count({ where });
+
+      const transactions = await prisma.inventoryTransaction.findMany({
+        where,
+        include: {
+          product: {
+            select: { id: true, name: true, sku: true, unit: true },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+
+      const items = transactions.map((tx) => ({
+        id: tx.id,
+        productId: tx.product.id,
+        productName: tx.product.name,
+        productSku: tx.product.sku,
+        productUnit: tx.product.unit,
+        batchNumber: tx.batchNumber,
+        adjustmentType: tx.adjustmentType,
+        quantity: tx.quantity,
+        previousStock: tx.previousStock,
+        newStock: tx.newStock,
+        notes: tx.notes,
+        createdAt: tx.createdAt,
+        createdBy: tx.createdBy || 'system',
+      }));
+
+      return {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      };
+    }),
+
+  /**
    * Get write-off history (paginated, searchable)
    */
   getWriteOffHistory: requirePermission('inventory:view')
@@ -1090,6 +1398,10 @@ export const inventoryRouter = router({
           productSku: tx.product.sku,
           productUnit: tx.product.unit,
           quantity: Math.abs(tx.quantity), // stored as negative, display as positive
+          rawQuantity: tx.quantity, // original signed value for edit dialog
+          previousStock: tx.previousStock,
+          newStock: tx.newStock,
+          notes: tx.notes,
           reason,
           createdAt: tx.createdAt,
           createdBy: tx.createdBy || 'system',
@@ -1103,5 +1415,276 @@ export const inventoryRouter = router({
         pageSize,
         totalPages: Math.ceil(totalCount / pageSize),
       };
+    }),
+
+  /**
+   * Edit a stock-received batch (all fields including quantity)
+   */
+  editStockReceivedBatch: requirePermission('products:adjust_stock')
+    .input(
+      z.object({
+        batchId: z.string(),
+        initialQuantity: z.number().positive().optional(),
+        quantityRemaining: z.number().min(0).optional(),
+        costPerUnit: z.number().int().positive().optional(), // in cents
+        expiryDate: z.date().nullable().optional(),
+        supplierId: z.string().nullable().optional(),
+        supplierInvoiceNumber: z.string().nullable().optional(),
+        stockInDate: z.date().nullable().optional(),
+        mtvNumber: z.string().nullable().optional(),
+        vehicleTemperature: z.number().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        editReason: z.string().min(1, 'Edit reason is required'),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { batchId, editReason, ...updates } = input;
+
+      const batch = await prisma.inventoryBatch.findUnique({
+        where: { id: batchId },
+        include: {
+          product: {
+            select: { id: true, currentStock: true, estimatedLossPercentage: true, parentProductId: true },
+          },
+        },
+      });
+
+      if (!batch) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
+      }
+
+      const quantityChanged = updates.quantityRemaining !== undefined && updates.quantityRemaining !== batch.quantityRemaining;
+
+      // Validate stock won't go negative if quantity reduced
+      if (quantityChanged) {
+        const quantityDiff = updates.quantityRemaining! - batch.quantityRemaining;
+        const projectedStock = batch.product.currentStock + quantityDiff;
+        if (projectedStock < 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot reduce batch quantity — it would reduce product stock below zero. Current stock: ${batch.product.currentStock}, change: ${quantityDiff}.`,
+          });
+        }
+      }
+
+      await prisma.$transaction(async (tx) => {
+        // Build update data for batch
+        const batchUpdate: any = {};
+        if (updates.quantityRemaining !== undefined) batchUpdate.quantityRemaining = updates.quantityRemaining;
+        if (updates.initialQuantity !== undefined) batchUpdate.initialQuantity = updates.initialQuantity;
+        if (updates.costPerUnit !== undefined) batchUpdate.costPerUnit = updates.costPerUnit;
+        if (updates.expiryDate !== undefined) batchUpdate.expiryDate = updates.expiryDate;
+        if (updates.supplierId !== undefined) batchUpdate.supplierId = updates.supplierId;
+        if (updates.supplierInvoiceNumber !== undefined) batchUpdate.supplierInvoiceNumber = updates.supplierInvoiceNumber;
+        if (updates.stockInDate !== undefined) batchUpdate.stockInDate = updates.stockInDate;
+        if (updates.mtvNumber !== undefined) batchUpdate.mtvNumber = updates.mtvNumber;
+        if (updates.vehicleTemperature !== undefined) batchUpdate.vehicleTemperature = updates.vehicleTemperature;
+        if (updates.notes !== undefined) batchUpdate.notes = updates.notes;
+
+        // Mark batch as consumed if quantity set to 0
+        if (updates.quantityRemaining === 0) {
+          batchUpdate.isConsumed = true;
+          batchUpdate.consumedAt = new Date();
+        } else if (updates.quantityRemaining !== undefined && updates.quantityRemaining > 0 && batch.isConsumed) {
+          // Re-open if was consumed
+          batchUpdate.isConsumed = false;
+          batchUpdate.consumedAt = null;
+        }
+
+        await tx.inventoryBatch.update({
+          where: { id: batchId },
+          data: batchUpdate,
+        });
+
+        // If quantity changed, create a corrective transaction
+        if (quantityChanged) {
+          const quantityDiff = updates.quantityRemaining! - batch.quantityRemaining;
+          const { generateBatchNumber } = await import('../services/batch-number');
+          const batchNumber = await generateBatchNumber(tx, 'stock_count_correction');
+
+          await tx.inventoryTransaction.create({
+            data: {
+              type: 'adjustment',
+              adjustmentType: 'stock_count_correction',
+              productId: batch.productId,
+              quantity: quantityDiff,
+              previousStock: batch.product.currentStock,
+              newStock: batch.product.currentStock + quantityDiff,
+              costPerUnit: batch.costPerUnit,
+              notes: `Batch edit (stock received correction): ${editReason}`,
+              createdBy: ctx.userId || 'system',
+              batchNumber,
+            },
+          });
+        }
+
+        // Sync product stock and cascade to subproducts
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+        const syncedStock = await syncProductCurrentStock(batch.productId, tx);
+
+        // Cascade to subproducts
+        const subproducts = await tx.product.findMany({
+          where: { parentProductId: batch.productId },
+          select: { id: true },
+        });
+        if (subproducts.length > 0) {
+          const { calculateAllSubproductStocksWithInheritance } = await import('@joho-erp/shared');
+          const allSubs = await tx.product.findMany({
+            where: { parentProductId: batch.productId },
+            select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+          });
+          const updatedStocks = calculateAllSubproductStocksWithInheritance(
+            syncedStock,
+            batch.product.estimatedLossPercentage,
+            allSubs
+          );
+          for (const { id, newStock } of updatedStocks) {
+            await tx.product.update({
+              where: { id },
+              data: { currentStock: Math.max(0, newStock) },
+            });
+          }
+        }
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Edit an existing write-off/processing/packing transaction (quantity + notes)
+   */
+  editTransaction: requirePermission('products:adjust_stock')
+    .input(
+      z.object({
+        transactionId: z.string(),
+        newQuantity: z.number(),
+        notes: z.string().nullable().optional(),
+        editReason: z.string().min(1, 'Edit reason is required'),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { transactionId, newQuantity, notes, editReason } = input;
+
+      const transaction = await prisma.inventoryTransaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          product: {
+            select: { id: true, currentStock: true, estimatedLossPercentage: true },
+          },
+          batchConsumptions: true,
+        },
+      });
+
+      if (!transaction) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction not found' });
+      }
+
+      const allowedTypes = ['stock_write_off', 'processing', 'packing_adjustment', 'packing_reset'];
+      if (!transaction.adjustmentType || !allowedTypes.includes(transaction.adjustmentType)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot edit transaction of type '${transaction.adjustmentType}'. Only write-off, processing, and packing transactions can be edited.`,
+        });
+      }
+
+      // For negative transactions (write-offs, processing source), newQuantity should be the absolute value
+      // The stored quantity is negative, so we work with the absolute difference
+      const oldAbsQuantity = Math.abs(transaction.quantity);
+      const isNegativeTransaction = transaction.quantity < 0;
+      const absNewQuantity = Math.abs(newQuantity);
+
+      // Validate the new quantity won't cause negative stock
+      if (isNegativeTransaction) {
+        // Increasing a deduction: check there's enough stock
+        const additionalDeduction = absNewQuantity - oldAbsQuantity;
+        if (additionalDeduction > 0) {
+          // Need to restore old consumptions then re-consume, so check total available
+          // This is validated inside the transaction below
+        }
+      }
+
+      await prisma.$transaction(async (tx) => {
+        const { syncProductCurrentStock } = await import('../services/inventory-batch');
+
+        // Step 1: Reverse original batch consumptions
+        if (transaction.batchConsumptions.length > 0) {
+          for (const consumption of transaction.batchConsumptions) {
+            await tx.inventoryBatch.update({
+              where: { id: consumption.batchId },
+              data: {
+                quantityRemaining: { increment: consumption.quantityConsumed },
+                isConsumed: false,
+                consumedAt: null,
+              },
+            });
+          }
+          // Delete old consumption records
+          await tx.batchConsumption.deleteMany({
+            where: { transactionId: transaction.id },
+          });
+        }
+
+        // Step 2: Re-consume with corrected amount (for negative/deduction transactions)
+        if (isNegativeTransaction && absNewQuantity > 0) {
+          const { consumeStock } = await import('../services/inventory-batch');
+          await consumeStock(
+            transaction.productId,
+            absNewQuantity,
+            transaction.id,
+            undefined,
+            undefined,
+            tx
+          );
+        }
+
+        // Step 3: Recalculate stock values
+        const currentStock = await syncProductCurrentStock(transaction.productId, tx);
+
+        // Compute the correct previousStock/newStock for the updated transaction
+        const actualQuantity = isNegativeTransaction ? -absNewQuantity : absNewQuantity;
+        const updatedPreviousStock = currentStock - actualQuantity + transaction.quantity;
+
+        // Step 4: Update the transaction record
+        const existingNotes = transaction.notes || '';
+        const updatedNotes = notes !== undefined && notes !== null
+          ? `${notes} [Edited: ${editReason}]`
+          : `${existingNotes} [Edited: ${editReason}]`;
+
+        await tx.inventoryTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            quantity: actualQuantity,
+            previousStock: updatedPreviousStock,
+            newStock: currentStock,
+            notes: updatedNotes.trim(),
+          },
+        });
+
+        // Step 5: Cascade to subproducts
+        const subproducts = await tx.product.findMany({
+          where: { parentProductId: transaction.productId },
+          select: { id: true },
+        });
+        if (subproducts.length > 0) {
+          const { calculateAllSubproductStocksWithInheritance } = await import('@joho-erp/shared');
+          const allSubs = await tx.product.findMany({
+            where: { parentProductId: transaction.productId },
+            select: { id: true, parentProductId: true, estimatedLossPercentage: true },
+          });
+          const updatedStocks = calculateAllSubproductStocksWithInheritance(
+            currentStock,
+            transaction.product.estimatedLossPercentage,
+            allSubs
+          );
+          for (const { id, newStock: subStock } of updatedStocks) {
+            await tx.product.update({
+              where: { id },
+              data: { currentStock: Math.max(0, subStock) },
+            });
+          }
+        }
+      });
+
+      return { success: true };
     }),
 });

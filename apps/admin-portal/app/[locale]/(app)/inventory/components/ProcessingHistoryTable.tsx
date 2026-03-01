@@ -24,7 +24,7 @@ import {
   Input,
 } from '@joho-erp/ui';
 import {
-  Trash2,
+  ArrowRightLeft,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -35,46 +35,36 @@ import { api } from '@/trpc/client';
 type SortBy = 'createdAt' | 'productName' | 'quantity';
 type SortDirection = 'asc' | 'desc';
 
-interface WriteOffItem {
+interface TransactionItem {
   id: string;
   productId: string;
   productName: string;
   productSku: string;
   productUnit: string;
+  batchNumber: string | null;
   quantity: number;
-  rawQuantity: number;
   previousStock: number;
   newStock: number;
   notes: string | null;
-  reason: string;
   createdAt: Date;
   createdBy: string;
 }
 
-export function StockWriteOffTable() {
-  const t = useTranslations('inventory.writeOffHistory');
+export function ProcessingHistoryTable() {
+  const t = useTranslations('inventory.processingHistory');
 
-  // Search state
   const [search, setSearch] = useState('');
-
-  // Date range state
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-
-  // Sort state
   const [sortBy, setSortBy] = useState<SortBy>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
-  // Pagination state
   const [page, setPage] = useState(1);
   const pageSize = 25;
 
-  // Edit dialog state
-  const [selectedItem, setSelectedItem] = useState<WriteOffItem | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Fetch write-off history
-  const { data, isLoading, refetch } = api.inventory.getWriteOffHistory.useQuery({
+  const { data, isLoading, refetch } = api.inventory.getProcessingHistory.useQuery({
     page,
     pageSize,
     sortBy,
@@ -108,7 +98,7 @@ export function StockWriteOffTable() {
     );
   }
 
-  const items = (data?.items ?? []) as WriteOffItem[];
+  const items = (data?.items ?? []) as TransactionItem[];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
@@ -119,16 +109,14 @@ export function StockWriteOffTable() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Trash2 className="h-5 w-5 text-destructive" />
+                <ArrowRightLeft className="h-5 w-5 text-primary" />
                 {t('title')}
               </CardTitle>
               <CardDescription>{t('description')}</CardDescription>
             </div>
           </div>
 
-          {/* Filters */}
           <div className="flex flex-col gap-4 mt-4 sm:flex-row">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -142,7 +130,6 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Date From */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">
                 {t('filters.dateFrom')}
@@ -158,7 +145,6 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Date To */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">
                 {t('filters.dateTo')}
@@ -174,7 +160,6 @@ export function StockWriteOffTable() {
               />
             </div>
 
-            {/* Sort */}
             <Select
               value={`${sortBy}-${sortDirection}`}
               onValueChange={(value) => {
@@ -204,8 +189,10 @@ export function StockWriteOffTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('columns.product')}</TableHead>
+                  <TableHead>{t('columns.batchNumber')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
-                  <TableHead>{t('columns.reason')}</TableHead>
+                  <TableHead>{t('columns.stockChange')}</TableHead>
+                  <TableHead>{t('columns.notes')}</TableHead>
                   <TableHead>{t('columns.date')}</TableHead>
                   <TableHead>{t('columns.performedBy')}</TableHead>
                 </TableRow>
@@ -216,7 +203,7 @@ export function StockWriteOffTable() {
                     key={item.id}
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => {
-                      setSelectedItem(item);
+                      setSelectedTransaction(item);
                       setShowEditDialog(true);
                     }}
                   >
@@ -226,13 +213,21 @@ export function StockWriteOffTable() {
                         <p className="text-sm text-muted-foreground">{item.productSku}</p>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {item.quantity.toFixed(1)} {item.productUnit}
+                      <span className={item.quantity > 0 ? 'text-success' : 'text-destructive'}>
+                        {item.quantity > 0 ? '+' : ''}{item.quantity.toFixed(1)} {item.productUnit}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">
-                        {item.reason || t('noReason')}
+                      <span className="text-sm text-muted-foreground">
+                        {item.previousStock} → {item.newStock}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm line-clamp-2">{item.notes || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{formatDate(item.createdAt)}</span>
@@ -244,9 +239,9 @@ export function StockWriteOffTable() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center">
+                    <TableCell colSpan={7} className="py-8 text-center">
                       <EmptyState
-                        icon={Trash2}
+                        icon={ArrowRightLeft}
                         title={t('emptyState')}
                         description={t('emptyStateDescription')}
                       />
@@ -257,7 +252,6 @@ export function StockWriteOffTable() {
             </Table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
@@ -295,28 +289,17 @@ export function StockWriteOffTable() {
         </CardContent>
       </Card>
 
-      {/* Edit Transaction Dialog */}
-      {showEditDialog && selectedItem && (
+      {showEditDialog && selectedTransaction && (
         <EditTransactionDialogLazy
           open={showEditDialog}
           onOpenChange={(open) => {
             setShowEditDialog(open);
-            if (!open) setSelectedItem(null);
+            if (!open) setSelectedTransaction(null);
           }}
-          transaction={{
-            id: selectedItem.id,
-            productId: selectedItem.productId,
-            productName: selectedItem.productName,
-            productSku: selectedItem.productSku,
-            productUnit: selectedItem.productUnit,
-            quantity: selectedItem.rawQuantity,
-            previousStock: selectedItem.previousStock,
-            newStock: selectedItem.newStock,
-            notes: selectedItem.notes,
-          }}
+          transaction={selectedTransaction}
           onSuccess={() => {
             setShowEditDialog(false);
-            setSelectedItem(null);
+            setSelectedTransaction(null);
             refetch();
           }}
         />

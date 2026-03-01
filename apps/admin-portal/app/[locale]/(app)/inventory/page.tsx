@@ -51,6 +51,9 @@ import {
   StockCountsTable,
   ExpiringBatchesList,
   StockWriteOffTable,
+  StockReceivedTable,
+  ProcessingHistoryTable,
+  PackingHistoryTable,
   type InventoryTransaction,
 } from './components';
 import { PermissionGate } from '@/components/permission-gate';
@@ -114,7 +117,7 @@ export default function InventoryPage() {
 
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry' | 'writeOffs'>('overview');
+  const [currentTab, setCurrentTab] = useState<'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry' | 'writeOffs' | 'stockReceived' | 'processing' | 'packing'>('overview');
 
   // Stock counts initial filter state (from URL params)
   const [stockCountsInitialFilter, setStockCountsInitialFilter] = useState<'all' | 'healthy' | 'low_stock' | 'out_of_stock' | undefined>(undefined);
@@ -365,6 +368,9 @@ export default function InventoryPage() {
           <TabsTrigger value="stockCounts">{t('tabs.stockCounts')}</TabsTrigger>
           <TabsTrigger value="stockExpiry">{t('tabs.stockExpiry')}</TabsTrigger>
           <TabsTrigger value="writeOffs">{t('tabs.writeOffs')}</TabsTrigger>
+          <TabsTrigger value="stockReceived">{t('tabs.stockReceived')}</TabsTrigger>
+          <TabsTrigger value="processing">{t('tabs.processing')}</TabsTrigger>
+          <TabsTrigger value="packing">{t('tabs.packing')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Existing content */}
@@ -613,6 +619,21 @@ export default function InventoryPage() {
         <TabsContent value="writeOffs">
           {currentTab === 'writeOffs' && <StockWriteOffTable />}
         </TabsContent>
+
+        {/* Stock Received Tab */}
+        <TabsContent value="stockReceived">
+          {currentTab === 'stockReceived' && <StockReceivedTable />}
+        </TabsContent>
+
+        {/* Processing Tab */}
+        <TabsContent value="processing">
+          {currentTab === 'processing' && <ProcessingHistoryTable />}
+        </TabsContent>
+
+        {/* Packing Tab */}
+        <TabsContent value="packing">
+          {currentTab === 'packing' && <PackingHistoryTable />}
+        </TabsContent>
       </Tabs>
 
       {/* Stock Adjustment Dialog */}
@@ -637,7 +658,7 @@ export default function InventoryPage() {
       <ExportDialog
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
-        currentTab={currentTab}
+        currentTab={currentTab as 'overview' | 'trends' | 'turnover' | 'comparison' | 'stockCounts' | 'stockExpiry' | 'writeOffs'}
         currentFilters={{
           transactionType,
           productSearch,
