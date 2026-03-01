@@ -6,6 +6,15 @@ const nextConfig = {
   // Enable standalone output for Docker deployments
   // This creates a minimal production server with all dependencies bundled
   output: 'standalone',
+  images: {
+    remotePatterns: [
+      // Clerk user profile images
+      { protocol: 'https', hostname: 'img.clerk.com' },
+      { protocol: 'https', hostname: 'images.clerk.dev' },
+      // Google OAuth profile images (in case Clerk returns original URL)
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+    ],
+  },
   // Increase body size limit for image uploads (max 2MB images + form overhead)
   experimental: {
     serverActions: {
