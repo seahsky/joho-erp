@@ -36,6 +36,7 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
+  Hash,
   Package,
   Search,
 } from 'lucide-react';
@@ -249,18 +250,21 @@ function ProductBatchRows({
       <TableRow className="bg-muted/30 hover:bg-muted/30">
         <TableCell />
         <TableCell className="pl-8 text-xs font-medium text-muted-foreground">
-          {tBatches('batches.expiry')}
+          {tBatches('batches.batchNumber')}
         </TableCell>
         <TableCell className="text-xs font-medium text-muted-foreground">
-          {tBatches('batches.supplier')}
+          {tBatches('batches.expiry')}
         </TableCell>
         <TableCell className="text-right text-xs font-medium text-muted-foreground">
           {tBatches('batches.quantity')}
         </TableCell>
         <TableCell className="text-xs font-medium text-muted-foreground">
+          {tBatches('batches.supplier')}
+        </TableCell>
+        <TableCell className="text-xs font-medium text-muted-foreground">
           {tBatches('batches.costPerUnit')}
         </TableCell>
-        <TableCell className="text-xs font-medium text-muted-foreground" colSpan={3}>
+        <TableCell className="text-xs font-medium text-muted-foreground" colSpan={2}>
           {tBatches('batches.received')}
         </TableCell>
       </TableRow>
@@ -276,6 +280,16 @@ function ProductBatchRows({
         >
           <TableCell />
           <TableCell className="pl-8">
+            {batch.batchNumber ? (
+              <Badge variant="secondary" className="font-mono">
+                <Hash className="mr-1 h-3 w-3" />
+                {batch.batchNumber}
+              </Badge>
+            ) : (
+              <span className="text-muted-foreground">&mdash;</span>
+            )}
+          </TableCell>
+          <TableCell>
             <div className="flex items-center gap-2">
               <span className="text-sm">
                 {batch.expiryDate ? formatDate(batch.expiryDate) : '-'}
@@ -283,16 +297,16 @@ function ProductBatchRows({
               {getExpiryBadge(batch)}
             </div>
           </TableCell>
-          <TableCell className="text-sm">
-            {batch.supplier?.businessName ?? '-'}
-          </TableCell>
           <TableCell className="text-right text-sm tabular-nums">
             {batch.quantityRemaining.toFixed(1)}
           </TableCell>
           <TableCell className="text-sm">
+            {batch.supplier?.businessName ?? '-'}
+          </TableCell>
+          <TableCell className="text-sm">
             {formatAUD(batch.costPerUnit)}
           </TableCell>
-          <TableCell className="text-sm" colSpan={3}>
+          <TableCell className="text-sm" colSpan={2}>
             {formatDate(batch.receivedAt)}
           </TableCell>
         </TableRow>

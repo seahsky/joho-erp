@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   Badge,
+  Input,
   Table,
   TableBody,
   TableCell,
@@ -30,7 +31,10 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Hash,
+  Search,
 } from 'lucide-react';
+import { useDebounce } from 'use-debounce';
 import { useTranslations } from 'next-intl';
 import { formatAUD } from '@joho-erp/shared';
 import { api } from '@/trpc/client';
@@ -38,7 +42,7 @@ import { ExpiringBatchActions } from './ExpiringBatchActions';
 import { BatchInfoDialog } from './BatchInfoDialog';
 
 type StatusFilter = 'all' | 'expired' | 'expiringSoon';
-type SortBy = 'expiryDate' | 'value' | 'productName' | 'quantity';
+type SortBy = 'expiryDate' | 'value' | 'productName' | 'quantity' | 'batchNumber';
 type SortDirection = 'asc' | 'desc';
 
 interface ExpiringBatchesListProps {
@@ -48,6 +52,10 @@ interface ExpiringBatchesListProps {
 export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
   const t = useTranslations('inventory.expiringList');
   const tDashboard = useTranslations('dashboard.expiringInventory');
+
+  // Search state
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebounce(search, 300);
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -79,6 +87,7 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
     statusFilter,
     categoryId: categoryId || undefined,
     supplierId: supplierId || undefined,
+    search: debouncedSearch || undefined,
   });
 
   const formatDate = (date: string | Date) => {
@@ -197,8 +206,20 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
             </TabsList>
           </Tabs>
 
-          {/* Additional Filters */}
-          <div className="flex flex-col gap-4 mt-4 sm:flex-row">
+          {/* Search + Additional Filters */}
+          <div className="flex flex-col gap-4 mt-4 sm:flex-row sm:flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={t('filters.searchPlaceholder')}
+                className="pl-10"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  handleFilterChange();
+                }}
+              />
+            </div>
             <Select
               value={categoryId}
               onValueChange={(value) => {
@@ -260,6 +281,8 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                 <SelectItem value="productName-desc">{t('sort.productNameDesc')}</SelectItem>
                 <SelectItem value="quantity-desc">{t('sort.quantityDesc')}</SelectItem>
                 <SelectItem value="quantity-asc">{t('sort.quantityAsc')}</SelectItem>
+                <SelectItem value="batchNumber-asc">{t('sort.batchNumberAsc')}</SelectItem>
+                <SelectItem value="batchNumber-desc">{t('sort.batchNumberDesc')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -270,6 +293,7 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('columns.product')}</TableHead>
+                  <TableHead>{t('columns.batchNumber')}</TableHead>
                   <TableHead>{t('columns.category')}</TableHead>
                   <TableHead>{t('columns.expiry')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
@@ -291,6 +315,16 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                         <p className="font-medium">{batch.product.name}</p>
                         <p className="text-sm text-muted-foreground">{batch.product.sku}</p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {batch.batchNumber ? (
+                        <Badge variant="secondary" className="font-mono">
+                          <Hash className="mr-1 h-3 w-3" />
+                          {batch.batchNumber}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">&mdash;</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {batch.product.category ? (
@@ -332,7 +366,7 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                 ))}
                 {batches.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center">
+                    <TableCell colSpan={9} className="py-8 text-center">
                       <EmptyState
                         icon={AlertTriangle}
                         title={t('emptyState')}

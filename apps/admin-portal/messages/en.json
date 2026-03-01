@@ -3107,6 +3107,7 @@
       },
       "emptyState": "No products found",
       "batches": {
+        "batchNumber": "Batch #",
         "expiry": "Expiry",
         "quantity": "Quantity",
         "costPerUnit": "Cost/Unit",
@@ -3239,7 +3240,8 @@
         "expired": "Expired",
         "expiringSoon": "Expiring Soon",
         "allCategories": "All Categories",
-        "allSuppliers": "All Suppliers"
+        "allSuppliers": "All Suppliers",
+        "searchPlaceholder": "Search by product, SKU, or batch number..."
       },
       "sort": {
         "sortBy": "Sort by",
@@ -3250,10 +3252,13 @@
         "productNameAsc": "Product Name (A-Z)",
         "productNameDesc": "Product Name (Z-A)",
         "quantityDesc": "Quantity (Highest)",
-        "quantityAsc": "Quantity (Lowest)"
+        "quantityAsc": "Quantity (Lowest)",
+        "batchNumberAsc": "Batch # (A-Z)",
+        "batchNumberDesc": "Batch # (Z-A)"
       },
       "columns": {
         "product": "Product",
+        "batchNumber": "Batch #",
         "category": "Category",
         "expiry": "Expiry",
         "quantity": "Quantity",

@@ -574,15 +574,16 @@ export const inventoryRouter = router({
       z.object({
         page: z.number().int().positive().default(1),
         pageSize: z.number().int().positive().max(100).default(25),
-        sortBy: z.enum(['expiryDate', 'value', 'productName', 'quantity']).default('expiryDate'),
+        sortBy: z.enum(['expiryDate', 'value', 'productName', 'quantity', 'batchNumber']).default('expiryDate'),
         sortDirection: z.enum(['asc', 'desc']).default('asc'),
         statusFilter: z.enum(['all', 'expired', 'expiringSoon']).default('all'),
         categoryId: z.string().optional(),
         supplierId: z.string().optional(),
+        search: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const { page, pageSize, sortBy, sortDirection, statusFilter, categoryId, supplierId } = input;
+      const { page, pageSize, sortBy, sortDirection, statusFilter, categoryId, supplierId, search } = input;
 
       // Get company inventory settings for threshold
       const company = await prisma.company.findFirst({
@@ -624,6 +625,15 @@ export const inventoryRouter = router({
         where.supplierId = supplierId;
       }
 
+      // Apply search filter
+      if (search) {
+        where.OR = [
+          { product: { name: { contains: search, mode: 'insensitive' } } },
+          { product: { sku: { contains: search, mode: 'insensitive' } } },
+          { batchNumber: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
       // Build orderBy based on sortBy
       let orderBy: any;
       switch (sortBy) {
@@ -636,6 +646,9 @@ export const inventoryRouter = router({
         case 'value':
           // For value sorting, we'll sort in-memory since it's a computed field
           orderBy = { expiryDate: 'asc' };
+          break;
+        case 'batchNumber':
+          orderBy = { batchNumber: sortDirection };
           break;
         case 'expiryDate':
         default:

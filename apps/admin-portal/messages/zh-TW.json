@@ -3107,6 +3107,7 @@
       },
       "emptyState": "未找到產品",
       "batches": {
+        "batchNumber": "批次號",
         "expiry": "保質期",
         "quantity": "數量",
         "costPerUnit": "單價",
@@ -3239,7 +3240,8 @@
         "expired": "已過期",
         "expiringSoon": "即將過期",
         "allCategories": "所有類別",
-        "allSuppliers": "所有供應商"
+        "allSuppliers": "所有供應商",
+        "searchPlaceholder": "按產品、SKU或批次號搜尋..."
       },
       "sort": {
         "sortBy": "排序方式",
@@ -3250,10 +3252,13 @@
         "productNameAsc": "產品名稱（A-Z）",
         "productNameDesc": "產品名稱（Z-A）",
         "quantityDesc": "數量（最多）",
-        "quantityAsc": "數量（最少）"
+        "quantityAsc": "數量（最少）",
+        "batchNumberAsc": "批次號（A-Z）",
+        "batchNumberDesc": "批次號（Z-A）"
       },
       "columns": {
         "product": "產品",
+        "batchNumber": "批次號",
         "category": "類別",
         "expiry": "到期日期",
         "quantity": "數量",

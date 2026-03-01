@@ -3107,6 +3107,7 @@
       },
       "emptyState": "未找到产品",
       "batches": {
+        "batchNumber": "批次号",
         "expiry": "保质期",
         "quantity": "数量",
         "costPerUnit": "单价",
@@ -3239,7 +3240,8 @@
         "expired": "已过期",
         "expiringSoon": "即将过期",
         "allCategories": "所有类别",
-        "allSuppliers": "所有供应商"
+        "allSuppliers": "所有供应商",
+        "searchPlaceholder": "按产品、SKU或批次号搜索..."
       },
       "sort": {
         "sortBy": "排序方式",
@@ -3250,10 +3252,13 @@
         "productNameAsc": "产品名称（A-Z）",
         "productNameDesc": "产品名称（Z-A）",
         "quantityDesc": "数量（最多）",
-        "quantityAsc": "数量（最少）"
+        "quantityAsc": "数量（最少）",
+        "batchNumberAsc": "批次号（A-Z）",
+        "batchNumberDesc": "批次号（Z-A）"
       },
       "columns": {
         "product": "产品",
+        "batchNumber": "批次号",
         "category": "类别",
         "expiry": "到期日期",
         "quantity": "数量",
