@@ -188,8 +188,8 @@ export function ProcessingHistoryTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead>{t('columns.batchNumber')}</TableHead>
+                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
                   <TableHead>{t('columns.stockChange')}</TableHead>
                   <TableHead>{t('columns.notes')}</TableHead>
@@ -208,13 +208,13 @@ export function ProcessingHistoryTable() {
                     }}
                   >
                     <TableCell>
+                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                    </TableCell>
+                    <TableCell>
                       <div>
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-muted-foreground">{item.productSku}</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       <span className={item.quantity > 0 ? 'text-success' : 'text-destructive'}>

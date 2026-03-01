@@ -190,8 +190,8 @@ export function PackingHistoryTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead>{t('columns.batchNumber')}</TableHead>
+                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead>{t('columns.type')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
                   <TableHead>{t('columns.stockChange')}</TableHead>
@@ -211,13 +211,13 @@ export function PackingHistoryTable() {
                     }}
                   >
                     <TableCell>
+                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
+                    </TableCell>
+                    <TableCell>
                       <div>
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-muted-foreground">{item.productSku}</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-mono">{item.batchNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.adjustmentType === 'packing_reset' ? 'secondary' : 'outline'}>

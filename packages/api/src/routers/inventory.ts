@@ -1023,7 +1023,9 @@ export const inventoryRouter = router({
     .query(async ({ input }) => {
       const { page, pageSize, sortBy, sortDirection, search, dateFrom, dateTo, supplierId } = input;
 
-      const where: any = {};
+      const where: any = {
+        batchNumber: { startsWith: 'SI-' },
+      };
 
       if (search) {
         where.product = {

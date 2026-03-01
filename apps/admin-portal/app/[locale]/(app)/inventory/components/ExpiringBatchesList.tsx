@@ -292,8 +292,8 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead>{t('columns.batchNumber')}</TableHead>
+                  <TableHead>{t('columns.product')}</TableHead>
                   <TableHead>{t('columns.category')}</TableHead>
                   <TableHead>{t('columns.expiry')}</TableHead>
                   <TableHead className="text-right">{t('columns.quantity')}</TableHead>
@@ -311,12 +311,6 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                     onClick={() => handleRowClick(batch.id)}
                   >
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{batch.product.name}</p>
-                        <p className="text-sm text-muted-foreground">{batch.product.sku}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       {batch.batchNumber ? (
                         <Badge variant="secondary" className="font-mono">
                           <Hash className="mr-1 h-3 w-3" />
@@ -325,6 +319,12 @@ export function ExpiringBatchesList({ onBack }: ExpiringBatchesListProps) {
                       ) : (
                         <span className="text-muted-foreground">&mdash;</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{batch.product.name}</p>
+                        <p className="text-sm text-muted-foreground">{batch.product.sku}</p>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {batch.product.category ? (
