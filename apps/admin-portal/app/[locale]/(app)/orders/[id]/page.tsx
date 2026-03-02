@@ -20,7 +20,7 @@ import { OrderItemsTable } from './components/OrderItemsTable';
 import { StatusTimeline } from './components/StatusTimeline';
 import { DeliveryInfo } from './components/DeliveryInfo';
 import { XeroSyncCard } from './components/XeroSyncCard';
-import { OrderActions } from './components/OrderActions';
+import { OrderActionBar } from './components/OrderActionBar';
 import { AuditLogSection } from '@/components/audit-log-section';
 
 interface PageProps {
@@ -163,6 +163,20 @@ export default function OrderDetailPage({ params }: PageProps) {
         onBack={handleBack}
       />
 
+      {/* Sticky Action Bar */}
+      <OrderActionBar
+        orderId={order.id}
+        orderNumber={order.orderNumber}
+        currentStatus={order.status}
+        deliveryAreaId={deliveryAddress.areaId}
+        currentDriverId={delivery?.driverId}
+        currentDriverName={delivery?.driverName}
+        xero={xero}
+        orderItems={items}
+        totalAmount={order.totalAmount}
+        onStatusUpdated={handleStatusUpdated}
+      />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -210,31 +224,15 @@ export default function OrderDetailPage({ params }: PageProps) {
 
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
-          {/* Order Actions */}
-          <OrderActions
-            orderId={order.id}
-            currentStatus={order.status}
-            onStatusUpdated={handleStatusUpdated}
-          />
-
           {/* Delivery Info */}
           <DeliveryInfo
-            orderId={order.id}
-            orderNumber={order.orderNumber}
-            orderStatus={order.status}
             deliveryAddress={deliveryAddress}
             requestedDeliveryDate={order.requestedDeliveryDate}
             delivery={delivery}
-            onDriverAssigned={handleStatusUpdated}
           />
 
           {/* Xero Sync Status */}
-          <XeroSyncCard
-            xero={xero}
-            orderId={order.id}
-            orderItems={items}
-            totalAmount={order.totalAmount}
-          />
+          <XeroSyncCard xero={xero} />
 
           {/* Activity History */}
           <AuditLogSection entity="order" entityId={order.id} />

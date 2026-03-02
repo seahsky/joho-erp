@@ -1,20 +1,15 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   Badge,
-  Button,
-  useToast,
 } from '@joho-erp/ui';
-import { RefreshCw, CheckCircle, Clock, AlertTriangle, Loader2, Download, CreditCard } from 'lucide-react';
+import { RefreshCw, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { formatDate, formatAUD } from '@joho-erp/shared';
-import { api } from '@/trpc/client';
-import { IssueCreditNoteDialog } from './IssueCreditNoteDialog';
 
 interface CreditNoteEntry {
   creditNoteId: string;
@@ -38,56 +33,12 @@ interface XeroInfo {
   lastSyncJobId?: string | null;
 }
 
-interface OrderItem {
-  productId: string;
-  productName: string;
-  sku: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  applyGst?: boolean;
-}
-
 interface XeroSyncCardProps {
   xero?: XeroInfo | null;
-  orderId: string;
-  orderItems?: OrderItem[];
-  totalAmount?: number; // cents
 }
 
-export function XeroSyncCard({ xero, orderId, orderItems, totalAmount }: XeroSyncCardProps) {
+export function XeroSyncCard({ xero }: XeroSyncCardProps) {
   const t = useTranslations('orderDetail');
-  const { toast } = useToast();
-  const utils = api.useUtils();
-  const [creditNoteDialogOpen, setCreditNoteDialogOpen] = useState(false);
-
-  const retryMutation = api.xero.retryJob.useMutation({
-    onSuccess: () => {
-      toast({
-        title: t('xero.retrySuccess'),
-        description: t('xero.retrySuccessMessage'),
-      });
-      void utils.order.getById.invalidate({ orderId });
-    },
-    onError: (error) => {
-      toast({
-        title: t('xero.retryError'),
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleRetry = () => {
-    if (xero?.lastSyncJobId) {
-      retryMutation.mutate({ jobId: xero.lastSyncJobId });
-    }
-  };
-
-  const handleDownloadInvoice = () => {
-    // Open the local PDF proxy endpoint which fetches from Xero
-    window.open(`/api/invoices/${orderId}/pdf`, '_blank');
-  };
 
   const getSyncStatus = () => {
     if (!xero) return 'not_synced';
@@ -130,13 +81,6 @@ export function XeroSyncCard({ xero, orderId, orderItems, totalAmount }: XeroSyn
 
   const creditNotes = xero?.creditNotes || [];
   const totalCredits = creditNotes.reduce((sum, cn) => sum + (cn.amount || 0), 0);
-  const invoiceStatus = xero?.invoiceStatus;
-  const canIssueCreditNote =
-    xero?.invoiceId &&
-    (invoiceStatus === 'PAID' || invoiceStatus === 'AUTHORISED') &&
-    orderItems &&
-    totalAmount &&
-    totalCredits < totalAmount;
 
   return (
     <Card>
@@ -210,67 +154,6 @@ export function XeroSyncCard({ xero, orderId, orderItems, totalAmount }: XeroSyn
           <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
             <p className="text-sm text-destructive">{xero.syncError}</p>
           </div>
-        )}
-
-        {/* Retry Button */}
-        {status === 'failed' && xero?.lastSyncJobId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRetry}
-            disabled={retryMutation.isPending}
-            className="w-full"
-          >
-            {retryMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t('xero.retrying')}
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                {t('xero.retry')}
-              </>
-            )}
-          </Button>
-        )}
-
-        {/* Download Invoice Button */}
-        {xero?.invoiceId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadInvoice}
-            className="w-full"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {t('xero.downloadInvoice')}
-          </Button>
-        )}
-
-        {/* Issue Credit Note Button */}
-        {canIssueCreditNote && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCreditNoteDialogOpen(true)}
-            className="w-full"
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            {t('xero.issueCreditNote')}
-          </Button>
-        )}
-
-        {/* Issue Credit Note Dialog */}
-        {canIssueCreditNote && (
-          <IssueCreditNoteDialog
-            orderId={orderId}
-            orderItems={orderItems!}
-            totalAmount={totalAmount!}
-            existingCreditNotes={creditNotes}
-            open={creditNoteDialogOpen}
-            onOpenChange={setCreditNoteDialogOpen}
-          />
         )}
       </CardContent>
     </Card>

@@ -3942,6 +3942,29 @@
       "resendSuccess": "邮件已发送",
       "resendSuccessMessage": "订单确认邮件已重新发送给客户",
       "resendError": "发送邮件失败"
+    },
+    "actionBar": {
+      "moveToConfirmed": "移至已确认",
+      "moveToPacking": "移至打包中",
+      "moveToReadyForDelivery": "移至待配送",
+      "moveToDelivered": "标记为已送达",
+      "resendConfirmation": "重发确认邮件",
+      "assignDriver": "分配司机",
+      "changeDriver": "更换司机",
+      "downloadInvoice": "下载发票",
+      "retrySyncButton": "重试同步",
+      "issueCreditNote": "开具贷项通知单",
+      "cancelOrder": "取消订单",
+      "moreActions": "更多",
+      "noTransitionsAvailable": "没有可用的状态转换",
+      "orderCancelled": "订单已取消",
+      "resendDisabled": "仅已确认的订单可重发确认邮件",
+      "assignDriverDisabled": "仅当订单待配送时才能分配司机",
+      "assignDriverNoPermission": "您没有管理配送的权限",
+      "downloadInvoiceDisabled": "Xero中尚无发票",
+      "retrySyncDisabled": "没有失败的同步可重试",
+      "creditNoteDisabled": "发票必须在Xero中已付款或已授权",
+      "creditNoteFullyCredited": "订单已全额退款"
     }
   },
   "status": {

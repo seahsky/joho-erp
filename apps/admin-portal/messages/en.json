@@ -3942,6 +3942,29 @@
       "resendSuccess": "Email Sent",
       "resendSuccessMessage": "Order confirmation email has been resent to the customer",
       "resendError": "Failed to Send Email"
+    },
+    "actionBar": {
+      "moveToConfirmed": "Move to Confirmed",
+      "moveToPacking": "Move to Packing",
+      "moveToReadyForDelivery": "Move to Ready for Delivery",
+      "moveToDelivered": "Mark as Delivered",
+      "resendConfirmation": "Resend Confirmation",
+      "assignDriver": "Assign Driver",
+      "changeDriver": "Change Driver",
+      "downloadInvoice": "Download Invoice",
+      "retrySyncButton": "Retry Sync",
+      "issueCreditNote": "Issue Credit Note",
+      "cancelOrder": "Cancel Order",
+      "moreActions": "More",
+      "noTransitionsAvailable": "No status transitions available",
+      "orderCancelled": "Order is cancelled",
+      "resendDisabled": "Resend is only available for confirmed orders",
+      "assignDriverDisabled": "Driver can only be assigned when order is ready for delivery",
+      "assignDriverNoPermission": "You don't have permission to manage deliveries",
+      "downloadInvoiceDisabled": "Invoice not yet available in Xero",
+      "retrySyncDisabled": "No failed sync to retry",
+      "creditNoteDisabled": "Invoice must be paid or authorised in Xero",
+      "creditNoteFullyCredited": "Order has been fully credited"
     }
   },
   "status": {
