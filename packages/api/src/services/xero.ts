@@ -1175,9 +1175,12 @@ export async function syncContactToXero(customer: CustomerForXeroSync): Promise<
       return { success: true, contactId: response.Contacts[0].ContactID };
     }
 
-    // Create new contact in Xero (always create, never match by email)
+    // Create new contact in Xero using PUT to prevent accidental updates
+    // POST /Contacts matches by Name and updates existing contacts silently,
+    // while PUT /Contacts creates a new contact and returns a validation error
+    // if the name already exists — preventing data from being overwritten.
     const response = await xeroApiRequest<XeroContactsResponse>('/Contacts', {
-      method: 'POST',
+      method: 'PUT',
       body: { Contacts: [contactPayload] },
     });
 
