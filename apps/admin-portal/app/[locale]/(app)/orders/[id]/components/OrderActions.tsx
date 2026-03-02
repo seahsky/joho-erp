@@ -106,8 +106,8 @@ export function OrderActions({ orderId, currentStatus, onStatusUpdated }: OrderA
     setShowCancelDialog(false);
   };
 
-  // Can only cancel if not already cancelled or delivered
-  const canCancel = !['cancelled', 'delivered'].includes(currentStatus);
+  // Can cancel from any status except cancelled itself
+  const canCancel = currentStatus !== 'cancelled';
 
   // Backward transitions that must use dedicated endpoints (resetOrder, returnToWarehouse)
   const BLOCKED_BACKWARD_TRANSITIONS: Record<string, string[]> = {
@@ -210,7 +210,9 @@ export function OrderActions({ orderId, currentStatus, onStatusUpdated }: OrderA
           <AlertDialogHeader>
             <AlertDialogTitle>{t('actions.cancelTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('actions.cancelConfirm')}
+              {currentStatus === 'delivered'
+                ? t('actions.cancelDeliveredConfirm')
+                : t('actions.cancelConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

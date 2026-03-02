@@ -25,7 +25,7 @@ export interface TransitionValidation {
  * - packing: Can be marked ready (→ ready_for_delivery) or cancelled
  * - ready_for_delivery: Can start delivery (→ out_for_delivery) or be cancelled
  * - out_for_delivery: Can be delivered (→ delivered), returned (→ ready_for_delivery), or cancelled
- * - delivered: Terminal state (no transitions allowed)
+ * - delivered: Can be cancelled (for full credit notes/refunds)
  * - cancelled: Terminal state (no transitions allowed)
  */
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -34,7 +34,7 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   packing: ['ready_for_delivery', 'cancelled', 'confirmed'], // Can revert to confirmed if issues
   ready_for_delivery: ['out_for_delivery', 'cancelled', 'packing'], // Can revert to packing if issues
   out_for_delivery: ['delivered', 'ready_for_delivery', 'cancelled'], // Can return to warehouse
-  delivered: [], // Terminal state
+  delivered: ['cancelled'], // Can cancel for full credit notes/refunds
   cancelled: [], // Terminal state
 };
 
@@ -67,13 +67,16 @@ const ROLE_PERMISSIONS: Record<string, UserRole[]> = {
   'out_for_delivery->delivered': ['admin', 'manager', 'driver'],
   'out_for_delivery->ready_for_delivery': ['admin', 'manager', 'driver'], // Return to warehouse
   'out_for_delivery->cancelled': ['admin', 'manager'],
+
+  // Cancel delivered order (admin/manager only - for full credit notes/refunds)
+  'delivered->cancelled': ['admin', 'manager'],
 };
 
 /**
  * Check if a status is a terminal state (no further transitions allowed)
  */
 export function isTerminalStatus(status: OrderStatus): boolean {
-  return status === 'delivered' || status === 'cancelled';
+  return status === 'cancelled';
 }
 
 /**
@@ -208,6 +211,11 @@ export function shouldRestoreStockOnCancel(
   currentStatus: OrderStatus,
   stockConsumed: boolean
 ): boolean {
+  // Delivered orders: goods are with the customer, stock must NOT be restored
+  if (currentStatus === 'delivered') {
+    return false;
+  }
+
   // Only restore stock if it was actually consumed
   if (!stockConsumed) {
     return false;

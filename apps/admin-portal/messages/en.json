@@ -3933,6 +3933,7 @@
       "cancel": "Cancel Order",
       "cancelTitle": "Cancel Order",
       "cancelConfirm": "Are you sure you want to cancel this order? This action cannot be undone and the customer will be notified.",
+      "cancelDeliveredConfirm": "This order has already been delivered. Cancelling it will issue a full credit note to the customer. Stock will not be restored as goods are already with the customer. This action cannot be undone.",
       "keepOrder": "Keep Order",
       "confirmCancel": "Cancel Order",
       "cancelling": "Cancelling...",

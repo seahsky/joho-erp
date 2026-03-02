@@ -1250,10 +1250,25 @@ export const packingRouter = router({
           });
         }
 
+        // Auto-update requestedDeliveryDate if it's in the future (pre-order shipped early)
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const requestedDate = new Date(freshOrder.requestedDeliveryDate);
+        requestedDate.setHours(0, 0, 0, 0);
+        const isPreOrderShippedEarly = requestedDate > todayStart;
+
+        let statusNote = input.notes || 'Order packed and ready for delivery';
+        if (isPreOrderShippedEarly) {
+          const originalDateStr = freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU');
+          statusNote = `${statusNote}. Delivery date moved forward from ${originalDateStr} to today.`;
+        }
+
         // Update packing info and status history separately (these fields require update, not updateMany)
         await tx.order.update({
           where: { id: input.orderId },
           data: {
+            // Move delivery date to today if pre-order is shipped early
+            ...(isPreOrderShippedEarly ? { requestedDeliveryDate: todayStart } : {}),
             packing: {
               // Preserve existing packing fields (including originalItems from quantity adjustments)
               ...(freshOrder.packing || {}),
@@ -1268,11 +1283,16 @@ export const packingRouter = router({
                 changedBy: ctx.userId || 'system',
                 changedByName: userDetails.changedByName,
                 changedByEmail: userDetails.changedByEmail,
-                notes: input.notes || 'Order packed and ready for delivery',
+                notes: statusNote,
               },
             },
           },
         });
+
+        // Update delivery date in return data for email notification
+        if (isPreOrderShippedEarly) {
+          txOrderData.deliveryDate = todayStart;
+        }
 
         // Return order data for use after transaction
         return txOrderData;

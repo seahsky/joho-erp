@@ -3933,6 +3933,7 @@
       "cancel": "取消订单",
       "cancelTitle": "取消订单",
       "cancelConfirm": "确定要取消此订单吗？此操作无法撤销，客户将收到通知。",
+      "cancelDeliveredConfirm": "此订单已送达。取消后将向客户开具全额贷记单。由于货物已交付客户，库存将不会恢复。此操作无法撤销。",
       "keepOrder": "保留订单",
       "confirmCancel": "确认取消",
       "cancelling": "取消中...",

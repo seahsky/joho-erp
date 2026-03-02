@@ -1265,75 +1265,80 @@ export const orderRouter = router({
 
         // Handle stock restoration when cancelling
         let shouldRestoreStock = false;
+        const wasDelivered = currentOrder.status === 'delivered';
         if (input.newStatus === 'cancelled') {
-          if (currentOrder.stockConsumed === true) {
-            shouldRestoreStock = true;
-            // STEP 4: Atomic guard for stock restoration - prevent double restoration
-            const stockGuardResult = await tx.order.updateMany({
-              where: {
-                id: input.orderId,
-                stockConsumed: true, // Only if stock is actually consumed
-              },
-              data: {
-                stockConsumed: false, // Mark as not consumed atomically
-                stockConsumedAt: null,
-              },
-            });
-
-            if (stockGuardResult.count === 0) {
-              // Stock already restored by another process - skip restoration
-              // Update status history and return
-              const order = await tx.order.update({
-                where: { id: input.orderId },
+          // Skip stock restoration and packing reversal for delivered orders
+          // Goods are already with the customer, stock cannot be restored
+          if (!wasDelivered) {
+            if (currentOrder.stockConsumed === true) {
+              shouldRestoreStock = true;
+              // STEP 4: Atomic guard for stock restoration - prevent double restoration
+              const stockGuardResult = await tx.order.updateMany({
+                where: {
+                  id: input.orderId,
+                  stockConsumed: true, // Only if stock is actually consumed
+                },
                 data: {
-                  statusHistory: [
-                    ...currentOrder.statusHistory,
-                    {
-                      status: input.newStatus,
-                      changedAt: new Date(),
-                      changedBy: ctx.userId,
-                      changedByName: userDetails.changedByName,
-                      changedByEmail: userDetails.changedByEmail,
-                      notes: input.notes,
-                    },
-                  ],
+                  stockConsumed: false, // Mark as not consumed atomically
+                  stockConsumedAt: null,
                 },
               });
-              return { order, alreadyCompleted: false, originalStatus: currentOrder.status, stockAlreadyRestored: true };
+
+              if (stockGuardResult.count === 0) {
+                // Stock already restored by another process - skip restoration
+                // Update status history and return
+                const order = await tx.order.update({
+                  where: { id: input.orderId },
+                  data: {
+                    statusHistory: [
+                      ...currentOrder.statusHistory,
+                      {
+                        status: input.newStatus,
+                        changedAt: new Date(),
+                        changedBy: ctx.userId,
+                        changedByName: userDetails.changedByName,
+                        changedByEmail: userDetails.changedByEmail,
+                        notes: input.notes,
+                      },
+                    ],
+                  },
+                });
+                return { order, alreadyCompleted: false, originalStatus: currentOrder.status, stockAlreadyRestored: true };
+              }
+
+              // Use shared stock restoration service
+              const orderItems = (currentOrder.items as any[]).map((item: any) => ({
+                productId: item.productId,
+                productName: item.productName || item.name,
+                sku: item.sku,
+                quantity: item.quantity,
+              }));
+
+              await restoreOrderStock(
+                {
+                  orderId: input.orderId,
+                  orderNumber: currentOrder.orderNumber,
+                  items: orderItems,
+                  userId: ctx.userId,
+                  reason: input.notes || 'Admin cancellation',
+                },
+                tx
+              );
             }
 
-            // Use shared stock restoration service
-            const orderItems = (currentOrder.items as any[]).map((item: any) => ({
-              productId: item.productId,
-              productName: item.productName || item.name,
-              sku: item.sku,
-              quantity: item.quantity,
-            }));
-
-            await restoreOrderStock(
-              {
-                orderId: input.orderId,
-                orderNumber: currentOrder.orderNumber,
-                items: orderItems,
-                userId: ctx.userId,
-                reason: input.notes || 'Admin cancellation',
-              },
-              tx
-            );
-          }
-
-          // Reverse packing adjustments when stockConsumed is false
-          // (e.g., cancelled from 'packing' status before markOrderReady)
-          if (!currentOrder.stockConsumed) {
-            await reversePackingAdjustments(
-              {
-                orderId: input.orderId,
-                orderNumber: currentOrder.orderNumber,
-                userId: ctx.userId,
-                reason: input.notes || 'Admin cancellation',
-              },
-              tx
-            );
+            // Reverse packing adjustments when stockConsumed is false
+            // (e.g., cancelled from 'packing' status before markOrderReady)
+            if (!currentOrder.stockConsumed) {
+              await reversePackingAdjustments(
+                {
+                  orderId: input.orderId,
+                  orderNumber: currentOrder.orderNumber,
+                  userId: ctx.userId,
+                  reason: input.notes || 'Admin cancellation',
+                },
+                tx
+              );
+            }
           }
         }
 
@@ -1420,8 +1425,9 @@ export const orderRouter = router({
               });
 
               // If order has a Xero invoice, create a credit note
-              const xeroInfo = result.order.xero as { invoiceId?: string | null } | null;
-              if (xeroInfo?.invoiceId) {
+              // But only if no partial credit notes already exist (to avoid conflicts)
+              const xeroInfo = result.order.xero as { invoiceId?: string | null; creditNotes?: any[] } | null;
+              if (xeroInfo?.invoiceId && !((xeroInfo?.creditNotes?.length ?? 0) > 0)) {
                 const { enqueueXeroJob } = await import('../services/xero-queue');
                 await enqueueXeroJob('create_credit_note', 'order', input.orderId).catch((error) => {
                   console.error('Failed to enqueue Xero credit note creation:', error);
