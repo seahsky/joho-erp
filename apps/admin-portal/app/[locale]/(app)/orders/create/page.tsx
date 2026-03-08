@@ -96,17 +96,8 @@ export default function CreateOrderOnBehalfPage() {
 
   // Product search state
   const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   const productDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Debounce product search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedProductSearch(productSearchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [productSearchTerm]);
 
   // Close product dropdown on outside click
   useEffect(() => {
@@ -121,11 +112,7 @@ export default function CreateOrderOnBehalfPage() {
 
   // Fetch data
   const { data: customersData } = api.customer.getAll.useQuery({ limit: 1000 });
-  const { data: productsData, isLoading: isLoadingProducts } = api.product.getAll.useQuery({
-    search: debouncedProductSearch || undefined,
-    limit: 50,
-    showAll: true,
-  });
+  const { data: productsData, isLoading: isLoadingProducts } = api.product.listAll.useQuery({ showAll: true });
   const { data: selectedCustomer } = api.customer.getById.useQuery(
     { customerId: selectedCustomerId },
     { enabled: !!selectedCustomerId }

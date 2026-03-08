@@ -463,12 +463,14 @@ export const productRouter = router({
       return { items, nextCursor, total: totalCount };
     }),
 
-  // Get all active products at once (for customer portal — no pagination)
+  // Get all products at once (no pagination) — used by customer portal and admin order creation
   listAll: protectedProcedure
-    .query(async ({ ctx: _ctx }) => {
-      // Only fetch top-level active products (subproducts nested under parents)
+    .input(z.object({ showAll: z.boolean().optional() }).optional())
+    .query(async ({ ctx: _ctx, input }) => {
+      const showAll = input?.showAll ?? false;
+      // Only fetch top-level products (subproducts nested under parents)
       const products = await prisma.product.findMany({
-        where: { parentProductId: null, status: 'active' },
+        where: { parentProductId: null, ...(showAll ? {} : { status: 'active' }) },
         orderBy: { name: 'asc' },
         include: {
           categoryRelation: true,
