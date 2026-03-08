@@ -697,6 +697,16 @@ export const customerRouter = router({
       return customer;
     }),
 
+  // Get all customers (no pagination) — used for dropdowns/filters
+  listAll: requirePermission('customers:view')
+    .query(async () => {
+      const customers = await prisma.customer.findMany({
+        orderBy: { businessName: 'asc' },
+        select: { id: true, businessName: true, abn: true, status: true },
+      });
+      return { customers };
+    }),
+
   // Admin: Get all customers
   getAll: requirePermission('customers:view')
     .input(

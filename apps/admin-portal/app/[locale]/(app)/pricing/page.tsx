@@ -91,12 +91,10 @@ export default function PricingPage() {
   });
 
   // Fetch customers for filter
-  const { data: customersData } = api.customer.getAll.useQuery({
-    limit: 100,
-  });
+  const { data: customersData } = api.customer.listAll.useQuery();
 
   // Fetch products for filter
-  const { data: productsData } = api.product.getAll.useQuery({});
+  const { data: productsData } = api.product.listAll.useQuery();
 
   // Delete mutation
   const deleteMutation = api.pricing.deleteCustomerPrice.useMutation({
