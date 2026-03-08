@@ -79,52 +79,14 @@ export function ProductList() {
     router.replace(`/${locale}/products${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
   }, [searchParams, router, locale]);
 
-  // Infinite query for all products — loads pages progressively as user scrolls
+  // Load all products at once — filtering is done client-side
   const {
-    data: infiniteData,
+    data: allProductsData,
     isLoading,
     isFetching,
-    isFetchingNextPage,
     error,
     refetch,
-    fetchNextPage,
-    hasNextPage,
-  } = api.product.getInfinite.useInfiniteQuery(
-    { limit: 20, search: searchQuery || undefined },
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-      initialCursor: 1,
-    }
-  );
-
-  // Flatten all pages into a single items array
-  const allProductsData = React.useMemo(() => {
-    if (!infiniteData) return null;
-    return {
-      items: infiniteData.pages.flatMap((page) => page.items),
-    };
-  }, [infiniteData]);
-
-  // Infinite scroll sentinel ref
-  const sentinelRef = React.useRef<HTMLDivElement>(null);
-
-  // IntersectionObserver for infinite scroll
-  React.useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  } = api.product.listAll.useQuery(undefined);
 
   const { data: categoriesData } = api.category.getAll.useQuery();
   const categories = React.useMemo(() => categoriesData ?? [], [categoriesData]);
@@ -171,10 +133,19 @@ export function ProductList() {
   };
 
   // All products flattened (for counts and as base for filtering)
-  const allProductsForCounts = React.useMemo(() => {
+  const allProductsFlattened = React.useMemo(() => {
     const items = (allProductsData?.items || []) as unknown as ProductWithSubProducts[];
     return flattenAllProducts(items);
   }, [allProductsData]);
+
+  // Client-side search filtering
+  const allProductsForCounts = React.useMemo(() => {
+    if (!searchQuery) return allProductsFlattened;
+    const query = searchQuery.toLowerCase();
+    return allProductsFlattened.filter(
+      (p) => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)
+    );
+  }, [allProductsFlattened, searchQuery]);
 
   // Products for DISPLAY — filtered client-side by selected category
   const allInStockProducts = React.useMemo(() => {
@@ -389,15 +360,6 @@ export function ProductList() {
                   />
                 ))}
               </div>
-
-              {/* Infinite scroll sentinel + loading spinner */}
-              {hasNextPage && (
-                <div ref={sentinelRef} className="flex items-center justify-center py-6">
-                  {isFetchingNextPage && (
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              )}
 
               {/* Empty State */}
               {inStockProducts.length === 0 && (

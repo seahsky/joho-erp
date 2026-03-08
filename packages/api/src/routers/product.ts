@@ -463,6 +463,100 @@ export const productRouter = router({
       return { items, nextCursor, total: totalCount };
     }),
 
+  // Get all active products at once (for customer portal — no pagination)
+  listAll: protectedProcedure
+    .query(async ({ ctx: _ctx }) => {
+      // Only fetch top-level active products (subproducts nested under parents)
+      const products = await prisma.product.findMany({
+        where: { parentProductId: null, status: 'active' },
+        orderBy: { name: 'asc' },
+        include: {
+          categoryRelation: true,
+          subProducts: {
+            include: { categoryRelation: true },
+            orderBy: { name: 'asc' },
+          },
+        },
+      });
+
+      // Fetch customer-specific pricing if user is authenticated
+      let customerId: string | null = null;
+      if (_ctx.userId) {
+        const customer = await prisma.customer.findUnique({
+          where: { clerkUserId: _ctx.userId },
+          select: { id: true },
+        });
+        customerId = customer?.id || null;
+      }
+
+      const isCustomer = !_ctx.userRole || _ctx.userRole === 'customer';
+
+      const transformForCustomer = <T extends { currentStock: number; lowStockThreshold: number | null }>(
+        product: T
+      ) => {
+        const { currentStock, lowStockThreshold, ...rest } = product;
+        return {
+          ...rest,
+          stockStatus: getCustomerStockStatus(currentStock, lowStockThreshold),
+          hasStock: currentStock > 0,
+        };
+      };
+
+      let items;
+      if (customerId) {
+        const allProductIds = products.flatMap((p) => [
+          p.id,
+          ...(p.subProducts?.map((sub: any) => sub.id) || [])
+        ]);
+
+        const customerPricings = await prisma.customerPricing.findMany({
+          where: { customerId, productId: { in: allProductIds } },
+        });
+
+        const pricingMap = new Map(customerPricings.map((p) => [p.productId, p]));
+
+        items = products.map((product) => {
+          const customPricing = pricingMap.get(product.id);
+          const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
+          const priceInfo = getEffectivePrice(product.basePrice, customPricing, gstOptions);
+
+          const transformedSubProducts = product.subProducts?.map((sub: any) => {
+            const subCustomPricing = pricingMap.get(sub.id);
+            const subGstOptions = { applyGst: sub.applyGst, gstRate: sub.gstRate };
+            const subPriceInfo = getEffectivePrice(sub.basePrice, subCustomPricing, subGstOptions);
+            const fullSub = { ...sub, ...subPriceInfo };
+            return isCustomer ? transformForCustomer(fullSub) : fullSub;
+          });
+
+          const fullProduct = {
+            ...product,
+            ...priceInfo,
+            ...(transformedSubProducts && { subProducts: transformedSubProducts })
+          };
+          return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+        });
+      } else {
+        items = products.map((product) => {
+          const gstOptions = { applyGst: product.applyGst, gstRate: product.gstRate };
+
+          const transformedSubProducts = product.subProducts?.map((sub: any) => {
+            const subGstOptions = { applyGst: sub.applyGst, gstRate: sub.gstRate };
+            const fullSub = { ...sub, ...getEffectivePrice(sub.basePrice, undefined, subGstOptions) };
+            return isCustomer ? transformForCustomer(fullSub) : fullSub;
+          });
+
+          const fullProduct = {
+            ...product,
+            ...getEffectivePrice(product.basePrice, undefined, gstOptions),
+            ...(transformedSubProducts && { subProducts: transformedSubProducts })
+          };
+          return isCustomer ? transformForCustomer(fullProduct) : fullProduct;
+        });
+      }
+
+      return { items };
+    }),
+
   // Get product by ID (with customer-specific pricing if applicable)
   getById: protectedProcedure
     .input(z.object({ productId: z.string() }))
