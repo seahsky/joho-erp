@@ -1271,7 +1271,7 @@ function mapProductToXeroItem(product: {
 
 /**
  * Ensure all Xero Items exist for the given order items.
- * Auto-creates missing items via PUT /Items (upsert) and caches the Xero Item ID
+ * Syncs items via POST /Items (upsert) and caches the Xero Item ID
  * on the Product record to skip future API calls.
  */
 export async function ensureXeroItemsExist(
@@ -1317,7 +1317,7 @@ export async function ensureXeroItemsExist(
 
       const itemPayload = mapProductToXeroItem(product);
       const response = await xeroApiRequest<XeroItemsResponse>('/Items', {
-        method: 'PUT',
+        method: 'POST',
         body: { Items: [itemPayload] },
       });
 
@@ -1331,27 +1331,6 @@ export async function ensureXeroItemsExist(
         createdCount++;
       }
     } catch (error) {
-      // Handle "already exists" — lookup failed but item is in Xero
-      if (
-        error instanceof XeroApiError &&
-        error.statusCode === 400 &&
-        error.responseBody.toLowerCase().includes('already exists')
-      ) {
-        xeroLogger.warn(
-          `Item with SKU "${product.sku}" already exists in Xero — looking up and caching`,
-          { sku: product.sku } as any
-        );
-        const retryItemId = await findExistingItemByCode(product.sku);
-        if (retryItemId) {
-          await prisma.product.update({
-            where: { id: product.id },
-            data: { xeroItemId: retryItemId },
-          });
-          xeroLogger.sync.itemCreated(retryItemId, product.id, product.sku);
-          skippedCount++;
-          continue;
-        }
-      }
       const message = error instanceof Error ? error.message : 'Unknown error';
       errors.push(`SKU "${product.sku}": ${message}`);
       xeroLogger.error(`Failed to create Xero item for SKU "${product.sku}"`, {
