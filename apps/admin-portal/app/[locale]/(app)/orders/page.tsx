@@ -116,7 +116,7 @@ export default function OrdersPage() {
   };
 
   // Sorting hook
-  const { sortBy, sortOrder, handleSort } = useTableSort('orderedAt', 'desc');
+  const { sortBy, sortOrder, handleSort } = useTableSort('requestedDeliveryDate', 'desc');
 
   const utils = api.useUtils();
 
@@ -293,9 +293,9 @@ export default function OrdersPage() {
         sortable: true,
       },
       {
-        key: 'orderedAt',
-        label: t('date'),
-        render: (order) => new Date(order.orderedAt).toLocaleDateString(),
+        key: 'requestedDeliveryDate',
+        label: t('deliveryDate'),
+        render: (order) => new Date(order.requestedDeliveryDate).toLocaleDateString(),
         sortable: true,
       },
       {
@@ -420,8 +420,8 @@ export default function OrdersPage() {
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
-          <p className="text-muted-foreground">{t('date')}</p>
-          <p className="font-medium">{new Date(order.orderedAt).toLocaleDateString()}</p>
+          <p className="text-muted-foreground">{t('deliveryDate')}</p>
+          <p className="font-medium">{new Date(order.requestedDeliveryDate).toLocaleDateString()}</p>
         </div>
         <div>
           <p className="text-muted-foreground">{t('items')}</p>
