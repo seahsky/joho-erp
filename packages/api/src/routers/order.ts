@@ -1106,6 +1106,7 @@ export const orderRouter = router({
       const orderSortFieldMapping: Record<string, string> = {
         orderNumber: 'orderNumber',
         orderedAt: 'orderedAt',
+        requestedDeliveryDate: 'requestedDeliveryDate',
         totalAmount: 'totalAmount',
         status: 'status',
         customer: 'customer.businessName',
