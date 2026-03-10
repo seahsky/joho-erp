@@ -1250,25 +1250,30 @@ export const packingRouter = router({
           });
         }
 
-        // Auto-update requestedDeliveryDate if it's in the future (pre-order shipped early)
+        // Auto-update requestedDeliveryDate if it doesn't match today
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const requestedDate = new Date(freshOrder.requestedDeliveryDate);
         requestedDate.setHours(0, 0, 0, 0);
         const isPreOrderShippedEarly = requestedDate > todayStart;
+        const isPastDeliveryDate = requestedDate < todayStart;
+        const needsDateUpdate = isPreOrderShippedEarly || isPastDeliveryDate;
 
         let statusNote = input.notes || 'Order packed and ready for delivery';
         if (isPreOrderShippedEarly) {
           const originalDateStr = freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU');
           statusNote = `${statusNote}. Delivery date moved forward from ${originalDateStr} to today.`;
+        } else if (isPastDeliveryDate) {
+          const originalDateStr = freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU');
+          statusNote = `${statusNote}. Delivery date moved from ${originalDateStr} to today (original date was in the past).`;
         }
 
         // Update packing info and status history separately (these fields require update, not updateMany)
         await tx.order.update({
           where: { id: input.orderId },
           data: {
-            // Move delivery date to today if pre-order is shipped early
-            ...(isPreOrderShippedEarly ? { requestedDeliveryDate: todayStart } : {}),
+            // Move delivery date to today if it doesn't match (pre-order shipped early or past date)
+            ...(needsDateUpdate ? { requestedDeliveryDate: todayStart } : {}),
             packing: {
               // Preserve existing packing fields (including originalItems from quantity adjustments)
               ...(freshOrder.packing || {}),
@@ -1290,7 +1295,7 @@ export const packingRouter = router({
         });
 
         // Update delivery date in return data for email notification
-        if (isPreOrderShippedEarly) {
+        if (needsDateUpdate) {
           txOrderData.deliveryDate = todayStart;
         }
 

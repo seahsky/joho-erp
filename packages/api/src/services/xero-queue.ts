@@ -442,6 +442,7 @@ async function processCreateInvoice(
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
     totalAmount: order.totalAmount,
+    requestedDeliveryDate: order.requestedDeliveryDate,
     xero: order.xero as {
       invoiceId?: string | null;
       invoiceNumber?: string | null;
@@ -598,6 +599,7 @@ async function processUpdateInvoice(
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
     totalAmount: order.totalAmount,
+    requestedDeliveryDate: order.requestedDeliveryDate,
     xero: order.xero as {
       invoiceId?: string | null;
       invoiceNumber?: string | null;
@@ -726,6 +728,7 @@ async function processCreateCreditNote(
     subtotal: order.subtotal,
     taxAmount: order.taxAmount,
     totalAmount: order.totalAmount,
+    requestedDeliveryDate: order.requestedDeliveryDate,
     xero: order.xero as {
       invoiceId?: string | null;
       invoiceNumber?: string | null;

@@ -957,6 +957,7 @@ export interface OrderForXeroSync {
     creditNoteId?: string | null;
     creditNoteNumber?: string | null;
   } | null;
+  requestedDeliveryDate: Date;
   delivery?: {
     deliveredAt?: Date | null;
   } | null;
@@ -1395,14 +1396,9 @@ export async function createInvoiceInXero(
 
     // Calculate due date from payment terms
     const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms) || 30;
-    // Use the date when order became ready_for_delivery (when invoice should be created)
-    // Fall back to delivery date or current date for backwards compatibility
-    const readyForDeliveryEntry = order.statusHistory?.find(
-      (h) => h.status === 'ready_for_delivery'
-    );
-    const invoiceDate = readyForDeliveryEntry?.changedAt
-      ? new Date(readyForDeliveryEntry.changedAt)
-      : order.delivery?.deliveredAt || new Date();
+    // Use requestedDeliveryDate as the invoice date
+    // By this point, packing logic has already corrected past/future dates to today
+    const invoiceDate = new Date(order.requestedDeliveryDate);
     const dueDate = new Date(invoiceDate);
     dueDate.setDate(dueDate.getDate() + paymentDays);
 
@@ -1521,7 +1517,7 @@ export async function updateInvoiceInXero(
 
     // Calculate due date from payment terms
     const paymentDays = parsePaymentTerms(customer.creditApplication.paymentTerms) || 30;
-    const invoiceDate = order.delivery?.deliveredAt || new Date();
+    const invoiceDate = new Date(order.requestedDeliveryDate);
     const dueDate = new Date(invoiceDate);
     dueDate.setDate(dueDate.getDate() + paymentDays);
 
