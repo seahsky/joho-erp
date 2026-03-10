@@ -112,3 +112,57 @@ export function formatMelbourneDateTimeForDisplay(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return formatInTimeZone(d, MELBOURNE_TIMEZONE, 'dd/MM/yyyy HH:mm');
 }
+
+/**
+ * Gets today's date in Melbourne, returns UTC midnight for that date.
+ * Consistent with DB convention where dates are stored as UTC midnight
+ * (e.g., `new Date("2026-03-11")` → `2026-03-11T00:00:00.000Z`).
+ *
+ * @example
+ * // At 9am AEDT (March 11), which is 10pm UTC (March 10):
+ * getTodayAsUTCMidnight()
+ * // Returns: 2026-03-11T00:00:00.000Z (UTC midnight for Melbourne's "today")
+ */
+export function getTodayAsUTCMidnight(): Date {
+  const todayStr = formatDateForMelbourne(new Date());
+  return new Date(todayStr + 'T00:00:00.000Z');
+}
+
+/**
+ * Normalizes any Date to UTC midnight of its Melbourne calendar day.
+ * Use for comparing dates that may have different time components.
+ * Consistent with DB convention (UTC midnight storage).
+ *
+ * @param date - The date to normalize
+ * @returns UTC midnight Date for the Melbourne calendar day
+ *
+ * @example
+ * // Melbourne midnight ISO string (from frontend):
+ * toUTCMidnightForMelbourneDay(new Date('2026-03-10T13:00:00.000Z'))
+ * // Returns: 2026-03-11T00:00:00.000Z (March 11 in Melbourne)
+ */
+export function toUTCMidnightForMelbourneDay(date: Date | string): Date {
+  const dateStr = formatDateForMelbourne(date);
+  return new Date(dateStr + 'T00:00:00.000Z');
+}
+
+/**
+ * Returns UTC midnight start and next-day UTC midnight end (exclusive)
+ * for a Melbourne calendar day. Replaces setUTCHours(0,0,0,0) / setUTCHours(23,59,59,999)
+ * patterns which break when the input is a Melbourne midnight ISO string.
+ *
+ * @param date - The date (can be Date object or ISO string)
+ * @returns { start, end } where start is inclusive and end is exclusive
+ *
+ * @example
+ * // Frontend sends Melbourne midnight: 2026-03-10T13:00:00.000Z (March 11 AEDT)
+ * getUTCDayRangeForMelbourneDay(new Date('2026-03-10T13:00:00.000Z'))
+ * // Returns: { start: 2026-03-11T00:00:00.000Z, end: 2026-03-12T00:00:00.000Z }
+ */
+export function getUTCDayRangeForMelbourneDay(date: Date | string): { start: Date; end: Date } {
+  const dateStr = formatDateForMelbourne(date);
+  const start = new Date(dateStr + 'T00:00:00.000Z');
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}

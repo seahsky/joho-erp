@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "@joho-erp/database";
+import { getUTCDayRangeForMelbourneDay } from "@joho-erp/shared";
 
 export type TransactionClient = Omit<
   typeof prisma,
@@ -429,17 +430,13 @@ export async function assignPreliminaryPackingSequence(
   orderId: string,
   areaName: string | null
 ): Promise<number> {
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   // Build where clause - filter by area if provided for per-area sequencing
   const whereClause: any = {
     requestedDeliveryDate: {
       gte: startOfDay,
-      lte: endOfDay,
+      lt: endOfDay,
     },
     status: {
       in: ["confirmed", "packing", "ready_for_delivery"],
@@ -556,17 +553,13 @@ export async function optimizeDeliveryOnlyRoute(
   }
 
   // 2. Fetch ONLY ready_for_delivery orders
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   const orders = await prisma.order.findMany({
     where: {
       requestedDeliveryDate: {
         gte: startOfDay,
-        lte: endOfDay,
+        lt: endOfDay,
       },
       status: "ready_for_delivery", // ONLY ready orders
     },
@@ -837,20 +830,16 @@ export async function getDeliveryRouteOptimization(
   deliveryDate: Date,
   driverId?: string | null
 ) {
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   const whereClause: {
-    deliveryDate: { gte: Date; lte: Date };
+    deliveryDate: { gte: Date; lt: Date };
     routeType: "delivery";
     driverId?: string | null;
   } = {
     deliveryDate: {
       gte: startOfDay,
-      lte: endOfDay,
+      lt: endOfDay,
     },
     routeType: "delivery",
   };
@@ -882,18 +871,14 @@ export async function checkIfDeliveryRouteNeedsRecalculation(
 ): Promise<boolean> {
   const deliveryRoute = await getDeliveryRouteOptimization(deliveryDate, null);
 
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   // Count current ready_for_delivery orders
   const currentReadyCount = await prisma.order.count({
     where: {
       requestedDeliveryDate: {
         gte: startOfDay,
-        lte: endOfDay,
+        lt: endOfDay,
       },
       status: "ready_for_delivery",
     },

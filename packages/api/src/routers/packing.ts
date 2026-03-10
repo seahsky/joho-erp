@@ -3,6 +3,7 @@ import { router, requirePermission } from "../trpc";
 import { prisma, Prisma } from "@joho-erp/database";
 import { TRPCError } from "@trpc/server";
 import { clerkClient } from "@clerk/nextjs/server";
+import { getTodayAsUTCMidnight, toUTCMidnightForMelbourneDay, formatMelbourneDateForDisplay } from "@joho-erp/shared";
 
 /**
  * Get user display name and email for audit trail
@@ -893,10 +894,8 @@ export const packingRouter = router({
         }
 
         // Delivery date validation - check if date hasn't passed (Issue #19 fix)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const deliveryDate = new Date(freshOrder.requestedDeliveryDate);
-        deliveryDate.setHours(0, 0, 0, 0);
+        const today = getTodayAsUTCMidnight();
+        const deliveryDate = toUTCMidnightForMelbourneDay(freshOrder.requestedDeliveryDate);
 
         if (deliveryDate < today) {
           throw new TRPCError({
@@ -1250,21 +1249,19 @@ export const packingRouter = router({
           });
         }
 
-        // Auto-update requestedDeliveryDate if it doesn't match today
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const requestedDate = new Date(freshOrder.requestedDeliveryDate);
-        requestedDate.setHours(0, 0, 0, 0);
+        // Auto-update requestedDeliveryDate if it doesn't match today (Melbourne timezone)
+        const todayStart = getTodayAsUTCMidnight();
+        const requestedDate = toUTCMidnightForMelbourneDay(freshOrder.requestedDeliveryDate);
         const isPreOrderShippedEarly = requestedDate > todayStart;
         const isPastDeliveryDate = requestedDate < todayStart;
         const needsDateUpdate = isPreOrderShippedEarly || isPastDeliveryDate;
 
         let statusNote = input.notes || 'Order packed and ready for delivery';
         if (isPreOrderShippedEarly) {
-          const originalDateStr = freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU');
+          const originalDateStr = formatMelbourneDateForDisplay(freshOrder.requestedDeliveryDate);
           statusNote = `${statusNote}. Delivery date moved forward from ${originalDateStr} to today.`;
         } else if (isPastDeliveryDate) {
-          const originalDateStr = freshOrder.requestedDeliveryDate.toLocaleDateString('en-AU');
+          const originalDateStr = formatMelbourneDateForDisplay(freshOrder.requestedDeliveryDate);
           statusNote = `${statusNote}. Delivery date moved from ${originalDateStr} to today (original date was in the past).`;
         }
 

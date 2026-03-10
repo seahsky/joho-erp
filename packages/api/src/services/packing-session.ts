@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@joho-erp/database";
+import { getUTCDayRangeForMelbourneDay } from "@joho-erp/shared";
 
 // Session timeout in milliseconds (30 minutes)
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
@@ -60,10 +61,7 @@ export async function startPackingSession(
   deliveryDate: Date,
   orderIds: string[]
 ): Promise<StartPackingSessionResult> {
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   // Check for existing active session for this packer and date
   const existingSession = await prisma.packingSession.findFirst({
@@ -235,10 +233,7 @@ export async function takeoverPackingSession(
   });
 
   // Check for existing session for the new packer
-  const startOfDay = new Date(existingSession.deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(existingSession.deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(existingSession.deliveryDate);
 
   const newPackerSession = await prisma.packingSession.findFirst({
     where: {
@@ -316,10 +311,7 @@ export async function updateSessionActivityByPacker(
   packerId: string,
   deliveryDate: Date
 ): Promise<void> {
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   await prisma.packingSession.updateMany({
     where: {
@@ -509,10 +501,7 @@ export async function getActiveSession(
   packerId: string,
   deliveryDate: Date
 ): Promise<PackingSessionInfo | null> {
-  const startOfDay = new Date(deliveryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(deliveryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
   const session = await prisma.packingSession.findFirst({
     where: {

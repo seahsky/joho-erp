@@ -16,6 +16,7 @@ import {
 } from '../services/email';
 import { enqueueXeroJob } from '../services/xero-queue';
 import { sortInputSchema } from '../schemas';
+import { getUTCDayRangeForMelbourneDay } from '@joho-erp/shared';
 import {
   logDriverAssignment,
   logDeliveryStatusChange,
@@ -53,12 +54,9 @@ async function getUserDetails(userId: string | null): Promise<{
  */
 function isPackedToday(packedAt: Date | null | undefined): boolean {
   if (!packedAt) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const { start, end } = getUTCDayRangeForMelbourneDay(new Date());
   const packed = new Date(packedAt);
-  return packed >= today && packed < tomorrow;
+  return packed >= start && packed < end;
 }
 
 export const deliveryRouter = router({
@@ -321,8 +319,7 @@ export const deliveryRouter = router({
   // Get delivery statistics
   // readyForDelivery now filters by orders packed today (same-day delivery)
   getStats: requirePermission('deliveries:view').query(async () => {
-    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
-    const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
+    const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(new Date());
 
     const [readyForDelivery, deliveredToday] = await Promise.all([
       // Count orders that are ready for delivery with today as delivery date
@@ -331,7 +328,7 @@ export const deliveryRouter = router({
           status: 'ready_for_delivery',
           requestedDeliveryDate: {
             gte: startOfDay,
-            lte: endOfDay,
+            lt: endOfDay,
           },
         },
       }),
@@ -342,7 +339,7 @@ export const deliveryRouter = router({
             is: {
               deliveredAt: {
                 gte: startOfDay,
-                lte: endOfDay,
+                lt: endOfDay,
               },
             },
           },
@@ -418,17 +415,14 @@ export const deliveryRouter = router({
       }
 
       // Get all orders for this route with full details
-      const startOfDay = new Date(deliveryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(deliveryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(deliveryDate);
 
       const orders = await prisma.order.findMany({
         where: {
           // Filter by requested delivery date to match getAll endpoint behavior
           requestedDeliveryDate: {
             gte: startOfDay,
-            lte: endOfDay,
+            lt: endOfDay,
           },
           status: {
             in: ['ready_for_delivery', 'delivered'],
@@ -493,16 +487,12 @@ export const deliveryRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const deliveryDate = new Date(input.deliveryDate);
-      const startOfDay = new Date(deliveryDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(deliveryDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(input.deliveryDate);
 
       const where: any = {
         requestedDeliveryDate: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
         status: {
           in: input.status
@@ -656,18 +646,15 @@ export const deliveryRouter = router({
       }).optional()
     )
     .query(async ({ input, ctx }) => {
-      // Use provided date or default to today (in Sydney timezone)
+      // Use provided date or default to today (Melbourne timezone)
       const targetDate = input?.date || new Date();
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(targetDate);
 
       // Build where clause for orders
       const where: any = {
         requestedDeliveryDate: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
         status: input?.status
           ? { equals: input.status }
@@ -1519,15 +1506,11 @@ export const deliveryRouter = router({
       // Get order counts for today if date provided
       let orderCountMap = new Map<string, number>();
       if (input.date) {
-        const targetDate = new Date(input.date);
-        const startOfDay = new Date(targetDate);
-        startOfDay.setUTCHours(0, 0, 0, 0);
-        const endOfDay = new Date(targetDate);
-        endOfDay.setUTCHours(23, 59, 59, 999);
+        const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(input.date);
 
         const orders = await prisma.order.findMany({
           where: {
-            requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+            requestedDeliveryDate: { gte: startOfDay, lt: endOfDay },
             status: { in: ['ready_for_delivery', 'out_for_delivery'] },
           },
           select: { delivery: true },
@@ -1566,11 +1549,7 @@ export const deliveryRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const targetDate = new Date(input.deliveryDate);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(input.deliveryDate);
 
       // Use transaction to ensure atomic bulk assignment
       return prisma.$transaction(
@@ -1578,7 +1557,7 @@ export const deliveryRouter = router({
           // Get all ready_for_delivery orders without a driver assigned
           const orders = await tx.order.findMany({
             where: {
-              requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+              requestedDeliveryDate: { gte: startOfDay, lt: endOfDay },
               status: 'ready_for_delivery',
               OR: [
                 { delivery: { is: { driverId: null } } },
@@ -1712,16 +1691,12 @@ export const deliveryRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const targetDate = new Date(input.deliveryDate);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getUTCDayRangeForMelbourneDay(input.deliveryDate);
 
       // Get unassigned orders
       const orders = await prisma.order.findMany({
         where: {
-          requestedDeliveryDate: { gte: startOfDay, lte: endOfDay },
+          requestedDeliveryDate: { gte: startOfDay, lt: endOfDay },
           status: 'ready_for_delivery',
           OR: [
             { delivery: { is: { driverId: null } } },

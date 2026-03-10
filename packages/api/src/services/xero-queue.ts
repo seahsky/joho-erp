@@ -7,6 +7,7 @@
  */
 
 import { prisma } from '@joho-erp/database';
+import { getTodayAsUTCMidnight } from '@joho-erp/shared';
 import type { XeroSyncJob, XeroSyncJobType, XeroSyncJobStatus } from '@joho-erp/database';
 import {
   syncContactToXero,
@@ -1009,8 +1010,7 @@ export async function getSyncStats(): Promise<{
   failed: number;
   completedToday: number;
 }> {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDay = getTodayAsUTCMidnight();
 
   const [pending, failed, completedToday] = await Promise.all([
     prisma.xeroSyncJob.count({ where: { status: 'pending' } }),
